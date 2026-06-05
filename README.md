@@ -2,6 +2,8 @@
 
 ![Editor Image](rpgcobo-logo.png)
 
+[⇒ Japanese](README.ja.md)
+
 ## 🎮 Multi-platform and multi-language compatible 3D-RPG development tool
 
 RPG-Cobo is an AI-compatible open source RPG production tool that allows anyone to easily create 3D-RPGs.  
@@ -55,7 +57,6 @@ RPG-Cobo consists of multiple repositories.
 ### 1. Download/Install (recommended)
 You can download the latest stable version of **Portal app installer** from the RPG-Cobo official website:
 ```
-(Coming soon)
 👉 https://rpg-cobo.com/download （For Windows）
 ```
 ### 2. Launch from the portal app repository (recommended)
