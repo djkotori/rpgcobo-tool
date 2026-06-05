@@ -65,10 +65,10 @@ class MapTools.tool_sel extends MapTool
 				name="$T.camwork",
 				icon="\ue04b",
 				props = [
-					{ pid="pre", lbl="$T.lbl_preset", type=LIST, list=@( pl) presetcamlist( pl.ref), refresh=1,
+					{ pid="pre", lbl="$T.lbl_presets", type=LIST, list=@( pl) presetcamlist( pl.ref), refresh=1,
 						get=@( prop, data, e){
 							local v = presetcamlist( e).find( @( v) v.fovy==data.fovy && v.viewport==data.viewport && v.yoffs==data.yoffs && !(v.hpb<>data.hpb));
-							return 0;
+							return v||null;
 						}
 						set=@( prop, data, val, e){
 							data.fovy <- val.fovy;
@@ -518,6 +518,7 @@ class MapTools.tool_sel extends MapTool
 		local box = IRect3D();
 		local lblref = (null,);
 		local x2 = x2chk.isSelected();
+		local blkflag = blkflag;
 		
 		local placeSizeLabel( e, r){
 			if( !lblref[0]){
@@ -534,11 +535,7 @@ class MapTools.tool_sel extends MapTool
 			e.consume();
 			switch( e.id){
 			case MOUSE_DRAGGED:
-				local hb;
-				hb = self.planeTest( e, hb0);
-				if( hb && (e.modifiers&SHIFT_MASK)){
-					self.adjustPlane( hb0, hb);
-				}
+				local hb = self.rayTest( e, blkflag, true);	//local hb = self.planeTest( e, hb0);
 				if( hb){
 					local b = makebox( hb0, hb, 0);
 					if( b <> box){
@@ -849,8 +846,7 @@ class MapTools.tool_sel extends MapTool
 			e.consume();
 			switch( e.id){
 			case MOUSE_DRAGGED:
-				local hb;
-				hb = self.planeTest( e, hb0);
+				local hb = self.planeTest( e, hb0);
 				if( hb && (e.modifiers&SHIFT_MASK)){
 					self.adjustPlane( hb0, hb);
 				}

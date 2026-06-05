@@ -743,8 +743,8 @@ function reportErrorAction( func, type="general"){
 	try{
 		func();
 	}catch( ex){
-		local msg = "error in reportErrorAction...";
-		printexception( ex, msg);
+		printf( "error in reportErrorAction...\n");
+		printexception( ex);
 		::rootview.postErrorEvent( {type=type, error=ex, });
 	}
 }

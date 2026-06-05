@@ -1036,7 +1036,7 @@ class PropertyBehaviors.Requirements extends PropertyBehavior
 		foreach( i, v in a){
 			if( !v){
 				local v = (prop["varbits"]??1)&1 ? "A" : "G000";
-				a[i] = { lvar=v, op="=", rvar=true, }
+				a[i] = { lvar=v, op="==", rvar=true, }
 			}
 		}
 		setParam( a);
@@ -1517,10 +1517,10 @@ class PropertyBehaviors.Message extends PropertyBehavior
 			{ id="size", lbl=RichText( "[-6]$T.lbl_size-6"), val="[-6]", func=ctxfunc},
 		];
 		local colors = [
-			{ id="style", lbl="$T.lbl_reset", val="[c0]", func=ctxfunc},
-			{ id="style", lbl=RichText( "[c1]${T.lbl_color}1"), val="[c1]", func=ctxfunc},
-			{ id="style", lbl=RichText( "[c2]${T.lbl_color}2"), val="[c2]", func=ctxfunc},
-			{ id="style", lbl=RichText( "[c3]${T.lbl_color}3"), val="[c3]", func=ctxfunc},
+			{ id="color", lbl="$T.lbl_reset", val="[c0]", func=ctxfunc},
+			{ id="color", lbl=RichText( "[c1]${T.lbl_color}1"), val="[c1]", func=ctxfunc},
+			{ id="color", lbl=RichText( "[c2]${T.lbl_color}2"), val="[c2]", func=ctxfunc},
+			{ id="color", lbl=RichText( "[c3]${T.lbl_color}3"), val="[c3]", func=ctxfunc},
 		];
 		local textruns = [
 			{ id="textrun", lbl="$T.lbl_pagebreak", val="[p]", func=ctxfunc},
@@ -1573,6 +1573,12 @@ class PropertyBehaviors.Message extends PropertyBehavior
 	//	
 	function textMenuSelected( mi){
 		switch( mi.id){
+		case "style":
+		case "size":
+		case "color":
+		case "color":
+			edit.textedit.insertText( mi.val);
+			break;
 		case "dataname":
 		case "dataiconname":
 			local ret = DataSelectPopup.run( null, { datatype="all" });
@@ -1609,13 +1615,23 @@ class PropertyBehaviors.Message extends PropertyBehavior
 	}
 }
 
+::uiloopinit <- false;
+
 class PropertyBehaviors.Message.MessagePreviewDialog extends Dialog
 {
+
 	cmd = null;
 
 	constructor( v, c){
 		super( v);
 		cmd = c;
+		//
+		if( !uiloopinit){
+			::uiloopinit = true;
+			::rootview.addPostEventListener( GPUI_EVENT, ::RPGMain.uiloopevent, ::RPGMain);
+			::rootview.addPostEventListener( ACTION_EVENT, ::RPGMain.uiloopevent, ::RPGMain);
+			::rootview.addPostEventListener( MOUSE_EVENT, ::RPGMain.uiloopevent, ::RPGMain);
+		}
 	}
 
 	function shown(){

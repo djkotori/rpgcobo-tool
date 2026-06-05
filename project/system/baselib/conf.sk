@@ -40,7 +40,14 @@ function override( dst, src, makeslot=true){
 	}else{
 		foreach( si, sv in src){
 			if( si[0]>='0' && si[0]<='9') si = int( si);
-			local st = typeof( sv), dt = typeof( dst[si]);
+			local st = typeof( sv), dv = dst[si], dt = typeof( dv);
+			if( (st==SS_TABLE) && (dt==SS_ARRAY)){
+				foreach( ssi, ssv in sv){
+					ssi = int( ssi);
+					if( ssi in dv) override( dv[ssi], ssv, makeslot);
+					else if( makeslot){ dv.resize(ssi+1); dv[ssi] = ssv; }
+				}
+			}else
 			if( (st==SS_TABLE) && (dt==SS_TABLE||dt==SS_INSTANCE)){
 				override( dst[si], sv, makeslot);
 			}else{

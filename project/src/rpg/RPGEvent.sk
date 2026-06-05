@@ -345,7 +345,7 @@ class RPGEventRunner
 	function memberOp( cmd){
 		::rpgvar.ERROR = 0;
 		local p = cmd.playerid["player"] || ::rpgstat.playermap[cmd.playerid];	//	RPGObjectRefの場合は.playerでRPGPlayerが取れる
-		local slot = cmd.slot;
+		local slot = int( cmd.slot);
 		switch( slot){
 		case null:		//	leave
 			local idx = ::rpgstat.members.indexOf( p);
@@ -356,14 +356,16 @@ class RPGEventRunner
 			rpgstat.members[idx] = null;
 			break;
 		case -1:		//	any
-			slot = ::rpgstat.members.findi( @( v) !v);
-			if( slot < 0){	//	メンバーが満杯
+			local i = ::rpgstat.members.findi( @( v) !v);
+			if( i < 0){	//	メンバーが満杯
 				::rpgvar.ERROR = 13126;
-				return;
+			}else{
+				::rpgstat.members[i] = p;
 			}
+			break;
 		default:
-			if( slot in ::rpgstat.members){	//	
-				::rpgstat.members = p;
+			if( slot in ::rpgstat.members){
+				::rpgstat.members[slot] = p;	//	むりやり交代
 			}else{
 				::rpgvar.ERROR = 13127;
 			}

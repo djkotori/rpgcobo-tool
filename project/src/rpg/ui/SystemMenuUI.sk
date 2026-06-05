@@ -318,12 +318,19 @@ local langconf = {
 	list = @() ::sakana.languagelist.map( @( v)({ lbl=v.name, val=v.code, })),
 
 	get = @(){
-		return ::clientconf["lang"] || ::lang.code;
+		return ::clientconf.game["lang"] || ::lang.code;
 	}
 	
-	// set = @( val) {
-	// 	//	言語切り替えはゲームの再起動が必要。
-	// }
+	set = @( val) {
+		local ret = RPGMain.showUI({ key="dialog_confirm", msg="$T.confirm_changelang" });
+		if( ret){
+			::clientconf.game.lang = val;
+			playSound( "SE011");
+			ClientConfig.save();
+			sleep( 1000);
+			skRestart();
+		}
+	}
 };
 
 
@@ -461,7 +468,7 @@ local confimplmap = {
 				},
 				action = "show"
 			});
-			local delta = {[BTN_LEFT]=-1, [BTN_RIGHT]=1, [BTN_UP]=-10, [BTN_DOWN]=10, "dec"=-1, "inc"=1 }
+			local delta = {[BTN_LEFT]=-1, [BTN_RIGHT]=1, [BTN_UP]=10, [BTN_DOWN]=-10, "dec"=-1, "inc"=1 }
 			local r = RPGMain.uiLoop( {
 				"action" : @( e){
 					local d = delta[e.name];

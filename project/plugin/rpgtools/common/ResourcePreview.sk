@@ -83,12 +83,13 @@ class ResourcePreviewList
 		(thread=newthread()).start( fn, this);
 	}
 
-	function selectItem( id){
+	function selectItem( id, scroll=false){
 		local v = getItemView( id);
 		if( v != selview){
 			selview?.setSelected( false);
 			selview = v;
 			v?.setSelected( true);
+			if( scroll && v){ suspend(); listview.gpui.scrollViewToVisible( v, 0); }
 		}
 	}
 
@@ -160,7 +161,7 @@ class ResourcePreviewList
 			e.consume();
 			break;
 		case MOUSE_ENTERED:
-			printf( "RES!!!!!!!!! %S %S\n", e.src["name"], e.src["ref"][0]);
+			// printf( "RES!!!!!!!!! %S %S\n", e.src["name"], e.src["ref"][0]);
 			break;
 		case MOUSE_EXITED:
 			break;

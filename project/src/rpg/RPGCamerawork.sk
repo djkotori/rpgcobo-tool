@@ -90,7 +90,7 @@ class RPGCameraworkStandard extends RPGCamerawork
 		if( Math.abs( gy-tgtloc.pos.y) < 0.01){
 			if( (gytime+=dt) >= 200){
 				local _dy = (toloc.y-(gy+poffs.y)), dy = Math.abs( _dy);
-				local spd = (dy * 0.001 + 0.0002) * dt * Math.saturate( (gytime-200)/600.0);
+				local spd = (dy * 0.003 + 0.0001) * dt * Math.saturate( (gytime-200)/1000.0);
 				if( spd >= dy){
 					toloc.y = gy+poffs.y;
 				}else{

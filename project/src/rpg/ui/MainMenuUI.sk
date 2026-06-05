@@ -706,7 +706,9 @@ RPGSystem.ui ..
 					slotidx = i,
 					slot = jobslot.name,
 					lbl = @() p1.jobs[i]?.iconname() || "\uf803$T.none",
-					desc = ""
+					desc = "",
+					lock = ptr({ hide=!jobslot["lock"]})
+					_lock = jobslot["lock"],
 				}) ),
 				lvoption = "",
 				"slotselect.desc" = "",
@@ -722,8 +724,14 @@ RPGSystem.ui ..
 		//	スロット選択
 		selslot = RPGMain.uiLoop( {
 			"action" : @( e){	//	スロット、最強装備、すべて外すが来る
-				::playSound( "SE001");
-				return e.item;
+				if( e.item){
+					if( e.item["_lock"]){
+						::playSound( "SE002");
+					}else{
+						::playSound( "SE001");
+						return e.item;
+					}
+				}
 			}
 			"select" : @( e){	//	選択時に説明表示
 				if( e.item){

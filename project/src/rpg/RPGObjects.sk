@@ -203,6 +203,7 @@ class RPGCharaBase extends RPGObject
 	constructor(){
 		conds = [];
 		etc = {};
+		options = [];
 	}
 
 	//	MAXHP, ATK等のスコアプロパティを直接参照できる。
@@ -635,8 +636,8 @@ class RPGPlayer extends RPGCharaBase
 	
 	//	レベルを設定する。レベルを下げることもできる。逆にexp=0でも戦闘後にLV1に下がることはない。
 	function setLV( lv){
-		LV = lv;
-		exp = ::RPGSystem.getExpByLV( LV, data.expcurv);
+		exp = ::RPGSystem.getExpByLV( lv, data.expcurv);
+		updateLV();
 	}
 
 	//	経験値を追加する。レベルが上がったらオプション、ステータスを更新する。
@@ -933,7 +934,7 @@ class RPGEnemy extends RPGCharaBase
 			if( val == undefined) val = clone prop.defval;	//	配列とかも入ってくる
 			::putField( bp, pid, val);
 		}
-		options = data.option.map( @( v) RPGOption( v));		//	ランダムあってもいいかも
+		baseoptions = data.option.map( @( v) v?RPGOption( v):undefined);		//	ランダムあってもいいかも
 		updateScoreMap();
 		HP = scoremap.MAXHP;	//	DQみたいにランダムしてもいい
 		// MP = scoremap.MAXMP;

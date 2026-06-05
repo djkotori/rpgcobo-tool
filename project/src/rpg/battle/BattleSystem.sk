@@ -281,6 +281,7 @@ class SkillCommand
 	
 	//	
 	function prepareTarget( dst){
+		if( !dst) return null;
 		rpgstage.battle.defchr = dst;		//	ひとまず現段階でのdefchrを設定
 		if( dst.isDead()){
 			if( skill.flags & (1<<FLAG_TARGET_ALT)){	//	対象が死亡時に別の対象を選択する

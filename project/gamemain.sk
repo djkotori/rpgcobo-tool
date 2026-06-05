@@ -94,18 +94,20 @@ function preloaShaders( glob=null){
 	//	ここでclient.confを読んでスクリーンサイズ、言語などを読む。
 	runsk( "/ClientConfig.sk");	//	$savedata/client.json
 	::clientconf = ClientConfig.load();
-	if( osname=="Windows"){
-		if( !clientconf.screen.fullscreen){
-			local wh = clientconf.screen.reso_window.split( "x");	//	"1920x1080"のような文字列
-			skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 5|16);
-		}else{
-			local wh = clientconf.screen.reso_screen.split( "x");
-			if( !skSupportsDisplaySize( int( wh[0]), int( wh[1]))) wh = ["1280","720"];
-			skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 0);
+	if( !skGetScreenSize( [0,0])[0]){	//	skRestart時にはウィンドウは既にできている
+		if( osname=="Windows"){
+			if( !clientconf.screen.fullscreen){
+				local wh = clientconf.screen.reso_window.split( "x");	//	"1920x1080"のような文字列
+				skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 5|16);
+			}else{
+				local wh = clientconf.screen.reso_screen.split( "x");
+				if( !skSupportsDisplaySize( int( wh[0]), int( wh[1]))) wh = ["1280","720"];
+				skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 0);
+			}
+		}else{	//	Windows以外は画面いっぱい
+			local wh = skGetDisplaySize( []);
+			skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 1);
 		}
-	}else{	//	Windows以外は画面いっぱい
-		local wh = skGetDisplaySize( []);
-		skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 1);
 	}
 
 	//	言語選択。ClientConf
@@ -129,8 +131,10 @@ function preloaShaders( glob=null){
 
 	local root = ::rootview = ::loadSKView( "/resource/ui/rpgroot.ui", SKRootView);		//	作った時点のスクリーンサイズで作られる
 	root.resizemode = 2;
-	local sc = skGetScreenSize( [0,0]);
-	root.screenResized( sc[0], sc[1]);
+	{
+		local sc = skGetScreenSize( [0,0]);
+		root.screenResized( sc[0], sc[1]);
+	}
 	
 	//	起動プロセスは別スレッドで実行。
 	newthread( "RPG Launch Thread").start( @(){

@@ -14,6 +14,7 @@ class SkillTestBattleRunner extends BattleRunnerBase
 
 	//	stage.launch内で自動イベント実行前に呼び出される
 	function start( st){
+		RPGMain.buttonhelp( null);
 		useskill ??= battledata["skillid"];
 		//
 		super.start( st);

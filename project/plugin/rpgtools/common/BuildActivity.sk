@@ -110,6 +110,7 @@ class BuildDialog extends UndoableDialog
 	zipfile = null;
 	zipthread = null;
 	buildserv = null;				//	host
+	buildtgt = null;
 	
 	constructor( v){
 		super( v);
@@ -119,7 +120,8 @@ class BuildDialog extends UndoableDialog
 		}
 		zipg = view.findChild( "zipg");
 		zipg.setVisible( false);
-		targetmenu = MenuBehavior( view.findChild( "targetmenu"), buildtargets);
+		local availos = ::account.license["os"] || "webgl";
+		targetmenu = MenuBehavior( view.findChild( "targetmenu"), buildtargets.map( @( v)+{ ...v, disable=!availos.contains( v.id)}));
 		proplist = PropertyListBehavior( view.findChild( "proplist"), null);
 		proplist.immediate = true;	//	テキストを即時入力
 		proplist.listview.addEventListener( ACTION_EVENT, propevent);
@@ -133,6 +135,7 @@ class BuildDialog extends UndoableDialog
 	}
 
 	function setTarget( t){
+		buildtgt = t;
 		targetmenu.selectItem( t);
 		view.setValue( "targetdesc", t.desc);
 		proplist.bindProperties( t.props);
@@ -321,7 +324,7 @@ class BuildDialog extends UndoableDialog
 		local r;
 		if( dlg.zipfile && dlg.ret){
 			try{
-				r = ::BuildingDialog.run( dlg.zipfile, dlg.buildserv);
+				r = ::BuildingDialog.run( dlg.zipfile, dlg.buildserv, dlg.buildtgt.lbl);
 			}catch( ex){
 				printexception( ex);
 			}
@@ -350,7 +353,10 @@ class BuildingDialog extends Dialog
 
 	function runBuild(){
 		try{
-			runBuildBody();
+			if( !runBuildBody()){
+				close();
+				return;
+			}
 		}catch( ex){
 			printexception( ex);
 			btng.anime( 2);
@@ -378,7 +384,26 @@ class BuildingDialog extends Dialog
 		//	※ビルドサーバーのセッション開始までが接続処理
 		try{
 			//	initリクエストでセッション開始。
-			session = ::account.requestAPI( {api="build_init", method="POST", buildserv=buildserv, params={ token=::account.token, ...conf, rpgid=rpgid}});
+			local params = { token=::account.token, ...conf, rpgid=rpgid};
+			local res = ::account.requestAPI( {api="build_init", method="POST", buildserv=buildserv, params=params});	//	test {result="Error", error="Duplicated build session"};
+			if( res.result == "OK"){
+				session = res.session;
+			}else{
+				if( res.error == "Duplicated build session"){
+					//	ビルドセッション重複状態。強制的に開始するかチェック
+					if( !Dialogs.confirm( {msg="$T.confirm_build_force_init"})){
+						return false;
+					}
+					params.force <- 1;	//	強制開始フラグを入れる
+					res = ::account.requestAPI( {api="build_init", method="POST", buildserv=buildserv, params=params});
+					if( res.result == "OK"){
+						session = res.session;
+					}else{
+						printf( "build_init error????? %S\n", encodeJSON( {params=params, res=res}, 1));
+						throw Exception( "build_init unknown error");
+					}
+				}
+			}
 		}catch( ex){
 			view.bindValue( "msg", rtf( T.lbl_error_build_connect));
 			throw ex;
@@ -446,6 +471,7 @@ class BuildingDialog extends Dialog
 		//	終わり！
 		btng.anime( 1);
 		view.bindValue( "msg", rtf( T.lbl_build_completed));
+		return true;
 	}
 	
 	//	※この関数はexe,dllの書き込み制限のため実行不可能。unzipFile2で行う。
@@ -489,7 +515,7 @@ class BuildingDialog extends Dialog
 	//	
 	function stopBuild(){
 		runthread.wakeupThrow( "interrupt");
-		::account.requestAPI( {api="build_clean", session=session.sid, });
+		::account.requestAPI( {api="build_clean", session=session.sid, buildserv=buildserv });
 	}
 
 	function actionevent( e){
@@ -504,8 +530,10 @@ class BuildingDialog extends Dialog
 		super.actionevent( e);
 	}
 	
-	static function run( f, b){
+	static function run( f, b, tgtlbl){
 		local dlg = this( "/plugin/rpgtools/common/ui/buildingdialog.ui");
+		local tgtstr = tmpl( tgtlbl, {});	//	tgtlblはテンプレート使ってる
+		dlg.view.setValue( "title", tmpl( T.tmpl_building_target, {v=tgtstr}));
 		dlg.infile = f;
 		dlg.buildserv = b;
 		dlg.show();
@@ -524,7 +552,7 @@ local showBuildMenu( btn){
 		{ id="ticket", lbl=ownticketlbl, icon="\uf11f", submenu=[
 			{ id="buyticket", lbl="$T.lbl_buyticket", icon="\ue8cc"},
 		]},
-		{ id="refer", lbl="$T.lbl_openoutdir", icon="\ue89e"},
+		{ id="refer", lbl="$T.lbl_build_opendir", icon="\ue89e"},
 	];
 	switch( MenuPopup.run( menudata, btn)["id"]){
 	case "build": BuildDialog.run(); break;

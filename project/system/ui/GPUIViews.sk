@@ -243,13 +243,14 @@ class GPUIButtonTarget extends GPUITarget
 		switch( e.id){
 		case MOUSE_PRESSED:
 			if( e.isMouseDown( BUTTON3_MASK)) break;	//	プッシュ型ボタンはホイールクリックを判断しない
-			if( e.isMouseDown( BUTTON2_MASK) && !enablerclick) break;
+			local rclk = e.isMouseDown( BUTTON2_MASK);
+			if( rclk && !enablerclick) break;
 			pressed = true;
 			::playSound( snd);
-			syncanime( MOUSE_PRESSED);
+			if( !rclk) syncanime( MOUSE_PRESSED);
 			view.postActionEvent( null, e.count, e.modifiers);		//	ここでActionEvent発火 右クリックかはmodifiersで見る
 			if( !isScrollable()) e.consume();
-			newthread().start( @(){
+			if( !rclk) newthread().start( @(){
 				syncanime( MOUSE_CLICKED);
 				if( entered) syncanime( MOUSE_ENTERED);
 			}, this);

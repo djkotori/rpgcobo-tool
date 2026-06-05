@@ -314,9 +314,11 @@ class DBSideView extends SKView
 		switch( bc["cmd"]){
 		case "dir_refreshed":
 			if( bc.dir.path.startsWith( typemap[curtype].dir)){
+				local p = pager.page, t = curtype;
 				updateTypeList();
-				setType( curtype);
-				setPage( page);
+				setType( t);
+				setPage( p);
+				pager.setPage( p);
 			}
 			break;
 		}

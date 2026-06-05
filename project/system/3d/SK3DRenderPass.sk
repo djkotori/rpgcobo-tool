@@ -14,7 +14,7 @@ local clearparam0 = ClearParam( 0.0,0.0,0.0,0.0, 1.0);
 
 //	uv,vzからwvpをreconstructするためのパラメータをMatrixの指定個所に埋め込む
 //	pers,ortho両対応
-local reconstructParam( cam, mat, i){
+function wvpReconstructParam( cam, mat, i){
 	mat[i  ] = 1.0 / cam.prjmat[0];
 	mat[i+1] = 1.0 / cam.prjmat[5];
 	mat[i+2] = (cam.zfar-cam.znear) / 65535.0;	//	R16UI用に 0-65535 => 0~1 にスケール
@@ -699,7 +699,7 @@ class reg.ReprojectionPass extends reg.ImagePassBase
 		m[5] = m[1];
 		m[6] = m[2];
 		m[7] = m[3];
-		reconstructParam( r.camera, m, 0);
+		wvpReconstructParam( r.camera, m, 0);
 		r.camera.prjmat.invert44( m0.miscmat1);
 		//	reprojectmat
 		r.camera.viewmat.invert44( m0.miscmat2);
@@ -792,13 +792,13 @@ class reg.SSAOPass extends reg.ImagePassBase
 			1.0/projasp,	1.0,			projscale,			0,
 			0,		0,			0,					0
 		);
-		reconstructParam( r.camera, m0.miscmat0, 12);
+		wvpReconstructParam( r.camera, m0.miscmat0, 12);
 		//	
 		skBindVertexBuffer( vtx);
 		framecnt = (framecnt+1)&0x7fffffff;
 		local idx = r.currenttarget?ridx:fidx;
 		local m = m1["miscmat0"];
-		reconstructParam( r.camera, m, 4);
+		wvpReconstructParam( r.camera, m, 4);
 		//	Cross-Bilateral Upsampling pass
 		if( aoreso == VP_HALF){
 			r.setRenderTarget( midtex, null);
@@ -908,7 +908,7 @@ class reg.SSGIPass extends reg.ImagePassBase
 		m[5] = m[1];
 		m[6] = m[2];
 		m[7] = m[3];
-		reconstructParam( r.camera, m, 0);
+		wvpReconstructParam( r.camera, m, 0);
 		m0.miscmat1.set( r.camera.prjmat);
 		//	reproject
 		r.camera.viewmat.invert44( m0.miscmat2);	//	
@@ -925,7 +925,7 @@ class reg.SSGIPass extends reg.ImagePassBase
 			1.0/projasp,	1.0,			projscale,			0,
 			toffs,		trot,			0,					0
 		);
-		reconstructParam( r.camera, m1.miscmat0, 12);
+		wvpReconstructParam( r.camera, m1.miscmat0, 12);
 		r.setRenderTarget( gitemptex, null);
 		skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, idx);
 		//	SSGI upsampling pass
@@ -936,7 +936,7 @@ class reg.SSGIPass extends reg.ImagePassBase
 			0,			0			0,			0,
 			0,			0			0,			0
 		);
-		reconstructParam( r.camera, m2.miscmat0, 4);
+		wvpReconstructParam( r.camera, m2.miscmat0, 4);
 		m2.tex1 = giswaptex;
 		m2.tex2 = gisrc1tex;
 		r.setRenderTarget( gitex, null);
@@ -1263,7 +1263,7 @@ class reg.GBlurPass extends reg.ImagePassBase
 	}
 	
 	function performPass( r){
-		reconstructParam( r.camera, m.miscmat0, 0);
+		wvpReconstructParam( r.camera, m.miscmat0, 0);
 		r.setRenderTarget( target, viewport);
 		skBindVertexBuffer( vtx);
 		local idx = r.currenttarget?ridx:fidx;
@@ -1285,7 +1285,7 @@ class reg.PBRLightingPass extends reg.ImagePassBase
 	}
 	
 	function performPass( r){
-		reconstructParam( r.camera, m.miscmat0, 0);
+		wvpReconstructParam( r.camera, m.miscmat0, 0);
 		r.setRenderTarget( target, viewport);
 		skBindVertexBuffer( vtx);
 		local idx = r.currenttarget?ridx:fidx;
@@ -1431,7 +1431,7 @@ class reg.DofBlurPass extends reg.ImagePassBase
 		///////////////////////////////////////////////////////
 		//	coc
 		local dofz = r.camera.focus;
-		reconstructParam( r.camera, m0.miscmat0, 0);
+		wvpReconstructParam( r.camera, m0.miscmat0, 0);
 		m0.miscmat0[4] = dofz;
 		m0.miscmat0[5] = 1.0 / (0.1+ps.dofrange);
 		r.setRenderTarget( coctex, null);

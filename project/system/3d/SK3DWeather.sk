@@ -251,14 +251,13 @@ class SK3DWeathers.cloud extends SK3DWeather
 		local lip = r.mainpass.litprepass;	//	プレパスのライト情報が必要
 		local c = ctov( cloudcol, v_1);
 		local dop = r.mainpass.pbrpostpass["dofblurpass"];
-		local dofsc = dop["enabled"] ? 1.0/dop.ps.dofrange : 0.0;
-		local dofz = r.camera.focus;
 		m.miscmat0.set(
 			r.env.timer0, 100.0, spd[0], spd[1],
 			1.0/scale, 0.0, Math.saturate( dens-smooth), Math.saturate( dens+smooth),
 			c.x, c.y, c.z, 1.0,
-			dofz, dofsc, 0.0, 0.0
+			0.0, 0.0, 0.0, 0.0
 		);
+		wvpReconstructParam( r.camera, m.miscmat0, 12);
 		local idx = r.currenttarget?ridx:fidx;
 		skBindVertexBuffer( vtx);
 		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);

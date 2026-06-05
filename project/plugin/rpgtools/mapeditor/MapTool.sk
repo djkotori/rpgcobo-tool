@@ -256,9 +256,12 @@ class MapTool
 		if( t < 0.0 || t > 1.0) return null;
 		local fp = w.scale( t).add( q[0]);
 		local bx = ((fp.x*2)-hb0.nx*0.1)|0, by = Math.ifloor((fp.y*2)-hb0.ny*0.1), bz = ((fp.z*2)-hb0.nz*0.1)|0, bw = editor.bw;
-		if( bx<0 || by< -1 || bz<0 || bx>=bw.w || by>=bw.h || bz>=bw.d){	//	
-			return null;
-		}
+		// if( bx<0 || by< -1 || bz<0 || bx>=bw.w || by>=bw.h || bz>=bw.d){	//	
+		// 	return null;
+		// }
+		bx = Math.clamp( bx, 0, bw.w-1);
+		by = Math.clamp( by, 0, bw.h-1);
+		bz = Math.clamp( bz, 0, bw.d-1);
 		local hb = #HitBlock();
 		hb.set( hb0);
 		hb.bx = bx; hb.by = by; hb.bz = bz;
@@ -1180,6 +1183,9 @@ class SelectBlock
 					selitem = cmd;
 					e.src.setSelected( true);
 					view.postActionEvent( cmd, e.count, e.modifiers);
+				}
+				if( e.isMouseDown( BUTTON2_MASK)){
+					showContextMenu( e, cmd);
 				}else
 				if( e.count==2){
 					view.postActionEvent( cmd, e.count, e.modifiers);
@@ -1188,6 +1194,20 @@ class SelectBlock
 			break;
 		}
 		e.consume();
+	}
+
+	function showContextMenu( e, item){
+		local menudata = [
+			{ id="edit", lbl="$T.lbl_edit", icon="\ue745", },
+		];
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "edit":
+			::skstudio.openEditor( "/.x/map_vox");
+			if( item["blk"]) ::skstudio.editor.selectBlock( item.blk);
+			else if( item["fblk"]) ::skstudio.editor.selectFreeBlock( item.fblk);
+			break;
+		}
 	}
 
 	function dragevent( e){

@@ -89,7 +89,7 @@ class BattleRunnerBase
 	/////////////////////////////////////////////////////////////////////////
 	//	登場キャラのセットアップ
 
-	static pwidths = [0.0, 0.0, 3.5, 5.6, 7.4, 8.0, 8.0, 8.0, 8.0];	//	メンバー数で陣形の幅を変更
+	static pwidths = [0.0, 0.0, 3.5, 5.6, 9.0, 10.4, 11.0, 11.0, 11.0];	//	メンバー数で陣形の幅を変更
 
 	//	バトル用のキャラをステージに配置する。※後から追加できるように！！！
 	//	パーティーメンバー、エネミー
@@ -106,7 +106,7 @@ class BattleRunnerBase
 			local ec = RPGEnemy();
 			ec.setDataID( v.id);
 			local e3d = addBattleEnemy( ec);
-			local p = Vector3D( eloc.pos).add( v.x, 0 v.z);
+			local p = Vector3D( eloc.pos).add( v.x, 0 v.z*1.8);	//	なんかzが縮こまる
 			local epos = (p.x, p.y, p.z, eloc.dir);
 			e3d.setPosition( epos);
 		}
@@ -571,7 +571,7 @@ class BattleRunnerBase
 
 	//	コマンドターゲットの選択範囲に入る全ての対象を取得する。
 	//	※基本ルールとして、味方は死亡してても選択可能。敵が死亡していたら選択不能。これはisCommandTargetも同じ。
-	function getCommandTargets( src, dst, cmdtgt, choosedead=false){
+	function getCommandTargets( src, dst, cmdtgt, forshow=false){
 		switch( cmdtgt){
 		//	自分選択 : 誰を選択してもsrcを対象に
 		case TGT_MYSELF:
@@ -587,7 +587,9 @@ class BattleRunnerBase
 			return [dst];
 		//	ランダム選択 : ※選択時の表示はdstにすること。。。また、ランダムは死亡キャラを含まない。
 		case TGT_ENEMY_RANDOM:
+			if( forshow) return charas.filter( @( v) (getRelation( src, v)&2) && !v.isDead());	//	表示用には全ての敵を選択してることに
 		case TGT_ANY_RANDOM:
+			if( forshow) return charas.filter( @( v) v!=src);	//	表示用には自分以外の全てのキャラを選択してることに
 			local b = cmdtgt==TGT_ENEMY_RANDOM?2:3;
 			local a = charas.filter( @( v) (getRelation( src, v)&b) && !v.isDead());
 			a.removeValue( src);

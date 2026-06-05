@@ -1618,27 +1618,61 @@ class PropertyBehaviors.PropertyList extends PropertyBehavior
 
 	function setParam( v){
 		val = deepclone( v);
-		local inpropdef = fget( prop, "propdef", prop, v);
-		local lbl = fget( inpropdef, "tostring", inpropdef, v, proplist) ?? string( v);
+		local pdef = fget( prop, "propdef", prop, v);
+		local lbl = fget( pdef, "tostring", pdef, v, proplist) ?? string( v);
 		view.setValue( "lbl", lbl);
 	}
 	
 	function paramevent( e){
 		if( e.src["name"] == "btn"){
-			local inpropdef = fget( prop, "propdef", prop, val);
-			if( inpropdef["edit"]){
-				local ret = inpropdef.edit( val);
+			local pdef = fget( prop, "propdef", prop, val);
+			if( e.isMouseDown( BUTTON2_MASK)){
+				showContextMenu( e, pdef);
+				return;
+			}
+			if( pdef["edit"]){
+				local ret = pdef.edit( val);
 				if( ret && ret<>val){
 					setParam( ret);
 					postActionEvent( true);
 				}
 			}else{
-				local ret = PropertyEditPopup.run( e.src, inpropdef, val);
+				local ret = PropertyEditPopup.run( e.src, pdef, val);
 				if( ret && ret<>val){
 					setParam( ret);
 					postActionEvent( true);
 				}
 			}
+		}
+	}
+
+	function showContextMenu( e, pdef){
+		local cbk = fget( pdef, "copykey");
+		local cbdata = cbk && getClipboard( cbk);
+		//	
+		local menudata = [
+			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d", disable=!cbk },
+			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!cbdata },
+			{ lbl="$T.lbl_initialize", id="clear", icon="\uf0ff" },
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "copy":
+			putClipboard( cbk, val);
+			printf( "COPY....... %S\n", encodeJSON( val, 1));
+			break;
+		case "paste":
+			local d = fget( pdef, "pastefunc", cbdata) || cbdata;
+			setParam( d);
+			postActionEvent( true);
+			break;
+		case "clear":
+			local d = fget( prop, "defval");	//	defvalはpropから、、？
+			if( d != undefined){
+				setParam( d);
+				postActionEvent( true);
+			}
+			break;
 		}
 	}
 }

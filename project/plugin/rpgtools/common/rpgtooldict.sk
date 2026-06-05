@@ -302,6 +302,12 @@
 	"animepart4"						: {"ja":"前ポーズ", "en":"Top Pose"}
 	"animepart5"						: {"ja":"中ポーズ", "en":"Mid Pose"}
 	"animepart6"						: {"ja":"後ポーズ", "en":"End Pose"}
+
+	//	キャラボクセルタグ
+	"charavox_player"					: {"ja":"プレイヤーキャラ", "en":"Player Chara"}
+	"charavox_mob"						: {"ja":"モブキャラ", "en":"Mob Chara"}
+	"charavox_enemy"					: {"ja":"エネミーキャラ", "en":"Enemy Chara"}
+	"charavox_box"						: {"ja":"ボックス", "en":"Box"}
 	
 	//	リバーブ
 	"reverb"							: {"ja":"リバーブ", "en":"Reverb"}
@@ -1133,6 +1139,7 @@
 	"lbl_groupnum"						: {"ja":"グループ数", "en":"Group Num"}
 	"lbl_asset"							: {"ja":"アセット", "en":"Asset"}
 	"lbl_eventlist"						: {"ja":"イベントリスト", "en":"Event List"}
+	"lbl_pickheight"					: {"ja":"この高度に設定", "en":"Set to this Height"}
 
 	"lbl_map_cursize"					: {"ja":"現在のサイズ", "en":"Current Size"}
 	"lbl_map_floorheight"				: {"ja":"床の高さ", "en":"Floor Height"}
@@ -1150,6 +1157,13 @@
 	"menu_debug_clearsavedata"			: {"ja":"セーブデータを初期化", "en":"Clear Save Data"}
 	
 	"confirm_clearsavedata"				: {"ja":"セーブデータを全てクリアしますか？", "en":"Are you sure to clear all save data?"}
+
+	//	debug settings
+	"pref_debuglang"					: {"ja":"デバッグする言語", "en":"Language to Debug"}
+	"pref_debugtouch"					: {"ja":"タッチをデバッグ", "en":"Debug TouchPanel"}
+	"pref_debugskills"					: {"ja":"全スキル解放", "en":"Unlock all Skills"}
+	"pref_debugitems"					: {"ja":"全アイテム所持", "en":"Own all Items"}
+	"pref_debuglv"						: {"ja":"レベル指定(0で無効)", "en":"Level Set(0=not set)"}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	ビルド
@@ -1176,6 +1190,7 @@
 		"ja":"iPhone/iPad用のアプリをビルドします。出力されたxcodeファイルをMac上でビルドしてください。", 
 		"en":"Windows .exe"
 	},
+	"tmpl_building_target"				: {"ja":"$v をビルド中", "en":"Building $v"}
 
 	"lbl_build_opendir"					: {"ja":"出力フォルダを開く", "en":"Open Output folder"}
 	"confirm_overwrite_outdir"			: {"ja":"出力先のフォルダが存在します。上書きしますか？", "en":"The output folder exists. Do you want to overwrite it?"}
@@ -1192,6 +1207,10 @@
 	"pop_build_starterr"				: {"ja":"ビルドが開始できませんでした。", "en":"Build could not start."}
 	
 	"lbl_build_zipping"					: {"ja":"アップロードのためにプロジェクトをzip圧縮中です。", "en":"Zipping project for upload.", },
+	"confirm_build_force_init"			: {
+		"ja":"前回のビルドセッションが続行中になっています。このビルドセッションを閉じてビルドを開始しますか？",
+		"en":"The previous build session is still continuing. Do you want to close this build session and start a build?",
+	},
 	"tmpl_build_confirm"				: {
 		"ja":"ビルドを開始しますか？ビルドが成功するとチケットが消費されます。\n[P]現在の所持数: $own\n使用する枚数: $use",
 		"en":"Do you want to start the build? When the build was successful, a ticket will be consumed. \n[P]You have: $v",

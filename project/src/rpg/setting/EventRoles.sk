@@ -342,11 +342,19 @@ RPGSystem.eventrole .. {
 		}
 	]
 	
-	defdata = {
-		mdlid="CV001",
-		itemid = "I000"
-		num=1,
-		spawndist=1,
+	defdata = @(){
+		local mdlid = "CV000";
+		for( local l = 0;l < 1000;l ++){
+			local id = "CV%03d" % l;
+			local cv = ::conf._resource.chara_vox[id];
+			if( cv && (cv["tags"]&8)){ mdlid = id; break; }
+		}
+		return {
+			mdlid = mdlid,
+			itemid = "I000"
+			num=1,
+			spawndist=1,
+		};
 	}
 
 	defpage = [

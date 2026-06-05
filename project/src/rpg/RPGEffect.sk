@@ -29,6 +29,7 @@ class OverlayEffect
 		tostring = @( v){
 			return v["enabled"] ? "$T.lbl_enabled" : "$T.lbl_disabled";
 		}
+		copykey = "ovfx"
 	};
 
 	rp3d = null;				//	RPG3DObject

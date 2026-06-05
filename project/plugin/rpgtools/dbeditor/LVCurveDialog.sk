@@ -102,7 +102,7 @@ class LVCurveDialog extends UndoableDialog
 	}
 
 	function getVal( x){
-		return (x*100.0/zoom) + val0;
+		return Math.max( (x*100.0/zoom) + val0, 0);
 	}
 
 	function getLVVal( lv){

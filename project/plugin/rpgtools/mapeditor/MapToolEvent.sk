@@ -563,11 +563,6 @@ class MapTools.tool_event extends MapTool
 		editor.submitOp( redo, undo, null);
 	}
 
-	//	
-	function deleteEventGZ( gz){
-		deleteEvents( [getListItem( gz.id)]);
-	}
-	
 	//	ギズモ選択時のコンテキストメニュー。リストの単選択時のメニューもここ。
 	function showGizmoConectMenu( e, gz){
 		local colmenu = evcolorlist.map( @( v, i){
@@ -599,7 +594,7 @@ class MapTools.tool_event extends MapTool
 			}
 		}
 		local m = MenuPopup.run( ctxmenu);
-		local a = [getListItem( gz)];
+		local a = [getListItem( gz.id)];
 		switch( m["id"]){
 		case "edit":
 			editGizmo( gz);

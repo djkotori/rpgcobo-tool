@@ -301,6 +301,32 @@ class ResEditorMapVox extends EditorViewBase
 		previewlist.updateItemView( resid, d);
 		preview.setResourceData( resid, d);
 	}
+
+	function selectBlock( b){
+		local idx = (b>>5)&0xff;
+		local bv = ::blks[b&31].variations[idx];
+		local type = bv.type;
+		local ctg = categories.find( @( v) v.props[0].defval==type);
+		if( !ctg) return;
+		categorySelected( ctg);
+		
+		local item = catgitems[idx];
+		itemSelected( item);
+		previewlist.selectItem( idx, true);
+	}
+
+	//	
+	function selectFreeBlock( fb){
+		local fbt = ::fblks[fb.fbtype], idx = fb.fbparam&0xfff, va = fbt.variations[idx];
+		local type = va.type;
+		local ctg = categories.find( @( v) v.props[0].defval==type);
+		if( !ctg) return;
+		categorySelected( ctg);
+		
+		local item = catgitems[idx];
+		itemSelected( item);
+		previewlist.selectItem( idx, true);
+	}
 	
 	//	※refreshではアイテムのプレビューは変化させない。100個の表示を再初期化することになるので、、、
 	function refresh(){

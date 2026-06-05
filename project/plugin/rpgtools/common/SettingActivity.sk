@@ -33,26 +33,26 @@ preferenceprops .. {
 ///////////////////////////	デバッグ用設定
 
 preferenceprops .. {
-	ctg="debug", pid="debuglang", lbl="デバッグする言語", type=LIST, list= @()[
+	ctg="debug", pid="debuglang", lbl="$T.pref_debuglang", type=LIST, list= @()[
 		{ lbl="$T.lbl_notspecify", val = null,},
 		... ::sakana.languagelist.map( @( v)({ lbl=v.name, icon=v.icon, val=v.code })),
 	], defval = null,
 }
 
 preferenceprops .. {
-	ctg="debug", pid="debugtouch", lbl="タッチをデバッグ", type=BOOL, defval=false,
+	ctg="debug", pid="debugtouch", lbl="$T.pref_debugtouch", type=BOOL, defval=false,
 }
 
 preferenceprops .. {
-	ctg="debug", pid="debugskills", lbl="全スキル解放", type=BOOL, defval=false,
+	ctg="debug", pid="debugskills", lbl="$T.pref_debugskills", type=BOOL, defval=false,
 }
 
 preferenceprops .. {
-	ctg="debug", pid="debugitems", lbl="全アイテム所持", type=BOOL, defval=false,
+	ctg="debug", pid="debugitems", lbl="$T.pref_debugitems", type=BOOL, defval=false,
 }
 
 preferenceprops .. {
-	ctg="debug", pid="debuglv", lbl="レベル指定(0で無効)", type=SCALAR, range=(0,99), defval=0,
+	ctg="debug", pid="debuglv", lbl="$T.pref_debuglv", type=SCALAR, range=(0,99), defval=0,
 }
 
 

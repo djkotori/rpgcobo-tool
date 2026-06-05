@@ -226,9 +226,11 @@ class ResEditorUI extends EditorViewBase
 		d = deepclone( d);
 		foreach( tab in tabitems){
 			foreach( i, v in d[tab.id]){
-				//	name, baseuiどっちもない場合は消そう
-				if( length( v.baseui)) continue;
-				if( Table.find( v, @( v) length( v["name"]))) continue;
+				if( v){
+					//	name, baseuiどっちもない場合は消そう
+					if( length( v.baseui)) continue;
+					if( Table.find( v, @( v) length( v["name"]))) continue;
+				}
 				removei;
 			}
 		}

@@ -26,13 +26,15 @@ module.hookAction( "conf_postload", @(){
 
 runsk( "/ClientConfig.sk");
 ::clientconf = ClientConfig.load();
-if( !clientconf.screen.fullscreen){
-	local wh = clientconf.screen.reso_window.split( "x");	//	"1920x1080"のような文字列
-	skCreateScreen( "RPG-Cobo TestPlay", int( wh[0]), int( wh[1]), 5|16);
-}else{
-	local wh = clientconf.screen.reso_screen.split( "x");
-	if( !skSupportsDisplaySize( int( wh[0]), int( wh[1]))) wh = ["1280","720"];
-	skCreateScreen( "RPG-Cobo TestPlay", int( wh[0]), int( wh[1]), 0);
+if( !skGetScreenSize( [0,0])[0]){	//	skRestart時にはウィンドウは既にできている
+	if( !clientconf.screen.fullscreen){
+		local wh = clientconf.screen.reso_window.split( "x");	//	"1920x1080"のような文字列
+		skCreateScreen( "RPG-Cobo TestPlay", int( wh[0]), int( wh[1]), 5|16);
+	}else{
+		local wh = clientconf.screen.reso_screen.split( "x");
+		if( !skSupportsDisplaySize( int( wh[0]), int( wh[1]))) wh = ["1280","720"];
+		skCreateScreen( "RPG-Cobo TestPlay", int( wh[0]), int( wh[1]), 0);
+	}
 }
 
 skBeginRender();
@@ -46,12 +48,27 @@ if( ws["debugtouch"]) GPUI.emuosname <- "Android";		//	タッチデバッグの�
 
 RPGMain.setupUI();
 ::rootview.setValue( "apptitle", conf.setting.title);
+{
+	local sc = skGetScreenSize( [0,0]);
+	::rootview.stretchSize( sc[0], sc[1]);
+}
+
+
 //	ロゴから起動しない。設定を直に読み込んで
 RPGMain.loadSetting();
 
 local recfx = arguments.contains( "-recfx");	//	使用したシェーダーを記録
 local prof = null;
 if( ::arguments.contains( "-skprof")) (prof = SKProfiler()).start();
+
+local applydebugpref(){
+	if( ws["debugitems"]) rpgstat.addAllItems();
+	if( ws["debuglv"]){
+		foreach( p in rpgstat.playermap){
+			if( p) p.setLV( ws.debuglv);
+		}
+	}
+}
 
 {
 	//	起動モードの判定
@@ -63,7 +80,7 @@ if( ::arguments.contains( "-skprof")) (prof = SKProfiler()).start();
 	case -2:	//	title
 		if( !args.contains( "-map") && !args.contains( "-battle")){
 			RPGMain.goTitle();
-			if( ws["debugitems"]) rpgstat.addAllItems();
+			applydebugpref();
 			goto SKIP;
 		}
 	case -1:	//	newgame
@@ -80,7 +97,7 @@ if( ::arguments.contains( "-skprof")) (prof = SKProfiler()).start();
 		::rpgstat = ns;
 		break;
 	}
-	if( ws["debugitems"]) rpgstat.addAllItems();
+	applydebugpref();
 	
 	//	セーブ前データの置き換え。bwとconfを置き換えれる
 	if( (i=args.indexOf( "-bw")) >= 0){

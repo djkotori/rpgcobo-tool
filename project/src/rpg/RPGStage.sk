@@ -578,7 +578,7 @@ class RPGStage
 	function updateSearchTarget(){
 		local newdst = null;
 		local dists = #[0.4,1.4];
-		local shps = #[ b3Shape.createCylinder( 0.8, 0.75, 0.8), b3Shape.createCylinder( 1.2, 0.75, 1.2), ];	//	キャラの半径は0.4m。
+		local shps = #[ b3Shape.createCylinder( 0.8, 0.75, 0.8), b3Shape.createCylinder( 1.25, 1.0, 1.25), ];	//	キャラの半径は0.4m。
 		local ppos = player3d.pos;
 		local pvec = Vector3D( 0, 0.75, 1).rotate( player3d.dir, 0.0, 0.0);
 		//	l= 0:接触チェック 1:1mチェック

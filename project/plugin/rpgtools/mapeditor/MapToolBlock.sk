@@ -1390,7 +1390,7 @@ class MapTools.tool_level extends MapTool
 	function showContextMenu( e){
 		local hb = rayTest( e, blkflag, true); if( hb.by < 0) hb = null;
 		local ctxmenu = [
-			{ id="pick", lbl=("この高に設定: %S" % (hb?hb.by:"---")), icon="\ue259", disable=!hb },
+			{ id="pick", lbl=("$T.lbl_pickheight: %S" % (hb?hb.by:"---")), icon="\ue259", disable=!hb },
 			"-",
 			...getDefaultContextMenu( e),
 		];
@@ -1416,20 +1416,18 @@ class MapTools.tool_level extends MapTool
 		//	最初の描画
 		bop.levelSet({ pen:pen, hb:hb0, blk:blk, newy:m?hb0.by+offs0:offs0, align=align });
 		bop.submit( editor);
+		local nyptr = ptr( 0);
 		//	開始時のtoolfunc
 		local fn( e){
 			e.consume();
 			switch( e.id){
 			case MOUSE_DRAGGED:
-				local hb, ny = 0;
+				local hb;
 				//	ドラッグでの描画。mousedown地点の平面
 				if( e.modifiers&CTRL_MASK){
 				 	local h = self.planeHeight( e, hb0), bh = (h*2.0)|0;
 					hb = #HitBlock(); hb.set( hb0);
-					ny = bh;
-					// hb.bx += bh*hb.nx;
-					// hb.by += bh*hb.ny;
-					// hb.bz += bh*hb.nz;
+					nyptr << bh;
 				}else{
 					hb = self.planeTest( e, hb0);
 					if( hb && (e.modifiers&SHIFT_MASK)){
@@ -1438,15 +1436,18 @@ class MapTools.tool_level extends MapTool
 				}
 				if( hb){
 					if( hb && x2){ hb.bx = (hb.bx+1)&~1; hb.bz = (hb.bz+1)&~1; }
-					bop.levelSet({ pen:pen, hb:hb, blk:blk, newy:(m?(hb.by+offs0):offs0)+ny, align=align });
+					bop.levelSet({ pen:pen, hb:hb, blk:blk, newy:(m?(hb.by+offs0):offs0)+~nyptr, align=align });
 					if( bop.len()) bop.merge( editor);
 				}
-				local dh = self.offsval.getValue()+(m?0:-(hb["by"]||0)) + ny;
+				local dh = self.offsval.getValue()+(m?0:-(hb["by"]||0)) + ~nyptr;
 				self.placeLVPen( hb, pen, dh);
 				break;
 			case MOUSE_MOVED:	//	普通はこれ来ない
 			case MOUSE_RELEASED:
 			case MOUSE_CANCELLED:
+				if( ~nyptr){
+					self.offsval.setValue( offs0 + ~nyptr);
+				}
 				return null;
 			case KEY_PRESSED:
 				break;

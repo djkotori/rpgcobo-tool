@@ -39,6 +39,7 @@ class TurnBattleRunner extends BattleRunnerBase
 	//	stage.launch内で自動イベント実行前に呼び出される
 	function start( st){
 		super.start( st);
+		RPGMain.buttonhelp( "battle");	//	ボタンヘルプをバトルに
 		setupCharas();				//	バトルキャラ配置。
 		setupBattleUI();			//	バトルUIを配置。
 		emitOption( "prebattle", null);		//	こいつが呼ばれるときはまだワイプアウト時。
@@ -102,6 +103,9 @@ class TurnBattleRunner extends BattleRunnerBase
 			pc.selected = true;
 			cmdchr = pc;
 			local cmd = chooseCommand( pc);
+			battleui.bindValue( "infollbl", "");
+			battleui.bindValue( "inforlbl", "");
+			battleui.findChild( "infog").setVisible( false);
 			cmdchr = null;
 			pc.selected = false;
 			if( !cmd){
@@ -179,9 +183,11 @@ class TurnBattleRunner extends BattleRunnerBase
 		});
 		local cmdidx = pc.etc["cmdidx"] || 0;
 		battleui.bindValue( "cmdlist", cmds);
+		battleui.findChild( "infog").setVisible( true);
+		battleui.bindValue( "infollbl", @() ::rtf( sprintf( "%S　[M]$T.HP %d $T.MP %d $T.TP %d[O]", pc.name, pc.HP, pc.MP, pc.TP)));
+		battleui.bindValue( "inforlbl", "");
 		// ::playSound( "SE001");
 	CHOOSE_COMMAND:
-		battleui.findChild( "infog").setVisible( false);
 		selectCommandTargets( [pc]);
 		battleui.action( "showcmd").waitAction();
 		battleui.focusTo( "bcmd"..cmdidx);
@@ -206,8 +212,6 @@ class TurnBattleRunner extends BattleRunnerBase
 		//	スキル／アイテム選択
 		local cmddef = cmditem.cmddef;
 	CHOOSE_SKILL:
-		battleui.findChild( "infog").setVisible( true);
-		battleui.bindValue( "infollbl", @() ::rtf( sprintf( "%S　[M]$T.HP %d $T.MP %d $T.TP %d[O]", pc.name, pc.HP, pc.MP, pc.TP)));
 		local skill = cmddef.selectSkill( cmditem.bcmd, pc);
 		if( !skill){
 			if( skill == false) goto CHOOSE_COMMAND_SKIP;
@@ -239,7 +243,7 @@ class TurnBattleRunner extends BattleRunnerBase
 				}
 				"select" : @( e){
 					if( !e.item["rpgobj"]) return;
-					local dsts = self.getCommandTargets( pc, e.item.rpgobj, skill.cmdtgt, false);
+					local dsts = self.getCommandTargets( pc, e.item.rpgobj, skill.cmdtgt, true);	//	dstsは表示用のもの
 					self.selectCommandTargets( dsts);
 				}
 			});

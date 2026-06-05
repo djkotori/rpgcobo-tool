@@ -464,11 +464,11 @@ class MapCanvas extends CanvasBehavior
 		renderer.setCamera( cam);
 		local t1 = skGetTime();
 		//	レンダリング準備
+		local objs = scn.objs; scn.objs = [bw3d];	//	シーン内をbw3dのみにしちゃう
 		_updatetec( false);
 		skcol.visible = false;
 		bw3d.generateAllMesh();
 		local t2 = skGetTime();
-		foreach( v in editor.tool["guides"]) v.visible = false;
 		scn.updateScene( 16);
 		//	レンダリング実行
 		local dst = Texture(); dst.create( w, h, SK_RGBA8, 1);	//	+depth
@@ -479,7 +479,7 @@ class MapCanvas extends CanvasBehavior
 		//	状態を復元
 		_updatetec( gridchk.isSelected());
 		skcol.visible = colchk.isSelected();
-		foreach( v in editor.tool["guides"]) v.visible = true;
+		scn.objs = objs;
 		local t3 = skGetTime();
 		printf( "captureMapShot time %S %S %S total %S\n", t1-t0, t2-t1, t3-t2, t3-t0);
 		return dst;

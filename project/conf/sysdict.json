@@ -82,6 +82,10 @@
 	"button":{ "ja":"ボタン", "en":"Button"},
 	"btn_tap":{ "ja":"画面タップ", "en":"Tap Screen"},
 	
+	"equip":{ "ja":"装備", "en":"Equipment"},
+	"weapon":{ "ja":"武器", "en":"Weapon"},
+	"armor":{ "ja":"防具", "en":"Armor"},
+
 	"mymoney":{ "ja":"所持金", "en":"Money"},
 	"buyitem":{ "ja":"%S を購入", "en":"Buy %S"},
 	"sellitem":{ "ja":"%S を売却", "en":"Sell %S"},
@@ -164,5 +168,7 @@
 	"gamepad_on":{ "ja":"ゲームパッドが接続されました", "en":"Gamepad is connected"},
 	"gamepad_off":{ "ja":"ゲームパッドが切断されました", "en":"Gamepad was disconnected"},
 	"gamepad_x":{ "ja":"サポート外のゲームパッドです", "en":"This Gamepad is unsupported"},
+
+	"confirm_changelang":{ "ja":"言語を変更するためにゲームを再起動しますか？", "en":"Do you want to restart the game to change language?"},
 	"":0
 }

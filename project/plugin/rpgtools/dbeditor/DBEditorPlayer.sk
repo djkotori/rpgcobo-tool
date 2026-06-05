@@ -242,8 +242,14 @@ class DBEditorPlayer.LVPreview
 			break;
 		case "lvsellist":
 			local prop = e.actioncmd;
+			if( !prop){
+				if( e.isMouseDown( BUTTON2_MASK)){
+					showContextMenu( e);
+				}
+				break;
+			}
 			local curvp = editor.data.lvcurve[prop.pid];
-			local lvtype = editor.data._meta["lvtype"] || 0;
+			local lvtype = ::conf.player._meta["lvtype"] || 0;
 			if( e.isMouseDown( BUTTON1_MASK)){
 				local lvc = LVCurveDialog.run( prop.pid, curvp, lvtype);
 				if( lvc && lvc <> curvp){

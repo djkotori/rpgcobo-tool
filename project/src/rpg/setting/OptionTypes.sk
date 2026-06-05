@@ -574,7 +574,7 @@ RPGSystem.option .. {
 		local sb = StringBuffer();
 		sb .. spdmgstr( totalrate) .. ":";
 		foreach( i,e in ::conf.type.eqtype){
-			if( isWeapon( i)){
+			if( spbits & (1<<i)){
 				sb .. sprintf("%S", e.icon);
 			}
 		}
@@ -583,7 +583,7 @@ RPGSystem.option .. {
 	props = [
 		{
 			pid = "spbits",
-			lbl = "$T.lbl_weapon"
+			lbl = "$T.weapon"
 			type = CHECKBITS,
 			list = @() ::conf.type.eqtype.filter( @( v, i) isWeapon( i))
 			defval = 1
@@ -807,6 +807,7 @@ RPGSystem.option .. {
 			type = RESID,
 			restype = ["efx"],
 			defval = null,
+			nullable = true
 		},
 	],
 };
@@ -1275,7 +1276,11 @@ RPGSystem.option .. {
 			if( self.isSkillFlagSealed( 1<<FLAG_BACKUPABLE)) return;	//	かばうが封じられていたら除外
 			if( getRelation( self, dmg.dst) != 1) return;	//	味方に対して飛んできた攻撃か
 			if( getRelation( self, dmg.src) != 2) return;	//	敵が仕掛けてきた攻撃か。パーティアタックは除外？
-			// if( dmg.dst.hprate() > 25) return;		//	ピンチ判定
+			if( opd.tgttype == 0){
+				if( dmg.dst.hprate() > 25) return;		//	ピンチ判定
+			}else{
+				//	指定した相手、ちょい後回し。。。
+			}
 			local r = ::getvar( opd.rate, opd);
 			if( ::rnd( 1.0) > r) return;
 			local dst = dmg.dst;
