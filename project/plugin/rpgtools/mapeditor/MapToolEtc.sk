@@ -360,7 +360,10 @@ class MapTools.tool_asset extends MapTool
 	function createAssetPlace( aid, hb, rot){
 		//	
 		local bw3d = SK3DBlockWorld( abw);
-		bw3d.setPivot( Vector3D( -abw.w*0.25, 0, -abw.d*0.25));
+		local piv = Vector3D( -abw.w*0.25, 0, -abw.d*0.25);
+		piv.x = int( piv.x*2) * 0.5;
+		piv.z = int( piv.z*2) * 0.5;
+		bw3d.setPivot( piv);
 		bw3d.matdirty = true;
 		bw3d.updateMatrix( true);
 		bw3d.generateAllMesh();

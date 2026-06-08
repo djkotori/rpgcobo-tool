@@ -1015,13 +1015,18 @@ class SK3DObject extends SK3DRenderNode
 	//	シーンが3Dサウンドでは無い場合もある。その時は単純に再生する。
 	//	追従モードにした場合はサウンドがキャラの移動についてくる。
 	function playSound( sid, relpos=null){
-		if( sndgain <= 0.0) return null;
+		local gain = sndgain;
+		if( gain <= 0.0) return null;
 		local sm = scn.sk3dsound;
 		if( !sm) return; //{ ::playSound( sid); return; }	//	SK3DSoundManagerが無効な場合は再生しない！！！！！！
+		if( sid["id"]){
+			gain *= sid["gain"] || (sid["vol"]?sid.vol*0.01:1.0);	//	volは0-100でくる
+			sid = sid.id;
+		}
 		local sp = ::soundmanager.getSoundPlayable( sid);
 		if( !sp) return;
 		if( !sp.src3d){	//	3Dサウンド無し
-			sp.gain *= sndgain;
+			sp.gain *= gain;
 			sp.play();
 			return sp;
 		}
@@ -1034,7 +1039,7 @@ class SK3DObject extends SK3DRenderNode
 		}
 		local sndmergerate = 0.5;
 		if( sm.setup3DSound( sp, this, relpos, sndmergerate)){
-			sp.gain *= sndgain;
+			sp.gain *= gain;
 			sp.play();	//	thread
 			if( sp.track3d){ if( trackingsounds) trackingsounds..sp; else trackingsounds = [sp]; }
 			return sp;

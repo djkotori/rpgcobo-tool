@@ -50,7 +50,7 @@ class Account extends Serializable
 	static apimap = {
 		checkapplogin = urlenv.url_user.."/api/checkapplogin?reqid=$reqid"	//	user
 		userinfo = urlenv.url_user.."/api/userinfo?token=$token"			//	user
-		buildserv = urlenv.url_user.."/api/buildserv?token=$token"			//	user
+		buildserv = urlenv.url_user.."/api/buildserv?token=$token&zipsize=$zipsize"			//	user
 		build_init = "${buildserv}/init"
 		build_upload = "${buildserv}/upload/$session"		//	PUT
 		build_status = "${buildserv}/status/$session"

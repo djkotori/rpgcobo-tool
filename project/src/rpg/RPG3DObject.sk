@@ -161,6 +161,8 @@ class RPG3DObject extends SK3DObject
 	+prevpos = Vector3D();		//	前フレームでの位置。スムーズ移動用。
 	dir = 0.0;					//	
 	prevdir = 0.0;				//	前フレームでの向き。スムーズ移動用。
+	pitch = 0.0;				//	X軸回転。RPG3DMapAssetのみ
+	bank = 0.0;					//	Z軸回転。RPG3DMapAssetのみ
 	
 	//	移動アクション
 	mainaction = null;			//	PlayerMoveAction | EventMoveAction : 操作の入力処理とオブジェクトの移動を兼ねる。
@@ -251,7 +253,7 @@ class RPG3DObject extends SK3DObject
 
 	function setDir( d){
 		prevdir = dir = d;
-		rot.setHPB( prevdir+diroffs, 0.0, 0.0);
+		rot.setHPB( prevdir+diroffs, pitch, bank);
 		matdirty = true;
 	}
 
@@ -527,6 +529,7 @@ class RPG3DObject extends SK3DObject
 				if( br.bodyb == b3body) continue;	//	自分自身にも当たるけど無視
 				local n = br.normal, nlen = n.length();
 				if( nlen < 0.001) continue;
+				printf( "colcol\n");
 				if( br.dotSurfaceNormal() < 0.707) continue;	//	衝突面との角度差が45°以上ある場合は押し戻しの必要なし。ポリゴン面が連続していることが前提。
 				local sn = br.surfnormal;//, ny = n.y/nlen;
 				if( sn&&sn.y>FLOORANGLE){	//	フロアに対するコリジョンはxz成分の押し戻しは無しにする。
@@ -577,7 +580,7 @@ class RPG3DObject extends SK3DObject
 			p.y = gy;
 		}
 	}
-
+	
 	//	moveTest, groundTestを組み合わせて当たり判定、接地チェックをしつつ自分を移動する。
 	function move( vec, dt, gdy=0.0){
 		local vdt = vec * (dt*0.001);
@@ -1444,8 +1447,12 @@ class RPG3DEffect extends RPG3DObject
 //	
 class RPG3DMapAsset extends RPG3DObject
 {
+	static assetshpcache = {};
+
 	bw3d = null;			//	SK3DBlockWorld : childとしてadd
-	bwcol = null;			//	b3Body<BlockColiderInterface> : 
+	bci = null;
+
+	hasmapcol = false;		//	マップとしてのコリジョンを持つ。この状態ではこのオブジェクトはマップとの接触判定を行わない。
 	
 	function setMapAsset( x){
 		local bb = uncompressZSTD( decodeBASE64( x.bw64, ByteBuffer()));
@@ -1453,20 +1460,56 @@ class RPG3DMapAsset extends RPG3DObject
 		bw3d = SK3DBlockWorld( bw);
 		bw3d.rembottom = false;
 		local cpos = x["cntpos"] || #(0.5,0.0,0.5);
-		bw3d.setPivot( Vector3D( -bw.w*0.5*cpos[0], -bw.h*0.5*cpos[1], -bw.d*0.5*cpos[2]));
+		local piv = Vector3D( -bw.w*0.5*cpos[0], -bw.h*0.5*cpos[1], -bw.d*0.5*cpos[2]);
+		piv.x = int( piv.x*2) * 0.5;
+		piv.y = int( piv.y*2) * 0.5;
+		piv.z = int( piv.z*2) * 0.5;
+		bw3d.setPivot( piv);
 		bw3d.updateMatrix( true);
 		bw3d.generateAllMesh();
 		addChild( bw3d);
 		if( x["mapcol"]){	//	マップのコリジョン有効
+			hasmapcol = true;
+			bci = BlockColiderInterface( bw);
+			bci.setFlagMask( BLK_SOLID|BLK_BARRIOR|BLK_SOLIDFB);
+			local shp = b3Shape.createCustomConcave( bci);
+			local offsmat = Matrix.fromTranslate( piv.x, piv.y, piv.z);
+			b3body = b3Body( 0.0, shp, mat, G_STAGE|G_EVENT, G_CHARA);		//	G_CHARAとしかコリジョンは当たらない。ConcaveなのでconvexSweepTest不可
+			b3body.ref = this;
+			b3body.setOffsetTransform( offsmat);
+		}else{
+			//	b3body ... 1m四方に収まるように。。。どんなにでかいマップアセットでも！
+			local colsize = x["colsize"]||#(0.38,0.45,0.38);
+			local shp = createShape( x["colshp"]||SK_SHAPE_CAPSULE, colsize);
+			local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
+			b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);		//	G_STAGEとしかコリジョンは当たらない。キャラと当てたかったらmapcolで。
+			b3body.ref = this;
+			b3body.setOffsetTransform( offsmat);
 		}
-		//	b3body ... 1m四方に収まるように。。。どんなにでかいマップアセットでも！
-		//	
-		local colsize = x["colsize"]||#(0.38,0.45,0.38);
-		local shp = createShape( x["colshp"]||SK_SHAPE_CAPSULE, colsize);
-		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
-		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);		//	G_STAGEとしかコリジョンは当たらない。キャラと当てたかったらmapcolで。
-		b3body.ref = this;
-		b3body.setOffsetTransform( offsmat);
+	}
+	
+	//	hascolの場合はスムーズ補間はやらない。
+	function updatepos( dt){
+		if( hasmapcol){
+			prevpos << pos;
+			prevdir = dir;
+		}else{
+			super.updatepos( dt);
+		}
+	}
+	
+	function groundTest( pos, dy){
+		if( hasmapcol){
+			return pos.y;	//	自分のyを地面として返す
+		}else{
+			return super.groundTest( pos, dy);
+		}
+	}
+
+	function moveTest( pos, vec){
+		if( !hasmapcol){
+			return super.moveTest( pos, vec);
+		}
 	}
 	
 	function getMaterials(){

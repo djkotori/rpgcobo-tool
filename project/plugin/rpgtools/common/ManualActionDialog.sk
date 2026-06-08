@@ -105,7 +105,7 @@ class ManualActionDialog extends UndoableDialog
 				{ pid="vol", lbl="$T.lbl_volume", type=SCALAR, range=(0,200), ui="bar" }
 				{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL }
 			]
-			defval={ pos=[0,0,0], id="SE000", wait=true, }
+			defval={ pos=[0,0,0], id="SE000", wait=true, vol=100 }
 		},
 		{	//	スクリプト
 			act = "scp", name="$T.lbl_script", icon="\ueb8e", 
@@ -257,6 +257,9 @@ class ManualActionDialog extends UndoableDialog
 		placeEvents();
 		canvas.camwork.moveFocus( getEvent3D( seltab)["pos"]);
 		refresh();
+		//	
+		local sndmanager = SK3DSoundManager( canvas.scn);
+		canvas.scn.setSK3DSoundManager( sndmanager);
 	}
 
 	function getEvent3D( tab){
@@ -420,6 +423,9 @@ class ManualActionDialog extends UndoableDialog
 		case "tabmenu":
 			showTabAddMenu( e);
 			break;
+		case "listmenubtn":
+			showItemContextMenu( e);
+			break;
 		case "LIST":	//	tabsのこと。。。
 			local tab = tabs.tabitems[e.actioncmd].val;
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -532,6 +538,10 @@ class ManualActionDialog extends UndoableDialog
 		];
 		local ret = MenuPopup.run( menudata);
 		switch( ret["id"]){
+		case "edit":
+		{
+			return editItem( actionlist.items[actionlist.curidx]);
+		}
 		case "copy":
 		{
 			local v = deepclone( actionlist.getSelectedItems( true));
