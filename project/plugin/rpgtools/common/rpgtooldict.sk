@@ -1158,6 +1158,7 @@
 	"menu_debug_clearsavedata"			: {"ja":"セーブデータを初期化", "en":"Clear Save Data"}
 	
 	"confirm_clearsavedata"				: {"ja":"セーブデータを全てクリアしますか？", "en":"Are you sure to clear all save data?"}
+	"lbl_debug_running"					: {"ja":"デバッグを実行中…", "en":"Debug is running..."}
 
 	//	debug settings
 	"pref_debuglang"					: {"ja":"デバッグする言語", "en":"Language to Debug"}

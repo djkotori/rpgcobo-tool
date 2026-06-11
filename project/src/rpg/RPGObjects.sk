@@ -1039,7 +1039,6 @@ class RPGStageState extends Serializable
 			foreach( v in dynassets){	//	動的アセットをリセット。parmaなものは残す
 				if( !v["parma"]) removei;
 			}
-			dynassets = null;
 			env = {};
 		}
 	}

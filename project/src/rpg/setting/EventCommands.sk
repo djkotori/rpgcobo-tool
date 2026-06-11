@@ -906,8 +906,9 @@ eventcmd .. {
 	cmdinfo = @( cmd){
 		local cmddef = RPGSystem.eventcmd[cmd.cmd];
 		local pi = propstr( cmddef.props, cmd, "playerid");
+		local si = propstr( cmddef.props, cmd, "slot");
 		local ii = propstr( cmddef.props, cmd, "itemid");
-		local info = sprintf( "%S %S", pi, ii);
+		local info = sprintf( "%S %S ⇒ %S", pi, si, ii);
 		return {
 			info = info,
 		}
@@ -1727,7 +1728,7 @@ eventcmd .. {
 	
 	defval = @(){
 		local mapid = "M800";
-		return { mapid=mapid, gid=1, losefunc=0, bgmid=null, keeprset=false, enemies=[{id="E000",x=0.0,z=0.0}],}
+		return { mapid=mapid, losefunc=0, bgmid=null, keeprset=false, enemies=[{id="E000",x=0.0,z=0.0}],}
 	}
 	
 	cmdinfo = @( cmd){

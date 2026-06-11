@@ -282,7 +282,7 @@ class RPGStage
 		}
 		//	マップアセット動的配置のスナップショット
 		if( bw.dynassets){
-			local t = ss.dynassets = bw.dynassets.map( @( v) v && { resid=v.resid, pos=v.pos, parma=v.parma, blend=v.blend, });
+			local t = ss.dynassets = bw.dynassets.map( @( v) v ? { resid=v.resid, pos=v.pos, parma=v.parma, blend=v.blend, } : undefined );
 		}
 		//	env
 		ss.env = {

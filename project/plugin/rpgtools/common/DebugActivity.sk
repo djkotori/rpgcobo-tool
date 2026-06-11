@@ -80,7 +80,7 @@ function startDebugMenu( m){
 	local exe = FileRef( "rpgcobo.exe");
 	local p = popen_s();
 	p.open( exe, ["-testplay", ...args], 0x100);
-	Dialogs.showWaiting( "$T.lbl_dupproj_run", @(){
+	Dialogs.showWaiting( "$T.lbl_debug_running", @(){
 		if( p.isrunning()){
 			for( local li; li = p.readLine();){
 				printf( "::: %S\n", li.trim());

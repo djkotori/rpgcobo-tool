@@ -310,7 +310,7 @@ import GamepadStateID;
 	function enterBattle( cmd){
 		local doneptr = ptr( false);
 		local thisstage = ::rpgstage;		//	このステージに戻ってくれば良い
-		if( "gid" in cmd){		//	エンカウントグループ指定のコマンドならcmdを置き換える
+		if( !cmd["enemies"] && "gid" in cmd){		//	エンカウントグループ指定のコマンドならcmdを置き換える
 			local mapid = cmd["mapid"] || ::rpgstage.mapid;		//	cmdにmapidが指定されていない場合は現在マップから
 			cmd = ::conf.map[mapid].encount?.find( @( v) v.gid==cmd.gid);
 			if( !cmd){	//	エンカウントデータ無し。しょうがないから勝利扱い
