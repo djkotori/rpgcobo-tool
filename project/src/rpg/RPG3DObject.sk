@@ -1409,6 +1409,17 @@ class RPG3DVoxObject extends RPG3DObject
 class RPG3DEffect extends RPG3DObject
 {
 	efx = null;
+	restartcnt = 100;
+	
+	function updatepos( dt){
+		super.updatepos( dt);
+		if( ptc && !ptc.alive){
+			if( (restartcnt-=dt) <= 0){
+				ptc.start();
+				restartcnt = 100;
+			}
+		}
+	}
 
 	function setEffect( x){
 		this.efx = x;
@@ -1420,7 +1431,7 @@ class RPG3DEffect extends RPG3DObject
 		// sk.pos( lpos);
 		if( efx["pos"]) pos.add( efx.pos);
 		// addChild( sk, lpos[3]);		//	常に自分の子として追加？
-		startParticle();
+		startParticle( false);	//	!autokill
 		//	b3body ... 1m四方に収まるように。。。どんなにでかいエフェクトでも！
 		local colsize = efx["colsize"]||#(0.38,0.45,0.38);
 		local shp = createShape( efx["colshp"]||SK_SHAPE_CAPSULE, colsize);

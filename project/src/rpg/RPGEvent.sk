@@ -805,10 +805,17 @@ class RPGEventRunner
 		local waits = [];
 		foreach( i, v in cmd){
 			if( !length( v["actions"])) continue;
-			local rp3d = cmd.who=="player" ? st.player3d : cmd.who=="event" ? this.rp3d : st.getEvent( cmd.who)["rp3d"];
+			local rp3d;
+			switch( i){
+			case "player": rp3d = st.player3d; break;
+			case "event": rp3d = this.rp3d; break;
+			default:
+				rp3d = st.getEvent( i)["rp3d"];
+				break;
+			}
 			if( rp3d){
 				setManualAction( rp3d);	//	ここでmainactionの設定とイベント終了時に消す処理
-				local astat = rp3d.manuaction.act( @() playData( v.actions, 0, this.rp3d));
+				local astat = rp3d.manuaction.act( @() playData( v, 0, this.rp3d));
 				if( v["wait"]) waits .. astat;
 			}
 		}

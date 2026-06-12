@@ -73,7 +73,7 @@ class DBEditorGvar extends EditorViewBase
 			local r = gvarlist.rows[l];
 			local varfield = r.findChild( "varfield");
 			if( !varfield.ref){
-				local vf = varfield.ref = VariableBehavior( varfield, #{ constbits=15, nullable=1});
+				local vf = varfield.ref = VariableBehavior( varfield, #{ constbits=15, nullable=1, anytype=1});
 			}
 			local id = "G%03d" % (p*100+l);
 			setVarItem( r, id, data[id]);
@@ -153,6 +153,7 @@ class DBEditorGvar extends EditorViewBase
 				if( var[0] == '\t'){ type = VAR_SCRIPT; break; }
 				else if( var[0] == '\''){ type = VAR_STRING; break; }
 				else{ type = VAR_STRING; var = "'"..var; break; }	//	こんなデータは来ないとは思うけど
+			case SS_TABLE:	type = VAR_ANY; break;
 			default:
 				var = null;	//	any...
 				type = VAR_NONE;

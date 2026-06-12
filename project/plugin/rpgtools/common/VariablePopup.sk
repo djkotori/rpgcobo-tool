@@ -178,6 +178,7 @@ class VariableBehavior
 	constbits = 15;				//	
 	varbits = 63;				//	
 	nullable = 0;				//	
+	anytype = 0;
 	datatype = null;			//	
 	datafilter = null;			//	
 	
@@ -202,6 +203,7 @@ class VariableBehavior
 		datatype = prop["datatype"] || null;
 		datafilter = prop["filter"] || null;
 		nullable = prop["nullable"] || 0;
+		anytype = prop["anytype"] || 0;
 		//
 		typeicon = v.findChild( "typeicon");
 		varlbl = v.findChild( "varlbl");
@@ -221,9 +223,15 @@ class VariableBehavior
 		var = v;
 		switch( typeof( var)){
 		case SS_NULL:
+		case SS_UNDEFINED:
 			setTab( -1);
 			varlbl.setText( "$T.lbl_notset");
 			typeicon.setText( "\ue15d");
+			break;
+		case SS_TABLE:	//	便宜上anytype
+			setTab( -1);
+			varlbl.setText( "$T.lbl_anytype");
+			typeicon.setText( "\ue41d");
 			break;
 		case SS_INTEGER: case SS_FLOAT:
 			setTab( 1);
@@ -297,6 +305,8 @@ class VariableBehavior
 				typeicon?.setText( vi["icon"] ||"\ue322");
 			}
 			break;
+		case SS_TABLE:	//	便宜上anytype
+			break;
 		case SS_BOOL:
 		default:				//	他のタイプの場合はboolにしちゃったらいいかな
 			// (var?onbtn:offbtn).setSelected( true);
@@ -348,6 +358,7 @@ class VariableBehavior
 			e.consume();
 			local v;
 			if( var == null) break;
+			if( typeof( var) == SS_TABLE) break;	//	anytypeも入力不可
 			if( var[0] == '.'){
 				v = DataSelectPopup.run( e, { datatype=datatype, filter=datafilter});
 				if( v) v = "."..v;
@@ -391,7 +402,7 @@ class VariableBehavior
 	}
 
 	function selectType( e){
-		local bits = constbits | (varbits?16:0) | (datatype?32:0) | (nullable?64:0);
+		local bits = constbits | (varbits?16:0) | (datatype?32:0) | (anytype?64:0) | (nullable?128:0);
 		local menudata = [
 			{ val=0, lbl="$T.lbl_input_bool", icon="\ue9f6"},
 			{ val=1, lbl="$T.lbl_input_number", icon="\ue0bc"},
@@ -399,7 +410,8 @@ class VariableBehavior
 			{ val=3, lbl="$T.lbl_input_script", icon="\ueb8e"},
 			{ val=4, lbl="$T.lbl_input_var", icon="\ue322"},
 			{ val=5, lbl="$T.lbl_input_dataid", icon="\uf120"},
-			{ val=6, lbl="$T.lbl_notset", icon="\ue15d"},
+			{ val=6, lbl="$T.lbl_anytype", icon="\ue41d"},
+			{ val=7, lbl="$T.lbl_notset", icon="\ue15d"},
 		].filter( @( v) (1<<v.val) & bits );
 		local ret = e? MenuPopup.pulldown( menudata, varbtn) : MenuPopup.run( menudata);
 		switch( ret["val"]){
@@ -416,7 +428,8 @@ class VariableBehavior
 			local v = DataSelectPopup.run( e, { datatype=datatype, filter=datafilter}, "I000");
 			if( v){ setVar( "."..v); return true; }
 			break;
-		case 6: setVar( null); return true;
+		case 6: setVar( {}); return true;
+		case 7: setVar( null); return true;
 		}
 		return false;
 	}
