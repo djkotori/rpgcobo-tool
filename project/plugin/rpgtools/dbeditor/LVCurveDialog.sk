@@ -18,6 +18,8 @@ class LVCurveDialog extends UndoableDialog
 	guide = null;				//	LVCurveGuide
 	tool = null;				//	LVCurveTools
 
+	zoomlblbtn = null;
+
 	toolbtns = null;
 	toolidx = 0;
 	
@@ -27,6 +29,7 @@ class LVCurveDialog extends UndoableDialog
 	mdrag = false;
 	mx = 0; my = 0;
 	mval0 = 0;
+	changings = null;			//	
 
 	static function run( pid, lvcurve, lvtype){
 		local dlg = this( srcdir.."/ui/lvcurvedialog.ui", pid, lvcurve, lvtype);
@@ -53,6 +56,7 @@ class LVCurveDialog extends UndoableDialog
 		vallist.setListItems( lvcurve);
 		vallist.listview.content.addEventListener( MOUSE_EVENT, winevent);
 		vallist.setSelectable( false);
+		changings = {};
 		updateBarColors();
 		//
 		local ga = view.findChild( "guidearea");
@@ -77,6 +81,8 @@ class LVCurveDialog extends UndoableDialog
 			local v = self.getVal( p.x)|0;
 			return v>=0 ? v : null;
 		}
+
+		zoomlblbtn = view.findChild( "zoomlblbtn");
 	}
 
 	function updateBarColors(){
@@ -87,13 +93,13 @@ class LVCurveDialog extends UndoableDialog
 				bar.anime( 10);
 			}else{
 				val = v.val;
-				bar.anime( 0);
+				bar.anime( changings[i]?1:0);
 			}
 		}
 	}
 
 	function shown(){
-		zoomRange( 0, lvcurve.last().val);
+		zoomRange( 0, (lvcurve.last().val*1.1)|0);
 		// updateValBars();
 	}
 
@@ -129,19 +135,24 @@ class LVCurveDialog extends UndoableDialog
 		else if( z+c > 300){ z = Math.min( z+c*20, 800); }
 		else if( z+c > 100){ z = Math.min( z+c*10, 800); }
 		else{ z = Math.max( z+c*5, 10); }
-		// zoomto( gx, gy, z);
+		setZoom( z);
+	}
+
+	function setZoom( z){
 		zoom = z;
 		guide.setZoom( z);
 		updateValBars();
+		zoomlblbtn.setValue( "lbl", string( z));
 	}
 
 	//	
 	function zoomRange( mi, ma){
-		local z = (guide.bnd.w / (ma-mi) * 100)|0;
+		local z = ((guide.bnd.w / (ma-mi) * 100 + 9.9)|0 )/10*10;
 		zoom = z;
 		val0 = mi;
 		guide.setZoom( z);
 		updateValBars();
+		zoomlblbtn.setValue( "lbl", string( z));
 	}
 	
 	//	
@@ -215,6 +226,21 @@ class LVCurveDialog extends UndoableDialog
 			vallist.selectable = (toolidx==2);
 			vallist.deselectAll();
 			break;
+		case "zoomlblbtn":
+			local lbl = zoomlblbtn.findChild( "lbl");
+			local n = Popups.showRename( lbl, {selall=1});
+			n = int( n);
+			if( n){
+				n = Math.clamp( n, 10, 800);
+				setZoom( n);
+			}
+			break;
+		case "zoomoutbtn":
+		case "zoominbtn":
+			local zin = e.src.name=="zoominbtn";
+			local div = 20;
+			local z = Math.clamp( zin ? ((zoom+div)/div*div) : ((zoom-1)/div*div), 10, 800) | 0;
+			setZoom( z);
 		}
 		super.actionevent( e);
 	}
@@ -267,6 +293,7 @@ class LVCurveDialog.LVCurveTools
 			local lvvalmap = #{}, oldvalmap = #{}, d = d;
 			if( !(lv in oldvalmap)) oldvalmap[lv] <- d.getLVVal( lv);
 			lvvalmap[lv] <- val;
+			d.changings[lv-1] <- 1;
 			local redo = [@(){
 				foreach( lv, val in lvvalmap) d.setLVVal( lv, val);
 				d.updateLVItem( lv);
@@ -296,6 +323,8 @@ class LVCurveDialog.LVCurveTools
 			case MOUSE_RELEASED:
 				if( e.modifiers & BUTTON1_MASK){
 					e.consume();
+					dlg.changings = {};
+					dlg.updateBarColors();
 					return null;
 				}
 				break;
@@ -308,16 +337,19 @@ class LVCurveDialog.LVCurveTools
 	function lineDrawFunc( tool, e){
 		local self = this, d = dlg;
 		local trk = skGetTime();
-		local sv = Vector3D( e.lx, e.ly, 0), ev = clone sv;
+		local sv = [d.getVal( e.lx)|0, d.getLV( e.ly)];
+		local ev = Vector3D( e.lx, e.ly, 0);
 		
 		local oldlv = deepclone( d.vallist.items);
 		local setLVVal( sv, ev){
 			local lvvalmap = #{}, oldvalmap = #{}, d = d;
-			local v0 = d.getVal( sv.x)|0, i0 = d.getLV( sv.y);
+			local v0 = sv[0], i0 = sv[1];
 			local v1 = d.getVal( ev.x)|0, i1 = d.getLV( ev.y);
 			if( i0 > i1){
 				local vt = v0, it = i0; i0 = i1; v0 = v1; v1 = vt; i1 = it;
 			}
+			d.changings = {};
+			for( local l = i0-1; l < i1;l ++) d.changings[l] <- 1;
 			local dv = (v1-v0)*1.0 / Math.max( i1-i0, 1);
 			local newlv = oldlv.map( @( v){
 				if( v.lv>=i0 && v.lv<=i1) return { lv=v.lv, val=Math.iround( v0+dv*(v.lv-i0)), };
@@ -349,6 +381,8 @@ class LVCurveDialog.LVCurveTools
 			case MOUSE_RELEASED:
 				if( e.modifiers & BUTTON1_MASK){
 					e.consume();
+					dlg.changings = {};
+					dlg.updateBarColors();
 					return null;
 				}
 				break;

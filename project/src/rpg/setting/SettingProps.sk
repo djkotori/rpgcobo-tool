@@ -39,6 +39,15 @@ settingprops .. {
 
 settingprops .. {
 	part = "basic",
+	pid = "maxlv",
+	lbl = "$T.MAXLV",
+	type = SCALAR
+	range = (1,999)
+	defval = 99,
+};
+
+settingprops .. {
+	part = "basic",
 	proptype = "status",
 	pid = "walkspd",
 	lbl = "$T.setting_walkspd",

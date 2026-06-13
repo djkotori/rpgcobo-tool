@@ -25,6 +25,7 @@ class DBEditorSetting extends EditorViewBase
 	//	view
 	baseproplist = null;		//	PropertyListBehavior : 基本パラメータ。拡張はできない。
 	proplist = null;			//	PropertyListBehavior : 
+	maxlv0 = 99;				//	maxlv変化時に全てのプレイヤーのlvcurvを変更する
 
 	function init( path){
 		//	appiconはeditor内のを使うのでbasepropsはstatic化出来ない。。。
@@ -58,6 +59,7 @@ class DBEditorSetting extends EditorViewBase
 		
 		res = ::getResource( path);
 		data = deepclone( res.getContent()) || {};
+		maxlv0 = data.maxlv;
 		//	データ補間。存在しないプロパティにデフォルト値を挿入
 		setDefaultProperties( baseprops, data);
 		setDefaultProperties( ::RPGSystem.settingprops, data);
@@ -102,6 +104,11 @@ class DBEditorSetting extends EditorViewBase
 			::skstudio.updateChangeFile( this);
 			return true;
 		case "menu_file_save":
+			if( maxlv0 != data.maxlv){
+				if( !Dialogs.confirm( {msg="$T.confirm_change_maxlv"})) return;
+				changePlayersMaxLevel( maxlv0, data.maxlv);
+				maxlv0 = data.maxlv;
+			}
 			op.markSaved();
 			res.save( data);
 			//	appiconセーブ！
@@ -116,6 +123,26 @@ class DBEditorSetting extends EditorViewBase
 			return true;
 		}
 		return false;
+	}
+
+	//	全キャラのレベルカーブ配列をリサイズ。プレイヤーのデータが変更されるのでエディタをフラッシュ
+	function changePlayersMaxLevel( maxlv0, maxlv){
+		foreach( id, p in ::conf.player){
+			if( !p["lvcurve"]) continue;
+			foreach( i, a in p.lvcurve){
+				a.resize( maxlv+1, a.last());	//	データ上はLV0も存在する。
+			}
+			//	レベルキャップも更新。
+			p.INILV = Math.min( p.INILV, maxlv);
+			if( p.MAXLV == maxlv0) p.MAXLV = maxlv;
+			else p.MAXLV = Math.min( p.MAXLV, maxlv);
+		}
+		::getResource( "/.x/player").save();
+		foreach( path in ::skstudio.filetabbar.getPathList()){
+			if( path.startsWith( "/.x/player/")){
+				::skstudio.flushEditor( path);
+			}
+		}
 	}
 
 	//	

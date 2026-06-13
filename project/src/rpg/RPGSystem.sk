@@ -133,12 +133,12 @@ class SettingMap
 	//	指定した経験値での到達レベル
 	function getLVByExp( exp, et){
 		local m = et[0], n = 0.5 + et[1] / 150.0;
-		local v = 0;
-		for( local lv = 1; lv <= 99; lv++){
+		local v = 0, maxlv = ::conf.setting.maxlv;
+		for( local lv = 1; lv <= maxlv; lv++){
 			v += m; m *= 1 + n; n *= 0.91;
 			if( (v|0) > exp) return lv;
 		}
-		return 99;
+		return maxlv;
 	}
 	
 	///////////////////////////////////////////////////////////////////////////

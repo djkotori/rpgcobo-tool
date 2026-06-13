@@ -275,6 +275,7 @@ class Popups
 		local oldname = lbl.getText();
 		edit.setText( oldname);
 		edit.startTextEdit();
+		if( prms["selall"]) edit.textedit.selectAll();
 		local fn( e){
 			local close = false;
 			switch( e.id){

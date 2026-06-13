@@ -646,7 +646,8 @@ class RPGPlayer extends RPGCharaBase
 
 	//	経験値を追加する。レベルが上がったらオプション、ステータスを更新する。
 	function addExp( val){
-		exp += val;
+		local maxexp = ::RPGSystem.getExpByLV( MAXLV, data.expcurv);	//	レベルキャップのexpで止める
+		exp = Math.clamp( exp+val, 0, maxexp);
 		return updateLV();
 	}
 

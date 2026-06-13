@@ -354,7 +354,7 @@ class RPGEventRunner
 					}
 					::playSound( "SE014");
 					local lvui = RPGMain.showUI( { key = "misc_levelup", p0 = old, p1 = pc.cloneForCompare(), });	//	p1も比較用に状態リセット
-					if( pc.LV > old.LV && ::conf.setting["lvupheal"]){	//	レベルアップで回復設定
+					if( ::conf.setting["lvupheal"]){	//	レベルアップで回復設定
 						pc.HP = pc.MAXHP;
 						pc.MP = pc.MAXMP;
 					}

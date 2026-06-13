@@ -40,15 +40,15 @@ playerprops .. {
 };
 
 //	MAXLV : 最大LV (スタティックプロパティ)
-//	※※※※※　レベルキャップにするためにscoreか、、でもオプションとかで変えるものでもないからstatusかなー？？
+//	※※※※※　レベルキャップにするためにscoreか、、オプション付与で解放で良いかな
 playerprops .. {
-	proptype = "static"
+	proptype = "score"
 	pid = "MAXLV"
-	lbl = "$T.MAXLV"			//	ツール上での表示名
+	lbl = "$T.LVCAP"			//	ツール上での表示名
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = SCALAR
-	range = (1,999)				//	setting.maxlv
+	range = @() (1,::conf.setting.maxlv)				//	setting.maxlv
 	defval = 99
 };
 

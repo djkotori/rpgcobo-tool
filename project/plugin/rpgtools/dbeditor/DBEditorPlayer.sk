@@ -206,14 +206,14 @@ class DBEditorPlayer.LVPreview
 		v.addEventListener( ACTION_EVENT, actionevent);
 		v.addEventListener( ITEM_EVENT, itemevent);
 	}
-
+	
 	function refresh(){
 		local maxlv = ::conf.setting.maxlv;
-		lvcurvelist.setRowCount( maxlv);
+		lvcurvelist.setRowCount( maxlv+1);
 		local curvprops = ::RPGSystem.playerprops.filter( @(v) v["lvcurve"]);
-		for( local lv = 1; lv <= maxlv; lv ++){
+		for( local lv = 1; lv <= maxlv+1; lv ++){	//	右にスペース1個分
 			local r = lvcurvelist.rows[lv-1];
-			r.setValue( "lv", string( lv));
+			r.setValue( "lv", lv<=maxlv ? string( lv) : "");
 			for( local l = 0; ; l ++){
 				local p = r.findChild( "p"..l);
 				if( !p) break;

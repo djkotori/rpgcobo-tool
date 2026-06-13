@@ -7,6 +7,7 @@
 	//	パラメータ(ツール使用のみ分)
 	"INILV"								: {"ja":"初期LV", "en":"Initial LV"}
 	"MAXLV"								: {"ja":"最大LV", "en":"Max LV"}
+	"LVCAP"								: {"ja":"LVキャップ", "en":"LV Cap"}
 	"MAXHP"								: {"ja":"最大HP", "en":"Max HP"}
 	"MAXMP"								: {"ja":"最大MP", "en":"Max MP"}
 	"expcurv"							: {"ja":"EXPカーブ", "en":"EXP Curve"}
@@ -825,6 +826,11 @@
 	"setting_hotelheal0"				: {"ja":"HP,MPのみ回復", "en":"Heal only HP, MP"}
 	"setting_hotelheal1"				: {"ja":"状態異常も回復", "en":"Heal Bad Status too"}
 	"setting_hotelheal2"				: {"ja":"死亡も回復", "en":"Revive too"}
+
+	"confirm_change_maxlv"				: {
+		"ja":"最大レベルを変更します。全てのプレイヤーのデータを更新して良いですか？",
+		"en":"Changeing the Max Level. Is it okay to update data for all players?",
+	}
 	
 	////////// スキルプロパティ
 
