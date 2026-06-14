@@ -289,11 +289,12 @@ import GamepadStateID;
 			st.camwork.recover( st);	//	カメラワークのリセット
 			st.setPaused( true);		//	念のためポーズ
 			RPGMain.changeActiveStage( st);
+			RPGMain.buttonhelp( "stage");	//	デフォルトのボタンヘルプ
 			//	元のステージでなっていたBGMを途中から復帰させる。無い場合は今のBGMが継続していく。
 			if( cmd["bgmsnap"] && ::soundmanager.currentbgm!=cmd.bgmsnap){
 				::fadeoutBGM( 2000);
 				::soundmanager.currentbgm = cmd.bgmsnap;
-				cmd.bgmsnap.resumein( 2000);
+				cmd.bgmsnap.resumein( 2400);
 			}
 			//	※メッシュロード
 			//	ここでワイプアウト。

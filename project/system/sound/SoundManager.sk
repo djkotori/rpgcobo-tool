@@ -525,14 +525,18 @@ class BGMThread
 	}
 
 	function resumein( fadetime){
-		if( thread) return false;
+		fadew = 0.0;
 		fadespeed = 1.0 / fadetime;
 		fadetype = 1;
-		snd = mixer.ctx.createStreamSoundSource( ov.freq, ov.ch, SK_WAVE_SHORTLE, 44100 * 2 * ov.ch * 6);	//	freq, ch, bits
-		snd[SK_SND_GAIN] = vol * ::soundmanager.bgmvol;
-		thread = newthread( "BGMThread(%S)" % name);
-		thread.start( runresume, this);
-		playing = true;
+		if( thread){
+			if( snd) snd[SK_SND_GAIN] = 0;
+		}else{
+			snd = mixer.ctx.createStreamSoundSource( ov.freq, ov.ch, SK_WAVE_SHORTLE, 44100 * 2 * ov.ch * 6);	//	freq, ch, bits
+			snd[SK_SND_GAIN] = vol * ::soundmanager.bgmvol;
+			thread = newthread( "BGMThread(%S)" % name);
+			thread.start( runresume, this);
+			playing = true;
+		}
 	}
 	
 	//	フェード状態をアップデート。runスレッドから呼ばれる

@@ -55,6 +55,7 @@ class RandomMoveAction extends EventMoveAction
 {
 	rp3d = null;			//	rpgstage.events[evid].rp3d
 	evdata = null;			//	イベントのデータ。パラメータも入ってる
+	evpage = null;			//	ページのデータ。
 	evpos = null;			//	Vector3D : 
 	contfunc = null;		//	function : updateAction時に呼び出してfalseだったらこのアクションは消える。
 	
@@ -65,6 +66,7 @@ class RandomMoveAction extends EventMoveAction
 	constructor( p){
 		rp3d = p;
 		evdata = p.event.data;
+		evpage = p.event.page;
 		evpos = Vector3D( rp3d.event.data.pos);
 		//	
 		nexttime = 2000;
@@ -94,7 +96,7 @@ class RandomMoveAction extends EventMoveAction
 			rp3d.anime2( {id="walk"});
 			mvfunc = rp3d.walkTo({
 				target = tp,
-				spd = evdata.movespd,
+				spd = evpage["movespd"] ?? evdata["movespd"] ?? 1.0,
 			}) ( dt);	//	1回目の呼び出しも行う！
 		}
 	}

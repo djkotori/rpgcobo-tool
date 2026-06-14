@@ -124,7 +124,7 @@ class BattleRunnerBase
 		local m = stage.getLocation( "*memberloc");	//	マーカー位置
 		local pvec = Vector3D( 1, 0, 0).rotate( m.dir, 0, 0);		//	横視点だと右から左だけど、縦視点だと左から右だなー。。。カメラでチェックするしか
 		local ploc = m.pos;
-		if( n > 0) ploc += pvec * ((0.5-i/(n-1.0))*w);
+		if( n > 1) ploc += pvec * ((0.5-i/(n-1.0))*w);
 		if( pc["formation"]) ploc += Vector3D( 0, 0, -0.7).rotate( m.dir, 0, 0);
 		return (ploc.x,ploc.y,ploc.z,m.dir);
 	}
