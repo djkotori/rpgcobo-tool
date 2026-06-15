@@ -94,6 +94,13 @@ class ManualMoveAction
 		}
 	}
 	
+	//	全ての追加されたアクションが終了するまで待つ。
+	function waitActionsAndMovements(){
+		while( curstat || stats[0] || moves[0]){
+			suspend();
+		}
+	}
+	
 	//////////////////////////////////////////////////////////////////////
 
 	//	アクションを追加する。

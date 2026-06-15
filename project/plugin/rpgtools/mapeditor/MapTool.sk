@@ -288,7 +288,7 @@ class MapTool
 
 	//	ドラッグでhb0の法線軸にそって動かしたベクトルの高さを返す。
 	//	※hb0.fx,fy,fzには正しい値が入っている事！！！！
-	function planeHeight( e, hb0){
+	function planeHeight( e, hb0, adjust=true){
 		local cam = canvas.view.renderer.camera;
 		local p = #Plane();
 		local n = (#Vector3D())( hb0.nx, hb0.ny, hb0.nz);
@@ -298,9 +298,14 @@ class MapTool
 		local q = canvas.getRay( e.lx, e.ly), w = q[1]-q[0];
 		local t = p.getIntersectTime( q[0], w);
 		if( t < 0.0 || t > 1.0) return null;
+		local sc = 1.0;
+		if( adjust){
+			local d = n.dot( pn);
+			sc /= (1.0-Math.clamp( d*d-0.05, 0.0, 0.99));
+		}
 		local v = w.scale( t).add( q[0]);
 		v.sub( p0);
-		return v.dot( n);	// return v.length() * (v.normalize() * v.dot( n));
+		return v.dot( n) * sc;	// return v.length() * (v.normalize() * v.dot( n));
 	}
 
 	//	
@@ -827,7 +832,7 @@ class MapTool
 		local trk = "gzmv"..skGetTime();
 		local part = gz0.part;
 		local self = this, editor = editor, cam = canvas.camwork.cam;
-		local p0 = gz0.pos, n, absn, pl;
+		local p0 = gz0.pos, n, absn, pl, dotsc = 1.0;
 		switch( part){
 		case 0:		//	free
 			pl = chooseCameraPlane( cam.fw, gz0.pos); break;
@@ -838,7 +843,10 @@ class MapTool
 			local pv = #( Vector3D( 1,0,0), Vector3D( 0,1,0), Vector3D( 0,0,1));
 			local pn = cam.fw;
 			n = gz0.gz.rot * pv[(part-1)/2]; absn = Vector3D( n).scale( n);	//	abs
-			pl = Plane(); pl.setParam( pn.x, pn.y, pn.z, p0.x, p0.y, p0.z); break;
+			local d = n.dot( pn);
+			dotsc /= (1.0-Math.clamp( d*d-0.05, 0.0, 0.99));
+			pl = Plane(); pl.setParam( pn.x, pn.y, pn.z, p0.x, p0.y, p0.z);
+			break;
 		}
 		// printf( "pl %S %S %S %S\n", pl.a,pl.b,pl.c,pl.d);
 		local fn( e){
@@ -856,7 +864,7 @@ class MapTool
 					local fd = w.scale( t).add( q[0]).sub( p0).scale( 2.0);
 					d.set( fd.x|0, fd.y|0, fd.z|0);
 				}else{
-					local v = w.scale( t).add( q[0]).sub( p0);
+					local v = w.scale( t).add( q[0]).sub( p0).scale( dotsc);
 					dot = (v.dot( n) * 2.0)|0;
 					local fd = v.scale( absn).scale( 2.0);
 					d.set( fd.x|0, fd.y|0, fd.z|0);

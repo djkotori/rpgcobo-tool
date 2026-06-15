@@ -754,9 +754,9 @@ class ManualActionDialog extends UndoableDialog
 			local tab = seltab, td = data[tab];
 			local ep = getBasePos( tab);
 			local self = this;
-			local oldval = td.basepos, newval = [hb.bx, hb.by+1, hb.bz, ep[3]];
-			local redo = [@(){ td.basepos = newval; self.updateBasePos( tab); }];
-			local undo = [@(){ td.basepos = oldval; self.updateBasePos( tab); }];
+			local oldval = td["basepos"], newval = [hb.bx, hb.by+1, hb.bz, ep[3]];
+			local redo = [@(){ td.basepos <- newval; self.updateBasePos( tab); }];
+			local undo = [@(){ if( oldval) td.basepos = oldval; else delete td.basepos; self.updateBasePos( tab); }];
 			submitOp( redo, undo, null);
 			refresh();
 			break;
