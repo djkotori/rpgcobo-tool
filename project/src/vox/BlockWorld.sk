@@ -344,7 +344,7 @@ class SK3DBlockWorld extends SK3DObject
 		li.color = va.lcol | 0xff;
 		li.power = va.lcol & 255;	//	1-255?
 		li.spotout = Math.cos( va.lspot[0] * Math.DTOR);
-		li.spotsharp = va.lspot[1]+1;
+		li.spotsharp = va.lspot[1]+1+::rnd( 1.0);	//	このrndをライトチャンネルに使う！！！！
 		local m = fb.fpmat( 0, im_1).toMatrix( Matrix(), 0.5/8.0).translate( va.lpos[0], va.lpos[1], va.lpos[2]).rotate( va.lhpb[0]*Math.DTOR, va.lhpb[1]*Math.DTOR, 0);
 		li.setMatrix( gmat.mult34( m, m_1));
 		li.ref = {

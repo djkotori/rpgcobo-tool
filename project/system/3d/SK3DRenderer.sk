@@ -65,7 +65,7 @@ class RenderHint
 	ssao_qua = 1;				//	fast, normal, quality
 	ssgi_reso = 0;				//	SSGIの解像度。半分、等倍。※等倍はとても重いのでSS撮影用
 	ssgi_qua = 1;				//	fast, normal, quality
-	shadow_qua = 1;				//	シャドウの品質はどう設定させようか？ブラー、解像度、
+	shadow_qua = 1;				//	fast, normal, quality。 normalでSSShadowが有効に。
 	blur_qua = 1;				//	色々なところで掛かるブラーの品質を指定。最大サンプリング数。
 	pbr_qua = 0;				//	gblurをやるかぐらいかな？
 	

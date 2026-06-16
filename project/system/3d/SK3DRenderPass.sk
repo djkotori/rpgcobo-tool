@@ -952,7 +952,48 @@ class reg.SSGIPass extends reg.ImagePassBase
 	}
 }
 
+//	Screen Space Shadow パス
+//	有効なポイントライトがある場合に実行する。
+//	
+class reg.SSShadowPass extends reg.ImagePassBase
+{
+	m0 = null;	//	compute
+	m1 = null;	//	blur x/y
+	midtex = null;			//	途中テクスチャ
+	
+	function setPassSetting( p){
+		super.setPassSetting( p);
+		m0 = createMaterial( "pbrsprite.ssshadow_normal");
+		m0.miscmat0 = Matrix();
+		m0.miscmat1 = Matrix();
+		m1 = createMaterial( "pbrsprite.sssupsample");
+		m1.miscmat0 = Matrix();
+	}
+	
+	function setupPass( r){
+		local p = {w:VP_HALF,h:VP_HALF,fmt:SK_RGBA8};
+		midtex = r.findTempTarget( 100+p.fmt+p.w, p);
+		target = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_RGBA8});
+	}
 
+	function performPass( r){
+		//	SSAO compute pass
+		wvpReconstructParam( r.camera, m0.miscmat0, 0);
+		m0.miscmat1.set( r.camera.prjmat);
+		//	
+		skBindVertexBuffer( vtx);
+		r.setRenderTarget( midtex, null, true);
+		skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, ridx);
+		//	Cross-Bilateral Upsampling pass
+		m1.tex0 = midtex;
+		local m = m1.miscmat0;
+		m[0] = 1.0/midtex.width;
+		m[1] = 1.0/midtex.height;
+		wvpReconstructParam( r.camera, m, 4);
+		r.setRenderTarget( target, null, true);
+		skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, ridx);
+	}
+}
 
 ///////////////////////////////// AA, UpScaling /////////////////////////////////
 
@@ -1118,6 +1159,8 @@ class reg.LightPreparePass extends SK3DRenderPass
 	ibldiff = 1.0;				//	sh.powerもあるけどこっちも使える
 	ibldir = 0;
 	iblcolor = -1;
+
+	enablesss = false;			//	ssshadowを有効化すべきか。ライトの影響度が十分大きい場合のみtrue
 	
 	constructor( p, ex){
 		super( p);
@@ -1203,6 +1246,7 @@ class reg.LightPreparePass extends SK3DRenderPass
 		//	punctual lights
 		local znf = #(0,0);
 		skCullLights( (r.scn.lights, r.env.envlights), cam, litprmtex, litidxtex, ex, znf);	//	テクスチャへの転送はCPUから
+		enablesss = (ex>=0.02) && (znf[0]<znf[1]);
 		env.litprmtex = litprmtex;
 		env.litidxtex = litidxtex;
 		local zsc = -1.0 / (znf[1]-znf[0]);
@@ -1794,6 +1838,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	ssaopass = null;		//	SSAOはライトパス
 	ssrpass = null;
 	ssgipass = null;
+	ssspass = null;	
 	//	post process
 	autoexppass = null;		//	AutoExposurePass : 最終のhdcolortexからLavgを取得。1フレーム遅延で露光パラメータを調整。自動露光オフでも一応作られる。
 	pbrpostpass = null;		//	PBRPostPass : ブルーム、DOF、ToneMapping。結果はsdcolortexに。
@@ -1815,6 +1860,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		drawpass = reg.DrawToViewportPass( null);
 		copyzpass = reg.CopyZPass( {});
 		gblurpass = reg.GBlurPass( null);	//	renderhint.blur_quaによって変わる
+		ssspass = reg.SSShadowPass( {});
 		//	SSAO | SSGI
 		if( p["ss"]["gitype"] == 1){
 			lightingpass = reg.PBRLightingPass( {target:"lightingfb", tec:"pbr.deferlighting_gi"});	//	giはaにdiffuse情報
@@ -1900,9 +1946,14 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		r.env.gtex1 = g1tex2 || g1tex;
 		r.env.gtex2 = g2tex;
 		
-		//	SSAOはlightingpassの前に行う。
+		//	SSAO,SSShadowはlightingpassの前に行う。
 		ssaopass?.performPass( r);
-		
+		if( litprepass.enablesss){
+			ssspass.performPass( r);
+			lightingpass.m.tex0 = ssspass.target;
+		}else{
+			lightingpass.m.tex0 = null;
+		}
 		//	lighting pass (gbuffers, shadow) -> hdcolortex
 		lightingpass.performPass( r);
 		r.env.aotex = null;		//	aotexはssaopassで設定される。transpass以降で使われてほしくないのでここでnull代入。

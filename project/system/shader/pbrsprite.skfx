@@ -623,7 +623,7 @@ fs ssaoblur
 		for( float r = 1.0; r < R; r ++){
 			aozsum += blurfunc( uv - p0[0].xy*r, r, z0);
 		}
-		fragcolor = vec4( aozsum.x/aozsum.y);
+		fragcolor = vec4( aozsum.x/aozsum.y, 1.0, 1.0, 1.0);
 	}
 }
 
@@ -685,7 +685,7 @@ fs ssaoupsample
 				sumw += w;
 			}
 		}
-		fragcolor = vec4( sumao / sumw, 0.0, 0.0, 1.0);
+		fragcolor = vec4( sumao / sumw, 1.0, 1.0, 1.0);
 	}
 }
 
@@ -697,5 +697,200 @@ technique ssaoupsample
 		param = ssaoupsample;
 		vs = def;
 		fs = ssaoupsample;
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	
+//	Screen Space Shadows (SSShadow)
+//	
+
+param ssshadow
+{
+	attribute highp vec4 in_pos <ID=POSITION>;
+	attribute highp vec4 in_uv <id=UV1>;
+	
+	uniform highp sampler2D litprmtex <id=LIGHTPARAMTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;		//	4*1024のテクスチャ。
+	uniform mediump usampler3D litidxtex <id=LIGHTINDEXTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, WRAP_R=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;		//	16*16*8のライトインデックスバッファ。
+	uniform highp usampler2D gtex1 <id=GTEX2, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform highp usampler2D gtex2 <id=GTEX3, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform mediump usampler2D uztex <id=DEPTHTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform highp vec2 uztexscale <id=DEPTHTEX_PIX>;
+	
+	uniform highp mat4 dirlit <id=ENV1MAT>;
+	uniform highp mat4 p0 <id=MISC1MAT>;
+	uniform highp mat4 pmat <id=MISC2MAT>;				//	uummmmm
+	
+	varying highp vec4 v_uv;
+	
+	fragout mediump vec4 fragcolor;
+	
+	const float PI = 3.14159263358979323845;
+	const float HPI = (PI / 2.0);
+}
+
+fs ssshadow
+{
+	float pow2( float x) {
+		return x*x;
+	}
+
+	float distatten( highp float d, highp float R){
+		float s = d / R;
+		float s2 = pow2( s);
+		const float A = 1.0, F = 1.5;
+		return A * pow2( 1.0-s2) / (1.0+F*s) * clamp( d*0.5, 0.0, 1.0);	//	
+	}
+
+	float spotatten( highp vec3 ld, highp vec3 ll, highp float spotout, highp float spotscale){
+		float cd = -dot( ld, ll);
+		float atten = clamp( (cd-spotout) * spotscale, 0.0, 1.0);
+		return atten;
+	}
+	
+	vec4 computeSSS( uint i, highp vec3 wvp){
+		highp vec4 a = texelFetch( litprmtex, ivec2( 0, i), 0);
+		highp vec4 b = texelFetch( litprmtex, ivec2( 1, i), 0);
+		highp vec4 c = texelFetch( litprmtex, ivec2( 2, i), 0);
+		highp vec3 lwvp = b.xyz;
+		highp vec3 ldir = c.xyz;
+		highp vec3 d = lwvp - wvp;
+		highp vec3 l = normalize( d);
+		highp float dist = length( d);
+		if( dist >= a.w) return vec4( 1.0);
+		highp float atten = distatten( dist, a.w) * spotatten( ldir, l, b.w, c.w);
+		if( atten < 0.015) return vec4( 1.0);
+		float t = DT * (0.5+bayer4( gl_FragCoord.xy));     // 開始オフセット
+		float shadow = 1.0;
+		for( int i = 0; i < STEPCNT; i++) {
+			if( t > dist) break;
+			highp vec3 samplePos = wvp + l * t;
+			highp vec4 clip = pmat * vec4( samplePos, 1.0);
+			highp vec2 suv = clip.xy / clip.w * vec2(0.5,-0.5) + 0.5;
+			if( any( bvec4( lessThan( suv, vec2( 0.0)), greaterThan( suv, vec2( 1.0))) )) break;
+			highp vec3 scenePos = reconstructWVPtex( uztex, suv, p0[0]);
+			// 遮蔽判定（少しバイアスを入れて誤判定を減らす）
+			// float distScene = length( scenePos - wvp); if( distScene < t - 0.03) {	//	damekore
+			if( scenePos.z > samplePos.z+0.04 && scenePos.z < samplePos.z+2.0){
+				highp uint u1 = texture( gtex1, suv).x, u2 = texture( gtex2, suv).x;	//	自己発光チェック 2sample...
+				shadow = float( (u1>>29u)==0 && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
+				// shadow = 0.0;
+				break;
+			}
+			t += DT + t * DTT;	// 可変ステップ：距離に応じてステップ幅を増やす
+		}
+		float w = 1.0-atten, w3 = w*w;
+		int ch = int( fract( c.w) * 255.0) & 3;
+		vec4 p = vec4( 1.0); p[ch] = mix( shadow, 1.0, w3);
+		return p;
+	}
+	
+	// #define PNTLIT1( I) { mediump uint i = I; if( i==0u){ break; } else { shadow *= computeSSS( i, wvp); if( shadow < 0.05) break; } }
+	#define PNTLIT1( I) { mediump uint i = I; if( i==0u){ break; } else { shadow *= computeSSS( i, wvp); } }
+
+	void main(){
+		highp vec3 wvp = reconstructWVPtex( uztex, vec2( v_uv.x, v_uv.y), p0[0]);
+		vec2 fuv = abs( v_uv.xy-0.5);
+		float foff = clamp(( max( fuv.x, fuv.y) - 0.45) * 20.0, 0.0, 1.0);
+		vec4 shadow = vec4( 1.0 - foff);
+		highp uvec2 u2 = texture( litidxtex, vec3( v_uv.x, v_uv.y, wvp.z*dirlit[2].w+dirlit[3].w)).xy;
+		for(;;){	//	max 4 lits
+			PNTLIT1( u2[0]&1023u); PNTLIT1((u2[0]>>10u)&1023u); PNTLIT1( u2[0]>>20u); 
+			PNTLIT1( u2[1]&1023u); PNTLIT1((u2[1]>>10u)&1023u); PNTLIT1( u2[1]>>20u); 
+			break;
+		}
+		// shadow = smoothstep( 0.0, 1.0, shadow);
+		fragcolor = vec4( shadow);
+	}
+}
+
+param ssshadow_normal
+{
+	const int STEPCNT = 9;
+	const float DT = 0.046;
+	const float DTT = 0.16;
+}
+
+param ssshadow_quality
+{
+	const int STEPCNT = 12;
+	const float DT = 0.04;
+	const float DTT = 0.12;
+}
+
+technique ssshadow_normal
+{
+	apilevel = 30;
+	
+	pass {
+		using ssshadow_normal, bayer, reconstwvp;
+
+		param = ssshadow;
+		vs = def;
+		fs = ssshadow;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	
+//	SSShadow Cross-Bilateral Upsampling
+
+param sssupsample
+{
+	attribute mediump vec4 in_pos <ID=POSITION>;
+	attribute mediump vec4 in_uv <id=UV1>;
+	
+	uniform lowp sampler2D ssstex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform mediump usampler2D uztex <id=DEPTHTEX, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	
+	uniform highp mat4 p0 <id=MISC1MAT>;
+	
+	varying highp vec4 v_uv;
+	
+	fragout mediump vec4 fragcolor;
+}
+
+fs sssupsample
+{
+	const int R = 2;
+	const float SIGMA = float( R) * 0.7;
+	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
+	const float SHARPEN = 5.0;
+	
+	float wvz( highp vec2 uv){
+		highp vec4 v = p0[1];
+		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
+	}
+	
+	void main(){
+		highp vec2 uv = v_uv.xy;
+		highp float z0 = wvz( uv);
+		highp vec2 texsc = p0[0].xy;
+		mediump float sumw = 0.0001;
+		mediump vec4 sums = vec4( 0.0);
+		for( int y=-R; y<=R; y ++){
+			for( int x=-R; x<=R; x ++){
+				highp vec2 xy = vec2( x, y);
+				vec4 s = texture( ssstex, uv+xy*texsc);
+				highp float z = wvz( uv+xy*texsc);
+				float ddiff = (z - z0) * SHARPEN;
+				float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
+				sums += s * w;
+				sumw += w;
+			}
+		}
+		fragcolor = sums / sumw;
+	}
+}
+
+technique sssupsample
+{
+	apilevel = 30;
+
+	pass {
+		param = sssupsample;
+		vs = def;
+		fs = sssupsample;
 	}
 }

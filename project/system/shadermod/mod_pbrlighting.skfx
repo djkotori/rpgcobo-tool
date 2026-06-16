@@ -10,6 +10,7 @@ param pbrlighting
 	uniform highp samplerCube ibltex <id=ENVTEX, MIN_FILTER=LINEAR_MIP, MAG_FILTER=LINEAR, WRAP_S=CLAMP, WRAP_T=CLAMP, WRAP_R=CLAMP>;
 	uniform mediump sampler2D dfgtex <id=DFGTEX, WRAP_S=CLAMP, WRAP_T=CLAMP>;
 	uniform lowp sampler2D aotex <id=AOTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform lowp sampler2D ssstex <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
 	
 	uniform highp mat4 dirlit <id=ENV1MAT>;
 	uniform highp mat3 invvmat3 <id=ENV4MAT>;
@@ -56,7 +57,7 @@ fs pbrlighting
 		if( d >= R) return 0.0;
 		float s = d / R;
 		float s2 = pow2( s);
-		const float A = 1.0, F = 4.0;
+		const float A = 1.0, F = 1.5;
 		return A * pow2( 1.0-s2) / (1.0+F*s);
 	}
 
@@ -78,7 +79,8 @@ fs pbrlighting
 		li.l = normalize( d);
 		li.NoL = clamp( dot( g.n, li.l), 0.0, 1.0);
 		li.atten = distatten( length( d), a.w) * spotatten( li.dir, li.l, b.w, c.w);
-		li.ch = 2;
+		li.ch = int( fract( c.w) * 255.0) & 3;
+		$( COLORTEX1) li.atten *= texture( ssstex, g.uv)[li.ch];
 		return li;
 	}
 
@@ -258,7 +260,7 @@ fs pbrlighting
 	#define DIRLIT( SHADING_FUNC, mul) SHADING_FUNC( g, dirLight( g, mul), Fd, Fr);
 	#define PNTLIT1( I, SHAD, mul) { mediump uint i = I; if( i==0u){ break; } else { SHAD( g, pointLight( i, g, mul), Fd, Fr); } }
 	#define PNTLIT( SHAD, mul) \
-	mediump uvec2 u2 = texture( litidxtex, vec3( g.uv, g.wvp.z*dirlit[2].w+dirlit[3].w)).xy; \
+	highp uvec2 u2 = texture( litidxtex, vec3( g.uv, g.wvp.z*dirlit[2].w+dirlit[3].w)).xy; \
 	for(;;){ \
 		PNTLIT1( u2[0]&1023u, SHAD, mul); PNTLIT1((u2[0]>>10u)&1023u, SHAD, mul); PNTLIT1( u2[0]>>20u, SHAD, mul); \
 		PNTLIT1( u2[1]&1023u, SHAD, mul); PNTLIT1((u2[1]>>10u)&1023u, SHAD, mul); PNTLIT1( u2[1]>>20u, SHAD, mul); \
