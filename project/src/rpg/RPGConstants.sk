@@ -213,6 +213,12 @@ import AnimationPart;
 		{ lbl="$T.animepart5", val = MD, },
 		{ lbl="$T.animepart6", val = EN, },
 	]
+	easinglist = [
+		{ lbl="Linear", val=0, func=::Easing.presets[1], }
+		{ lbl="Ease in", val=1, func=::Easing.presets[5],}
+		{ lbl="Ease out", val=2, func=::Easing.presets[6],}
+		{ lbl="Ease in-out", val=3, func=::Easing.presets[7],}
+	];
 
 	function battlecmdlist(){
 		local a = [{ lbl="$T.lbl_none", }, ];

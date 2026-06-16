@@ -25,7 +25,7 @@ class ResEditorMapAsset extends ResEditor
 		))}
 		{ pid="eventuse", lbl="$T.lbl_eventuse", type=BOOL, defval=false },
 		{ pid="cntpos", lbl="$T.lbl_centerpos", type=VEC3, range=(0.0,1.0), q=100, defval=[0.5,0.0,0.5], hide=@( pl) !pl.getParam( "eventuse")},
-		{ pid="mapcol", lbl="$T.lbl_mapcol", type=BOOL, defval=false, hide=@( pl) !pl.getParam( "eventuse")},
+		// { pid="mapcol", lbl="$T.lbl_mapcol", type=BOOL, defval=false, hide=@( pl) !pl.getParam( "eventuse")},
 		{ pid="bw64", lbl="", type=CUSTOMBUTTON, tostring=@( v) "$T.lbl_editasset", cnt="cnt5.ui", icon="\ue745", ui="1",
 			edit = @( val){
 				::skstudio.editor.editSelectedAsset();

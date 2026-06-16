@@ -3,7 +3,7 @@ import AnimationPart;
 import CollisionGroupID;
 import BlockFlagID;
 
-local v_0 = Vector3D(), v_1 = Vector3D(), v_2 = Vector3D(), v_3 = Vector3D(), m_1 = Matrix(), r_1 = Rect3D(), q_1 = Quaternion(), q_2 = Quaternion();
+local v_0 = Vector3D(), v_1 = Vector3D(), v_2 = Vector3D(), v_3 = Vector3D(), m_1 = Matrix(), r_1 = Rect3D(), q_1 = Quaternion(), q_2 = Quaternion(), a_1 = [0,0];
 
 AnimationLayer.id <- null;
 AnimationLayer.part <- null;
@@ -163,6 +163,10 @@ class RPG3DObject extends SK3DObject
 	prevdir = 0.0;				//	前フレームでの向き。スムーズ移動用。
 	pitch = 0.0;				//	X軸回転。RPG3DMapAssetのみ
 	bank = 0.0;					//	Z軸回転。RPG3DMapAssetのみ
+
+	mount = null;				//	MountState : 動く地面に乗っている状態。
+	mountable = false;			//	乗っかることができる RPG3DMapAssetのみtrue
+
 	
 	//	移動アクション
 	mainaction = null;			//	PlayerMoveAction | EventMoveAction : 操作の入力処理とオブジェクトの移動を兼ねる。
@@ -280,6 +284,7 @@ class RPG3DObject extends SK3DObject
 	//	アップデート処理、移動処理
 
 	function update( dt, pmatdirty=true){
+		updateMount( dt);
 		if( dt > 0.001){
 			if( manuaction){
 				manuaction.updateAction( dt);
@@ -300,6 +305,28 @@ class RPG3DObject extends SK3DObject
 			light.setMatrix( m_1);
 		}
 		return b;
+	}
+	
+	//	乗り物の移動に合わせて移動。
+	function updateMount( dt){
+		if( mount){
+			local diff = mount.updateMount( dt, pos, mount.rp3d.mat);
+			pos.add( diff[0]);
+			dir += diff[1];
+			updateMatrix();
+			return true;
+		}
+		return false;
+	}
+
+	//	指定したRPG3DObjectに乗る。以後はrp3dの動きに合わせて移動する
+	function mountTo( rp3d){
+		if( !rp3d){
+			mount = null;
+		}else
+		if( rp3d != mount["rp3d"]){
+			mount = MountState( rp3d);
+		}
 	}
 
 	function updatepos( dt){
@@ -552,7 +579,8 @@ class RPG3DObject extends SK3DObject
 			if( ny > FLOORANGLE && (!sn || sn.y>FLOORANGLE)){// || (ny > 0.03 && sn && sn.y > FLOORANGLE/* && br.pointb.y < pos.y+width*/)){	//	カプセルの下半球が触れてる床のみ採用
 				local f = br.fraction;	//	b3resはfractionで昇順ソートされている
 				local gy = Math.clamp( pos0.y + vec.y*f -halfh, -128.0, 128.0);
-				return gy;
+				local ma3d = br.bodyb.ref;
+				return a_1.set( gy, ma3d["mountable"] ? ma3d : null);
 			}
 		}
 		return null;
@@ -574,9 +602,9 @@ class RPG3DObject extends SK3DObject
 			local ref = moveTest( p, v);
 			p.add( v).add( ref);
 			//	穴落ちチェック。。。
-			local gy = groundTest( pos, -0.5);
-			if( gy == null) return false;
-			p.y = gy;
+			local r = groundTest( pos, -0.5);
+			if( !r) return false;
+			p.y = r[0];
 		}
 	}
 	
@@ -585,9 +613,11 @@ class RPG3DObject extends SK3DObject
 		local vdt = vec * (dt*0.001);
 		local ref = moveTest( pos, vdt);
 		pos.add( vdt).add( ref);
-		local gy = groundTest( pos, vdt.y+gdy);
-		if( gy != null) pos.y = gy;
-		return { ref=ref, gy=gy };
+		local r = groundTest( pos, vdt.y+gdy);
+		if( r){
+			pos.y = r[0];	//	gy
+		}
+		return { ref=ref, gy=r[0], mnt=r[1]};
 	}
 	
 	/////////////////////////////////////////////////////////////////////////
@@ -601,6 +631,55 @@ class RPG3DObject extends SK3DObject
 			self.dir ??= t["dir"];
 			return (time[0]+=dt)<t.time;
 		};
+	}
+
+	//	
+	function turnTo( t){
+		if( t["time"]){
+			local self = this, time = (0.0,), dur = t.time;
+			local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
+			local dir1 = t["dir"]*Math.DTOR;
+			return @( dt){
+				local ddir = #deltadir( dir1, self.dir);
+				self.matdirty = true;
+				local w = (time[0]+=dt) / dur;
+				if( w >= 1.0){
+					self.dir = dir1;
+					return null;
+				}else{
+					self.dir = dir1  +ddir*(1.0-w);
+					return callee();
+				}
+			}
+		}else{
+			rp3d.dir = v.dir * 45 * Math.DTOR;
+			return null;
+		}
+	}
+	//	
+	function objTurnTo( t){
+		if( t["time"]){
+			local self = this, time = (0.0,), dur = t.time;
+			local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
+			local r1 = t["rot"], dir1 = r1[0]*Math.DTOR, pitch1 = r1[1]*Math.DTOR, bank1 = r1[2]*Math.DTOR;
+			return @( dt){
+				local dr = #( deltadir( dir1, self.dir), deltadir( pitch1, self.pitch), deltadir( bank1, self.bank));
+				self.matdirty = true;
+				local w = (time[0]+=dt) / dur;
+				if( w >= 1.0){
+					self.dir = dir1; self.pitch = pitch1; self.bank = bank1;
+					return null;
+				}else{
+					self.dir   = dir1  +dr[0]*(1.0-w);
+					self.pitch = pitch1+dr[1]*(1.0-w);
+					self.bank  = bank1 +dr[2]*(1.0-w);
+					return callee();
+				}
+			}
+		}else{
+			rp3d.dir = v.dir * 45 * Math.DTOR;
+			return null;
+		}
 	}
 	
 	//	指定した座標まで直線的に移動する。当たり判定、接地チェックは行わない。
@@ -652,16 +731,16 @@ class RPG3DObject extends SK3DObject
 				}
 				if( !self.landed){	//	ジャンプ又は落下中
 					vyptr << Math.max( ~vyptr-0.015*dt, -10.0);
-					local gy = self.groundTest( p, -spd*dt*0.001);
-					if( gy != null){	//	地面があった
+					local r = self.groundTest( p, -spd*dt*0.001);
+					if( r){	//	地面があった
 						vyptr << 0.0; 
-						p.y = gy;
+						p.y = r[0];	//	gy
 						self.landed = true;
 					}
 				}else{	//	歩行中
-					local gy = self.groundTest( p, -Math.max( 0.25, spd*dt*0.001+0.1));
-					if( gy != null){
-						p.y = gy;
+					local r = self.groundTest( p, -Math.max( 0.25, spd*dt*0.001+0.1));
+					if( r){
+						p.y = r[0];	//	gy
 					}else{	//	地面が無くなった=落下開始
 						vyptr << 0.4;		//	落下開始時には少しだけ上方向のベクトルを与える
 						self.landed = false;
@@ -707,6 +786,31 @@ class RPG3DObject extends SK3DObject
 				return callee();	//	自分自身を返すことで継続
 			}
 		}
+	}
+	
+	//	オブジェクト移動用。位置と向きを直線的に補間する。
+	function objMoveTo( t){
+		local self = this, time = (0.0,);
+		local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
+		local p1 = t.target;
+		local r1 = t["rot"], dir1 = r1[0]*Math.DTOR, pitch1 = r1[1]*Math.DTOR, bank1 = r1[2]*Math.DTOR;
+		return @( dt){
+			self.matdirty = true;
+			local p0 = #Vector3D( self.pos), dur = #float( t["time"] || p0.hypot( p1)/t.spd*1000);
+			local dr = #( deltadir( dir1, self.dir), deltadir( pitch1, self.pitch), deltadir( bank1, self.bank));
+			local w = (time[0]+=dt) / dur;
+			if( w >= 1.0){
+				self.pos( p1); self.dir = dir1; self.pitch = pitch1; self.bank = bank1;
+				return null;
+			}else{
+				w = ease( w);
+				p0.lerp( p1, w, self.pos);
+				self.dir   = dir1  +dr[0]*(1.0-w);
+				self.pitch = pitch1+dr[1]*(1.0-w);
+				self.bank  = bank1 +dr[2]*(1.0-w);
+				return callee();
+			}
+		};
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -790,6 +894,29 @@ class RPG3DObject extends SK3DObject
 		parent.addChild( v);
 	}
 }
+
+//	RPG3DMapAssetに乗っかってる状態
+//	
+class MountState
+{
+	rp3d = null;			//	RPG3DMapAsset
+	+lastmat = Matrix();	
+
+	constructor( r){
+		rp3d = r;
+		lastmat.set( rp3d.gmat);
+	}
+
+	function updateMount( dt, pos, curmat){
+		local movmat = curmat.mult34( lastmat.invert34());	//	差分成分
+		local vec = v_0( pos).transform( movmat).sub( pos);
+		local fw = v_1(0,0,1).transform0( movmat); fw.y = 0.0; fw.normalize();	//	xzの軸変化
+		local dir = Math.atan2( fw.x, fw.z);
+		lastmat.set( curmat);
+		return a_1.set( vec, dir);
+	}
+}
+
 
 //	
 class SK3DEffect extends SK3DObject
@@ -1452,7 +1579,7 @@ class RPG3DEffect extends RPG3DObject
 }
 
 //	マップアセットをマップ上に配置する。配置されたマップアセットは当たり判定もマップそのもの。
-//	※mapcolのRPG3DMapAssetは地面となれる。この時、RPG3DMapAssetの移動に合わせてキャラも移動する必要がある。
+//	※RPG3DMapAssetは地面となれる。この時、RPG3DMapAssetの移動に合わせてキャラも移動する必要がある。
 //	RPG3DMapAssetのイベントを最後に処理。設置しているイベント、プレイヤーを全て取得して移動後にそれらを強制的に移動。
 //	
 class RPG3DMapAsset extends RPG3DObject
@@ -1462,8 +1589,6 @@ class RPG3DMapAsset extends RPG3DObject
 	bw3d = null;			//	SK3DBlockWorld : childとしてadd
 	bci = null;
 
-	hasmapcol = false;		//	マップとしてのコリジョンを持つ。この状態ではこのオブジェクトはマップとの接触判定を行わない。
-	
 	function setMapAsset( x){
 		local bb = uncompressZSTD( decodeBASE64( x.bw64, ByteBuffer()));
 		local bw = ObjectInput.decode( bb);
@@ -1478,48 +1603,29 @@ class RPG3DMapAsset extends RPG3DObject
 		bw3d.updateMatrix( true);
 		bw3d.generateAllMesh();
 		addChild( bw3d);
-		if( x["mapcol"]){	//	マップのコリジョン有効
-			hasmapcol = true;
-			bci = BlockColiderInterface( bw);
-			bci.setFlagMask( BLK_SOLID|BLK_BARRIOR|BLK_SOLIDFB);
-			local shp = b3Shape.createCustomConcave( bci);
-			local offsmat = Matrix.fromTranslate( piv.x, piv.y, piv.z);
-			b3body = b3Body( 0.0, shp, mat, G_STAGE|G_EVENT, G_CHARA);		//	G_CHARAとしかコリジョンは当たらない。ConcaveなのでconvexSweepTest不可
-			b3body.ref = this;
-			b3body.setOffsetTransform( offsmat);
-		}else{
-			//	b3body ... 1m四方に収まるように。。。どんなにでかいマップアセットでも！
-			local colsize = x["colsize"]||#(0.38,0.45,0.38);
-			local shp = createShape( x["colshp"]||SK_SHAPE_CAPSULE, colsize);
-			local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
-			b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);		//	G_STAGEとしかコリジョンは当たらない。キャラと当てたかったらmapcolで。
-			b3body.ref = this;
-			b3body.setOffsetTransform( offsmat);
-		}
+		//
+		bci = BlockColiderInterface( bw);
+		bci.setFlagMask( BLK_SOLID|BLK_BARRIOR|BLK_SOLIDFB);
+		local shp = b3Shape.createCustomConcave( bci);
+		local offsmat = Matrix.fromTranslate( piv.x, piv.y, piv.z);
+		b3body = b3Body( 0.0, shp, mat, G_STAGE|G_EVENT, G_CHARA);		//	G_CHARAとしかコリジョンは当たらない。ConcaveなのでconvexSweepTest不可
+		b3body.ref = this;
+		b3body.setOffsetTransform( offsmat);
+		mountable = true;
 	}
 	
 	//	hascolの場合はスムーズ補間はやらない。
 	function updatepos( dt){
-		if( hasmapcol){
-			prevpos << pos;
-			prevdir = dir;
-		}else{
-			super.updatepos( dt);
-		}
+		prevpos << pos;
+		prevdir = dir;
+		rot.setHPB( dir+diroffs, pitch, bank);
 	}
 	
 	function groundTest( pos, dy){
-		if( hasmapcol){
-			return pos.y;	//	自分のyを地面として返す
-		}else{
-			return super.groundTest( pos, dy);
-		}
+		return a_1.set( pos.y, null);	//	自分のyを地面として返す
 	}
 
 	function moveTest( pos, vec){
-		if( !hasmapcol){
-			return super.moveTest( pos, vec);
-		}
 	}
 	
 	function getMaterials(){

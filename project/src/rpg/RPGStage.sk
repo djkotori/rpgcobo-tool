@@ -698,12 +698,7 @@ class RPGCameraFade
 
 	function set( d, cw){
 		foutcw = cw;
-		ease = ::Easing.presets[1];
-		switch( d["easing"]){
-		case 1: ease = ::Easing.presets[5]; break;
-		case 2: ease = ::Easing.presets[6]; break;
-		case 3: ease = ::Easing.presets[7]; break;
-		}
+		ease = RPGProperties[d["easing"]]["func"] || ::Easing.presets[1];
 		fade = d["fade"]+0.0;
 	}
 

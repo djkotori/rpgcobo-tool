@@ -603,6 +603,41 @@ RPGSystem.eventrole .. {
 	]
 }
 
+//	移動物体
+//	
+RPGSystem.eventrole .. {
+	menutype = "event"
+	key = "movobj"
+	name = "$T.lbl_movobj"
+	icon = "\uf235"
+	editmanuaction = true
+	
+	// width = 520
+	
+	props = @( cmd)[
+		nameprop,
+		{...mdlprop, restype=["map_asset"]},
+		...RPGSystem.moveaction[cmd["moveaction"]]["props"],
+		reqs0prop,		//	スポーン条件。
+	]
+	
+	defdata = @() +{
+		mdlid = Table.findi( ::conf._resource.map_asset, @( v) v["eventuse"]) || "CV000",
+		spawndist = 1,
+		reqs0 = null,
+		moveaction = "actiontool",
+	}
+	
+	defpage = [
+		{
+			trigger = 0
+			cmdblock = []
+		},
+	]
+}
+
+
+
 
 ::lightflickerlist <- [
 	{ lbl="$T.lbl_none", val=0 },

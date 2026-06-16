@@ -57,14 +57,6 @@ local losefuncprop = {
 	],
 }
 
-//	イージング
-local easinglist = [
-	{ lbl="Linear", val=0, }
-	{ lbl="Ease in", val=1, }
-	{ lbl="Ease out", val=2, }
-	{ lbl="Ease in-out", val=3, }
-];
-
 //	ユーティリティ
 local defmapid(){
 	local mapid = ::skstudio.editor["mapid"];
@@ -1274,7 +1266,7 @@ eventcmd .. {
 			];
 		}
 		a .. { pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), ui="bar", barrange=(0,3000,100), variable=1 }
-		if( cmd.op==0) a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=easinglist, variable=1, hide=@( pl) pl.getParam( "fade")<=0 };
+		if( cmd.op==0) a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1, hide=@( pl) pl.getParam( "fade")<=0 };
 		a .. { pid="wait", lbl="$T.lbl_waitfade", type=BOOL, variable=1, hide=@( pl) pl.getParam( "fade")<=0 };
 		return a;
 	}
@@ -2017,7 +2009,7 @@ eventcmd .. {
 			break;
 		}
 		a .. { pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), ui="bar", barrange=(0,3000,100), variable=1 }
-		a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=easinglist, variable=1, hide=@( pl) pl.getParam( "fade")<=0 };
+		a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1, hide=@( pl) pl.getParam( "fade")<=0 };
 		a .. { pid="wait", lbl="$T.lbl_waitfade", type=BOOL, variable=1, hide=@( pl) pl.getParam( "fade")<=0 };
 		if( cmd.type) a .. camrestoreprop;
 		return a;
@@ -2073,7 +2065,7 @@ eventcmd .. {
 				{ lbl="$T.lbl_reverse", val=1, }
 				{ lbl="$T.lbl_repeat", val=2, }
 			]};
-			a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=easinglist, }
+			a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
 		};
 		return a;
 	}
@@ -2399,7 +2391,7 @@ eventcmd .. {
 
 
 
-//	cmd_move : キャラ移動
+//	cmd_move : キャラ移動／オブジェクト移動
 //	
 eventcmd .. {
 	category = 5
@@ -2408,19 +2400,30 @@ eventcmd .. {
 	icon = "\ue021"
 	color = color5
 	
-	props = [
-		{ pid="who", lbl="$T.lbl_who", type=LIST, list=who2list, variable=true, refresh=true, }
-		{ pid="pos", lbl="$T.lbl_position", type=VEC2, range=(-128,128), q=10, variable=1, },
-		{ pid="movetype", lbl="$T.movetype", type=LIST, list=[
+	props = @( cmd){
+		local isobj = cmd["movetype"]=="obj";
+		local a = [];
+		a .. { pid="who", lbl="$T.lbl_who", type=LIST, list=who2list, variable=true, refresh=true, }
+		a .. { pid="pos", lbl="$T.lbl_position", type=isobj?VEC3:VEC2, range=(-128,128), q=10, variable=1, },
+		a .. { pid="movetype", lbl="$T.movetype", type=LIST, refresh=1, list=[
 			{ lbl="$T.movetype_walk", val="walk", }
 			{ lbl="$T.movetype_dash", val="dash", }
 			{ lbl="$T.movetype_jump", val="jump", }
 			{ lbl="$T.movetype_warp", val="warp", }
-		], },	//	walk, dash, jump, warp
-		{ pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, },
-		{ pid="playani", lbl="$T.lbl_playani", type=BOOL, variable=1, },
-		{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 },
-	]
+			"-"
+			{ lbl="$T.movetype_obj", val="obj", }
+		], };	//	walk, dash, jump, warp,  obj
+		if( isobj){
+			a .. { pid="rot", lbl="$T.lbl_rotation", type=VEC3, range=(-360,360), q=1, variable=1 }
+			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
+			a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1 }
+		}else{
+			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
+			a .. { pid="playani", lbl="$T.lbl_playani", type=BOOL, variable=1, }
+		}
+		a .. { pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 }
+		return a;
+	}
 	
 	cmdinfo = @( cmd){
 		local cmddef = RPGSystem.eventcmd[cmd.cmd], props = fget( cmddef, "props", cmddef, cmd);
@@ -2431,7 +2434,7 @@ eventcmd .. {
 		return { info = info, }
 	}
 	
-	defval = { who=2, pos=[0,0], movespd=3, playani=true, wait=true, movetype="walk" }
+	defval = { who=2, pos=[0,0,0], rot=[0,0,0], movespd=3, playani=true, wait=true, movetype="walk", easing=0 }
 	
 	exec = @( runner, cmd){
 		runner.moveChara( cmd);

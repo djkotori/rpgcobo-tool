@@ -139,7 +139,11 @@ class ManualMoveAction
 			local v = a[l];
 			switch( v.act){
 			case "move":
-				move( {target = Vector3D( v.pos).add( p0).scale( 0.5), aim = true, spd = v.movespd, movetype=v.movetype, playani=v["playani"] });
+				move( {movetype=v.movetype, target = Vector3D( v.pos).add( p0).scale( 0.5), aim = true, spd = v.movespd, playani=v["playani"] });
+				wait( 0x80000004);	//	移動は待たないとかなー
+				break;
+			case "objmove":
+				move( {movetype="obj", target = Vector3D( v.pos).add( p0).scale( 0.5), rot=v["rot"], spd = v.movespd, easing=v["easing"]||0 });
 				wait( 0x80000004);	//	移動は待たないとかなー
 				break;
 			case "wait":
@@ -158,8 +162,11 @@ class ManualMoveAction
 				break;
 			}
 			case "turn":
+			case "objturn":
 			{
-				rp3d.dir = v.dir * 45 * Math.DTOR;
+				if( turn( v)){
+					wait( 0x80000004);	//	待たないといけないタイプ。。。
+				}
 				break;
 			}
 			case "ani":
@@ -222,8 +229,11 @@ class ManualMoveAction
 		}
 	}
 
-	//	向きを変える。
+	//	向きを変える。時間指定可。
 	function turn( x){
+		local fn = x["rot"] ? rp3d.objTurnTo( x) : rp3d.turnTo( x);
+		if( fn) moves .. fn;
+		return !!fn;
 	}
 
 	//	
@@ -236,6 +246,9 @@ class ManualMoveAction
 			break;
 		case "warp":
 			moves .. rp3d.warpTo( x);
+			break;
+		case "obj":
+			moves .. rp3d.objMoveTo( x);
 			break;
 		default:
 			if( x["playani"] && mt) rp3d.anime2( {id=mt});

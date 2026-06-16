@@ -221,7 +221,7 @@ class DialogBase
 	}
 
 	function cancelEnabled(){
-		return view.findChild( "btn_cancel")?.isAvailable();
+		return view.findChild( "btn_cancel")?.isAvailable() || view.findChild( "btn_close")?.isAvailable();
 	}
 
 	//	キャンセル処理を入れたいならここ

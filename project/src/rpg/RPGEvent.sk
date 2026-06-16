@@ -746,11 +746,11 @@ class RPGEventRunner
 			setManualAction( rp3d);
 			local p0 = rp3d.pos;
 			// if( bp==1 || cmd.who=="player"){ v_0( rp3d.pos).scale( 2).round(); p0 = [v_0.x,v_0.y,v_0.z]; }	//	playerの時は常に現在位置から
-			local p = Vector3D( cmd.pos[0], 0.0, cmd.pos[1]).add( p0);
+			local isobj = cmd.movetype=="obj";
+			local p = (isobj ? Vector3D( cmd.pos) : Vector3D( cmd.pos[0], 0.0, cmd.pos[1])).add( p0);	//	obj移動の場合のみ3Dベクトル
 			// ::rpgstage.adjustFloorPos( p);		//	移動先の地面Y座標を正確に
 			local astat = rp3d.manuaction.act( @(){
-				move( {target = p, aim = true, spd = cmd.movespd, movetype=cmd.movetype, playani=cmd["playani"] });
-				// if( cmd["playani"]) anime( {id="stand"});
+				move( {target=p, rot=cmd["rot"], easing=cmd["easing"], aim=true, spd=cmd.movespd, movetype=cmd.movetype, playani=cmd["playani"] });
 			});
 			if( cmd["wait"]) rp3d.manuaction.waitActionsAndMovements();	//	移動を待つのはこのメソッドで！
 		}

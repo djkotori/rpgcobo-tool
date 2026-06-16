@@ -154,16 +154,17 @@ class PlayerMoveAction
 			}else{	//	ハシゴが無いので普通の移動
 				if( !landed){	//	ジャンプ又は落下中
 					if( vec.y > 0.0) ani.id = "jump";
-					local ref = rp3d.move( vec, dt);
-					if( ref.gy){
+					local r = rp3d.move( vec, dt);
+					if( r.gy){
 						vec.y = 0.0;
 						landed = true;
 					}else{
 						vec.y = Math.max( -16.0, vec.y-0.03*dt);
 					}
+					rp3d.mountTo( r["mnt"]);
 				}else{	//	歩行中／停止中
-					local ref = rp3d.move( vec, dt, -Math.max( 0.25, vec.length()*dt*0.001+0.1));
-					if( !ref.gy){	//	地面が無くなった=落下開始
+					local r = rp3d.move( vec, dt, -Math.max( 0.25, vec.length()*dt*0.001+0.1));
+					if( !r.gy){	//	地面が無くなった=落下開始
 						ctrlock = 100;
 						vec.y = 0.4;	//	落下開始時には少しだけ上方向のベクトルを与える
 						landed = false;
@@ -171,6 +172,7 @@ class PlayerMoveAction
 					//	anime
 					ani.id = cdir?"dash":"stand";
 					ani.part = ST_EN;
+					rp3d.mountTo( r["mnt"]);
 				}
 			}
 		}

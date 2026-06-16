@@ -195,12 +195,7 @@ class EventPicView extends SKView
 		}
 		removeUpdateFunc( @( o) o.getName() == "picmotfunc");	//	実行中のアクションは中断。。。
 		local tptr = ptr( 0);
-		local ease = ::Easing.presets[1];
-		switch( cmd["easing"]){
-		case 1: ease = ::Easing.presets[5]; break;
-		case 2: ease = ::Easing.presets[6]; break;
-		case 3: ease = ::Easing.presets[7]; break;
-		}
+		local ease = RPGProperties.easinglist[cmd["easing"]]["func"] || ::Easing.presets[1];
 		local picmotfunc( dt){
 			local t = (tptr << (~tptr + dt));
 			local w = ease( Math.saturate( t / fade));

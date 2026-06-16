@@ -194,12 +194,7 @@ class RPGCameraMotion
 		case 2: w = (float( t) / time) % 2.0; w = Math.min( w, 2.0-w); break;	// /\/\/\って感じでミラーリピート
 		default: w = Math.saturate( float( t) / time); break;
 		}
-		local ease = ::Easing.presets[1];
-		switch( data["easing"]){
-		case 1: ease = ::Easing.presets[5]; break;
-		case 2: ease = ::Easing.presets[6]; break;
-		case 3: ease = ::Easing.presets[7]; break;
-		}
+		local ease = RPGProperties.easinglist[data["easing"]]["func"] || ::Easing.presets[1];
 		w = ease( w);
 	}
 

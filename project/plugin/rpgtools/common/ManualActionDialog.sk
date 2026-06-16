@@ -50,26 +50,41 @@ class ManualActionDialog extends UndoableDialog
 			act="wait", name="$T.lbl_wait", icon="\ue034", 
 			props = [
 				{ pid="time", lbl="$T.lbl_time", type=VARIABLE, constbits=2|8, varbits=1|2|4 },
-				{ pid="stand", lbl="静止アニメ", type=BOOL }
+				{ pid="stand", lbl="$T.lbl_standani", type=BOOL }
 			],
 			defval={ time=100, stand=true },
 			info = @( v) v.time,
+			bits = 3,
 		},
 		{	//	条件を待つコマンド
 			act = "waitreq", name="$T.lbl_waitreqs", icon="\ue620", 
 			props = [
 				{ pid="reqs", lbl="$T.lbl_reqs", type=REQUIREMENTS, cnt="cnt6.ui", varbits=15 }
-				{ pid="stand", lbl="静止アニメ", type=BOOL }
+				{ pid="stand", lbl="$T.lbl_standani", type=BOOL }
 			]
 			defval={ reqs=null, stand=true }
+			bits = 3,
 		},
-		{	//	向く
+		{	//	向く(キャラ)
 			act = "turn", name="$T.lbl_turn", icon="\ue577", 
 			props = [
-				{ pid="dir", lbl="$T.lbl_dir", type=SCALAR, range=(0,7), ui="bar", }
+				{ pid="dir", lbl="$T.lbl_direction", type=SCALAR, range=(-360,360), ui="bar", }
+				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
 			]
-			defval={ dir=4, }
+			defval={ dir=4, time=0 }
 			info = @( v) dirlbls[v.dir],
+			bits = 1,
+		}
+		{	//	向く(オブジェクト)
+			act = "objturn", name="$T.lbl_rotation", icon="\ue577", 
+			props = [
+				{ pid="rot", lbl="$T.lbl_rotation", type=VEC3, range=(-360,360), ui="bar", }
+				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
+				{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
+			]
+			defval={ rot=[0,0,0], time=1000, easing=0, }
+			info = @( v) "%3d %3d %3d" % (v.rot[0],v.rot[1],v.rot[2]),
+			bits = 2,
 		}
 		{	//	アニメコマンド
 			act = "ani", name="$T.lbl_anime", icon="\ueae9", 
@@ -88,6 +103,7 @@ class ManualActionDialog extends UndoableDialog
 			]
 			defval={ ani={ id="stand", spd=1.0, part=0}, wait=true, }
 			info = @( v) "$T.anim_"..v.ani.id,
+			bits = 3,
 		},
 		{	//	エフェクトコマンド
 			act = "efx", name="$T.lbl_effect", icon="\uef55", 
@@ -97,6 +113,7 @@ class ManualActionDialog extends UndoableDialog
 				{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL }
 			]
 			defval={ pos=[0,0,0], id="FX000", wait=true, }
+			bits = 3,
 		},
 		{	//	サウンドコマンド
 			act = "snd", name="$T.lbl_sound", icon="\ue7f4", 
@@ -106,6 +123,7 @@ class ManualActionDialog extends UndoableDialog
 				{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL }
 			]
 			defval={ pos=[0,0,0], id="SE000", wait=true, vol=100 }
+			bits = 3,
 		},
 		{	//	スクリプト
 			act = "scp", name="$T.lbl_script", icon="\ueb8e", 
@@ -113,6 +131,7 @@ class ManualActionDialog extends UndoableDialog
 				{ pid="code", lbl="$T.lbl_script", type=SCRIPT, multiline=8, cnt="cnt6v.ui" }
 			]
 			defval={ code="", }
+			bits = 3,
 		},
 		///////////////////////////////////////////
 		{	//	移動コマンド。これはキャンバス上からのみ追加可能。
@@ -126,11 +145,27 @@ class ManualActionDialog extends UndoableDialog
 					{ lbl="$T.movetype_linear", val="linear", }
 					{ lbl="$T.movetype_warp", val="warp", }
 				], }	//	walk, dash, jump, warp
-				{ pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,7), ui="bar", },
+				{ pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,7), q=10, ui="bar", },
 				{ pid="playani", lbl="$T.lbl_playani", type=BOOL, }
 			]
 			defval={ pos=[0,0,0], movetype="walk", movespd=4, playani=true, }
+
+			info = @( v) "%2d %2d %2d" % (v.pos[0],v.pos[1],v.pos[2]),
+			bits = 1,
 		},
+		{	//	移動物用の移動コマンド。これはキャンバス上からのみ追加可能。
+			act = "objmove", name="$T.lbl_move", icon="\ue021",
+			props = [
+				{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-128,128), q=1, }	//	posは基準位置からの相対位置。
+				{ pid="rot", lbl="$T.lbl_rotation", type=VEC3, range=(-360,360), q=1, }
+				{ pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,7), q=10, ui="bar", }
+				{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
+			]
+			defval={ pos=[0,0,0], rot=[0,0,0], movetype="objmove", movespd=4, }
+			
+			info = @( v) "%2d %2d %2d" % (v.pos[0],v.pos[1],v.pos[2]),
+			bits = 2,
+		}
 	];
 
 	//	data全体のプロパティ。イベントコマンドと移動アクションで変わる
@@ -164,7 +199,6 @@ class ManualActionDialog extends UndoableDialog
 	bw = null;				//	BlockWorld: nullの場合はマッププレビューなしでグリッド表示
 	bw3d = null;			//	SK3DBlockWorld
 	bwcol = null;			//	b3Body<BlockColiderInterface> : ブロック選択用。
-	ev3d = null;			//	RPG3DObject : who="event",evidで切り替わる。
 
 	//	pen
 	pen3d = null;			//	SK3DObject : 
@@ -179,6 +213,7 @@ class ManualActionDialog extends UndoableDialog
 
 	data = null;			//	table : この中に各キャラのアクションデータが入る
 	seltab = null;			//	"event"|"player"|evid : data[seltab]で目的のキャラのアクションデータ
+	sel3d = null;			//	RPG3DObject
 	
 	static function run( envdef, data){
 		::skstudio.freezeEditorView( true);
@@ -222,7 +257,7 @@ class ManualActionDialog extends UndoableDialog
 		local self = this, _actiondefs = actiondefs;
 		actionlist.setviewfunc = @( la, v, i){
 			local def = _actiondefs.find( @( v) v.act==i.act);
-			if( i.act=="move"){
+			if( i.act=="move" || i.act=="objmove"){
 				local idx = self.routeIndexOf( i);
 				v.setValue( "icon", [char( 0xf123+idx+1), 0xA3D900ff]);
 			}else{
@@ -249,13 +284,16 @@ class ManualActionDialog extends UndoableDialog
 		seltab = length( d["event"]["actions"]) ? "event" : length( d["player"]["actions"]) ? "player" : null;
 		if( !seltab && envdef["eventmap"]){
 			seltab = Table.findi( envdef.eventmap, @( v) length( v["actions"]));
+		}else{
+			view.findChild( "tabmenu").setVisible( false);
 		}
 		if( !seltab) seltab = "event";
 		local _seltab = seltab;
 		tabs.selectTab( @( v) v.val == _seltab );
 		//	
 		placeEvents();
-		canvas.camwork.moveFocus( getEvent3D( seltab)["pos"]);
+		sel3d = getEvent3D( seltab);
+		canvas.camwork.moveFocus( sel3d["pos"]);
 		refresh();
 		//	
 		local sndmanager = SK3DSoundManager( canvas.scn);
@@ -332,7 +370,7 @@ class ManualActionDialog extends UndoableDialog
 	//	
 	function changeTab( t){
 		tabs.selectTab( @( v) v.val==t);
-		local new3d = getEvent3D( t);
+		local new3d = sel3d = getEvent3D( t);
 		seltab = t;
 		foreach( i, v in data){
 			local ev3d = getEvent3D( i);
@@ -373,7 +411,7 @@ class ManualActionDialog extends UndoableDialog
 		//	ルート
 		local i = 0, gz0 = gz;
 		foreach( v in td.actions){
-			if( v.act == "move"){
+			if( v.act=="move" || v.act=="objmove"){
 				local mk = {
 					icon = char( 0xf123+i+1),
 					pos = [v.pos[0]+ep[0], v.pos[1]+ep[1], v.pos[2]+ep[2]],
@@ -402,7 +440,7 @@ class ManualActionDialog extends UndoableDialog
 	function routeIndexOf( act){
 		local i = 0;
 		foreach( v in data[seltab].actions){
-			if( v.act == "move"){ if( v == act) return i; ++i; }
+			if( v.act=="move" || v.act=="objmove"){ if( v == act) return i; ++i; }
 		}
 		return 0;
 	}
@@ -527,9 +565,10 @@ class ManualActionDialog extends UndoableDialog
 	function showItemContextMenu( e){
 		local hasel = length( actionlist.selects), hascur = actionlist.curidx>=0;
 		local cbdata = getClipboard( "maction");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local bits = (sel3d instanceof RPG3DMapAsset)?2:1, movpid = bits==2?"objmove":"move";
 		local menudata = [
 			{ id="edit", lbl="$T.lbl_edit", icon="\ue745", disable=!hascur },
-			{ id="add", lbl="$T.lbl_addaction", submenu = actiondefs.map( @( v) v.act=="move"?undefined : {...v, lbl=v.name, id="cmd"}), },
+			{ id="add", lbl="$T.lbl_addaction", submenu = actiondefs.map( @( v) (v.act=="move"||v.act=="objmove"||!(bits&v.bits))?undefined : {...v, lbl=v.name, id="cmd"}), },
 			"-"
 			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d", disable=!hasel },
 			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!cbdata},
@@ -740,10 +779,11 @@ class ManualActionDialog extends UndoableDialog
 
 	//	
 	function showCanvasContextMenu( e, hb){
+		local bits = (sel3d instanceof RPG3DMapAsset)?2:1, movpid = bits==2?"objmove":"move";
 		local ctxmenu = [
-			{ ...actiondefs.find( @( v) v.act=="move"), id="moveto", lbl="$T.lbl_movehere", icon="\uef3a", },
+			{ ...actiondefs.find( @( v) v.act==movpid), id="moveto", lbl="$T.lbl_movehere", icon="\uef3a", },
 			"-",
-			...actiondefs.map( @( v) v.act=="move"?undefined : {...v, lbl=v.name, id="cmd"}),
+			...actiondefs.map( @( v) (v.act=="move"||v.act=="objmove"||!(bits&v.bits))?undefined : {...v, lbl=v.name, id="cmd"}),
 			"-",
 			{ id="basepos", lbl="$T.lbl_setbasepos", icon="\ue88a", },
 		];
@@ -767,6 +807,7 @@ class ManualActionDialog extends UndoableDialog
 			if( m.id == "moveto"){
 				local ep = getBasePos( seltab);
 				v0.pos = [hb.bx-ep[0], hb.by-ep[1]+1, hb.bz-ep[2]];
+				if( v0["rot"]) v0.rot[0] = (sel3d.dir*Math.RTOD)|0;
 			}
 			local v = PropertyEditPopup.run( null, m, v0);
 			if( v){

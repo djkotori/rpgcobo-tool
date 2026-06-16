@@ -216,7 +216,8 @@
 	"movetype_jump"						: {"ja":"ジャンプ", "en":"Jump"}
 	"movetype_linear"					: {"ja":"直進", "en":"Linear"}
 	"movetype_warp"						: {"ja":"ワープ", "en":"Warp"}
-
+	"movetype_obj"						: {"ja":"オブジェクト移動", "en":"Move Object"}
+	
 	//	ブロックタイプ
 	"blk_basic"							: {"ja":"基本", "en":"Basic"}
 	"blk_nature"						: {"ja":"地形", "en":"Terrain"}
@@ -949,6 +950,7 @@
 	"lbl_restoreonend"					: {"ja":"終了時に元に戻す", "en":"Restore on Finish"}
 	"lbl_anyslot"						: {"ja":"何れかのスロット", "en":"Any slot"}
 	"lbl_waitaction"					: {"ja":"アクションを待つ", "en":"Wait for Action"}
+	"lbl_standani"						: {"ja":"静止アニメ", "en":"Standing Anime"}
 	"lbl_waitfade"						: {"ja":"フェードを待つ", "en":"Wait for Fade"}
 	"lbl_focusto"						: {"ja":"フォーカス先", "en":"Focus UI to"}
 	"lbl_reqnum"						: {"ja":"条件の数", "en":"Num of Requrements"}
@@ -967,6 +969,7 @@
 	"lbl_storeclerk"					: {"ja":"ショップ店員", "en":"Store Clerk"}
 	"lbl_hotelclerk"					: {"ja":"宿屋店員", "en":"Hotel Clerk"}
 	"lbl_doctor"						: {"ja":"医者", "en":"Doctor"}
+	"lbl_movobj"						: {"ja":"動く地形", "en":"Moving Terrain"}
 	"lbl_storeid"						: {"ja":"ストアID", "en":"Store-ID"}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////
@@ -1022,7 +1025,7 @@
 	"lbl_poke"							: {"ja":"はみ出し", "en":"Poke"}
 	"lbl_battle"						: {"ja":"バトル", "en":"Battle"}
 	"lbl_viewinfo"						: {"ja":"情報表示", "en":"Information"}
-	"lbl_mapcol"						: {"ja":"マップのコリジョン", "en":"Map Collision"}
+	"lbl_mapcol"						: {"ja":"動く地形", "en":"Moving Terrain"}
 	"lbl_updatesnd"						: {"ja":"サウンド情報の更新", "en":"Update Sound info"}
 	"lbl_sndcheck"						: {"ja":"サウンド確認", "en":"Sound Check"}
 	"dlg_sndimport"						: {"ja":"サウンドのインポート", "en":"Import Sound"}
