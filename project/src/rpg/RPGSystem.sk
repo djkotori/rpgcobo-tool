@@ -456,6 +456,23 @@ class RPGVarAccessor
 	}
 }
 
+class VarGetter
+{
+	a = null;
+
+	constructor( a_){
+		a = a_;
+	}
+
+	function _get( key){
+		foreach( t in a){
+			local v = t[key];
+			if( v != undefined) return v;
+		}
+		return undefined;
+	}
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //	データアクセス用グローバルを設定

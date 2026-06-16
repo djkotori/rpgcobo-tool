@@ -932,19 +932,30 @@ class RPGEnemy extends RPGCharaBase
 		super.setDataID( did);
 		objid = rnd.nexti();		//	ここでobjid割り振り。初期化時のいつでもいいが
 		name = data.name;
-		local bp = basescoremap = {};
-		foreach( prop in ::RPGSystem.enemyprops){
-			if( prop["proptype"] != "score") continue;	//	登録タイプがscoreのパラメータ以外は無視
-			local pid = prop.pid, val;
-			val = data[pid];
-			if( val == undefined) val = clone prop.defval;	//	配列とかも入ってくる
-			::putField( bp, pid, val);
-		}
+		updateBaseScore();
 		baseoptions = data.option.map( @( v) v?RPGOption( v):undefined);		//	ランダムあってもいいかも
 		updateScoreMap();
 		HP = scoremap.MAXHP;	//	DQみたいにランダムしてもいい
 		// MP = scoremap.MAXMP;
 		// TP = scoremap.MAXTP;
+	}
+
+	function updateBaseScore(){
+		local bp = basescoremap = {};
+		//	先にデフォルト値を入れる
+		foreach( prop in ::RPGSystem.enemyprops){
+			if( prop["proptype"] != "score") continue;	//	登録タイプがscoreのパラメータ以外は無視
+			local pid = prop.pid, val = deepclone( prop.defval);	//	配列とかも入ってくる
+			::putField( bp, pid, val);
+		}
+		//	2回目のスキャン。こっで計算式による動的パラメータに対応
+		local env = VarGetter( [this, ::rpgvar]);	//	エネミー自身のパラメータと、システム変数等を直接参照可能
+		foreach( prop in ::RPGSystem.enemyprops){
+			if( prop["proptype"] != "score") continue;	//	登録タイプがscoreのパラメータ以外は無視
+			local pid = prop.pid, val;
+			val = ::getvar( data[pid], env);
+			if( val != undefined) ::putField( bp, pid, val);
+		}
 	}
 	
 	function getBaseScoreMap(){

@@ -415,25 +415,28 @@ local findprop( props, pid){
 
 //	LV : エネミーのLVは特に使われない (スタティックプロパティ)
 //	
-enemyprops .. {
-	proptype = "static"
+local varprop( prop){
+	return { ...prop, type=VARIABLE, varbits=0, constbits=2|8 };
+}
+
+enemyprops .. varprop( {
+	proptype = "score"
 	pid = "LV"
 	lbl = "$T.LV"
 	type = SCALAR
 	range = (1,999)
 	defval = 1
-};
+});
 
 //	プレイヤーの戦闘系のプロパティをエネミーにも追加
-enemyprops .. { ...findprop( playerprops, "MAXHP"), range=(1,999999), };
-// enemyprops .. { ...findprop( playerprops, "MAXHP"), range=(1,999999), type=VARIABLE, varbits=0, constbits=2|8 },	//	VARIABLEにできる！
+enemyprops .. { ...varprop( findprop( playerprops, "MAXHP")), range=(1,999999), };
 
 // enemyprops .. findprop( playerprops, "MAXMP");	//	MP,TPはエネミーにはいらない
-enemyprops .. findprop( playerprops, "PATK");
-enemyprops .. findprop( playerprops, "PDEF");
-enemyprops .. findprop( playerprops, "MATK");
-enemyprops .. findprop( playerprops, "MDEF");
-enemyprops .. findprop( playerprops, "AGI");
+enemyprops .. varprop( findprop( playerprops, "PATK"));
+enemyprops .. varprop( findprop( playerprops, "PDEF"));
+enemyprops .. varprop( findprop( playerprops, "MATK"));
+enemyprops .. varprop( findprop( playerprops, "MDEF"));
+enemyprops .. varprop( findprop( playerprops, "AGI"));
 enemyprops .. findprop( playerprops, "EDR");
 enemyprops .. findprop( playerprops, "CDR");
 enemyprops .. findprop( playerprops, "PHIT");
