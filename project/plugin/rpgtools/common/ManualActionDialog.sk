@@ -71,8 +71,8 @@ class ManualActionDialog extends UndoableDialog
 				{ pid="dir", lbl="$T.lbl_direction", type=SCALAR, range=(-360,360), ui="bar", }
 				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
 			]
-			defval={ dir=4, time=0 }
-			info = @( v) dirlbls[v.dir],
+			defval={ dir=180, time=0 }
+			info = @( v) "%d" % v.dir,
 			bits = 1,
 		}
 		{	//	向く(オブジェクト)
