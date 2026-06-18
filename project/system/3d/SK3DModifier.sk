@@ -556,8 +556,9 @@ class OpacityFadeModifier extends SK3DModifier
 	}
 
 	function modify( o, dt){
-		local o = 1.0, ret = true;
-		if( !loop && (time+=dt) >= totaltime){
+		local o = 1.0, ret = true; 
+		time += dt;
+		if( !loop && time >= totaltime){
 			o = opacs.last();
 			ret = false;
 		}else{
