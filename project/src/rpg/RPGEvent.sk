@@ -833,9 +833,26 @@ class RPGEventRunner
 		case 2: p = this["rp3d"]; break;
 		default: p = cmd.who["rp3d"]; break;
 		}
+		if( !p) return;
 		local e = p.effect( { id=cmd.efxid, });
 		if( cmd["wait"] && e["efx"]["waittime"]){
 			sleep( e.efx.waittime);
+		}
+	}
+
+	function fadeOpacity( cmd){
+		local p = null;
+		switch( cmd["who"]){
+		case 0: break;
+		case 1: p = rpgstage.player3d; break;
+		case 2: p = this["rp3d"]; break;
+		default: p = cmd.who["rp3d"]; break;
+		}
+		if( !p) return;
+		local mod = OpacityFadeModifier( p, cmd);
+		p.addModifier( mod);
+		if( cmd["wait"] && cmd["fade"]){
+			sleep( cmd.fade);
 		}
 	}
 	

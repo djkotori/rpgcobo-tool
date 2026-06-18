@@ -847,3 +847,46 @@ class PropertyBehaviors.EfxOffset extends PropertyBehavior
 		postActionEvent( true);
 	}
 }
+
+
+class PropertyBehaviors.EfxModScalar extends PropertyBehavior
+{
+	static proptype = 3321;
+	static cntui = "cnt2.ui";
+	static uipath = "/skstudio/ui/efxeditor/mod_scalar.ui"
+	
+	curv = null;		//	EfxCurveEditView
+	xchk = null;
+	ychk = null;
+	zchk = null;
+
+	function init(){
+		curv = EfxCurveEditView();
+		local curvp = view.findChild( "curvp");
+		curv = EfxCurveEditView();
+		curv.stretchalign = 15;
+		curv.setRect( 0, 0, curvp.bnd.w, curvp.bnd.h);
+		(curv.viewdata = ::SKViewEntityData()).staticparams = [( SKViewPropertyID.SIZE_STATIC, (curv.bnd.w,curv.bnd.h))];	//	todo: この手順を無くさんとなー
+		curvp.addChild( curv);
+	}
+	
+	function getParam(){
+		return curv.getCurves( 0.0, 1.0);
+	}
+	
+	function setParam( v){
+		curv.setCurves( v, 0.0, 1.0);
+	}
+
+	function paramevent( e){
+		switch( e.src["name"]){
+		case "addbtn": 
+			if( adddiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			break;
+		case "delbtn": 
+			if( remdiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			break;
+		}
+		postActionEvent( true);
+	}
+}

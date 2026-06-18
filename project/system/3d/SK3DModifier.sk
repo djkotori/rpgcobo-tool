@@ -521,3 +521,53 @@ class UVScrollModifier extends SK3DModifier
 		}
 	}
 }
+
+//	RPG-Cobo
+class OpacityFadeModifier extends SK3DModifier
+{
+	order = 12;
+
+	mate = null;			//	target materials
+	opacs = null;			//	opacity[]
+	time = 0.0;
+	totaltime = 100.0;
+	loop = false;
+	
+	constructor( o, t){
+		opacs = t.opacity;
+		totaltime = t["fade"]+0.0;
+		mate = o.getMaterials();
+		loop = t["loop"] && totaltime>1.0;
+	}
+
+	function start( o, old=null){
+		if( old){	//	fader
+			opacs = [mate[0].alpharef, ...opacs];
+		}else{
+			o = opacs[0];
+			foreach( m in mate){
+				m.alpharef = o;
+				m.alphatest = (o<=0.999);
+			}
+		}
+	}
+	
+	function interrupt( o){
+	}
+
+	function modify( o, dt){
+		local o = 1.0, ret = true;
+		if( !loop && (time+=dt) >= totaltime){
+			o = opacs.last();
+			ret = false;
+		}else{
+			local w = (time / totaltime)%1.0, i = w * (length( opacs)-1);
+			o = Math.lerp( opacs[i|0], opacs[(i|0)+1], i%1.0);
+		}
+		foreach( m in mate){
+			m.alpharef = o;
+			m.alphatest = (o<=0.999);
+		}
+		return ret;
+	}
+}

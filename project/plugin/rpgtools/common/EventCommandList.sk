@@ -523,7 +523,7 @@ class EventCommandSelectPopup extends Popup
 	constructor( v){
 		super( v);
 		listview = v.findChild( "cmdlist");
-		for( local l = 0; l < 7;l ++){	//	カテゴリ7個
+		for( local l = 0; l < 8;l ++){	//	カテゴリ7個
 			local h = ::loadSKView( HEADUIPATH);
 			h.setValue( "lbl", "$T.cmd_category"..l);	//	namae
 			listview.addRow( h);

@@ -375,7 +375,8 @@
 	"cmd_category3"						: {"ja":"画面表示・入力処理", "en":"Screen Display / Input commands"}
 	"cmd_category4"						: {"ja":"シーンの制御", "en":"Scene Control commands"}
 	"cmd_category5"						: {"ja":"操作・演出処理", "en":"Operation / Acting commands"}
-	"cmd_category6"						: {"ja":"バトル用処理", "en":"Battle commands"}
+	"cmd_category6"						: {"ja":"サウンド処理", "en":"Sound commands"}
+	"cmd_category7"						: {"ja":"バトル用処理", "en":"Battle commands"}
 	
 	"cmd_wait"							: {"ja":"ウェイト", "en":"Wait"}
 	"cmd_ret"							: {"ja":"処理を終了", "en":"Return"}
@@ -438,6 +439,7 @@
 	
 	"cmd_anime"							: {"ja":"アニメーション", "en":"Animation"}
 	"cmd_efx"							: {"ja":"エフェクトの発生", "en":"Emit Effect"}
+	"cmd_opacity"						: {"ja":"透明度を変化", "en":"Fade Opacity"}
 	"cmd_facetoface"					: {"ja":"向き合う", "en":"Face to Face"}
 	"cmd_camwork"						: {"ja":"カメラワーク", "en":"Camerawork"}
 	"cmd_cammot"						: {"ja":"カメラモーション", "en":"Camera Motion"}

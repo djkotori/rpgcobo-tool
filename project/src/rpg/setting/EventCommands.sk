@@ -18,7 +18,8 @@ local color2 = (0x00D9D9ff, 0x99FFFFff)
 local color3 = (0xCCA4FFff, 0xDFBFFFff)
 local color4 = (0xD9D900ff, 0xFFFF99ff)
 local color5 = (0x00B285ff, 0x99FFE5ff)
-local color6 = (0xFF6D6Dff, 0xFFBFBFff)
+local color6 = (0x7dc14dff, 0x92e05aff)
+local color7 = (0xFF6D6Dff, 0xFFBFBFff)
 
 //	計算操作
 local compoplist = [
@@ -1914,6 +1915,41 @@ eventcmd .. {
 	}
 }
 
+//	cmd_opacity : 透明度を変化
+//	プレイヤー、イベント
+eventcmd .. {
+	category = 5
+	key = "cmd_opacity"
+	name = "$T.cmd_opacity"
+	icon = "\ue3a3"
+	color = color5
+	
+	props = [
+		{ pid="who", lbl="$T.lbl_who", type=LIST, list=who2list, refresh=true, variable=1 }
+		{ pid="opacity", lbl="$T.lbl_opacity", type=3321, variable=1 }	//	EfxModScalar
+		{ pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), ui="bar", barrange=(0,3000,100), variable=1 }
+		{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 }
+		{ pid="loop", lbl="$T.lbl_loop", type=BOOL, variable=1 }
+	]
+
+	cmdinfo = @( cmd){
+		local cmddef = RPGSystem.eventcmd[cmd.cmd];
+		local o0 = cmd.opacity[0], o1 = cmd.opacity.last();
+		local w = cmd["wait"] ? "⌛" : "";
+		local l = cmd["loop"] ? "\uf81d" : "";
+		local info = sprintf( "%.1f～%.1f  %S%S", o0, o1, w, l);
+		return {
+			info = info,
+		}
+	}
+	
+	defval = { who=1, opacity=[1.0,0.5,0.0], fade=1000, wait=true, loop=false }
+
+	exec = @( runner, cmd){
+		runner.fadeOpacity( cmd);
+	}
+}
+
 //	cmd_facetoface : 向き合う。簡易演出。
 //	
 eventcmd .. {
@@ -2115,110 +2151,6 @@ eventcmd .. {
 	}
 }
 
-//	cmd_snd : 効果音
-//	
-eventcmd .. {
-	category = 5
-	key = "cmd_snd"
-	name = "$T.cmd_snd"
-	icon = "\ue7f4"
-	color = color5
-	
-	props = [
-		{ pid="who", lbl="$T.lbl_who", type=LIST, list=[
-			{ lbl="$T.who_ui", val=0 }
-			{ lbl="$T.who_player", val=1 }
-			{ lbl="$T.who_event", val=2 }
-		], variable=true, varbits=1|2|4|8 },
-		{ pid="sndid", lbl="$T.lbl_sound", type=RESID, restype = ["snd"], variable=true },
-		{ pid="vol", lbl="$T.lbl_gain", type=SCALAR, range=(0,200), ui="bar", variable=true }
-		{ pid="ch", lbl="$T.lbl_channel", type=SCALAR, range=(0,15), ui="bar", variable=true }
-	]
-	
-	cmdinfo = @( cmd){
-		local cmddef = RPGSystem.eventcmd[cmd.cmd];
-		local info = propstr( cmddef.props, cmd, "sndid");
-		return {
-			info = info,
-		}
-	}
-	
-	defval = { sndid="SE000", vol=100, who=0, ch=0 }
-	
-	exec = @( runner, cmd){
-		runner.playSound( cmd);
-	}
-}
-
-//	cmd_voice : ボイス
-//	
-eventcmd .. {
-	category = 5
-	key = "cmd_voice"
-	name = "$T.cmd_voice"
-	icon = "\ue029"
-	color = color5
-	
-	props = @(){
-		local a = [];
-		a .. { pid="ch", lbl="$T.lbl_channel", type=SCALAR, range=(0,15), ui="bar", variable=1 }
-		a .. { pid="voiceid", lbl="$T.lbl_voiceactor", type=RESID, restype="voice", variable=1, refresh=1 },
-		a .. { pid="voicekey", lbl="$T.lbl_voicekey", type=LIST, variable=1,
-			list = @( pl){
-				local vaid = pl.getParam( "voiceid");
-				local va = ::conf._resource.voice[vaid];
-				if( !va){
-					return [{ lbl="$T.lbl_none", val=0, }];
-				}else{
-					local tb = {};
-					foreach( lang in ::sakana.languagelist){
-						foreach( v in va[lang.code]["list"]){
-							local k = v.key;
-							if( tb[k]) tb[k].lbl = tb[k].lbl..(lang.icon);
-							else tb[k] <- { lbl=k.." "..lang.icon, val=k, }
-						}
-					}
-					local a = Table.map( tb, @( v, i) v).sort( @( v) v.val);
-					return a;
-				}
-			},
-			set = @( prop, data, val){
-				::soundmanager.checkctx();
-				data[prop.pid] = val;
-				local sp = ::getVoicePlayable( data["voiceid"], val);
-				if( sp) sp.play();
-			}
-		};
-		a .. { pid="vol", lbl="$T.lbl_gain", type=SCALAR, range=(0,200), ui="bar", variable=true }
-		a .. { pid="play", lbl="", type=CUSTOMBUTTON, cnt="cnt5.ui", tostring="PLAY", icon="\ue745", ui="1", 
-			edit=@( pl){
-				::soundmanager.checkctx();
-				local vaid = proplist.getParam( "voiceid"), vkey = proplist.getParam( "voicekey");
-				local sp = ::getVoicePlayable( vaid, vkey);
-				if( sp) sp.play();
-			}
-		};
-		return a;
-	}
-	
-	cmdinfo = @( cmd){
-		local cmddef = RPGSystem.eventcmd[cmd.cmd];	//	this jan
-		local props = fget( this, "props", this, cmd);
-		local ai = propstr( props, cmd, "voiceid");
-		local ki = propstr( props, cmd, "voicekey");
-		local info = `$ai - $ki`;
-		return {
-			info = info,
-		}
-	}
-	
-	defval = { voiceid="VA000", voicekey="BTL_BEGIN1", vol=100, pan=0, ch=0 }
-	
-	exec = @( runner, cmd){
-		runner.playVoice( cmd);
-	}
-}
-
 //	cmd_light : ライト点灯
 //	
 eventcmd .. {
@@ -2266,36 +2198,6 @@ eventcmd .. {
 	
 	exec = @( runner, cmd){
 		runner.setLight( cmd);
-	}
-}
-
-//	cmd_bgm : BGMの再生
-//	
-eventcmd .. {
-	category = 5
-	key = "cmd_bgm"
-	name = "$T.cmd_bgm"
-	icon = "\ue521"
-	color = color5
-	
-	props = [
-		{ pid="bgmid", lbl="BGM", type=RESID, restype = ["bgm"], variable=1 },
-		{ pid="fadetime", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), q=1, ui="bar", barrange=(0,3000,100), variable=1 }
-		{ pid="restore", lbl="$T.lbl_restoreonend", type=BOOL, variable=1 }
-	]
-	
-	cmdinfo = @( cmd){
-		local cmddef = RPGSystem.eventcmd[cmd.cmd];
-		local info = propstr( cmddef.props, cmd, "bgmid");
-		return {
-			info = info,
-		}
-	}
-	
-	defval = { bgmid="MU000", fadetime=0, restore=false }
-	
-	exec = @( runner, cmd){
-		runner.playBGM( cmd);
 	}
 }
 
@@ -2466,6 +2368,143 @@ eventcmd .. {
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////
+//	サウンド処理
+
+//	cmd_bgm : BGMの再生
+//	
+eventcmd .. {
+	category = 6
+	key = "cmd_bgm"
+	name = "$T.cmd_bgm"
+	icon = "\ue521"
+	color = color6
+	
+	props = [
+		{ pid="bgmid", lbl="BGM", type=RESID, restype = ["bgm"], variable=1 },
+		{ pid="fadetime", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), q=1, ui="bar", barrange=(0,3000,100), variable=1 }
+		{ pid="restore", lbl="$T.lbl_restoreonend", type=BOOL, variable=1 }
+	]
+	
+	cmdinfo = @( cmd){
+		local cmddef = RPGSystem.eventcmd[cmd.cmd];
+		local info = propstr( cmddef.props, cmd, "bgmid");
+		return {
+			info = info,
+		}
+	}
+	
+	defval = { bgmid="MU000", fadetime=0, restore=false }
+	
+	exec = @( runner, cmd){
+		runner.playBGM( cmd);
+	}
+}
+
+
+//	cmd_snd : 効果音
+//	
+eventcmd .. {
+	category = 6
+	key = "cmd_snd"
+	name = "$T.cmd_snd"
+	icon = "\ue7f4"
+	color = color6
+	
+	props = [
+		{ pid="who", lbl="$T.lbl_who", type=LIST, list=[
+			{ lbl="$T.who_ui", val=0 }
+			{ lbl="$T.who_player", val=1 }
+			{ lbl="$T.who_event", val=2 }
+		], variable=true, varbits=1|2|4|8 },
+		{ pid="sndid", lbl="$T.lbl_sound", type=RESID, restype = ["snd"], variable=true },
+		{ pid="vol", lbl="$T.lbl_gain", type=SCALAR, range=(0,200), ui="bar", variable=true }
+		{ pid="ch", lbl="$T.lbl_channel", type=SCALAR, range=(0,15), ui="bar", variable=true }
+	]
+	
+	cmdinfo = @( cmd){
+		local cmddef = RPGSystem.eventcmd[cmd.cmd];
+		local info = propstr( cmddef.props, cmd, "sndid");
+		return {
+			info = info,
+		}
+	}
+	
+	defval = { sndid="SE000", vol=100, who=0, ch=0 }
+	
+	exec = @( runner, cmd){
+		runner.playSound( cmd);
+	}
+}
+
+//	cmd_voice : ボイス
+//	
+eventcmd .. {
+	category = 6
+	key = "cmd_voice"
+	name = "$T.cmd_voice"
+	icon = "\ue029"
+	color = color6
+	
+	props = @(){
+		local a = [];
+		a .. { pid="ch", lbl="$T.lbl_channel", type=SCALAR, range=(0,15), ui="bar", variable=1 }
+		a .. { pid="voiceid", lbl="$T.lbl_voiceactor", type=RESID, restype="voice", variable=1, refresh=1 },
+		a .. { pid="voicekey", lbl="$T.lbl_voicekey", type=LIST, variable=1,
+			list = @( pl){
+				local vaid = pl.getParam( "voiceid");
+				local va = ::conf._resource.voice[vaid];
+				if( !va){
+					return [{ lbl="$T.lbl_none", val=0, }];
+				}else{
+					local tb = {};
+					foreach( lang in ::sakana.languagelist){
+						foreach( v in va[lang.code]["list"]){
+							local k = v.key;
+							if( tb[k]) tb[k].lbl = tb[k].lbl..(lang.icon);
+							else tb[k] <- { lbl=k.." "..lang.icon, val=k, }
+						}
+					}
+					local a = Table.map( tb, @( v, i) v).sort( @( v) v.val);
+					return a;
+				}
+			},
+			set = @( prop, data, val){
+				::soundmanager.checkctx();
+				data[prop.pid] = val;
+				local sp = ::getVoicePlayable( data["voiceid"], val);
+				if( sp) sp.play();
+			}
+		};
+		a .. { pid="vol", lbl="$T.lbl_gain", type=SCALAR, range=(0,200), ui="bar", variable=true }
+		a .. { pid="play", lbl="", type=CUSTOMBUTTON, cnt="cnt5.ui", tostring="PLAY", icon="\ue745", ui="1", 
+			edit=@( pl){
+				::soundmanager.checkctx();
+				local vaid = proplist.getParam( "voiceid"), vkey = proplist.getParam( "voicekey");
+				local sp = ::getVoicePlayable( vaid, vkey);
+				if( sp) sp.play();
+			}
+		};
+		return a;
+	}
+	
+	cmdinfo = @( cmd){
+		local cmddef = RPGSystem.eventcmd[cmd.cmd];	//	this jan
+		local props = fget( this, "props", this, cmd);
+		local ai = propstr( props, cmd, "voiceid");
+		local ki = propstr( props, cmd, "voicekey");
+		local info = `$ai - $ki`;
+		return {
+			info = info,
+		}
+	}
+	
+	defval = { voiceid="VA000", voicekey="BTL_BEGIN1", vol=100, pan=0, ch=0 }
+	
+	exec = @( runner, cmd){
+		runner.playVoice( cmd);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 //	バトル処理
@@ -2473,11 +2512,11 @@ eventcmd .. {
 //	cmd_battleend : バトルを終了
 //	
 eventcmd .. {
-	category = 6
+	category = 7
 	key = "cmd_battleend"
 	name = "$T.cmd_battleend"
 	icon = "\uf06e"
-	color = color6
+	color = color7
 	
 	props = [
 		{ pid="result", lbl="$T.lbl_result", type=LIST, list=[
@@ -2506,11 +2545,11 @@ eventcmd .. {
 //	誰が、誰に、何のコマンドを使うか。dataidでアイテムかスキル選ばせた方が良いかも。
 //	
 eventcmd .. {
-	category = 6
+	category = 7
 	key = "cmd_battlecmd"
 	name = "$T.cmd_battlecmd"
 	icon = "\ueae9"
-	color = color6
+	color = color7
 	
 	props = [
 		{ pid="who", lbl="$T.lbl_who", type=STRING, variable=2 }

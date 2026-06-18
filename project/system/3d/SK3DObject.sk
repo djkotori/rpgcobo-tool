@@ -854,7 +854,7 @@ class SK3DObject extends SK3DRenderNode
 						//	置き換え
 						v.interrupt( this);
 						modifiers[i] = m;
-						m.start( this);
+						m.start( this, v);
 						return;
 					}else
 					if( o > v.order){
