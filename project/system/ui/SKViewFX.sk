@@ -65,7 +65,7 @@ import SKViewFXPropertyID;
 ::SKFP .. { pid=POWER,			lbl="$T.lbl_power",			type=SCALAR, range=(0.0,1.0), q=100, anime=2, ui="bar"};
 ::SKFP .. { pid=BLURSIZE,		lbl="$T.lbl_blur$T.lbl_size",		type=SCALAR, range=(0,64), q=100, anime=2};
 ::SKFP .. { pid=CLIPBORDER,		lbl="$T.lbl_textclip",		type=BOOL,	};
-::SKFP .. { pid=BLURDIR	,		lbl="$T.lbl_blur$T.lbl_direction",		type=SCALAR, range=(0,360), q=1, anime=2};
+::SKFP .. { pid=BLURDIR	,		lbl="$T.lbl_blur$T.lbl_direction",		type=ROT_HEAD, range=(-360,360), q=1, anime=2};
 ::SKFP .. { pid=CENTERUV,		lbl="$T.lbl_center UV",		type=VEC2,	range=(0,1), q=100, anime=2};
 ::SKFP .. { pid=UVOFFSET,		lbl="UV $T.lbl_offset",		type=VEC2,	range=(-2,2), q=100, anime=2};
 ::SKFP .. { pid=MASKIMAGE,		lbl="$T.lbl_masktex",		type=PATH};

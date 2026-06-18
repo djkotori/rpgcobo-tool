@@ -1980,6 +1980,142 @@ class PropertyBehaviors.Camera extends PropertyBehavior
 	}
 }
 
+class PropertyBehaviors.RotHead extends PropertyBehaviors.Scalar
+{
+	static proptype = ROT_HEAD;
+	static uipath = "rot_head.ui"
+
+	static function getUIPath(){
+		return "rot_head.ui";
+	}
+
+	rot0 = null;
+	
+	function init(){
+		super.init();
+		rot0 = RotateCircle( view.findChild( "rot0"));
+	}
+	
+	function setParam( v){
+		super.setParam( v);
+		rot0.setRotation( val0.getValue());
+	}
+	
+	function paramevent( e){
+		if( e.id==trgid && e.src==val0.view){
+			postActionEvent( true);	//	同じidに対する操作は常にまとめる？
+			rot0.setRotation( val0.getValue());
+		}
+		if( e.src["name"] == "rot0"){
+			val0.setValue( e.actioncmd);
+			if( e.id==trgid){
+				postActionEvent( true);
+			}
+		}
+	}
+}
+
+class PropertyBehaviors.RotHead.RotateCircle
+{
+	view = null;
+	vec = null;
+	mousepress = false;
+	mousein = false;
+	val = 0;
+	offs = 0;
+	scale = 1;
+	range = (-180,180);
+
+	constructor( v, o=0){
+		view = v;
+		offs = o;
+		vec = v.findChild( "vec");
+		v.addEventListener( MOUSE_EVENT, mouseevent);
+	}
+
+	function setRotation( r){
+		vec.rot.z = (r * scale+offs)*Math.DTOR;
+		vec.matdirty = true;
+		vec.repaint();
+		val = r;
+	}
+	
+	function mouseevent( e){
+		switch( e.id){
+		case MOUSE_ENTERED:
+			mousein = true;
+			view.anime( 1);
+			break;
+		case MOUSE_EXITED:
+			mousein = false;
+			if( !mousepress) view.anime( 0);
+			break;
+		case MOUSE_PRESSED:
+		case MOUSE_DRAGGED:
+			mousepress = true;
+			e.computeLocal( view.getInvMatrix());
+			local v = Math.clamp( Math.iround( Math.atan2( e.lx+view.bnd.x, -scale*(e.ly+view.bnd.y))*Math.RTOD / 5.0) * 5 - offs, range[0], range[1]);
+			setRotation( v);
+			view.postIDEvent( VALUE_CHANGED, v);
+			break;
+		case MOUSE_RELEASED:
+			view.postIDEvent( ACTION_PERFORMED, val);
+		case MOUSE_CANCELLED:
+			mousepress = false;
+			if( !mousein) view.anime( 0);
+			break;
+		}
+	}
+}
+
+class PropertyBehaviors.RotHPB extends PropertyBehaviors.Vec3
+{
+	static proptype = ROT_HPB;
+	static uipath = "rot_hpb.ui"
+
+	static function getUIPath(){
+		return "rot_hpb.ui";
+	}
+
+	rot0 = null;
+	rot1 = null;
+	rot2 = null;
+	
+	function init(){
+		super.init();
+		rot0 = PropertyBehaviors.RotHead.RotateCircle( view.findChild( "rot0"));
+		rot1 = PropertyBehaviors.RotHead.RotateCircle( view.findChild( "rot1"), 90);
+		rot1.range = #(-90,90);
+		rot1.scale = -1;
+		rot2 = PropertyBehaviors.RotHead.RotateCircle( view.findChild( "rot2"));
+	}
+	
+	function setParam( v){
+		super.setParam( v);
+		rot0.setRotation( vals[0].getValue());
+		rot1.setRotation( vals[1].getValue());
+		rot2.setRotation( vals[2].getValue());
+	}
+	
+	function paramevent( e){
+		if( e.id==trgid && e.src["name"]?.startsWith( "val")){
+			postActionEvent( true);	//	同じidに対する操作は常にまとめる？
+			rot0.setRotation( vals[0].getValue());
+			rot1.setRotation( vals[1].getValue());
+			rot2.setRotation( vals[2].getValue());
+		}
+		if( e.src["name"]?.startsWith( "rot")){
+			vals[0].setValue( rot0.val);
+			vals[1].setValue( rot1.val);
+			vals[2].setValue( rot2.val);
+			if( e.id==trgid){
+				postActionEvent( true);
+			}
+		}
+	}
+}
+
+
 ::proptextfuncmap <- {
 	[LIST] = @( prop, data){
 		local val = data[prop.pid];

@@ -59,7 +59,7 @@ class ManualActionDialog extends UndoableDialog
 		{	//	条件を待つコマンド
 			act = "waitreq", name="$T.lbl_waitreqs", icon="\ue620", 
 			props = [
-				{ pid="reqs", lbl="$T.lbl_reqs", type=REQUIREMENTS, cnt="cnt6.ui", varbits=15 }
+				{ pid="reqs", lbl="$T.lbl_reqs", type=REQUIREMENTS, cnt="cnt6v.ui", varbits=15 }
 				{ pid="stand", lbl="$T.lbl_standani", type=BOOL }
 			]
 			defval={ reqs=null, stand=true }
@@ -68,7 +68,7 @@ class ManualActionDialog extends UndoableDialog
 		{	//	向く(キャラ)
 			act = "turn", name="$T.lbl_turn", icon="\ue577", 
 			props = [
-				{ pid="dir", lbl="$T.lbl_direction", type=SCALAR, range=(-360,360), ui="bar", }
+				{ pid="dir", lbl="$T.lbl_direction", type=ROT_HEAD, range=(-360,360), }
 				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
 			]
 			defval={ dir=180, time=0 }
@@ -78,7 +78,7 @@ class ManualActionDialog extends UndoableDialog
 		{	//	向く(オブジェクト)
 			act = "objturn", name="$T.lbl_rotation", icon="\ue577", 
 			props = [
-				{ pid="rot", lbl="$T.lbl_rotation", type=VEC3, range=(-360,360), ui="bar", }
+				{ pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6v.ui" }
 				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
 				{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
 			]
@@ -89,7 +89,7 @@ class ManualActionDialog extends UndoableDialog
 		{	//	アニメコマンド
 			act = "ani", name="$T.lbl_anime", icon="\ueae9", 
 			props = [
-				{ pid="ani", lbl="$T.lbl_anime", type=ANIME_INLINE, cnt="cnt6.ui", 
+				{ pid="ani", lbl="$T.lbl_anime", type=ANIME_INLINE, cnt="cnt6v.ui", 
 					mdlid = @( pl){
 						local dlg = pl.ref, who = dlg.data["who"];
 						if( who == "player"){
@@ -109,7 +109,7 @@ class ManualActionDialog extends UndoableDialog
 			act = "efx", name="$T.lbl_effect", icon="\uef55", 
 			props = [
 				{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-1000,1000), q=100, }
-				{ pid="id", lbl="$T.lbl_effect", type=RESID_PREVIEW, restype="efx", cnt="cnt6.ui" }
+				{ pid="id", lbl="$T.lbl_effect", type=RESID_PREVIEW, restype="efx", cnt="cnt6v.ui" }
 				{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL }
 			]
 			defval={ pos=[0,0,0], id="FX000", wait=true, }
@@ -157,7 +157,7 @@ class ManualActionDialog extends UndoableDialog
 			act = "objmove", name="$T.lbl_move", icon="\ue021",
 			props = [
 				{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-128,128), q=1, }	//	posは基準位置からの相対位置。
-				{ pid="rot", lbl="$T.lbl_rotation", type=VEC3, range=(-360,360), q=1, }
+				{ pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6v.ui", }
 				{ pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,7), q=10, ui="bar", }
 				{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
 			]
@@ -409,18 +409,19 @@ class ManualActionDialog extends UndoableDialog
 		canvas.scn.addObject( gz);
 		gzlist .. gz;
 		//	ルート
-		local i = 0, gz0 = gz;
-		foreach( v in td.actions){
+		local ri = 0, gz0 = gz;
+		foreach( i, v in td.actions){
 			if( v.act=="move" || v.act=="objmove"){
 				local mk = {
 					icon = char( 0xf123+i+1),
 					pos = [v.pos[0]+ep[0], v.pos[1]+ep[1], v.pos[2]+ep[2]],
-					idx = i,
+					idx = ri,
+					aidx = i,
 				};
 				local gz = SK3DRouteGizmo( mk);
 				canvas.scn.addObject( gz);
 				gz.setLine( gz0.data.pos);
-				++i;
+				++ri;
 				gzlist .. gz;
 				gz0 = gz;
 			}
@@ -762,10 +763,10 @@ class ManualActionDialog extends UndoableDialog
 				break;
 			case MOUSE_RELEASED:
 				if( gzpos <> gz.data.pos){
-					local td = self.data[self.seltab], i = gz.data.idx;
+					local td = self.data[self.seltab], i = gz.data.aidx;
 					local p0 = td.actions[i].pos, p1 = [p0[0]+gzpos[0]-gz.data.pos[0], p0[1]+gzpos[1]-gz.data.pos[1], p0[2]+gzpos[2]-gz.data.pos[2]];
-					local redo = [@(){ td.actions[i].pos = p1; }];
-					local undo = [@(){ td.actions[i].pos = p0; }];
+					local redo = [@(){ td.actions[i].pos = p1; self.actionlist.refreshItems(); }];
+					local undo = [@(){ td.actions[i].pos = p0; self.actionlist.refreshItems(); }];
 					self.submitOp( redo, undo, null);
 				}
 			case MOUSE_CANCELLED:

@@ -1563,7 +1563,7 @@ class RPG3DEffect extends RPG3DObject
 		local colsize = efx["colsize"]||#(0.38,0.45,0.38);
 		local shp = createShape( efx["colshp"]||SK_SHAPE_CAPSULE, colsize);
 		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
-		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);		//	G_STAGEとしかコリジョンは当たらない
+		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE|G_OBJECT);		//	キャラとはコリジョンは当たらない
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
 	}
@@ -1608,7 +1608,7 @@ class RPG3DMapAsset extends RPG3DObject
 		bci.setFlagMask( BLK_SOLID|BLK_BARRIOR|BLK_SOLIDFB);
 		local shp = b3Shape.createCustomConcave( bci);
 		local offsmat = Matrix.fromTranslate( piv.x, piv.y, piv.z);
-		b3body = b3Body( 0.0, shp, mat, G_STAGE|G_EVENT, G_CHARA);		//	G_CHARAとしかコリジョンは当たらない。ConcaveなのでconvexSweepTest不可
+		b3body = b3Body( 0.0, shp, mat, G_OBJECT|G_EVENT, G_CHARA);		//	G_CHARAとしかコリジョンは当たらない。ConcaveなのでconvexSweepTest不可
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
 		mountable = true;

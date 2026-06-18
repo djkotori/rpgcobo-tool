@@ -50,7 +50,7 @@ local dofrangeprop = { pid="dofrange", lbl="$T.lbl_dofrange",	type=SCALAR, range
 local dofblurprop = { pid="dofblur", lbl="$T.lbl_dofblur",	type=SCALAR, range=(0.0,10.0), q=100 };
 local dofzprop = { pid="dofz", lbl="$T.lbl_dofz",	type=SCALAR, range=(0.0,100.0), q=10 };
 
-local gitypeprop = { pid="gitype", lbl="GIタイプ",	type=LIST, list=["SSAO","SSGI"], };
+local gitypeprop = { pid="gitype", lbl="GI $T.lbl_type",	type=LIST, list=["SSAO","SSGI"], };
 local gipowprop = { pid="gipow", lbl="$T.lbl_gipow",	type=SCALAR, range=(0.0,8.0), q=100, hide=@( pl) pl.getParam( "gitype")!=1 };
 local aopowprop = { pid="aopow", lbl="$T.lbl_aopow",	type=SCALAR, range=(0.0,8.0), q=100 };
 local aoradiusprop = { pid="aoradius", lbl="$T.lbl_aoradius",	type=SCALAR, range=(0.1,9.0), q=10 };

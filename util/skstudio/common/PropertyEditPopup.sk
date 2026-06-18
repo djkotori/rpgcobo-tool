@@ -34,7 +34,7 @@ class PropertyEditPopup extends Popup
 		op = OperationStack();
 		propdef = p;
 		data = deepclone( d);
-		proplist = PropertyListBehavior( view.findChild( "proplist"), null, "cntv.ui");
+		proplist = PropertyListBehavior( view.findChild( "proplist"), null, p["cnt"]||"cntv.ui");
 		proplist.listview.addEventListener( ACTION_EVENT, propevent);
 		proplist.listview.addEventListener( ITEM_EVENT, listevent);
 		proplist.ref = ref;

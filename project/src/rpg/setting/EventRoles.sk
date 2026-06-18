@@ -114,10 +114,9 @@ local collectionFilterBox( p){
 local dirprop = {
 	pid = "dir"
 	lbl = "$T.lbl_direction"
-	type = SCALAR
+	type = ROT_HEAD
 	range = (-180,180)
 	defval = 0
-	ui = "bar"
 }
 
 local wipeprop = {

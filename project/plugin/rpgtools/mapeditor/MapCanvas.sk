@@ -908,10 +908,10 @@ class SK3DMarkerGizmo extends SK3DObject
 		local pm = RPGToolMesh.createIconMesh( icon, 0xffffffff, 0.5, "mkicon.ui", true);
 		setPolygonMesh( pm);
 		pos( mk.pos).scale( 0.5).add( 0, 0.0625, 0);
-		if( mk["dir"]){
+		if( "dir" in mk){
 			rot << Quaternion.fromHPB( mk.dir*Math.DTOR, 0, 0);
 		}else
-		if( mk["hpb"]){
+		if( "hpb" in mk){
 			rot << Quaternion.fromHPB( mk.hpb[0]*Math.DTOR, 0, 0);
 		}else{
 			rot << Quaternion.fromHPB( mk.pos[3]*Math.PI*0.5, 0, 0);

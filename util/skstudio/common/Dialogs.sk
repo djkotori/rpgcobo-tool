@@ -272,7 +272,7 @@ class Popups
 		root.addChild( poptf);
 		local oldcurs = ::gpui.gpuitarget;
 		local oldfocus = ::rootview.focusview;
-		local oldname = lbl.getText();
+		local oldname = prms["lbl"] || lbl.getText();
 		edit.setText( oldname);
 		edit.startTextEdit();
 		if( prms["selall"]) edit.textedit.selectAll();

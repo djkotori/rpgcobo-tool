@@ -263,6 +263,7 @@ class DataSelectPopup extends Popup
 		case "btn_ok":
 			e.consume();
 			if( !checkCancel( VK_ENTER) && inputNum()){
+				if( !dataid) dataid = datalist.getSelectedItems()[0]["dataid"];
 				ret = 1;
 				close();
 			}

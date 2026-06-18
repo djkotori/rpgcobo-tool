@@ -2388,9 +2388,6 @@ eventcmd .. {
 }
 
 
-
-
-
 //	cmd_move : キャラ移動／オブジェクト移動
 //	
 eventcmd .. {
@@ -2414,7 +2411,7 @@ eventcmd .. {
 			{ lbl="$T.movetype_obj", val="obj", }
 		], };	//	walk, dash, jump, warp,  obj
 		if( isobj){
-			a .. { pid="rot", lbl="$T.lbl_rotation", type=VEC3, range=(-360,360), q=1, variable=1 }
+			a .. { pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6.ui", variable=1 }
 			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
 			a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1 }
 		}else{

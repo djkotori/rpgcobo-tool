@@ -21,6 +21,8 @@ enum PropertyType
 	SCRIPT				= 15		
 	CUSTOMBUTTON		= 16		//	
 	BOOL1				= 17		//	省スペースBOOL
+	ROT_HEAD			= 18
+	ROT_HPB				= 19
 
 	//	special property type
 	TEXTSTYLE			= 100
@@ -189,7 +191,7 @@ local resizetype = ["0:OFF","1:ON","2:ON+Anime"]
 ::SKVP <- SKProperties();
 ::SKVP .. { pid=POSITION,		lbl="$T.lbl_position",		type=VEC2,		range=(-4096,4096), anime=2 };
 ::SKVP .. { pid=SCALE,			lbl="$T.lbl_scale",			type=VEC2,		range=(-1000,1000), q=1, anime=2 };
-::SKVP .. { pid=ROTATION,		lbl="$T.lbl_rotation",		type=SCALAR,	range=(-720,720), q=1, anime=2 };
+::SKVP .. { pid=ROTATION,		lbl="$T.lbl_rotation",		type=ROT_HEAD,	range=(-720,720), q=1, anime=2 };
 ::SKVP .. { pid=VISIBLE,			lbl="$T.lbl_visible",			type=BOOL,		anime=1 };
 ::SKVP .. { pid=ENABLED,			lbl="$T.lbl_enable",			type=LIST,		anime=1, list=["$T.lbl_disabled","$T.lbl_enabled","$T.lbl_notap"]};
 ::SKVP .. { pid=ENABLED_STATIC,		lbl="$T.lbl_enable",			type=LIST,		list=["$T.lbl_disabled","$T.lbl_enabled","$T.lbl_notap"]};
