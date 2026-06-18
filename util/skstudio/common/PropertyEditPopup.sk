@@ -5,7 +5,7 @@ import PropertyType;
 /////////////////////////////////////////////////////////////////////////////////
 //	
 
-class PropertyEditPopup extends Popup
+class PropertyEditPopup extends MobablePopup
 {
 	static POPUPUIPATH = "/skstudio/ui/dialog/proppopup.ui";
 	modalclose = 2;

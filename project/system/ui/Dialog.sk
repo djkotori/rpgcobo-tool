@@ -259,6 +259,7 @@ class Popup extends DialogBase
 		switch( bc["cmd"]){
 		case "cancel_popup":
 		case "screen_moving":
+		case "screen_resized":
 			close();
 			break;
 		}
@@ -296,6 +297,36 @@ class Popup extends DialogBase
 			}
 		}
 		return super.adjustBounds( view, posview, root);
+	}
+}
+
+class MobablePopup extends Popup
+{
+	movbar = null;
+	movx = 0; movy = 0;
+
+	constructor( v){
+		super( v);
+		movbar = view.findChild( "movbar");
+		if( movbar) movbar.addEventListener( MOUSE_EVENT, movbarevent);
+	}
+
+	function movbarevent( e){
+		switch( e.id){
+		case MOUSE_PRESSED:
+			e.computeLocal( view.parent.getInvMatrix());
+			movx = e.lx; movy = e.ly;
+			break;
+		case MOUSE_DRAGGED:
+			e.computeLocal( view.parent.getInvMatrix());
+			local dx = e.lx-movx, dy = e.ly-movy;
+			movx = e.lx; movy = e.ly;
+			view.pos.add( dx, dy, 0);
+			view.matdirty = true;
+			break;
+		case MOUSE_RELEASED:
+			break;
+		}
 	}
 }
 
