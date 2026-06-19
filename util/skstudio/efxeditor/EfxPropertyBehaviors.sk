@@ -604,7 +604,9 @@ class PropertyBehaviors.EfxModRotation extends PropertyBehavior
 		curv = EfxCurveEditView();
 		local curvp = view.findChild( "curvp");
 		curv = EfxCurveEditView();
+		curv.stretchalign = 15;
 		curv.setRect( 0, 0, curvp.bnd.w, curvp.bnd.h);
+		(curv.viewdata = ::SKViewEntityData()).staticparams = [( SKViewPropertyID.SIZE_STATIC, (curv.bnd.w,curv.bnd.h))];	//	todo: この手順を無くさんとなー
 		curvp.addChild( curv);
 		xchk = view.findChild( "xchk");
 		ychk = view.findChild( "ychk");

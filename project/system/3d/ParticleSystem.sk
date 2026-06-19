@@ -424,7 +424,7 @@ ParticleActions .. {
 		}
 	},
 	props = [
-		{ pid="pow", lbl="$T.lbl_power", type=SCALAR, range=(1,20), ui="bar", defval=3, }
+		{ pid="pow", lbl="$T.lbl_power", type=SCALAR, range=(1,20), q=10, ui="bar", defval=3, }
 		{ pid="dist", lbl="$T.lbl_distance", type=SCALAR, range=(1,100), ui="bar", defval=40, }
 		{ pid="dur", lbl="$T.lbl_duration", type=SCALAR, range=(100,3000), ui="bar", defval=750, }
 		{ pid="freq", lbl="$T.lbl_freq", type=SCALAR, range=(1,100), ui="bar", defval=40, }

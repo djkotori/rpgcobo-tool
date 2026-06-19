@@ -204,6 +204,7 @@
 	"when_damagehit"					: {"ja":"攻撃を受けた時", "en":"Damage Hit"}
 	"when_kill"							: {"ja":"倒した時", "en":"Kill"}
 	"when_killed"						: {"ja":"倒された時", "en":"Killed"}
+
 	//	誰に
 	"whom"								: {"ja":"誰に", "en":"Whom"}
 	"whom_me"							: {"ja":"自分", "en":"Myself"}
@@ -217,6 +218,13 @@
 	"movetype_linear"					: {"ja":"直進", "en":"Linear"}
 	"movetype_warp"						: {"ja":"ワープ", "en":"Warp"}
 	"movetype_obj"						: {"ja":"オブジェクト移動", "en":"Move Object"}
+
+	//	方向の基準
+	"dirbase"							: {"ja":"方向の基準", "en":"Base Direction"}
+	"dirbase0"							: {"ja":"グローバル", "en":"Global"}
+	"dirbase1"							: {"ja":"自身の向き", "en":"Itself Direction"}
+	"dirbase2"							: {"ja":"カメラの向き", "en":"Camera Direction"}
+	"dirbase3"							: {"ja":"相手への向き", "en":"Direction to the other"}
 	
 	//	ブロックタイプ
 	"blk_basic"							: {"ja":"基本", "en":"Basic"}
@@ -451,6 +459,7 @@
 	"cmd_screenfxon"					: {"ja":"画面効果ON", "en":"ScreenFX On"}
 	"cmd_screenfxoff"					: {"ja":"画面効果OFF", "en":"ScreenFX Off"}
 	"cmd_move"							: {"ja":"キャラ移動", "en":"Chara Move"}
+	"cmd_rotate"						: {"ja":"キャラ回転", "en":"Chara Rotate"}
 	"cmd_freeze"						: {"ja":"フリーズ", "en":"Freeze"}
 
 	"cmd_battleend"						: {"ja":"バトルを終了", "en":"End Battle"}
@@ -507,6 +516,7 @@
 
 	"cmd_anime_tips"					: {"ja":"キャラにアニメーションを再生します。", "en":""}
 	"cmd_efx_tips"						: {"ja":"キャラからエフェクトを発生します。", "en":""}
+	"cmd_opacity_tips"					: {"ja":"キャラの透明度を変化させます。", "en":""}
 	"cmd_facetoface_tips"				: {"ja":"イベントとプレイヤーが向き合います。", "en":""}
 	"cmd_camwork_tips"					: {"ja":"カメラワークを変更します。", "en":""}
 	"cmd_cammot_tips"					: {"ja":"カメラに対してモーションを追加します。", "en":""}
@@ -518,6 +528,7 @@
 	"cmd_screenfxon_tips"				: {"ja":"様々な画面効果を追加します。", "en":""}
 	"cmd_screenfxoff_tips"				: {"ja":"現在ある画面効果を消去します。", "en":""}
 	"cmd_move_tips"						: {"ja":"キャラを移動します。", "en":""}
+	"cmd_rotate_tips"					: {"ja":"キャラを回転します。", "en":""}
 	"cmd_freeze_tips"					: {"ja":"キャラの動作を一時的に止めます。", "en":""}
 	
 	"cmd_battleend_tips"				: {"ja":"勝利、敗北、又は中止を指定してバトルを強制的に終了します。", "en":""}

@@ -1,6 +1,6 @@
 import CommandTargetType;
 
-local v_0 = Vector3D(), v_1 = Vector3D();
+local v_0 = Vector3D(), v_1 = Vector3D(), q_1 = Quaternion();
 local r_0 = Rect3D(), r_1 = Rect3D();
 local m_0 = Matrix(), m_1 = Matrix();
 
@@ -743,16 +743,53 @@ class RPGEventRunner
 	function moveChara( cmd){
 		local rp3d = cmd.who["rp3d"] || (cmd.who==1 ? stage.player3d : (stage.getEvent( cmd.who)["rp3d"] || rp3d));
 		if( rp3d){
+			local isobj = cmd.movetype=="obj";
+			local vec = (isobj ? Vector3D( cmd.pos) : Vector3D( cmd.pos[0], 0.0, cmd.pos[1]));	//	obj移動の場合のみ3Dベクトル
+			local d = 0.0;
+			switch( cmd["dirbase"]){
+			case 1: d = rp3d.dir; break;
+			case 2: d = rpgstage.camdir; break;
+			case 3:
+				d = Math.atan2( this.rp3d.pos.x-stage.player3d.pos.x, -(this.rp3d.pos.z-stage.player3d.pos.z)) * (rp3d==this.rp3d?-1:1);
+				break;
+			}
+			if( d) vec.rotate( q_1.setHPB( d, 0, 0));
+			//
 			setManualAction( rp3d);
 			local p0 = rp3d.pos;
-			// if( bp==1 || cmd.who=="player"){ v_0( rp3d.pos).scale( 2).round(); p0 = [v_0.x,v_0.y,v_0.z]; }	//	playerの時は常に現在位置から
-			local isobj = cmd.movetype=="obj";
-			local p = (isobj ? Vector3D( cmd.pos) : Vector3D( cmd.pos[0], 0.0, cmd.pos[1])).add( p0);	//	obj移動の場合のみ3Dベクトル
+			local p = vec.add( p0);
 			// ::rpgstage.adjustFloorPos( p);		//	移動先の地面Y座標を正確に
 			local astat = rp3d.manuaction.act( @(){
 				move( {target=p, rot=cmd["rot"], easing=cmd["easing"], aim=true, spd=cmd.movespd, movetype=cmd.movetype, playani=cmd["playani"] });
 			});
 			if( cmd["wait"]) rp3d.manuaction.waitActionsAndMovements();	//	移動を待つのはこのメソッドで！
+		}
+	}
+	//	キャラを回転
+	function rotateChara( cmd){
+		local rp3d = cmd.who["rp3d"] || (cmd.who==1 ? stage.player3d : (stage.getEvent( cmd.who)["rp3d"] || rp3d));
+		local dir1 = cmd["dir"] * Math.DTOR;
+		if( rp3d){
+			switch( cmd["dirbase"]){
+			case 1: dir1 += rp3d.dir; break;
+			case 2:
+				dir1 = Math.mod2( dir1+rpgstage.camdir, -Math.PI, Math.PI);	//	正規化しないと回転おかしくなる…
+				break;
+			case 3:
+				local d = Math.atan2( this.rp3d.pos.x-stage.player3d.pos.x, -(this.rp3d.pos.z-stage.player3d.pos.z)) * (rp3d==this.rp3d?-1:1);
+				dir1 = Math.mod2( dir1+d, -Math.PI, Math.PI);	//	正規化しないと回転おかしくなる…
+				break;
+			}
+			if( cmd["fade"]){
+				local ease = RPGProperties.easinglist[cmd["easing"]]["func"] || ::Easing.presets[1];
+				local mod = RPG3DRotateModifier( rp3d, dir1, cmd.fade, ease);
+				rp3d.addModifier( mod);
+				if( cmd["wait"]){
+					sleep( cmd.fade);
+				}
+			}else{
+				rp3d.setDir( dir1);
+			}
 		}
 	}
 

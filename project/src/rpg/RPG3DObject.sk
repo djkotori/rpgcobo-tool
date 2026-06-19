@@ -18,8 +18,9 @@ AnimationLayer.part <- null;
 //	
 
 function unitdir( d){
-	if( d < 0.0){ d += Math.PI2 * Math.floor( -d / Math.PI2 + 1.0); }
-	return d % Math.PI2;
+	// if( d < 0.0){ d += Math.PI2 * Math.floor( -d / Math.PI2 + 1.0); }
+	// return d % Math.PI2;
+	return Math.mod2( d, 0.0, Math.PI2);
 }
 
 //	d1 - d2
@@ -951,6 +952,39 @@ class SK3DEffect extends SK3DObject
 			srttf.setSRT( pos, s, q);
 		}else{
 			super.updateSRT();
+		}
+	}
+}
+
+//	RPG-Cobo
+class RPG3DRotateModifier extends SK3DModifier
+{
+	order = 101;
+
+	dir0 = 0.0;
+	dir1 = 0.0;
+	time = 300;
+	w = 1.0;
+	easing = null;
+	
+	constructor( o, d1, t, e=null){
+		dir0 = o.prevdir;	//	mmm
+		dir1 = d1;
+		time = t;
+		w = 1.0 / t;
+		easing = e || Easing.easeLinear;
+	}
+
+	function modify( o, dt){
+		if( (time-=dt) > 0){
+			local d = unitdir( Math.lerp( dir1, dir0, easing( time*w)));
+			o.setDir( d);
+			o.matdirty = true;
+			return true;
+		}else{
+			o.setDir( dir1);
+			o.matdirty = true;
+			return false;
 		}
 	}
 }

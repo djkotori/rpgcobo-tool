@@ -46,6 +46,13 @@ local who2list = [
 	{ lbl="$T.who_event", val=2 }
 ]
 
+local dirbaselist = [
+	{lbl="$T.dirbase0", val=0, },
+	{lbl="$T.dirbase1", val=1, },
+	{lbl="$T.dirbase2", val=2, },
+	{lbl="$T.dirbase3", val=3, },
+]
+
 //	条件プロパティ
 local reqsprop = { pid = "reqs", lbl = "$T.lbl_reqs", type = REQUIREMENTS, cnt="cnt6v.ui" }
 
@@ -2258,7 +2265,6 @@ eventcmd .. {
 	}
 }
 
-
 //	cmd_screenfxoff : 画面効果の消去
 //	
 eventcmd .. {
@@ -2289,8 +2295,8 @@ eventcmd .. {
 	}
 }
 
-
 //	cmd_move : キャラ移動／オブジェクト移動
+//	座標指定、角度と距離、対象に移動
 //	
 eventcmd .. {
 	category = 5
@@ -2302,41 +2308,87 @@ eventcmd .. {
 	props = @( cmd){
 		local isobj = cmd["movetype"]=="obj";
 		local a = [];
-		a .. { pid="who", lbl="$T.lbl_who", type=LIST, list=who2list, variable=true, refresh=true, }
-		a .. { pid="pos", lbl="$T.lbl_position", type=isobj?VEC3:VEC2, range=(-128,128), q=10, variable=1, },
-		a .. { pid="movetype", lbl="$T.movetype", type=LIST, refresh=1, list=[
+		a .. { pid="who", lbl="$T.lbl_who", type=LIST, list=who2list, variable=1, refresh=true, }
+		a .. { pid="movetype", lbl="$T.movetype", type=LIST, refresh=1, list=[	//	walk, dash, jump, warp,  obj
 			{ lbl="$T.movetype_walk", val="walk", }
 			{ lbl="$T.movetype_dash", val="dash", }
 			{ lbl="$T.movetype_jump", val="jump", }
 			{ lbl="$T.movetype_warp", val="warp", }
 			"-"
 			{ lbl="$T.movetype_obj", val="obj", }
-		], };	//	walk, dash, jump, warp,  obj
+		], set = @( prop, data, val){
+			if( val == "obj" && data["val"] != "obj"){
+				data.pos <- [0,0,0]; data.rot <- [0,0,0]; data.easing <- 0;
+			}else
+			if( val != "obj" && data["val"] == "obj"){
+				data.pos = [0,0]; delete data["rot"]; delete data["easing"];
+			}
+			data[prop.pid] <- val;
+		}
+		};
+		a .. { pid="pos", lbl="$T.lbl_position", type=isobj?VEC3:VEC2, range=(-128,128), q=10, variable=1, }
 		if( isobj){
 			a .. { pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6.ui", variable=1 }
 			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
 			a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1 }
 		}else{
 			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
-			a .. { pid="playani", lbl="$T.lbl_playani", type=BOOL, variable=1, }
+			a .. { pid="dirbase", lbl="$T.dirbase", type=LIST, list=dirbaselist, variable=1 }
 		}
 		a .. { pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 }
+		a .. { pid="playani", lbl="$T.lbl_playani", type=BOOL, variable=1 }
 		return a;
 	}
 	
 	cmdinfo = @( cmd){
 		local cmddef = RPGSystem.eventcmd[cmd.cmd], props = fget( cmddef, "props", cmddef, cmd);
 		local who = propstr( props, cmd, "who");
-		local pos = sprintf( "[%d %d]", cmd.pos[0]||0, cmd.pos[1]||0);
+		local pos = propstr( props, cmd, "pos");// sprintf( "[%d %d]", cmd.pos[0]||0, cmd.pos[1]||0);
 		local w = cmd["wait"] ? "⌛" : "";
 		local info = sprintf( "%S %S %S\n", who, pos, w);
 		return { info = info, }
 	}
 	
-	defval = { who=2, pos=[0,0,0], rot=[0,0,0], movespd=3, playani=true, wait=true, movetype="walk", easing=0 }
+	defval = { who=2, pos=[0,0], movespd=3, playani=true, wait=true, movetype="walk", dirbase=0 }
 	
 	exec = @( runner, cmd){
 		runner.moveChara( cmd);
+	}
+}
+
+//	cmd_rotate : キャラ回転
+//	
+eventcmd .. {
+	category = 5
+	key = "cmd_rotate"
+	name = "$T.cmd_rotate"
+	icon = "\ue419"
+	color = color5
+	
+	props = [
+		{ pid="who", lbl="$T.lbl_who", type=LIST, list=who2list, refresh=true, variable=1 }
+		{ pid="dir", lbl="$T.lbl_direction", type=ROT_HEAD, range=(-3600,3600), variable=1 }
+		{ pid="dirbase", lbl="$T.dirbase", type=LIST, list=dirbaselist, variable=1 },
+		{ pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), ui="bar", barrange=(0,3000,100), variable=1 }
+		{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1, hide=@( pl) pl.getParam( "fade")<=0 }
+		{ pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1, hide=@( pl) pl.getParam( "fade")<=0 }
+	]
+
+	cmdinfo = @( cmd){
+		local cmddef = RPGSystem.eventcmd[cmd.cmd];
+		local wi = propstr( cmddef.props, cmd, "who");
+		local di = propstr( cmddef.props, cmd, "dir");
+		local w = cmd["wait"] ? "⌛" : "";
+		local info = sprintf( "%S ⊿ %S %S", wi, di, w);
+		return {
+			info = info,
+		}
+	}
+	
+	defval = { who=1, dir=0, base=0, fade=0, wait=true, easing=0 }
+
+	exec = @( runner, cmd){
+		runner.rotateChara( cmd);
 	}
 }
 
@@ -2552,9 +2604,9 @@ eventcmd .. {
 	color = color7
 	
 	props = [
-		{ pid="who", lbl="$T.lbl_who", type=STRING, variable=2 }
+		{ pid="who", lbl="$T.lbl_who", type=STRING, variable=2, varbits=15 }
 		{ pid="battlecmd", lbl="$T.lbl_command", type=DATAID, datatype=["item","skill"], variable=1, }
-		{ pid="whom", lbl="$T.lbl_whom", type=STRING, variable=2 }
+		{ pid="whom", lbl="$T.whom", type=STRING, variable=2, varbits=15 }
 	]
 	
 	cmdinfo = @( cmd){
