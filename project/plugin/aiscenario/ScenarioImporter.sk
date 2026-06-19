@@ -60,11 +60,18 @@ ScenarioImporter <- {
 	},
 
 	function loadScenarioJson( jsonPath){
-		local f = FileRef( jsonPath);
-		if( !f.exists()){
-			throw Exception( "scenario file not found: " + jsonPath);
+		local raw = null;
+		//	/plugin/... は Resource 仮想パス。FileRef では開けない。
+		if( jsonPath.len() > 0 && jsonPath[0] == '/'){
+			local res = ::getResource( jsonPath);
+			if( !res) throw Exception( "scenario resource not found: " + jsonPath);
+			raw = res.loadData();
+		}else{
+			local f = FileRef( jsonPath);
+			if( !f.exists()) throw Exception( "scenario file not found: " + jsonPath);
+			raw = f.load();
 		}
-		local scenario = decodeJSON( f.load());
+		local scenario = decodeJSON( raw);
 		if( typeof( scenario) != SS_TABLE) throw Exception( "invalid scenario json root");
 		return scenario;
 	},
