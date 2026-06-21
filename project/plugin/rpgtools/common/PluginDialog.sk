@@ -56,6 +56,7 @@ class PluginDialog extends UndoableDialog
 		//
 		makePluginList();
 		pluglist.setListItems( plugs);
+		pluglist.setSelectedIndex( 0);
 		selectPlugin( plugs[0]);
 	}
 	
@@ -94,6 +95,14 @@ class PluginDialog extends UndoableDialog
 		}
 	}
 
+	function getPluginData(){
+		local plugmap = {};
+		foreach( v in pluglist.items){
+			plugmap[v.id] <- v._data;
+		}
+		return plugmap;
+	}
+
 	//	
 	function selectPlugin( pi){
 		local props = [{pid="info",lbl="INFO",type=-1302,cnt="cnt5.ui"}];
@@ -105,11 +114,12 @@ class PluginDialog extends UndoableDialog
 		proplist.setParameters( pi);
 		view.setValue( "plugname", pi.info.name);
 		plugenable.selectItem( @( v) v.val==pi.enable);
-		plugenable.view.enabled = !pi.lock;
+		plugenable.view.enabled = !pi["lock"];
 		selplug = pi;
 	}
 
 	function refresh(){
+		pluglist.refreshItems();
 		proplist.setParameters( selplug);
 	}
 
@@ -120,18 +130,35 @@ class PluginDialog extends UndoableDialog
 
 	function actionevent( e){
 		switch( e.src["name"]){
+		case "btn_apply":
+			e.consume();
+			if( op.isChanged()){
+				if( Dialogs.confirm( {msg="$T.confirm_plugin_restart"})){
+					close();
+					suspend();
+					local f = FileRef( "project/plugin/plugin.json");
+					local bb = encodeJSON( getPluginData(), 5, ByteBuffer()); bb.pos = 0;
+					f.save( bb);
+					::skstudio.menuRelaunch( {});
+				}
+			}else{
+				close();
+			}
+			break;
 		case "plugenable":
 			local data = selplug, oldval = data.enable, val = plugenable.selitem.val;
 			local redo = [@(){ data.enable = val; }];
 			local undo = [@(){ data.enable = oldval; }];
 			submitOp( redo, undo, null);
+			refresh();
 			break;
 		}
-		super.actionevent( e);
+		if( !e.consumed) super.actionevent( e);
 	}
 	
 	function listevent( e){
 		if( e.id == ITEM_SELECTED){
+			selectPlugin( e.actioncmd);
 		}
 	}
 
@@ -148,6 +175,7 @@ class PluginDialog extends UndoableDialog
 			local redo = [@(){ ::setProperty( prop, data, val); }];
 			local undo = [@(){ ::setProperty( prop, data, oldval); }];
 			submitOp( redo, undo, trk);
+			refresh();
 		}
 	}
 }
@@ -166,10 +194,14 @@ class PropertyBehaviors.PluginInfo extends PropertyBehavior
 	}
 
 	function getParam(){
-		return mapshot;
 	}
 	
 	function setParam( v){
+		local sp = StringBuffer();
+		if( v["auther"]) sp .. T.lbl_auther .. ": " .. lang( v.auther) .. "\n\n";
+		if( v["ver"]) sp .. T.lbl_version .. ": " .. v.ver .. "\n\n";
+		if( v["desc"]) sp .. lang( v.desc) .. "\n";
+		lbl.setValue( string( sp));
 	}
 	
 	function paramevent( e){

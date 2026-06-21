@@ -18,12 +18,12 @@ local srcdir = dirname( callee().getSourceName());
 pluginfo <- {
 	name : { "ja":"RPG-Cobo ツール","en":"RPG-Cobo Tools"}
 	auther : "djkotori"
-	ver : "0.1.0"
+	ver : "0.1.6"
 	tags : ["editor"]
 	icon : srcdir.."/icon.png"
 	order : 0
 	lock : true
-	readme : srcdir.."/readme.txt"
+	desc : { "ja":"RPG-Cobo用の全ツール機能はこの中に含まれています。\n※このプラグインは無効化できません。", "en":"All tool functions for RPG-Cobo are included here. \n*This plugin cannot be disabled." }
 	props : [
 		// { pid="condid", lbl="${T.condition}", type=DATAID, datatype=["cond"], defval="K000" },
 		// { pid="val", lbl="上昇量", type=SCALAR, range=(-100, 100), defval=0 },
