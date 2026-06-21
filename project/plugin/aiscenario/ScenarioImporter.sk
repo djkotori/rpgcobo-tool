@@ -164,27 +164,39 @@ ScenarioImporter <- {
 		}
 
 		local imported = 0;
+		local skipped = 0;
 		local ids = [];
 		foreach( src in events){
-			local role = src["role"] || "villager";
-			local evid = allocNextEventId( mapdata.event);
-			local ev = buildEvent( src, evid);
-			if( !ev){
-				printf( "[aiscenario] WARN: unsupported role=%S (skipped)\n", role);
-				continue;
+			try{
+				local role = src["role"] || "villager";
+				//	採番前に構築。evid=0 は空 name 時のプレースホルダ（成功後に再設定）。
+				local ev = buildEvent( src, 0);
+				if( !ev){
+					printf( "[aiscenario] WARN: unsupported role=%S (skipped)\n", role);
+					++skipped;
+					continue;
+				}
+				local evid = allocNextEventId( mapdata.event);
+				if( !length( src["name"])){
+					local prefix = role == "custom" ? "custom" : "villager";
+					ev.name = formatDisplayName( "", evid, prefix);
+				}
+				mapdata.event[evid] <- ev;
+				ids.push( evid);
+				++imported;
+			}catch( ex){
+				printf( "[aiscenario] WARN: skip event (%S)\n", ex);
+				++skipped;
 			}
-			mapdata.event[evid] <- ev;
-			ids.push( evid);
-			++imported;
 		}
 
 		if( !imported){
-			printf( "[aiscenario] nothing imported from %S\n", jsonPath);
+			printf( "[aiscenario] nothing imported from %S (skipped %d)\n", jsonPath, skipped);
 			return 0;
 		}
 
 		mapres.save( mapdata);
-		printf( "[aiscenario] imported %d event(s) into %S ids=%S\n", imported, mapid, ids);
+		printf( "[aiscenario] imported %d, skipped %d into %S ids=%S\n", imported, skipped, mapid, ids);
 		return imported;
 	},
 

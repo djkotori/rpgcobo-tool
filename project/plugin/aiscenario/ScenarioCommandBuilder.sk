@@ -71,6 +71,7 @@ ScenarioCommandBuilder <- {
 	},
 
 	function buildChoice( c){
+		//	TODO(verify): 選択肢ラベルは生文字列で動作確認済み（$T.キー不要）
 		local options = c["options"] || [];
 		local branches = c["branches"] || [];
 		local nopt = length( options);
