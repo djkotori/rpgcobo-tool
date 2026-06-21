@@ -5,23 +5,26 @@
 local srcdir = dirname( callee().getSourceName());
 
 pluginfo <- {
-	name = { "ja":"AI Scenario Importer (PoC)", "en":"AI Scenario Importer (PoC)" },
-	auther = "matrix9neonebuchadnezzar2199-sketch",
-	ver = "0.1.0",
-	tags = [ "editor", "aiscenario" ],
-	order = 100,
-	lock = false,
-	desc = {
+	name : { "ja":"AI Scenario Importer (PoC)", "en":"AI Scenario Importer (PoC)" }
+	auther : "matrix9neonebuchadnezzar2199-sketch"
+	ver : "0.1.0"
+	tags : [ "editor", "aiscenario" ]
+	order : 100
+	lock : false
+	desc : {
 		"ja":"JSONシナリオから村人イベントを map.json へ取り込む PoC",
 		"en":"PoC: import villager events from scenario JSON into map.json",
-	},
-	props = [],
-};
+	}
+	props : []
+}
 
 function loadPlugin( args, opt){
 	if( !::["SKStudio"]) return false;
+	if( !::getResource( "/data/setting.json")){	//	プロジェクトセットアップ前。メニュー登録は行わない。
+		return true;
+	}
 
-	local registerImporter = @(){
+	module.hookAction( "editor_postload", @(){
 		::runsk( srcdir + "/ScenarioImporter.sk");
 		::skstudio.registerMenu( {
 			uid = "aiscenario_import_poc",
@@ -29,17 +32,11 @@ function loadPlugin( args, opt){
 			block = "*9",
 			lbl = { "ja":"[PoC] シナリオJSON取り込み", "en":"[PoC] Import scenario JSON" },
 			func = @( m){
-				ScenarioImporter.importSample( srcdir + "/sample/villager.json");
+				ScenarioImporter.importSample( "/plugin/aiscenario/sample/villager.json");
 			},
 		});
 		printf( "[aiscenario] plugin loaded (menu: [PoC] シナリオJSON取り込み)\n");
-	};
+	}, 100);
 
-	if( !::getResource( "/data/setting.json")){
-		module.hookAction( "editor_postload", registerImporter, 100);
-		return true;
-	}
-
-	module.hookAction( "editor_postload", registerImporter, 100);
 	return true;
 }

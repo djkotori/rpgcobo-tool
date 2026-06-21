@@ -28,6 +28,7 @@ ScenarioImporter <- {
 		if( next > this.EVENT_ID_MAX){
 			throw Exception( "event id exhausted (max " + this.EVENT_ID_MAX + ")");
 		}
+		//	将来: EVENT_ID_MAX 付近では max+1 ではなく範囲内の空き番号探索に切り替える。
 		return next;
 	},
 
@@ -42,6 +43,8 @@ ScenarioImporter <- {
 		if( typeof( pos) != SS_ARRAY || pos.len() < 4){
 			throw Exception( "villager.pos must be [x,y,z,dir]");
 		}
+		//	col/flags/pop/reqs0/standani 等は map.json 実データから観察した villager の既定値。
+		//	正規仕様は要確認（Issue #2 で作者に質問予定）。
 		return {
 			role = "villager",
 			col = 0,
