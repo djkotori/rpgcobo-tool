@@ -56,6 +56,7 @@ class BattleRunnerBase
 	result = null;					//	戦闘結果。1:勝利、-1:敗北、0:中止（逃げ、時間切れ等）、あとはエラーかな
 	forceend = null;				//	強制終了フラグ。
 	
+	battlerunning = false;			//	バトルが
 	turn = 0;
 	cmdqueue = null;				//	実行コマンド配列。battleTurn内で使用されるが、マクロでコマンド入れ替えとかする時に可視にする必要あり。
 	
@@ -236,7 +237,7 @@ class BattleRunnerBase
 			hp = @() v.HP
 			mp = @() v.MP
 			tp = @() v.TP
-			timeguage = @() v.timeguage		//	アクティブバトル時に表示 0-100
+			cmdgauge = @() v.isDead()?-1 : v.cmdgauge<=0?-1 : v.cmdgauge>=100?11 : (v.cmdgauge*0.1)		//	アクティブバトル時に表示 -1,0-100
 			sel = @() v.selected ? "on" : "off"
 			conds = @() ::RPGSystem.getConditionString( v.conds)
 		}:{	//	v=nullの場合は非表示
@@ -307,7 +308,7 @@ class BattleRunnerBase
 							deathAnime();
 							nptr << (~nptr-1);	//	ここまで完了待ち
 						}, null);	//	死亡アニメ
-						cancelCommand( chr);	//	コマンドキャンセル
+						cancelCommand( chr);	//	死亡者のコマンドを全てキャンセル
 						uisyncptr << true;
 						return;
 					}
@@ -320,6 +321,35 @@ class BattleRunnerBase
 			foreach( v in chara3ds) v["manuaction"]?.waitActions();
 		}
 		if( ~uisyncptr) syncEnemyListUI();
+	}
+
+	//	一人に対する死亡チェック。
+	function dieCheckOne( chr, cmd){
+		local rp3d = getChara3D( chr);
+		rp3d.manuaction.waitActions();	//	実行中のアクションの中にダメージが入るものがあったら終わるまで待つ。
+		local uisync = false, actsync = false, endptr = ptr( false);
+		if( !chr.isDead() && chr.HP <= 0){
+			local b = emitOption( "dying", {self=chr,cmd=cmd,src=cmd["src"]});	//	自動復活、死亡時スキル。
+			if( b){
+				actsync = true;
+				endptr << true;
+			}else
+			if( chr.HP <= 0){
+				rp3d.manuaction.act( @(){
+					wait( -1);
+					chr.updateDead();	//	死亡状態付与はdeathAnimeの後に！
+					deathAnime();
+					endptr << true;	//	ここまで完了待ち
+				}, null);	//	死亡アニメ
+				cancelCommand( chr);	//	死亡者のコマンドを全てキャンセル
+				uisync = true;
+			}else{
+				endptr << true;
+			}
+		}
+		while( ~endptr) suspend();
+		if( actsync) rp3d["manuaction"]?.waitActions();
+		if( uisync) syncEnemyListUI();
 	}
 
 	//	ここで判断するのは全滅、勝利のみ。
@@ -350,8 +380,8 @@ class BattleRunnerBase
 			//	敵の全滅をチェック
 			local victory = !enemies.find( @( v) !v.isDefeated());
 			if( victory){
-				showVictoryUI();		//	戦闘勝利パネルの表示。これを表示しないと経験値等は入らない。ラスボスとかはここすっ飛ばす。
 				result = 1;
+				showVictoryUI();		//	戦闘勝利パネルの表示。これを表示しないと経験値等は入らない。ラスボスとかはここすっ飛ばす。
 				printf( "VICTORY!!!!!!!!!!!!!!!\n");
 				throw "battleend";	//	endfunc( this);
 			}
@@ -461,6 +491,7 @@ class BattleRunnerBase
 		sleep( 1500);
 		::playBGMID( "MU021");	//	勝利のテーマ
 		//	カメラを切り替え、キャラをアニメーション
+		selectCommandTargets( []);
 		battleui.setVisible( false);
 		stage.setCamerawork({ type=2, mkid="*victorycam", trans=0, });
 		stage.addCameraMotion({ type=1, playtype=2, pos=[0,0,0], hpb=[40,0,0], zoom=0.3, time=20000, easing=0, });

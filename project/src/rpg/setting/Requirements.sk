@@ -200,7 +200,7 @@ aipagereq .. {
 	key = "turn1"
 	name = "$T.aipagereq_turn＝1"
 	icon = "\ue0b7"
-	calc = @( key, src) src.turn==1
+	calc = @( key, src) src.turn==0
 }
 
 //	turn3 : 3ターン経過
@@ -209,7 +209,7 @@ aipagereq .. {
 	key = "turn3"
 	name = "$T.aipagereq_turn≧3"
 	icon = "\ue0b7"
-	calc = @( key, src) src.turn>=3
+	calc = @( key, src) src.turn>=2
 }
 
 //	turn5 : 5ターン経過
@@ -218,7 +218,7 @@ aipagereq .. {
 	key = "turn5"
 	name = "$T.aipagereq_turn≧5"
 	icon = "\ue0b7"
-	calc = @( key, src) src.turn>=5
+	calc = @( key, src) src.turn>=4
 }
 
 //	cond : コンディションがかかっているか

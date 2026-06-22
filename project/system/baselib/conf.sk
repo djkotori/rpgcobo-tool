@@ -300,7 +300,7 @@ class Module
 				//	- pluginfoテーブル。中にname, order
 				//	- loadPlugin関数。
 				if( plug){
-					if( !plug["pluginfo"] || !plug.pluginfo["name"] || !("order" in plug.pluginfo)) throw Exception( "Invalid pluginfo");
+					if( !plug["pluginfo"] || !plug.pluginfo["name"]) throw Exception( "Invalid pluginfo");
 					if( typeof( plug["loadPlugin"]) != SS_CLOSURE) throw Exception( "Invalid loadPlugin");
 					plugs .. plug;
 				}
@@ -310,7 +310,7 @@ class Module
 			}
 		}
 		//	orderでソート
-		plugs.sort( @( v) v.pluginfo.order);
+		plugs.sort( @( v) v.pluginfo["order"] ?? 9999);
 		//	全て呼び出し。ここで失敗したプラグインは一覧から消去・・・？
 		foreach( plug in plugs){
 			local opts = plugmap[plug.id];

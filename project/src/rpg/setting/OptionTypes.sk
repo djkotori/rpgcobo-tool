@@ -892,7 +892,8 @@ RPGSystem.option .. {
 			local r = ::getvar( opd.rate, opd);
 			if( ::rnd( 1.0) > r) return;
 			local skill = ::rpgdata[opd.skillid];
-			local cmd = SkillCommand( self, skill, [dmg.dst]);	//	TODO : dstじゃなくてcmdtgtで取得する。cmdのorderは0のままで良いか？
+			local cmd = SkillCommand( self, skill, [dmg.dst]);	//	TODO : dstじゃなくてcmdtgtで取得する。
+			cmd.order = -1000.0;			//	すぐに発動
 			dmg.addEvent( { chr=self, id="cmd", cmd=cmd});
 			countrem( self, cmd, opd["countrem"]);
 		}
@@ -962,6 +963,7 @@ RPGSystem.option .. {
 			local skill = ::rpgdata[opd.skillid] || self.getAttackSkill();
 			local cmd = SkillCommand( self, skill, [dmg.src]);	//	TODO : dstじゃなくてcmdtgtで取得する。cmdのorderは0のままで良いか？
 			cmd.resetskill = self.skill;		//	カウンタースキル後は元のスキルに戻す必要あり
+			cmd.order = -1000.0;				//	すぐに発動
 			dmg.addEvent( { chr=self, id="cmd", cmd=cmd});
 			switch( opd.hittype){
 			case 1: dmg.miss = true; break;

@@ -86,8 +86,7 @@ function debuffRate( chr, putconds, hitrate){
 
 class SkillCommand
 {
-	order = 0;				//	ターンバトルでは行動順ソート用。
-	delay = 0;				//	アクティブバトルで使用。コマンド実行までのディレイ。普通は0。
+	order = 0;				//	ターンバトルでは行動順ソート用。アクティブバトルでは減っていき0になったら実行。
 	src = null;				//	RPGChara : コマンドの実行者
 	dsts = null;			//	RPGChara[] : コマンド選択時の範囲選択対象。dstも含む。dstが死んでたらここから選びなおしたり。
 	
@@ -98,6 +97,8 @@ class SkillCommand
 	//	・HP,MP,TPダメージ（回復）
 	//	・コンディションの付与・解除
 	events = null;
+
+	flags = 0;				//	ターン消費コマンドとか
 
 	//	skilltype, DamageResultTypeで置き換える。更にオプションでも置き換えられる
 	static hitact_replacemap = {
@@ -513,6 +514,29 @@ class SkillCommand
 		}
 	}
 }
+
+//	※アクティブバトル用。ターン経過を特定のキャラに伝えるために使う。
+//	
+class FuncCommand
+{
+	order = 0;				//	ターンバトルでは行動順ソート用。アクティブバトルでは減っていき0になったら実行。
+	src = null;				//	RPGChara : コマンドの実行者
+	func = null;			//	function : 実行する関数。
+
+	flags = 0;				//	ターン消費コマンドとか
+
+	constructor( s, o, f){
+		src = s;
+		order = o;
+		func = f;
+	}
+
+	function exec(){
+		printf( "EXEC FuncCommand src=%S func=%S\n", src["name"], func);
+		func();
+	}
+}
+
 
 //	タイプ設定のダメージ式文字列の実体化。内部的に使用される。
 //	(1) Damageのsrcとdstから必要なパラメータをatkとdefに抽出。他にhitrate,crirate,shieldrate,edrなど途中計算に必要な値を全て設定。

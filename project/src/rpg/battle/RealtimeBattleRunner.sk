@@ -1,0 +1,338 @@
+import VirtualKeyCode;
+
+////////////////////////////////////////////////////////////////////////////////
+//	
+//	RealtimeBattleRunner
+//	
+//	preturn, turn, postturnはキャラ毎に、、、
+//	ゲージの溜まり具合で80%でpreturn, 100%でturn, コマンド入力時にバトルコマンド+postturn
+//	cmdgaugeは各人が持っていて0~100。100でコマンドを決定した場合-1になる。-1の時はコマンド実行後や死亡、復活時などにリセットされる。
+//	※死亡時（睡眠等も）でもcmdgaugeは増え、何もしないスキルを実行し続ける。ただしゲージ表示はカラ状態にする。
+//	
+class RealtimeBattleRunner extends BattleRunnerBase
+{
+	gaugeactive = false;		//	ゲージが溜まる状態。
+	cmdthread = null;			//	コマンド入力スレッド。コマンド入力が始まると起動
+	
+	gaugespeed = 0.02;			//	5秒でゲージが0->100に
+	agiavr = 10.0;				//	AGIの平均。バトル開始時に1回だけ計算する。死亡キャラもまとめて計算する。
+	cmdrunning = false;			//	誰かがコマンド実行中か
+
+	//	stage.launch内で自動イベント実行前に呼び出される
+	function start( st){
+		super.start( st);
+		RPGMain.buttonhelp( "battle");	//	ボタンヘルプをバトルに
+		setupCharas();				//	バトルキャラ配置。
+		setupBattleUI();			//	バトルUIを配置。
+		emitOption( "prebattle", null);		//	こいつが呼ばれるときはまだワイプアウト時。
+		cmdqueue = [];
+		setupIniGauges();
+		//	ここからスレッドを切り離して
+		thread = newthread( "RealtimeBattle Thread");
+		thread.call( runRealtimeBattle, this);
+	}
+
+	//	初期ゲージ計算
+	//	初期ゲージはランダム性高めたほうが良いのかな？
+	function setupIniGauges(){
+		agiavr = charas.reduce( @( v, x) x+v.AGI, 0) * 1.0 / length( charas);	//	平均AGI
+		foreach( chr in charas){
+			chr.cmdgauge = Math.clamp( calcIniGauge( chr) * rnd( 1.0, 1.6), 0, 90);
+		}
+	}
+	
+	//	キャラのゲージの開始位置を計算する。AGI平均に対して自分のAGIの割合をsqrtする。
+	//	30%位置を標準に、倍速いキャラは42%から始まり、倍遅いキャラは21%からになる。
+	function calcIniGauge( chr){
+		return Math.clamp( chr.AGI / agiavr * 30, 0, 80) | 0;	//	sqrtいらんかも。平均で均されるし。
+		// return Math.clamp( Math.sqrt( chr.AGI / agiavr) * 30, 0, 80) | 0;
+	}
+
+	//	1. コマンドゲージを貯めていく、溜まったらコマンド入力開始or自動入力。
+	//	2. 実行待ちコマンドのorderを減らしていく。0になったコマンドはbattleTurn()で順に実行されていく。
+	function update( dt){
+		thread.wakeup( dt);
+		//	アクティブバトルの場合はここでゲージを進め、プレイヤーが溜まったらコマンド入力をして
+		//	エネミーが溜まったらAIでコマンド入力。エネミーの場合はスキル実行タイミングをランダムでずらす
+		if( gaugeactive){
+			local dg = dt * gaugespeed;
+			foreach( chr in charas){
+				local g = chr.cmdgauge;
+				if( g >= 0.0 && g < 100.0){
+					chr.cmdgauge = Math.min( chr.cmdgauge+dg, 100.0);
+					if( chr.cmdgauge >= 100.0){
+						turnReached( chr);
+					}
+				}
+			}
+			if( !stage.mainevent){	//	メインイベント時にこれ進むといかんかな
+				foreach( cmd in cmdqueue){
+					cmd.order -= dg;
+				}
+			}
+			checkCommandInput();
+		}
+	}
+	
+	//	
+	function runRealtimeBattle(){
+		//	ここからタイミング取って戦闘シーン開始。まだワイプは閉じてる。
+		battleStart();
+		waitMainEvent();
+		local maxg = charas.reduce( @( v, x) Math.max( v.cmdgauge, x), 0), gscale = Math.max( 1.0, 80/maxg);
+		foreach( v in charas) v.cmdgauge *= gscale;
+		gaugeactive = true;	//	ここからゲージ開始
+		try{
+			emitOption( "preturn", 0);	//	初ターンのみここ
+			foreach( chr in charas) insertTurnCommands( chr, 100-chr.cmdgauge);
+			for( ;;){
+				battleTurn();
+				suspend();
+			}
+		}catch( ex){
+			cmdthread?.wakeupThrow( "battleend");
+			printexception( ex);
+			gaugeactive = false;
+			endfunc( this);
+		}
+	}
+
+	//	バトル開始。
+	//	・カメラを戦闘用に切り替えて、登場演出をキャラごとに指定して、、、って処理はオートイベントで行う。これで特別な演出を入れられる
+	function battleStart(){
+		local alives = members.filter( @( v) !v.isDead());
+		local alive3ds = alives.map( @( v) getChara3D( v));
+		foreach( v in members){
+			local p3d = getChara3D( v);
+			if( !v.isDead()) p3d.anime2( {id="fight"});
+			else  p3d.anime2( {id="stand"});
+		}
+		sleep( 1200);
+		foreach( p3d in alive3ds) p3d.anime2( {id="stand"});
+	}
+	
+	//	1ターンの処理
+	function battleTurn(){
+		//	コマンド処理。メインイベント実行とは排他的。
+		while( cmdqueue[0] && cmdqueue[0].order<=0){
+			if( stage.mainevent){ suspend(); continue; }	//	メインイベント動作中。
+			local cmd = delete cmdqueue[0];
+			local t0 = skGetTime();
+			cmdrunning = true;
+			cmd.exec();
+			checkBattleEnd();
+			resetPosition();
+			cmdrunning = false;
+			//	ターン消費行動だったらゲージリセット
+			if( cmd["flags"] & 1){
+				local chr = cmd.src;
+				if( chr.cmdgauge < 0) chr.cmdgauge = calcIniGauge( chr);	//	ここでゲージリセット
+			}
+		}
+	}
+	
+	//	死亡時、復活時にキャラのリセット
+	function resetChara( chr){
+		chr.cmdgauge = 0;
+	}
+
+	//	キャラのゲージをリセットする
+	function resetCharaGauge( chr, gauge){
+		chr.cmdgauge = gauge;
+	}
+	
+	//	キャラ毎にターン経過コマンドを入れる。※各キャラ登場時の1回ずつしか呼んではいけない！！！！
+	function insertTurnCommands( chr, delay){
+		if( chr.turn){ insertCommand( FuncCommand( chr, delay, @() emitOption( "preturn", chr.turn, [chr]))); }
+		insertCommand( FuncCommand( chr, delay+1, @() emitOption( "turn", chr.turn, [chr])));
+		local self = this, turn = chr.turn;
+		local c1 = FuncCommand( chr, delay+8, @(){	//	ちょっと遅らせてpostturnを実行
+			emitOption( "postturn", turn, [chr]);	//	charalistはsrcだけでOK???
+			self.dieCheckOne( chr, 0);
+			local rems = chr.spendTurn();		//	ここで++turn
+			if( rems){
+				local rp3d = self.getChara3D( chr);
+				rp3d.manuaction.act( @(){
+					foreach( r in rems){
+						chr.removeCondition( r.dataid);
+						if( r.data.showpop){
+							popcond( r.dataid, "rem");
+							wait( 300);
+						}
+					}
+				});
+			}
+			local g = self.calcIniGauge( chr);
+			self.insertTurnCommands( chr, g);	//	ずっと続く
+		});
+		insertCommand( c1);
+	}
+
+	//	ターンが回ってきた。ここではエネミーやコマンド不能プレイヤーのみコマンドを自動入力。
+	function turnReached( chr){
+		if( !chr.isCommandable() || enemies.contains( chr)){
+			local cmds = chooseAutoCommands( chr);
+			local d = rnd( 3, 8);
+			foreach( cmd in cmds){
+				cmd.order += (++d);		//	ちょっと後に実行。ただ、何もしない系だとすぐに発動しちゃう
+				cmd.flags |= 1;			//	ターン消費コマンドフラグ
+				insertCommand( cmd);
+				chr.cmdgauge = -1.0;	//	コマンド選択後は-1状態
+			}
+		}
+	}
+	
+	//	毎フレーム呼ぶ！
+	function checkCommandInput(){
+		if( cmdthread){
+			//	現在コマンド入力中のキャラがコマンド不能になった場合に入力を中断させる。 この処理は入力のUIでやってる
+		}else{
+			local pc = members.find( @( v) v.isCommandable() && v.cmdgauge>=100.0);
+			if( pc){
+				cmdthread = newthread( "CommandInput thread");
+				cmdthread.start( inputCommand, this, pc);
+			}
+		}
+	}
+
+	//	指定したキャラのコマンド入力開始。キャンセルされた場合は別のキャラが入力可能か見てコマンド入力を続ける
+	function inputCommand( pc){
+		cmdchr = pc;
+		try{
+			while( pc){
+				pc.skill = null;
+				pc.selected = true;
+				::playSound( "SE020");
+				local cmd = chooseCommand( pc);
+				pc.selected = false;
+				if( cmd){
+					cmd.order = 2;			//	多少操作からのラグを入れる
+					cmd.flags |= 1;			//	ターン消費コマンドフラグ
+					insertCommand( cmd);	//	
+					pc.cmdgauge = -1.0;		//	コマンド選択後は-1状態
+				}
+				//	Bで次のキャラに変更可能
+				local i0 = members.indexOf( pc);
+				local a = members.slice( i0+1) ... members.slice( 0, i0);
+				cmdchr = pc = a.find( @( v, i) v.isCommandable() && v.cmdgauge>=100.0);
+			}
+		}catch( ex){	//	
+			printexception( ex);
+			if( pc){
+				pc.selected = false;
+			}
+		}
+		//	選択できるキャラがいなくなった／選択中のキャラが行動不能になった
+		cmdchr = null;
+		//	ui非表示化
+		battleui.bindValue( "infollbl", "");
+		battleui.bindValue( "inforlbl", "");
+		battleui.findChild( "infog").setVisible( false);
+		cmdthread = null;
+		selectCommandTargets( []);
+		battleui.action( "showtgt").waitAction();	//	waitいらんかも？
+	}
+
+	//	override : 入力を停止
+	function showVictoryUI(){
+		cmdthread?.wakeupThrow( "battleend");
+		gaugeactive = false;
+		return super.showVictoryUI();
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////////////
+	//	
+	//	選択UI
+	
+	//	コマンド選択、スキル選択、ターゲット選択。それぞれのフェーズでUI表示と入力待ち。
+	//	※混乱中や何かAIの設定されているときは呼ばれない。
+	//	pc : RPGPlayer
+	function chooseCommand( pc){
+		//////////////////////////////////////////////////////////////
+		//	コマンド選択
+		local cmds = pc.getBattleCommandList().map( @( v){
+			return !v.cmddef ? v : { ...v, grayout=@() v.cmddef.isDisabled( v.bcmd, pc)?"on":"off", };
+		});
+		local cmdidx = pc.etc["cmdidx"] || 0;
+		battleui.bindValue( "cmdlist", cmds);
+		battleui.findChild( "infog").setVisible( true);
+		battleui.bindValue( "infollbl", @() ::rtf( sprintf( "%S　[M]$T.HP %d $T.MP %d $T.TP %d[O]", pc.name, pc.HP, pc.MP, pc.TP)));
+		battleui.bindValue( "inforlbl", "");
+	CHOOSE_COMMAND:
+		selectCommandTargets( [pc]);
+		battleui.action( "showcmd").waitAction();
+		battleui.focusTo( "bcmd"..cmdidx);
+	CHOOSE_COMMAND_SKIP:
+		//	
+		local cmditem = RPGMain.uiLoop( {
+			"action" : @( e){
+				if( e.item["cmddef"]){
+					return e.item;
+				}else{
+					playSound( "SE002");
+				}
+			}	//	cmds[idx]が返ってくる
+			"back" : @( e){
+				playSound( "SE004");
+				return "back";
+			}
+			"idle" : @( e){
+				if( !pc.isCommandable()) return "cancel";		//	キャラがコマンド不能になった
+			}
+		});
+		if( !cmditem || cmditem == "back" || cmditem == "cancel") return null;		//	コマンドのところでbackされたらnullを返す
+		cmdidx = cmds.indexOf( cmditem);
+		//////////////////////////////////////////////////////////////
+		//	スキル／アイテム選択
+		local cmddef = cmditem.cmddef;
+	CHOOSE_SKILL:
+		local skill = cmddef.selectSkill( cmditem.bcmd, pc);
+		if( !skill){
+			if( skill == false) goto CHOOSE_COMMAND_SKIP;
+			else{
+				playSound( "SE004");
+				goto CHOOSE_COMMAND;
+			}
+		}
+		//////////////////////////////////////////////////////////////
+		//	ターゲット選択
+		local dst = null;
+		if( skill.cmdtgt == 0){		//	防御、逃げるとかはターゲット選択無し。仮に自分自身をターゲットしておく。
+			playSound( "SE013");
+			dst = pc;
+		}else{
+			playSound( "SE013");
+			battleui.action( "showtgt").waitAction();
+			local self = this;
+			local t0 = enableTargetSelect( pc, skill.cmdtgt, false);	//	選択可能なターゲットを指定
+			::rootview.focusTo( t0["tgtview"]["name"]);
+			dst = RPGMain.uiLoop( {
+				"action" : @( e){
+					playSound( "SE013");
+					return e.item["rpgobj"];
+				}
+				"back" : @( e){
+					playSound( "SE004");
+					return "back";
+				}
+				"select" : @( e){
+					if( !e.item["rpgobj"]) return;
+					local dsts = self.getCommandTargets( pc, e.item.rpgobj, skill.cmdtgt, true);	//	dstsは表示用のもの
+					self.selectCommandTargets( dsts);
+				}
+				"idle" : @( e){
+					if( !pc.isCommandable()) return "cancel";
+					self.enableTargetSelect( pc, skill.cmdtgt, false);
+				}
+			});
+			enableTargetSelect( pc, 0, false);
+			if( dst == "cancel") return null;		//	キャラがコマンド不能になった
+			if( dst == "back") goto CHOOSE_COMMAND;	//	コマンドのところまで戻るで良い？コマンドで変わるなこれは。。。
+		}
+		local dsts = getCommandTargets( pc, dst, skill.cmdtgt);
+		local cmd = SkillCommand( pc, skill, dsts);
+		pc.setSkill( skill);
+		battleui.findChild( "infog").setVisible( true);
+		return cmd;
+	}
+}

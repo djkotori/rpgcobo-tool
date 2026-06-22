@@ -14,7 +14,7 @@ local settingprops = RPGSystem.settingprops;
 local battletypelist = [
 	{ val=0, lbl="$T.setting_battletype0", },
 	{ val=1, lbl="$T.setting_battletype1", disable=true },	//	未実装・・・
-	{ val=2, lbl="$T.setting_battletype2", disable=true },	//	未実装・・・
+	{ val=2, lbl="$T.setting_battletype2", },
 ];
 
 //////// basic - 基本システム

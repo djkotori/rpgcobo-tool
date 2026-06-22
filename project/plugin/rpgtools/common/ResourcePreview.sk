@@ -129,13 +129,14 @@ class ResourcePreviewList
 	function setSelectedView( v){
 		if( v != selview){
 			selview?.setSelected( false);
-			selview = v;
 			v?.setSelected( true);
+			selview = v;
 		}
 	}
 
 	function listevent( e){
 		local v = e.src;
+		if( !v["ref"]) return;
 		switch( e.id){
 		case MOUSE_PRESSED:
 			e.computeLocal( listview.getInvMatrix());

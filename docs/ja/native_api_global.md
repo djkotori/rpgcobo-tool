@@ -465,21 +465,6 @@ chrome://tracing/で表示可能なプロファイルログを出力するプロ
 - **戻り値**: なし
 - **説明**: JSON形式でトレースイベントとスタックフレームを出力します
 
-#### 使用例
-
-```sk
-local profiler = SKProfiler();
-profiler.start();
-// ... プロファイリングしたい処理 ...
-profiler.stop();
-
-local fs = FileStream("profile.json", "w");
-profiler.write(fs);
-fs.close();
-```
-
-その後、chrome://tracing/ または https://www.speedscope.app/ で開きます。
-
 ---
 
 ## 注意事項

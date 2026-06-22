@@ -259,7 +259,7 @@ sleep(16);
 
 ## 8. 制御構文
 
-以下の構文は JavaScript とほぼ同じ使い方ができます。
+以下の構文は JavaScript とほぼ同じ使い方ができます。使い方の違うものについては、個別に説明します。
 
 - `if`
 - `switch`
@@ -273,6 +273,8 @@ sleep(16);
 - `return`
 - `try` / `catch`
 - `goto`
+- `enum`
+- `import`
 
 ### foreach
 
@@ -307,3 +309,23 @@ LABEL:
     ;
 if (cond) goto LABEL;
 ```
+
+### enum
+
+`enum` は列挙型を定義します。
+
+```sk
+enum Color { Red, Green, Blue }
+local c = Color.Red;
+```
+
+### import
+
+`sk` の `import` は JavaScriptのものとは異なり、モジュールではなく定数や関数をソース内のグローバルスコープに登録するための構文です。  
+例えば、以下のように `import` を使うことで、`VirtualKeyCode`の定数(VK_Aなど)を直接指定することができます。
+
+```sk
+import VirtualKeyCode;
+```
+
+`import` で指定できるのは、enumで定義された定数、事前に定義されたテーブル、またはクラスです。

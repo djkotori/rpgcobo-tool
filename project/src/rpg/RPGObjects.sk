@@ -198,7 +198,7 @@ class RPGCharaBase extends RPGObject
 	aiturn = 0;						//	aipageが選択されたターン
 	selected = false;				//	UI用。コマンド選択時にこのキャラが選択されていることを示す。
 	escaped = false;				//	逃走などで戦闘を離脱。主にエネミー用。プレイヤー側も個別に逃走する場合はこれを使えば良し
-	turn = 1;						//	ターン
+	turn = 0;						//	ターン
 	
 	constructor(){
 		conds = [];
@@ -480,6 +480,7 @@ class RPGCharaBase extends RPGObject
 			HP = 0;
 			skill = null;
 			conds = conds.filter( @( v) !v["data"]["rem_die"] );
+			cmdgauge = 0;
 		}
 		//	解除コンディションを削除
 		local rembits = cond.data.remcondbits;

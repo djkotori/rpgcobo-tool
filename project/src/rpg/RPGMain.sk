@@ -306,6 +306,14 @@ import GamepadStateID;
 		return doneptr;
 	}
 
+	//	バトルタイプを指定してBattleRunnerを生成する
+	function createBattleRunner( type, st, opt){
+		switch( type){
+		case 2: return RealtimeBattleRunner( st, opt);
+		}
+		return TurnBattleRunner( st, opt);
+	}
+
 	//	バトル開始。バトルマップに移動し、バトルが終了したらこのイベントをそのまま続行する。（敗北時は別）
 	//	バトル処理のstagerunnerを同時に走らせる以外はマップ間の移動と同じ。あと移動方法がバトル用。
 	function enterBattle( cmd){
@@ -329,7 +337,7 @@ import GamepadStateID;
 			dest = { mapid=cmd.mapid, pos=(8,null,8), },
 			//	以下バトル起動用の関数類。
 			startfunc = @( st, opt){	//	opt==cmd_自身
-				st.battle = TurnBattleRunner( st, opt);
+				st.battle = RPGMain.createBattleRunner( ::conf.setting.battletype, st, opt);
 				st.battle.start( st);
 			},
 			//	バトル終了時のコールバック

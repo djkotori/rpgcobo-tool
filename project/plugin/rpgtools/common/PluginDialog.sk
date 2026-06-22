@@ -52,7 +52,7 @@ class PluginDialog extends UndoableDialog
 		proplist.listview.addEventListener( ACTION_EVENT, propevent);
 		proplist.listview.addEventListener( ITEM_EVENT, propevent);
 		proplist.ref = this;
-		plugenable = MenuBehavior( v.findChild( "plugenable"), [{ lbl="$T.lbl_disabled", val=false, }, { lbl="$T.lbl_enabled", val=true, }]);
+		plugenable = MenuBehavior( v.findChild( "plugenable"), [{ lbl="$T.lbl_disabled", icon="", val=false, }, { lbl="$T.lbl_enabled", icon="\ue5ca", val=true, }]);
 		//
 		makePluginList();
 		pluglist.setListItems( plugs);
@@ -79,7 +79,7 @@ class PluginDialog extends UndoableDialog
 					~(fn,plug={ id=r.name, res=r });
 				}
 				if( plug){
-					if( !plug["pluginfo"] || !plug.pluginfo["name"] || !("order" in plug.pluginfo)) throw Exception( "Invalid pluginfo");
+					if( !plug["pluginfo"] || !plug.pluginfo["name"]) throw Exception( "Invalid pluginfo");	//	order無くても良いか
 					local pi = PluginData();
 					pi.id = r.name;
 					pi.info = plug.pluginfo;
