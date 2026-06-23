@@ -5,6 +5,8 @@
 - **v1:** `role: villager`（`msg` 直書き）
 - **v2:** `role: custom`（`pages[]` / `commands[]` → `page[]` / `cmdblock[]`）
 
+**詳細技術メモ:** [`docs/aiscenario-poc.md`](../../docs/aiscenario-poc.md)（PR #3 確定仕様・保存経路・落とし穴）
+
 ## 使い方
 
 1. RPG-Cobo ツール起動（プロジェクトを開いた状態）
