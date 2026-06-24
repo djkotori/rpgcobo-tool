@@ -9,12 +9,25 @@
 
 ## 使い方
 
+### プラグイン（RPG-Cobo 内）
+
 1. RPG-Cobo ツール起動（プロジェクトを開いた状態）
 2. **編集** メニューから取り込みを実行:
    - `[PoC] villager JSON取り込み` — `sample/villager.json`
    - `[PoC] custom JSON取り込み` — `sample/custom.json`
 3. ログは **表示 → システムコンソール**（Ctrl+@）
 4. 対象マップを**閉じて開き直す** → 配置・会話を確認
+
+### シナリオメーカー（ブラウザ）
+
+AI なしで中間 JSON を作るウィザード HTML です。
+
+1. `scenario-maker/index.html` をブラウザで開く
+2. ステップ 1〜3 でキャラ種類・配置・会話を入力
+3. **JSON を作成する** → 右ペインに出力（会話プレビュー付き）
+4. **コピー** または **ダウンロード** した JSON を、RPG-Cobo 側で取り込む
+
+プリセット（村人一言 / YES-NO / YES-NO+if）・下書き自動保存（localStorage）・入力バリデーションあり。
 
 ## 保存経路（PR#3 4点目）
 
@@ -36,6 +49,8 @@ project/plugin/aiscenario/
 ├─ plugin.sk
 ├─ ScenarioImporter.sk
 ├─ ScenarioCommandBuilder.sk   # v2: type → cmd_* 変換
+├─ scenario-maker/
+│  └─ index.html                 # ブラウザ用 JSON ウィザード
 └─ sample/
    ├─ villager.json
    └─ custom.json

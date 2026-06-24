@@ -228,6 +228,17 @@ ScenarioImporter.importFromFile
 
 ---
 
+## 8b. シナリオメーカー（HTML ウィザード）
+
+`project/plugin/aiscenario/scenario-maker/index.html` — ブラウザ単体で中間 JSON を生成。
+
+- **出力形式:** `sample/villager.json` / `sample/custom.json` と同じ中間 JSON（`version`, `map`, `events[]`）
+- **変換の分担:** フォームは `type: "message"` 等の人間向け形式のみ出力。`cmdblock[]` や trigger 数値への変換は **プラグイン**（`ScenarioCommandBuilder.sk`）が担当
+- **フロー:** キャラ種類 → マップ・配置 → 会話（選択肢なし / YES-NO / YES-NO+if）
+- **便利機能:** プリセット読込、会話プレビュー、コピー、ダウンロード、localStorage 下書き、バリデーション
+
+---
+
 ## 9. 参照
 
 - [Issue #2](https://github.com/djkotori/rpgcobo-tool/issues/2) — 提案元

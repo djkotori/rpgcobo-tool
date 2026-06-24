@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シナリオメーカー — RPG-Cobo aiscenario</title>
+<style>
+  :root {
+    --wood-dark: #3d2817;
+    --wood-mid: #5c3d1e;
+    --wood-light: #8b5a2b;
+    --parchment: #f4e4c1;
+    --parchment-dark: #e8d4a8;
+    --ink: #2a1810;
+    --ink-muted: #5c4030;
+    --moss: #4a7c59;
+    --moss-light: #6b9b76;
+    --lantern: #e8a838;
+    --lantern-glow: rgba(232, 168, 56, 0.35);
+    --sky-dusk: #1a2f24;
+    --sky-deep: #0f1a14;
+    --danger: #a63d3d;
+    --border-wood: #6b4423;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, var(--lantern-glow), transparent 60%),
+      linear-gradient(180deg, var(--sky-dusk) 0%, var(--sky-deep) 40%, #0a120e 100%);
+    line-height: 1.55;
+  }
+
+  /* 村の空気 — 木枠・羊皮紙 */
+  .signboard {
+    text-align: center;
+    padding: 48px 20px 28px;
+  }
+  .signboard-inner {
+    display: inline-block;
+    background: linear-gradient(180deg, var(--wood-mid), var(--wood-dark));
+    border: 4px solid var(--wood-light);
+    border-radius: 8px;
+    padding: 20px 36px 24px;
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.5),
+      inset 0 1px 0 rgba(255,255,255,0.08);
+    position: relative;
+  }
+  .signboard-inner::before,
+  .signboard-inner::after {
+    content: "";
+    position: absolute;
+    top: -12px;
+    width: 14px;
+    height: 14px;
+    background: var(--lantern);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--lantern-glow);
+  }
+  .signboard-inner::before { left: 24px; }
+  .signboard-inner::after { right: 24px; }
+  .signboard h1 {
+    margin: 0;
+    font-size: 1.85em;
+    font-weight: 800;
+    color: var(--parchment);
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    letter-spacing: 0.04em;
+  }
+  .signboard h1 .accent { color: var(--lantern); }
+  .signboard p {
+    margin: 10px 0 0;
+    color: var(--parchment-dark);
+    font-size: 0.95em;
+    opacity: 0.95;
+  }
+
+  .layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 16px 64px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--parchment);
+    border: 3px solid var(--border-wood);
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+    overflow: hidden;
+  }
+  .panel-head {
+    background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+    color: var(--parchment);
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 0.95em;
+    border-bottom: 2px solid var(--wood-dark);
+  }
+
+  /* ステップ（アコーディオン） */
+  .steps { padding: 12px; }
+  .step {
+    background: var(--parchment-dark);
+    border: 2px solid var(--border-wood);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .step.active {
+    border-color: var(--moss);
+    box-shadow: 0 0 0 2px rgba(74, 124, 89, 0.25);
+  }
+  .step.done .step-num { background: var(--moss); }
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .step-num {
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wood-mid);
+    color: var(--parchment);
+    border-radius: 50%;
+    font-size: 0.8em;
+    font-weight: 700;
+  }
+  .step-title { font-weight: 700; color: var(--ink); }
+  .step-summary {
+    margin-left: auto;
+    color: var(--moss);
+    font-size: 0.82em;
+    text-align: right;
+    max-width: 48%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chevron {
+    flex: 0 0 auto;
+    color: var(--ink-muted);
+    transition: transform 0.25s;
+    font-size: 0.75em;
+  }
+  .step.open .chevron { transform: rotate(180deg); }
+  .step-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+    padding: 0 14px;
+  }
+  .step.open .step-body {
+    max-height: 1200px;
+    padding: 4px 14px 16px;
+  }
+
+  label {
+    display: block;
+    margin: 10px 0 4px;
+    font-size: 0.82em;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+  input[type=text],
+  input[type=number],
+  textarea,
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.95em;
+    background: #fffef8;
+    color: var(--ink);
+    border: 2px solid #c4a574;
+    border-radius: 6px;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--moss);
+    box-shadow: 0 0 0 2px rgba(74, 124, 89, 0.2);
+  }
+  textarea { resize: vertical; min-height: 56px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 100px; }
+  .row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  @media (max-width: 500px) { .row-4 { grid-template-columns: repeat(2, 1fr); } }
+  .hint { font-size: 0.78em; color: var(--ink-muted); margin: 4px 0 0; }
+  .hidden { display: none !important; }
+
+  .btn {
+    font-size: 0.92em;
+    padding: 9px 18px;
+    font-weight: 600;
+    border: 2px solid transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-next {
+    margin-top: 14px;
+    background: var(--moss);
+    color: #fff;
+    border-color: #3d6348;
+  }
+  .btn-next:hover { filter: brightness(1.08); }
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    font-size: 1.05em;
+    background: linear-gradient(180deg, var(--lantern), #c48820);
+    color: var(--ink);
+    border-color: #a67018;
+    margin-top: 12px;
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-secondary {
+    background: var(--parchment-dark);
+    color: var(--ink);
+    border-color: var(--border-wood);
+  }
+  .btn-secondary:hover { background: #ddd0b0; }
+  .btn-danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: var(--danger);
+  }
+
+  .preset-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px 0;
+  }
+  .preset-bar .btn { font-size: 0.82em; padding: 6px 12px; }
+
+  .err-box {
+    display: none;
+    margin: 12px 14px 0;
+    padding: 10px 12px;
+    background: #fde8e8;
+    border: 2px solid var(--danger);
+    border-radius: 6px;
+    color: var(--danger);
+    font-size: 0.88em;
+  }
+  .err-box.show { display: block; }
+
+  /* 出力パネル */
+  .output-body { padding: 14px; }
+  .preview-flow {
+    background: #fffef8;
+    border: 2px dashed #c4a574;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 0.88em;
+  }
+  .preview-flow h3 {
+    margin: 0 0 8px;
+    font-size: 0.9em;
+    color: var(--moss);
+  }
+  .flow-line {
+    padding: 4px 0;
+    border-left: 3px solid var(--moss-light);
+    padding-left: 10px;
+    margin: 4px 0;
+  }
+  .flow-line.branch { border-left-color: var(--lantern); margin-left: 12px; }
+  .flow-line.if-line { border-left-color: var(--wood-light); margin-left: 24px; font-style: italic; }
+  pre.json-out {
+    background: var(--sky-deep);
+    color: #b8e0c8;
+    padding: 14px;
+    border-radius: 8px;
+    border: 2px solid var(--wood-dark);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-size: 0.78em;
+    line-height: 1.45;
+    margin: 0;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+  .action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--wood-dark);
+    color: var(--parchment);
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 2px solid var(--lantern);
+    opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+    z-index: 100;
+    font-size: 0.9em;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .checkbox-row input { width: auto; }
+  .checkbox-row label { margin: 0; font-weight: normal; }
+</style>
+</head>
+<body>
+
+<header class="signboard">
+  <div class="signboard-inner">
+    <h1>Scenario <span class="accent">Maker</span></h1>
+    <p>村の看板のように順番に選ぶだけ — プラグインへ流し込める JSON が作れます</p>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- 左: ウィザード -->
+  <div class="panel">
+    <div class="panel-head">冒険の準備（入力）</div>
+    <div class="preset-bar">
+      <button type="button" class="btn btn-secondary" data-preset="villager">村人・一言</button>
+      <button type="button" class="btn btn-secondary" data-preset="yesno">YES/NO 依頼</button>
+      <button type="button" class="btn btn-secondary" data-preset="yesno-if">YES/NO + フラグ分岐</button>
+      <button type="button" class="btn btn-danger" id="btnReset">下書きリセット</button>
+    </div>
+    <div class="err-box" id="errBox"></div>
+    <div class="steps" id="stepsWrap">
+
+      <div class="step open active" data-step="0">
+        <div class="step-header" data-toggle="0">
+          <span class="step-num">1</span>
+          <span class="step-title">キャラの種類</span>
+          <span class="step-summary" id="sum0"></span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <p class="hint">村人は一言メッセージ。カスタムは選択肢・分岐つき会話。</p>
+          <label for="role">役割 (role)</label>
+          <select id="role">
+            <option value="villager">村人 (villager) — 一言</option>
+            <option value="custom" selected>カスタム (custom) — 分岐あり</option>
+          </select>
+          <div class="row">
+            <div>
+              <label for="name">イベント名</label>
+              <input type="text" id="name" value="JSONテスト">
+            </div>
+            <div>
+              <label for="mdlid">モデルID (mdlid)</label>
+              <input type="text" id="mdlid" value="CV000">
+            </div>
+          </div>
+          <button type="button" class="btn btn-next" data-next="0">次へ ▾</button>
+        </div>
+      </div>
+
+      <div class="step" data-step="1">
+        <div class="step-header" data-toggle="1">
+          <span class="step-num">2</span>
+          <span class="step-title">マップと配置</span>
+          <span class="step-summary" id="sum1"></span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <label for="map">マップID</label>
+          <input type="text" id="map" value="M001">
+          <label>配置座標 pos</label>
+          <div class="row-4">
+            <div><label for="posX">X</label><input type="number" id="posX" value="80"></div>
+            <div><label for="posY">Y</label><input type="number" id="posY" value="5"></div>
+            <div><label for="posZ">Z</label><input type="number" id="posZ" value="65"></div>
+            <div><label for="posDir">向き</label><input type="number" id="posDir" value="2" min="0" max="3"></div>
+          </div>
+          <div id="triggerWrap">
+            <label for="trigger">起動方法 (trigger)</label>
+            <select id="trigger">
+              <option value="examine">調べる (examine)</option>
+              <option value="contact">接触 (contact)</option>
+              <option value="auto">自動 (auto)</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-next" data-next="1">次へ ▾</button>
+        </div>
+      </div>
+
+      <div class="step" data-step="2">
+        <div class="step-header" data-toggle="2">
+          <span class="step-num">3</span>
+          <span class="step-title">会話の内容</span>
+          <span class="step-summary" id="sum2"></span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="step-body">
+          <label for="firstMsg">最初のセリフ</label>
+          <textarea id="firstMsg">こんにちは、旅の人。</textarea>
+          <div id="customOnly">
+            <label for="uiclose">メッセージウィンドウ (uiclose)</label>
+            <select id="uiclose">
+              <option value="2" selected>2 — 即閉じ（既定）</option>
+              <option value="0">0 — 開いたまま</option>
+              <option value="1">1 — イベント終了時</option>
+            </select>
+            <div id="choiceWrap">
+              <label for="choiceType">選択肢</label>
+              <select id="choiceType">
+                <option value="none">選択肢なし</option>
+                <option value="yesno">選択肢あり（YES / NO）</option>
+                <option value="yesno-if">YES/NO + フラグ後の追加セリフ (if)</option>
+              </select>
+              <div id="yesnoBlock" class="hidden">
+                <div class="row">
+                  <div>
+                    <label for="yesLabel">「はい」ラベル</label>
+                    <input type="text" id="yesLabel" value="はい">
+                  </div>
+                  <div>
+                    <label for="noLabel">「いいえ」ラベル</label>
+                    <input type="text" id="noLabel" value="いいえ">
+                  </div>
+                </div>
+                <label for="yesMsg">「はい」を選んだとき</label>
+                <textarea id="yesMsg">やってくれるか、ありがたい。</textarea>
+                <label for="noMsg">「いいえ」を選んだとき</label>
+                <textarea id="noMsg">そうか…。残念だ。</textarea>
+                <div id="ifBlock" class="hidden">
+                  <label for="flagVar">YES で立てる変数名</label>
+                  <input type="text" id="flagVar" value="A">
+                  <label for="ifMsg">フラグが true のとき追加セリフ (if)</label>
+                  <textarea id="ifMsg">また会おう。</textarea>
+                  <div class="checkbox-row">
+                    <input type="checkbox" id="setFlagOnYes" checked>
+                    <label for="setFlagOnYes">「はい」分岐で setvar する</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-next" data-next="2">完了 ▾</button>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 0 14px 14px;">
+      <button type="button" class="btn btn-primary" id="btnBuild">JSON を作成する</button>
+    </div>
+  </div>
+
+  <!-- 右: 出力 -->
+  <div class="panel">
+    <div class="panel-head">巻物の内容（出力）</div>
+    <div class="output-body">
+      <div class="preview-flow" id="previewFlow">
+        <h3>会話の流れ（プレビュー）</h3>
+        <p class="hint">「JSON を作成する」を押すと表示されます。</p>
+      </div>
+      <pre class="json-out" id="output">（ここに JSON が出力されます）</pre>
+      <div class="action-row">
+        <button type="button" class="btn btn-secondary" id="btnCopy">クリップボードにコピー</button>
+        <button type="button" class="btn btn-secondary" id="btnDownload">JSON をダウンロード</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "aiscenario-maker-draft-v1";
+  const $ = (id) => document.getElementById(id);
+  const steps = [...document.querySelectorAll(".step")];
+  const TOTAL = steps.length;
+  let lastJson = null;
+
+  const fieldIds = [
+    "role", "name", "mdlid", "map", "posX", "posY", "posZ", "posDir",
+    "trigger", "firstMsg", "uiclose", "choiceType", "yesLabel", "noLabel",
+    "yesMsg", "noMsg", "flagVar", "ifMsg", "setFlagOnYes"
+  ];
+
+  function showToast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  function truncate(s, n) {
+    if (!s) return "";
+    return s.length > n ? s.slice(0, n) + "…" : s;
+  }
+
+  function openStep(i) {
+    steps.forEach((s, idx) => {
+      s.classList.toggle("open", idx === i);
+      s.classList.toggle("active", idx === i);
+    });
+  }
+
+  function toggleStep(i) {
+    const s = steps[i];
+    if (s.classList.contains("open")) s.classList.remove("open");
+    else openStep(i);
+  }
+
+  function nextStep(i) {
+    hideError();
+    const err = validateStep(i);
+    if (err) { showError(err); return; }
+    updateSummary(i);
+    steps[i].classList.add("done");
+    steps[i].classList.remove("open", "active");
+    if (i + 1 < TOTAL) {
+      openStep(i + 1);
+      steps[i + 1].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+    saveDraft();
+  }
+
+  function updateSummary(i) {
+    if (i === 0) {
+      const roleLabel = $("role").value === "villager" ? "村人" : "カスタム";
+      $("sum0").textContent = roleLabel + "：" + $("name").value;
+    } else if (i === 1) {
+      const trg = $("trigger").selectedOptions[0].text.replace(/\s*\(.*/, "");
+      $("sum1").textContent = $("map").value + " @ (" + posArray().join(",") + ") / " + trg;
+    } else if (i === 2) {
+      const isVil = $("role").value === "villager";
+      let c = "一言";
+      if (!isVil) {
+        const ct = $("choiceType").value;
+        c = ct === "none" ? "選択肢なし" : ct === "yesno" ? "YES/NO" : "YES/NO+if";
+      }
+      $("sum2").textContent = c + "：「" + truncate($("firstMsg").value.trim(), 14) + "」";
+    }
+  }
+
+  function posArray() {
+    return [
+      Number($("posX").value),
+      Number($("posY").value),
+      Number($("posZ").value),
+      Number($("posDir").value)
+    ];
+  }
+
+  function syncRoleUi() {
+    const isVil = $("role").value === "villager";
+    $("customOnly").classList.toggle("hidden", isVil);
+    $("triggerWrap").classList.toggle("hidden", isVil);
+  }
+
+  function syncChoiceUi() {
+    const ct = $("choiceType").value;
+    $("yesnoBlock").classList.toggle("hidden", ct === "none");
+    $("ifBlock").classList.toggle("hidden", ct !== "yesno-if");
+  }
+
+  function showError(msg) {
+    const box = $("errBox");
+    box.textContent = msg;
+    box.classList.add("show");
+  }
+
+  function hideError() {
+    $("errBox").classList.remove("show");
+  }
+
+  function validateStep(stepIndex) {
+    if (stepIndex >= 0) {
+      if (!$("name").value.trim()) return "イベント名を入力してください。";
+    }
+    if (stepIndex >= 1) {
+      if (!$("map").value.trim()) return "マップIDを入力してください。";
+      const pos = posArray();
+      if (pos.some((n) => Number.isNaN(n))) return "配置座標は数値で入力してください。";
+    }
+    if (stepIndex >= 2) {
+      if (!$("firstMsg").value.trim()) return "最初のセリフを入力してください。";
+      const ct = $("choiceType").value;
+      if ($("role").value === "custom" && ct !== "none") {
+        if (!$("yesMsg").value.trim() || !$("noMsg").value.trim())
+          return "YES/NO それぞれのセリフを入力してください。";
+        if (ct === "yesno-if" && !$("ifMsg").value.trim())
+          return "if 分岐の追加セリフを入力してください。";
+        if (ct === "yesno-if" && !$("flagVar").value.trim())
+          return "変数名を入力してください。";
+      }
+    }
+    return null;
+  }
+
+  function validateAll() {
+    for (let i = 0; i < TOTAL; i++) {
+      const e = validateStep(i);
+      if (e) return e;
+    }
+    return null;
+  }
+
+  function buildCommands() {
+    const uic = Number($("uiclose").value);
+    const commands = [
+      { type: "message", text: $("firstMsg").value.trim(), uiclose: uic }
+    ];
+    const ct = $("choiceType").value;
+    if (ct === "none") return commands;
+
+    commands.push({ type: "wait", time: 500 });
+
+    const yesBranch = [{ type: "message", text: $("yesMsg").value.trim() }];
+    if ($("setFlagOnYes").checked && ct === "yesno-if") {
+      yesBranch.push({
+        type: "setvar",
+        var: $("flagVar").value.trim(),
+        op: "=",
+        value: true
+      });
+    } else if (ct === "yesno") {
+      yesBranch.push({
+        type: "setvar",
+        var: "A",
+        op: "=",
+        value: true
+      });
+    }
+
+    commands.push({
+      type: "choice",
+      options: [$("yesLabel").value.trim(), $("noLabel").value.trim()],
+      branches: [
+        yesBranch,
+        [{ type: "message", text: $("noMsg").value.trim() }]
+      ]
+    });
+
+    if (ct === "yesno-if") {
+      commands.push({
+        type: "if",
+        conditions: [
+          { lvar: $("flagVar").value.trim(), op: "==", rvar: true }
+        ],
+        then: [{ type: "message", text: $("ifMsg").value.trim() }]
+      });
+    }
+
+    return commands;
+  }
+
+  function buildJsonObject() {
+    const role = $("role").value;
+    const pos = posArray();
+    const map = $("map").value.trim();
+
+    if (role === "villager") {
+      return {
+        version: 1,
+        map: map,
+        events: [{
+          role: "villager",
+          name: $("name").value.trim(),
+          mdlid: $("mdlid").value.trim(),
+          pos: pos,
+          msg: $("firstMsg").value.trim()
+        }]
+      };
+    }
+
+    return {
+      version: 2,
+      map: map,
+      events: [{
+        role: "custom",
+        name: $("name").value.trim(),
+        mdlid: $("mdlid").value.trim(),
+        pos: pos,
+        pages: [{
+          trigger: $("trigger").value,
+          move: "stop",
+          parallel: false,
+          conditions: [],
+          commands: buildCommands()
+        }]
+      }]
+    };
+  }
+
+  function renderPreview(obj) {
+    const el = $("previewFlow");
+    const ev = obj.events[0];
+    let html = "<h3>会話の流れ（プレビュー）</h3>";
+
+    if (ev.role === "villager") {
+      html += '<div class="flow-line">💬 ' + escapeHtml(ev.msg) + "</div>";
+      el.innerHTML = html;
+      return;
+    }
+
+    const cmds = ev.pages[0].commands;
+    html += '<div class="flow-line">📍 マップ ' + escapeHtml(obj.map) + " / trigger: " + escapeHtml(ev.pages[0].trigger) + "</div>";
+
+    cmds.forEach((c) => {
+      if (c.type === "message") {
+        html += '<div class="flow-line">💬 ' + escapeHtml(c.text) + "</div>";
+      } else if (c.type === "wait") {
+        html += '<div class="flow-line">⏳ 待機 ' + c.time + "ms</div>";
+      } else if (c.type === "choice") {
+        html += '<div class="flow-line">❓ 選択肢: ' + escapeHtml(c.options.join(" / ")) + "</div>";
+        c.branches.forEach((br, i) => {
+          const label = c.options[i] || ("分岐" + i);
+          br.forEach((bc) => {
+            if (bc.type === "message") {
+              html += '<div class="flow-line branch">→ ' + escapeHtml(label) + ": " + escapeHtml(bc.text) + "</div>";
+            } else if (bc.type === "setvar") {
+              html += '<div class="flow-line branch">→ ' + escapeHtml(label) + ": 変数 " + escapeHtml(bc.var) + " = true</div>";
+            }
+          });
+        });
+      } else if (c.type === "if") {
+        c.then.forEach((tc) => {
+          if (tc.type === "message") {
+            html += '<div class="flow-line if-line">🔀 if: ' + escapeHtml(tc.text) + "</div>";
+          }
+        });
+      }
+    });
+
+    el.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function build() {
+    hideError();
+    const err = validateAll();
+    if (err) {
+      showError(err);
+      return;
+    }
+    for (let i = 0; i < TOTAL; i++) updateSummary(i);
+
+    lastJson = buildJsonObject();
+    const text = JSON.stringify(lastJson, null, 2);
+    $("output").textContent = text;
+    renderPreview(lastJson);
+    saveDraft();
+    $("output").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    showToast("JSON を作成しました");
+  }
+
+  function copyJson() {
+    const t = $("output").textContent;
+    if (!lastJson) {
+      showError("先に「JSON を作成する」を押してください。");
+      return;
+    }
+    navigator.clipboard.writeText(t).then(() => showToast("コピーしました"));
+  }
+
+  function downloadJson() {
+    if (!lastJson) {
+      showError("先に「JSON を作成する」を押してください。");
+      return;
+    }
+    const map = lastJson.map || "scenario";
+    const blob = new Blob([JSON.stringify(lastJson, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "scenario-" + map + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast("ダウンロードしました");
+  }
+
+  function saveDraft() {
+    const data = {};
+    fieldIds.forEach((id) => {
+      const el = $(id);
+      if (!el) return;
+      data[id] = el.type === "checkbox" ? el.checked : el.value;
+    });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (_) { /* 容量超過等は無視 */ }
+  }
+
+  function loadDraft() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      fieldIds.forEach((id) => {
+        const el = $(id);
+        if (!el || !(id in data)) return;
+        if (el.type === "checkbox") el.checked = data[id];
+        else el.value = data[id];
+      });
+    } catch (_) { /* 破損下書きは無視 */ }
+    syncRoleUi();
+    syncChoiceUi();
+  }
+
+  function resetDraft() {
+    if (!confirm("入力と下書きをすべてリセットしますか？")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+
+  const PRESETS = {
+    villager: {
+      role: "villager",
+      name: "村人テスト",
+      mdlid: "CV000",
+      map: "M001",
+      posX: "70", posY: "5", posZ: "60", posDir: "2",
+      firstMsg: "こんにちは！これはJSONから自動生成された村人です。"
+    },
+    yesno: {
+      role: "custom",
+      name: "JSONカスタムテスト",
+      mdlid: "CV000",
+      map: "M001",
+      posX: "80", posY: "5", posZ: "65", posDir: "2",
+      trigger: "examine",
+      uiclose: "2",
+      choiceType: "yesno",
+      firstMsg: "こんにちは、旅の人。",
+      yesLabel: "はい", noLabel: "いいえ",
+      yesMsg: "気をつけてな。",
+      noMsg: "そうか…。"
+    },
+    "yesno-if": {
+      role: "custom",
+      name: "JSONカスタムテスト",
+      mdlid: "CV000",
+      map: "M001",
+      posX: "80", posY: "5", posZ: "65", posDir: "2",
+      trigger: "examine",
+      uiclose: "0",
+      choiceType: "yesno-if",
+      firstMsg: "こんにちは、旅の人。",
+      yesLabel: "はい", noLabel: "いいえ",
+      yesMsg: "気をつけてな。",
+      noMsg: "そうか…。",
+      flagVar: "A",
+      ifMsg: "また会おう。",
+      setFlagOnYes: true
+    }
+  };
+
+  function applyPreset(key) {
+    const p = PRESETS[key];
+    if (!p) return;
+    Object.entries(p).forEach(([k, v]) => {
+      const el = $(k);
+      if (!el) return;
+      if (el.type === "checkbox") el.checked = v;
+      else el.value = v;
+    });
+    syncRoleUi();
+    syncChoiceUi();
+    saveDraft();
+    showToast("プリセットを読み込みました");
+  }
+
+  /* イベント */
+  document.querySelectorAll("[data-toggle]").forEach((el) => {
+    el.addEventListener("click", () => toggleStep(Number(el.dataset.toggle)));
+  });
+  document.querySelectorAll("[data-next]").forEach((el) => {
+    el.addEventListener("click", () => nextStep(Number(el.dataset.next)));
+  });
+  $("role").addEventListener("change", () => { syncRoleUi(); saveDraft(); });
+  $("choiceType").addEventListener("change", () => { syncChoiceUi(); saveDraft(); });
+  $("btnBuild").addEventListener("click", build);
+  $("btnCopy").addEventListener("click", copyJson);
+  $("btnDownload").addEventListener("click", downloadJson);
+  $("btnReset").addEventListener("click", resetDraft);
+  document.querySelectorAll("[data-preset]").forEach((btn) => {
+    btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+  });
+  fieldIds.forEach((id) => {
+    const el = $(id);
+    if (el) el.addEventListener("change", saveDraft);
+    if (el && (el.tagName === "TEXTAREA" || el.tagName === "INPUT"))
+      el.addEventListener("input", saveDraft);
+  });
+
+  loadDraft();
+})();
+</script>
+</body>
+</html>
