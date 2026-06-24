@@ -717,6 +717,25 @@
   /* 左上ロゴ（メインエリア用・非表示 sidebar 内に移動） */
   .page-logo { display: none; }
 
+  /* 右上バージョン（修正のたびに APP_VERSION を更新） */
+  .app-version {
+    position: fixed;
+    top: 12px;
+    right: 14px;
+    z-index: 190;
+    padding: 4px 10px;
+    font-size: 0.72em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--parchment-dark);
+    background: rgba(61, 40, 23, 0.88);
+    border: 1px solid var(--wood-light);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    user-select: none;
+  }
+
   @media (max-width: 768px) {
     .sidebar {
       width: var(--sidebar-w);
@@ -732,6 +751,8 @@
 </style>
 </head>
 <body>
+
+<div class="app-version" id="appVersion" aria-label="バージョン"></div>
 
 <div class="app-shell">
   <aside class="sidebar" id="sidebar" aria-label="サイドバー">
@@ -927,6 +948,9 @@
 <script>
 (function () {
   "use strict";
+
+  /** シナリオメーカー版数 — 修正のたびに increment（patch: UI修正 / minor: 機能追加） */
+  const APP_VERSION = "0.5.0";
 
   const STORAGE_KEY = "aiscenario-maker-draft-v1";
   const HISTORY_KEY = "aiscenario-maker-history-v1";
@@ -1562,6 +1586,7 @@
   initSidebar();
   loadDraft();
   renderHistoryList();
+  $("appVersion").textContent = "v" + APP_VERSION;
 
   const popEl = $("historyPopover");
   popEl.addEventListener("mouseenter", () => clearTimeout(popoverHideTimer));
