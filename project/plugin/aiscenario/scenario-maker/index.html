@@ -280,13 +280,151 @@
     color: var(--moss);
   }
   .flow-line {
-    padding: 4px 0;
+    padding: 6px 10px;
     border-left: 3px solid var(--moss-light);
-    padding-left: 10px;
     margin: 4px 0;
+    background: rgba(255, 254, 248, 0.6);
+    border-radius: 0 6px 6px 0;
   }
-  .flow-line.branch { border-left-color: var(--lantern); margin-left: 12px; }
-  .flow-line.if-line { border-left-color: var(--wood-light); margin-left: 24px; font-style: italic; }
+  .flow-line.if-line {
+    border-left-color: var(--wood-light);
+    font-style: italic;
+    text-align: center;
+    max-width: 320px;
+    margin: 12px auto 4px;
+  }
+
+  /* 選択肢分岐ツリー */
+  .choice-fork {
+    margin: 16px 0;
+    position: relative;
+  }
+  .choice-fork-head {
+    text-align: center;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #fffef8, var(--parchment-dark));
+    border: 2px solid var(--lantern);
+    border-radius: 8px;
+    font-weight: 700;
+    color: var(--ink);
+    position: relative;
+    z-index: 2;
+    max-width: 280px;
+    margin: 0 auto 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .choice-fork-head .fork-icon { color: var(--lantern); margin-right: 4px; }
+  /* 幹から分岐点への縦線 */
+  .fork-stem {
+    width: 3px;
+    height: 20px;
+    background: var(--wood-light);
+    margin: 0 auto;
+  }
+  /* 分岐横棒 + 左右への枝 */
+  .fork-rail {
+    position: relative;
+    height: 24px;
+    margin: 0 8%;
+  }
+  .fork-rail::before {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: 50%;
+    height: 3px;
+    background: var(--wood-light);
+    transform: translateY(-50%);
+  }
+  .fork-rail::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--wood-light);
+    transform: translateX(-50%);
+  }
+  .branch-tree {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 0;
+    position: relative;
+  }
+  @media (max-width: 480px) {
+    .branch-tree { grid-template-columns: 1fr; }
+    .fork-rail { display: none; }
+    .fork-stem { display: none; }
+  }
+  .branch-col {
+    border-radius: 10px;
+    padding: 10px 12px 12px;
+    min-height: 60px;
+    position: relative;
+  }
+  /* 各列の上から幹へ伸びる縦線 */
+  .branch-col::before {
+    content: "";
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    width: 3px;
+    height: 24px;
+    transform: translateX(-50%);
+  }
+  @media (max-width: 480px) {
+    .branch-col::before { display: none; }
+  }
+  .branch-yes {
+    background: linear-gradient(180deg, rgba(74, 124, 89, 0.12), rgba(74, 124, 89, 0.04));
+    border: 2px solid var(--moss);
+  }
+  .branch-yes::before { background: var(--moss); }
+  .branch-no {
+    background: linear-gradient(180deg, rgba(139, 90, 43, 0.12), rgba(139, 90, 43, 0.04));
+    border: 2px solid var(--wood-light);
+  }
+  .branch-no::before { background: var(--wood-light); }
+  .branch-head {
+    font-weight: 800;
+    font-size: 0.88em;
+    text-align: center;
+    padding: 4px 8px 10px;
+    margin: -2px -4px 8px;
+    border-bottom: 2px dashed rgba(0,0,0,0.12);
+  }
+  .branch-yes .branch-head { color: var(--moss); }
+  .branch-no .branch-head { color: var(--wood-mid); }
+  .branch-col .flow-line {
+    border-left-width: 2px;
+    font-size: 0.92em;
+    margin: 6px 0;
+  }
+  .branch-yes .flow-line { border-left-color: var(--moss-light); }
+  .branch-no .flow-line { border-left-color: var(--wood-light); }
+  .branch-step-setvar {
+    font-size: 0.78em;
+    color: var(--ink-muted);
+    padding: 4px 8px;
+    margin: 4px 0;
+    background: rgba(232, 168, 56, 0.15);
+    border-radius: 4px;
+    text-align: center;
+  }
+  .if-after-fork {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 2px dotted var(--border-wood);
+  }
+  .if-after-fork .if-label {
+    text-align: center;
+    font-size: 0.78em;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+  }
   pre.json-out {
     background: var(--sky-deep);
     color: #b8e0c8;
@@ -719,6 +857,43 @@
     };
   }
 
+  function renderBranchContent(branch) {
+    let html = "";
+    branch.forEach((bc) => {
+      if (bc.type === "message") {
+        html += '<div class="flow-line">💬 ' + escapeHtml(bc.text) + "</div>";
+      } else if (bc.type === "setvar") {
+        html += '<div class="branch-step-setvar">📝 変数 ' + escapeHtml(bc.var) + " = " + escapeHtml(String(bc.value)) + "</div>";
+      } else if (bc.type === "wait") {
+        html += '<div class="flow-line">⏳ ' + bc.time + "ms</div>";
+      }
+    });
+    return html || '<div class="flow-line" style="opacity:0.6">（セリフなし）</div>';
+  }
+
+  function renderChoiceTree(c) {
+    const yesLabel = escapeHtml(c.options[0] || "はい");
+    const noLabel = escapeHtml(c.options[1] || "いいえ");
+    const yesBranch = c.branches[0] || [];
+    const noBranch = c.branches[1] || [];
+
+    let html = '<div class="choice-fork">';
+    html += '<div class="choice-fork-head"><span class="fork-icon">◆</span> 選択肢</div>';
+    html += '<div class="fork-stem"></div>';
+    html += '<div class="fork-rail"></div>';
+    html += '<div class="branch-tree">';
+    html += '<div class="branch-col branch-yes">';
+    html += '<div class="branch-head">← ' + yesLabel + "</div>";
+    html += renderBranchContent(yesBranch);
+    html += "</div>";
+    html += '<div class="branch-col branch-no">';
+    html += '<div class="branch-head">' + noLabel + " →</div>";
+    html += renderBranchContent(noBranch);
+    html += "</div>";
+    html += "</div></div>";
+    return html;
+  }
+
   function renderPreview(obj) {
     const el = $("previewFlow");
     const ev = obj.events[0];
@@ -739,23 +914,18 @@
       } else if (c.type === "wait") {
         html += '<div class="flow-line">⏳ 待機 ' + c.time + "ms</div>";
       } else if (c.type === "choice") {
-        html += '<div class="flow-line">❓ 選択肢: ' + escapeHtml(c.options.join(" / ")) + "</div>";
-        c.branches.forEach((br, i) => {
-          const label = c.options[i] || ("分岐" + i);
-          br.forEach((bc) => {
-            if (bc.type === "message") {
-              html += '<div class="flow-line branch">→ ' + escapeHtml(label) + ": " + escapeHtml(bc.text) + "</div>";
-            } else if (bc.type === "setvar") {
-              html += '<div class="flow-line branch">→ ' + escapeHtml(label) + ": 変数 " + escapeHtml(bc.var) + " = true</div>";
-            }
-          });
-        });
+        html += renderChoiceTree(c);
       } else if (c.type === "if") {
+        const cond = c.conditions && c.conditions[0];
+        const varName = cond ? cond.lvar : "?";
+        html += '<div class="if-after-fork">';
+        html += '<div class="if-label">🔀 分岐後（変数 <strong>' + escapeHtml(varName) + "</strong> が true のとき）</div>";
         c.then.forEach((tc) => {
           if (tc.type === "message") {
-            html += '<div class="flow-line if-line">🔀 if: ' + escapeHtml(tc.text) + "</div>";
+            html += '<div class="flow-line if-line">💬 ' + escapeHtml(tc.text) + "</div>";
           }
         });
+        html += "</div>";
       }
     });
 
