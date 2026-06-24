@@ -252,7 +252,7 @@ class ResEditorCharaVox.ResPreview extends ResEditor.ResPreview
 
 	function setAnimations(){
 		local animelist = sk3d["animelist"];
-		local selid = animenu.selitem["id"];
+		local selid = animenu.selitem["id"] || "stand";
 		if( animelist){
 			local menudata = animelist.map( @( v){
 				return { lbl = "$T.anim_"..v.id, icon = v["icon"]||"\uf2c0", id = v.id, val = v }

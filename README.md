@@ -88,6 +88,5 @@ It can be used freely for both commercial and non-commercial purposes.
 ## 🌐 Official website
 
 ```
-(Coming soon)
 https://rpg-cobo.com
 ```

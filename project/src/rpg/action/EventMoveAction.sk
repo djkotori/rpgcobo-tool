@@ -273,6 +273,7 @@ local movespdprop = {
 	lbl = "$T.lbl_movespd"
 	type = SCALAR
 	range = (0,7)
+	q = 10
 	ui = "bar"
 	defval = 3
 }

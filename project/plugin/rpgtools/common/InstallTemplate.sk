@@ -44,7 +44,7 @@ class InstallTemplateDialog extends Dialog
 		local st = decodeJSON( sf.load());
 		//	言語を変換。これも一瞬。
 		if( st.projlang != ::lang.code){
-			changeProjectLanguage( projdir, ::lang.code, "en");
+			changeProjectLanguage( projdir, st.projlang, ::lang.code, "en");
 		}
 		//	完了を表示して再起動
 		view.setValue( "msg", "$T.asset_install_done");
@@ -57,33 +57,42 @@ class InstallTemplateDialog extends Dialog
 	//	対象の言語が無かった場合はenをコピー。
 	//	※このメソッドはinstallTemplateの後続処理で呼ばれることが多々ある。基本的にテンプレートは日本語で
 	//	作られて、いくつかの言語にローカライズされている状況。
-	function changeProjectLanguage( projdir, langcode, deflc="en"){
+	function changeProjectLanguage( projdir, projlang, newlang, deflc="en"){
 		//	一時的にresrootを変えるとか？ちょっと考えないと。。。
 		local res = ::createResource( FileRef( projdir, "project"));
-		local newdict = ::loadconf( res.getResource( "/data/trns/%S.trns" % langcode));
-		//	confを全て翻訳適用したうえで再保存。dataのみ！
-		local tconf = ::loadconf( res.getResource( "/conf/load.conf"));
-		override( tconf, newdict.transdict, false);
-		local dataconfs = ("dict","setting","type","player","job","cond","skill","item","weapon","armor","enemy","map","quest","store","gvar","point","macro");
-		foreach( i in dataconfs){
-			local f = FileRef( projdir, "project/data/%S.conf" % i);
-			local json = encodeJSON( tconf[i]);
-			local bb = ByteBuffer();
-			bb.putText( json);
-			bb.pos = 0;
-			f.save( bb);
+		local tr = res.getResource( "data/trans/%S.trns" % newlang);
+		if( !tr && projlang!=deflc) tr = res.getResource( "data/trans/%S.trns" % deflc);
+		if( tr){
+			local newdict = decodeJSON( tr.loadData());
+			//	confを全て翻訳適用したうえで再保存。dataのみ！
+			local dataconfs = ("dict","setting","type","player","job","cond","skill","item","weapon","armor","enemy","map","quest","store","gvar","point","macro");
+			foreach( i in dataconfs){
+				local cf = FileRef( projdir, "project/data/%S.json" % i);
+				if( !cf.exists()) continue;
+				local data = decodeJSON( cf.load());
+				override( {[i]=data}, newdict.transdict, false);
+				local bb = encodeJSON( data, 5, ByteBuffer()); bb.pos = 0;
+				cf.save( bb);
+			}
+		}else{
+			//	何の辞書もない場合もprojlangだけは変えられるように。
 		}
 		//	既存の翻訳言語にソース情報を移行。乱暴だが全ての辞書は変換チェック済み、srcver=1で統一する。
 		local created = string( Date.currentTime());
-		foreach( f in FileRef( projdir, "project/data/trns").getList( "*.trns")){
+		foreach( f in FileRef( projdir, "project/data/trans").getList( "*.trns")){
 			local t = decodeJSON( f.load());
 			t._meta.srcver <- 1;
 			t._meta.created <- created;
 			t.check <- "";
-			local json = encodeJSON( t);
-			local bb = ByteBuffer();
-			bb.putText( json);
-			bb.pos = 0;
+			local bb = encodeJSON( t, 5, ByteBuffer()); bb.pos = 0;
+			f.save( bb);
+		}
+		//	最後にprojlang
+		{
+			local f = FileRef( projdir, "project/data/setting.json");
+			local t = decodeJSON( f.load());
+			t.projlang <- newlang;
+			local bb = encodeJSON( t, 5, ByteBuffer()); bb.pos = 0;
 			f.save( bb);
 		}
 	}

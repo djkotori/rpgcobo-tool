@@ -608,6 +608,7 @@ class ResourceFileSelectDialog extends Dialog
 		local dir = ::getResource( fget( prop, "dir"));
 		::skstudio.fileview.refreshDir( dir.path);
 		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( r in dir.getList()){
 			try{
 				if( !r.name.endsWith( ".vox")) continue;
@@ -628,6 +629,7 @@ class ResourceFileSelectDialog extends Dialog
 		local dir = ::getResource( fget( prop, "dir"));
 		::skstudio.fileview.refreshDir( dir.path);
 		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( r in dir.getList()){
 			try{
 				if( !r.name.endsWith( ".vox")) continue;
@@ -650,6 +652,7 @@ class ResourceFileSelectDialog extends Dialog
 		local dir = ::getResource( fget( prop, "dir"));
 		::skstudio.fileview.refreshDir( dir.path);
 		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( r in dir.getList()){
 			if( !r.name.endsWith( ".webp") && !r.name.endsWith( ".png")) continue;
 			a .. { id=r.name, data={ res = r, pic = r.path, ret = r.path }}
@@ -660,6 +663,7 @@ class ResourceFileSelectDialog extends Dialog
 	function setupEventPicList(){
 		local dirs = fget( prop, "dir");
 		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( path in dirs){
 			local dir = ::getResource( path);
 			::skstudio.fileview.refreshDir( dir.path);
@@ -675,6 +679,7 @@ class ResourceFileSelectDialog extends Dialog
 		local dir = ::getResource( fget( prop, "dir"));
 		::skstudio.fileview.refreshDir( dir.path);
 		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( r in dir.getList()){
 			if( !r.name.endsWith( ".ptd")) continue;
 			a .. { id=r.name, data={ res = r, efx = r.path, name = r.name, ret = r.path }}
@@ -686,6 +691,7 @@ class ResourceFileSelectDialog extends Dialog
 		local dir = ::getResource( fget( prop, "dir"));
 		::skstudio.fileview.refreshDir( dir.path);
 		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( r in dir.getList()){
 			if( !r.name.endsWith( ".webp") && !r.name.endsWith( ".png")) continue;
 			a .. { id=r.name, data={ res = r, pic = r.path, name = r.name, ret = r.path }}

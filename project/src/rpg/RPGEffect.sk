@@ -20,7 +20,7 @@ class OverlayEffect
 			{ pid="enabled", lbl="$T.lbl_enabled", type=BOOL, defval=false }
 			{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(1,10000), defval=1000 }
 			{ pid="delay", lbl="$T.lbl_delaytime", type=SCALAR, range=(0,10000), defval=0 }
-			{ pid="tex",  lbl="$T.lbl_texture", type=GRAPHIC, dir="/resource/efx/tex", restype="texture", defval=null }
+			{ pid="tex",  lbl="$T.lbl_texture", type=GRAPHIC, dir="/resource/efx/tex", nullable=true, restype="texture", defval=null }
 			{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,10.0), q=100, defval=1.0 },	//	rp3d.gbndに対するスケール。1.0だと全身を1週
 			{ pid="uvaxis", lbl="$T.lbl_uvaxis", type=LIST, list=["X","Y"] defval=1 },	//	
 			{ pid="color", lbl="$T.lbl_color", type=3312, defval={color=[0xffffffff, 0x00000080]} },

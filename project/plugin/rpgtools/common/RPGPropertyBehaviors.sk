@@ -504,7 +504,7 @@ class PropertyBehaviors.Graphic extends PropertyBehavior
 		if( e.src["name"]=="listmenu"){	//	リスト選択
 			local ret = ResourceFileSelectDialog.run( prop);
 			if( ret){
-				setParam( ret);
+				setParam( ret=="rem" ? null : ret);
 				postActionEvent( true);
 			}
 		}

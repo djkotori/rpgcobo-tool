@@ -86,6 +86,5 @@ RPG-Cobo は Apache-2.0 License のもとで公開されています。
 ## 🌐 公式サイト
 
 ```
-(後日公開予定)
 https://rpg-cobo.com
 ```
