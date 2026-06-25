@@ -137,6 +137,21 @@ project/plugin/aiscenario/
 
 ## 検証チェックリスト
 
+### 自動（修正のたびに実行）
+
+```powershell
+# rpgcobo-tool リポジトリ内
+.\project\plugin\aiscenario\check\check-aiscenario.ps1
+```
+
+- 必須ファイル・`runsk` 順序・既知の退行パターン（`super(..., this)` 等）
+- 履歴タブ UI・ギズモ同期・Delete ガードの **ソース存在チェック**
+- sample JSON / 履歴メタデータ / uiclose 等の **ロジック mirror テスト**
+
+詳細: [`check/MANUAL-CHECKLIST.md`](check/MANUAL-CHECKLIST.md)（RPG-Cobo 実機スモーク）
+
+### 手動（UI 変更時・リリース前）
+
 - [ ] PluginDialog に「AI Scenario Importer (PoC)」が表示される
 - [ ] メニュー実行後ログ成功
 - [ ] M001 に村人が追加され会話できる
