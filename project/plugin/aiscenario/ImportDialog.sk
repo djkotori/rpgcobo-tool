@@ -7,24 +7,49 @@ import ModifiersMask;
 //
 
 ImportDialog <- {
+	//	multiline=18 の 1.5 倍。SCRIPT ではなく STRING で日本語表示とスクロールを改善。
 	PASTE_PROPDEF = {
 		name = { "ja":"JSON 貼り付け", "en":"Paste JSON" },
-		width = 720,
-		props = [
-			{ pid="json", lbl={ "ja":"シナリオ JSON", "en":"Scenario JSON" }, type=SCRIPT, multiline=18, cnt="cnt6v.ui" },
+		width = 800,
+		tipskey = "aiscenario_import_paste",
+		menu = [
+			{ id="clip", lbl={ "ja":"クリップボード再読込", "en":"Reload clipboard" }, icon="\ue14d" },
+			{ id="preview", lbl={ "ja":"プレビューのみ", "en":"Preview only" }, icon="\ue417" },
 		],
+		props = [
+			{
+				pid = "json",
+				lbl = { "ja":"シナリオ JSON", "en":"Scenario JSON" },
+				type = STRING,
+				multiline = 27,
+				cnt = "cnt6v.ui",
+			},
+		],
+		menufunc = function( cmd, d){
+			switch( cmd.id){
+			case "clip":
+				d.json = readClipboardJson();
+				return d;
+			case "preview":
+				showPreviewOnly( d.json || "");
+				return null;
+			}
+			return null;
+		},
 	},
+
+	POPUP_MIN_HEIGHT = 520,
 
 	function formatPreview( report){
 		local sb = StringBuffer();
-		sb .. "Target map: " .. (report.mapid || "(none)") .. "\n";
-		sb .. sprintf( "Events: %d (importable: %d)\n", report.eventCount, report.importableCount);
+		sb .. "対象マップ: " .. (report.mapid || "(未指定)") .. "\n";
+		sb .. sprintf( "イベント数: %d（取り込み可: %d）\n\n", report.eventCount, report.importableCount);
 		foreach( item in report.items){
 			local mark = item.ok ? "[OK]" : "[NG]";
 			sb .. mark .. " " .. item.message .. "\n";
 		}
 		if( length( report.warnings)){
-			sb .. "\nWarnings:\n";
+			sb .. "\n警告:\n";
 			foreach( w in report.warnings) sb .. "- " .. w .. "\n";
 		}
 		return string( sb);
@@ -32,13 +57,27 @@ ImportDialog <- {
 
 	function formatErrors( report){
 		local sb = StringBuffer();
+		sb .. "取り込み前チェックでエラーがあります:\n\n";
 		foreach( err in report.errors) sb .. "- " .. err .. "\n";
 		return string( sb);
 	},
 
+	function showErrorNotice( msg){
+		Dialogs.notice( { msg=msg, icon="\ue002" });
+	},
+
+	function showPreviewOnly( raw){
+		local report = ScenarioImporter.validateText( raw);
+		if( !report.ok){
+			showErrorNotice( formatErrors( report));
+			return;
+		}
+		Dialogs.notice( { msg=formatPreview( report), icon="\ue417" });
+	},
+
 	function showResultNotice( result){
 		local msg = sprintf(
-			"Imported %d event(s) into %S (%S)\nIDs: %S\n\nReopen the map to refresh the editor view.",
+			"%d 件のイベントを %S に取り込みました（%S 経路）\nID: %S\n\nマップを開き直すとエディタ表示が更新されます。",
 			result.imported, result.mapid, result.route || "unknown", result.ids
 		);
 		Dialogs.notice( { msg=msg, icon="\ue86c" });
@@ -47,19 +86,19 @@ ImportDialog <- {
 	function confirmImport( report){
 		local msg = formatPreview( report);
 		if( length( report.warnings)){
-			msg = "Warnings detected.\n\n" + msg;
+			msg = "警告があります。\n\n" + msg;
 		}
-		msg += "\nImport now?";
-		return Dialogs.confirm( { msg=msg, icon="\ue2c6", yestxt="Import", notxt="Cancel" });
+		msg += "\n\n取り込みますか？";
+		return Dialogs.confirm( { msg=msg, icon="\ue2c6", yestxt="取り込む", notxt="キャンセル" });
 	},
 
 	function importValidated( report, sourceLabel){
 		if( !report.ok){
-			Dialogs.notice( { msg=formatErrors( report), icon="\ue002" });
+			showErrorNotice( formatErrors( report));
 			return false;
 		}
 		if( !report.importableCount){
-			Dialogs.notice( { msg="No importable events.", icon="\ue002" });
+			showErrorNotice( "取り込めるイベントがありません。\n\n- events が空\n- すべて NG 判定\n\nプレビューのみで内容を確認してください。");
 			return false;
 		}
 		if( !confirmImport( report)) return false;
@@ -69,19 +108,24 @@ ImportDialog <- {
 				showResultNotice( result);
 				return true;
 			}
-			Dialogs.notice( { msg="No events were imported.", icon="\ue002" });
+			showErrorNotice( "イベントは 1 件も取り込まれませんでした。\n\nシステムコンソール（Ctrl+@）の [aiscenario] ログを確認してください。");
 		}catch( ex){
 			printf( "[aiscenario] import failed: %S\n", ex);
 			printexception( ex);
-			Popups.showErrorTrace( { error=ex });
+			showErrorNotice( ScenarioImporter.formatExceptionDetail( ex, "取り込み中にエラーが発生しました"));
 		}
 		return false;
 	},
 
 	function readClipboardJson(){
 		try{
-			local clip = skGetClipboardData();
-			if( length( clip)) return clip;
+			local clip = null;
+			if( skCheckClipboardType( ClipboardType.CLIPBOARD_TEXT)){
+				clip = skGetClipboardData( ClipboardType.CLIPBOARD_TEXT);
+			}else{
+				clip = skGetClipboardData();
+			}
+			if( length( clip)) return ScenarioImporter.normalizeJsonRaw( clip);
 		}catch( ex){
 			printf( "[aiscenario] clipboard read skipped: %S\n", ex);
 		}
@@ -97,7 +141,7 @@ ImportDialog <- {
 
 	function pickJsonFile(){
 		local d = FileDialog();
-		d.setTitle( "Open scenario JSON");
+		d.setTitle( "シナリオ JSON を開く");
 		d.setMode( FileDialogMode.FILEDIALOG_SELECT);
 		d.show();
 		while( d.isShown()){
@@ -118,7 +162,7 @@ ImportDialog <- {
 		}catch( ex){
 			printf( "[aiscenario] file load failed: %S\n", ex);
 			printexception( ex);
-			Popups.showErrorTrace( { error=ex });
+			showErrorNotice( ScenarioImporter.formatExceptionDetail( ex, "ファイル読込に失敗しました: " + path));
 		}
 		return false;
 	},
@@ -137,7 +181,34 @@ ImportDialog <- {
 class ImportPastePopup extends PropertyEditPopup_OK
 {
 	constructor( v, data){
+		minheight = ImportDialog.POPUP_MIN_HEIGHT;
 		super( v, ImportDialog.PASTE_PROPDEF, data, this);
+		tuneJsonEditor();
+	}
+
+	//	日本語表示・長文 JSON・マウスホイールスクロール向け調整
+	function tuneJsonEditor(){
+		if( !proplist || !proplist.listview) return;
+		foreach( row in proplist.listview.rows){
+			local pv = row.ref;
+			if( !pv) continue;
+			local edit = pv.findChild( "edit");
+			if( !edit) continue;
+			edit.updateMaxLength( 65536);
+			if( edit.textedit){
+				edit.textedit.maxlen = 65536;
+				edit.textedit.areatrim = false;
+				local tb = edit.textedit.textbox;
+				if( tb){
+					tb.wrapmode = 1;
+				}
+			}
+		}
+		local gpui = proplist.listview.gpui;
+		if( gpui){
+			gpui.contentdraggable = true;
+		}
+		updateViewSize();
 	}
 
 	function actionevent( e){

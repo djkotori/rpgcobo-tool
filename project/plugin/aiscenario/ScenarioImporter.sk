@@ -125,10 +125,59 @@ ScenarioImporter <- {
 		};
 	},
 
+	function normalizeJsonRaw( raw){
+		if( raw == null || raw == undefined) return "";
+		if( typeof( raw) != SS_STRING) raw = string( raw);
+		//	UTF-8 BOM / UTF-16 BOM を除去
+		if( raw.len() >= 1 && raw[0] == '\uFEFF') raw = raw.slice( 1);
+		if( raw.len() >= 3 && raw[0] == 0xEF && raw[1] == 0xBB && raw[2] == 0xBF){
+			raw = raw.slice( 3);
+		}
+		return raw;
+	},
+
+	function formatExceptionDetail( ex, context=null){
+		local msg = string( ex);
+		if( typeof( ex) == "object" && ex ){
+			if( "message" in ex && length( ex.message)) msg = string( ex.message);
+			else if( "msg" in ex && length( ex.msg)) msg = string( ex.msg);
+		}
+		if( msg.find( "Exception:") == 0 && msg.len() < 32){
+			msg += "\n(内部エラー。JSON 構文・文字コード UTF-8・括弧/カンマの不足を確認してください)";
+		}
+		if( context) msg = context + "\n\n" + msg;
+		return msg;
+	},
+
+	function formatJsonParseError( ex, raw){
+		local detail = formatExceptionDetail( ex);
+		local hints = [
+			"JSON 構文が不正です",
+			"Scenario Maker からコピーした JSON をそのまま貼り付けてください",
+			"ファイル保存時は UTF-8 を使用してください",
+			"末尾カンマ・括弧の閉じ忘れ・ダブルクォートの不足がないか確認してください",
+		];
+		local sb = StringBuffer();
+		sb .. detail .. "\n\n";
+		foreach( h in hints) sb .. "- " .. h .. "\n";
+		local preview = normalizeJsonRaw( raw);
+		if( length( preview)){
+			if( preview.len() > 120) preview = preview.slice( 0, 120) .. "...";
+			sb .. "\n先頭:\n" .. preview;
+		}
+		return string( sb);
+	},
+
 	function parseScenarioText( raw){
-		if( !length( raw)) throw Exception( "scenario json is empty");
-		local scenario = decodeJSON( raw);
-		if( typeof( scenario) != SS_TABLE) throw Exception( "invalid scenario json root");
+		raw = normalizeJsonRaw( raw);
+		if( !length( raw)) throw Exception( "JSON が空です");
+		local scenario = null;
+		try{
+			scenario = decodeJSON( raw);
+		}catch( ex){
+			throw Exception( formatJsonParseError( ex, raw));
+		}
+		if( typeof( scenario) != SS_TABLE) throw Exception( "JSON のルートはオブジェクト { ... } である必要があります");
 		return scenario;
 	},
 
@@ -168,12 +217,12 @@ ScenarioImporter <- {
 	function validateEvent( src, index){
 		local role = src["role"] || "villager";
 		if( typeof( src) != SS_TABLE){
-			return { ok=false, role=role, name="", message="event must be object" };
+			return { ok=false, role=role, name="", message="events[] の各要素はオブジェクトである必要があります" };
 		}
 		try{
 			local ev = buildEvent( src, 0);
 			if( !ev){
-				return { ok=false, role=role, name=src["name"]||"", message="unsupported role" };
+				return { ok=false, role=role, name=src["name"]||"", message="未対応 role（villager / custom のみ）" };
 			}
 			return {
 				ok = true,
@@ -192,24 +241,24 @@ ScenarioImporter <- {
 		local warnings = [];
 		local items = [];
 		if( typeof( scenario) != SS_TABLE){
-			errors.push( "root must be a JSON object");
+			errors.push( "JSON のルートはオブジェクト { ... } である必要があります");
 			return { ok=false, errors=errors, warnings=warnings, items=items, mapid=null, eventCount=0, importableCount=0 };
 		}
 		local mapid = scenario["map"];
 		if( !length( mapid)){
-			errors.push( "map is required");
+			errors.push( "map が未指定です（例: \"map\": \"M001\"）");
 		}else
 		if( !::getResource( "/.x/map/" + mapid)){
-			errors.push( "map not found: " + mapid);
+			errors.push( "map が見つかりません: " + mapid + "（プロジェクトに存在する mapid か確認）");
 		}
 		local events = scenario["events"];
 		local eventCount = 0;
 		local importableCount = 0;
 		if( typeof( events) != SS_ARRAY){
-			errors.push( "events must be an array");
+			errors.push( "events は配列 [ ... ] である必要があります");
 		}else{
 			eventCount = length( events);
-			if( !eventCount) warnings.push( "events is empty");
+			if( !eventCount) warnings.push( "events が空です（取り込むイベントがありません）");
 			foreach( i, src in events){
 				local item = validateEvent( src, i);
 				items.push( item);
@@ -237,7 +286,7 @@ ScenarioImporter <- {
 		}catch( ex){
 			return {
 				ok = false,
-				errors = [ string( ex) ],
+				errors = [ formatExceptionDetail( ex) ],
 				warnings = [],
 				items = [],
 				mapid = null,
