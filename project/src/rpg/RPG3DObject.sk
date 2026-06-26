@@ -20,7 +20,8 @@ AnimationLayer.part <- null;
 function unitdir( d){
 	// if( d < 0.0){ d += Math.PI2 * Math.floor( -d / Math.PI2 + 1.0); }
 	// return d % Math.PI2;
-	return Math.mod2( d, 0.0, Math.PI2);
+	// return Math.mod2( d, 0.0, Math.PI2);
+	return Math.mod2( d, -Math.PI, Math.PI);
 }
 
 //	d1 - d2
@@ -110,6 +111,32 @@ local animelist_leg2 = [
 //	4足歩行アニメーション。基本的にステージ中のモブとして出る想定のモーション数。
 //	スキルを限定すれば戦闘にも参加させていい。
 local animelist_leg4 = [
+	//	基本動作
+	{ ...AI, id:"stand", st:5, en:9, spd:4, loop:true, replay=false }	//	立ち *
+	{ ...AI, id:"walk", st:10, en:18, spd:12, loop:true, replay=false }	//	歩き *
+	{ ...AI, id:"dash", st:20, en:28, spd:12, loop:true, replay=false }	//	走り *
+	{ ...AI, id:"crimb", st:30, en:38, spd:12, loop:true, replay=false }	//	登り *
+	{ ...AI, id:"sleep", st:40, en:48, spd:10, loop:true, replay=false }	//	眠り *
+	{ ...AI, id:"aim", st:50, en:54, spd:4, loop:true, replay=false }		//	構え *
+	{ ...AI, id:"sick", st:55, en:59, spd:4, loop:true, replay=false }		//	弱り *
+	{ ...AI, id:"sit", st:60, en:64, spd:10, replay=false }		//	座り *
+	{ ...AI, id:"jump", st:65, en:69, spd:10, replay=false }		//	ジャンプ *
+	{ ...AI, id:"land", st:70, en:74, spd:10, replay=false }		//	着地 *
+];
+
+//	翼付きキャラクター用のモーション。飛行や滑空などの動作を含む。
+local animelist_wings = [
+	//	基本動作
+	{ ...AI, id:"stand", st:5, en:9, spd:4, loop:true, replay=false }	//	立ち *
+	{ ...AI, id:"walk", st:10, en:18, spd:12, loop:true, replay=false }	//	歩き *
+	{ ...AI, id:"dash", st:20, en:28, spd:12, loop:true, replay=false }	//	走り *
+	{ ...AI, id:"crimb", st:30, en:38, spd:12, loop:true, replay=false }	//	登り *
+	{ ...AI, id:"sleep", st:40, en:48, spd:10, loop:true, replay=false }	//	眠り *
+	{ ...AI, id:"aim", st:50, en:54, spd:4, loop:true, replay=false }		//	構え *
+	{ ...AI, id:"sick", st:55, en:59, spd:4, loop:true, replay=false }		//	弱り *
+	{ ...AI, id:"sit", st:60, en:64, spd:10, replay=false }		//	座り *
+	{ ...AI, id:"jump", st:65, en:69, spd:10, replay=false }		//	ジャンプ *
+	{ ...AI, id:"land", st:70, en:74, spd:10, replay=false }		//	着地 *
 ];
 
 //	宝箱用のモーション。ヒンジ型、フタ型、スライド型などあり。
@@ -148,6 +175,7 @@ class RPG3DObject extends SK3DObject
 	static animelistmap = {
 		"leg2" = animelist_leg2,
 		"leg4" = animelist_leg4,
+		"wings" = animelist_wings,
 		"box" = animelist_box,
 		"obj" = animelist_obj,
 	};
@@ -164,6 +192,7 @@ class RPG3DObject extends SK3DObject
 	prevdir = 0.0;				//	前フレームでの向き。スムーズ移動用。
 	pitch = 0.0;				//	X軸回転。RPG3DMapAssetのみ
 	bank = 0.0;					//	Z軸回転。RPG3DMapAssetのみ
+	offsy = 0.0;				//	コリジョンの中心Y
 
 	mount = null;				//	MountState : 動く地面に乗っている状態。
 	mountable = false;			//	乗っかることができる RPG3DMapAssetのみtrue
@@ -540,7 +569,32 @@ class RPG3DObject extends SK3DObject
 	function getPickingImage(){
 		return null;
 	}
-	
+
+	//	これはアクションではなく演出効果。アクションとして追加するならラップする
+	function modifyRotate( t){
+		local dir1 = t["dir"] * Math.DTOR;
+		switch( t["dirbase"]){
+		case 0:
+			dir1 = dir + deltadir( dir, dir1);	//	正規化しないと回転おかしくなる…
+			break;
+		case 1: dir1 += dir; break;			//	こいつのみくるくる回ることができる
+		case 2:
+			dir1 = dir + deltadir( dir, dir1+rpgstage.camdir);	//	正規化しないと回転おかしくなる…
+			break;
+		case 3:	//	プレイヤーとの向き
+			local d = Math.atan2( pos.x-stage.player3d.pos.x, -(pos.z-stage.player3d.pos.z)) * (stage.player3d==this?1:-1);
+			dir1 = dir + Math.mod2( dir, dir1+d);	//	正規化しないと回転おかしくなる…
+			break;
+		}
+		if( t["fade"]){
+			local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
+			local mod = RPG3DRotateModifier( this, dir1, t.fade, ease);
+			addModifier( mod);
+		}else{
+			dir = dir1;		//	スムーズ回転ありで
+		}
+	}
+
 	/////////////////////////////////////////////////////////////////////////
 	//	アクション関連
 	//	ここのメソッドは基本的にカプセル形状のコリジョンで機能する。
@@ -549,7 +603,7 @@ class RPG3DObject extends SK3DObject
 	//	押し戻しがあった場合にそのベクトルを返す。
 	function moveTest( pos, vec){
 		local shp = b3body.getShape(), b3world = scn.b3world;
-		local pos1 = v_1( pos).add( 0, 0.8, 0).add( vec);	//	todo : offsmatにしないと！
+		local pos1 = v_1( pos).add( 0, offsy, 0).add( vec);	//	todo : offsmatにしないと！
 		local b3res = b3world.contactTest( 0, shp, pos1, G_CHARA, G_STAGE|G_CHARA|G_OBJECT);
 		if( b3res.len()){
 			local pv = v_2( 0.0), mv = v_3( 0.0);
@@ -570,16 +624,16 @@ class RPG3DObject extends SK3DObject
 
 	//	指定した位置で設置しているか判定する。dyまで下の床が有効。
 	function groundTest( pos, dy){
-		local shp = b3body.getShape(), b3world = scn.b3world, halfh = 0.8;//shp.getBounds( null, r_1).s;
+		local shp = b3body.getShape(), b3world = scn.b3world;//shp.getBounds( null, r_1).s;
 		local vvy = dy;//-0.1;
-		local pos0 = v_1( pos ).add( 0.0, halfh+0.1, 0.0);
+		local pos0 = v_1( pos ).add( 0.0, offsy+0.1, 0.0);
 		local vec = v_2( 0.0, vvy, 0.0);
 		local b3res = b3world.convexSweepTest( 0, shp, pos0, vec, G_CHARA, G_STAGE|G_CHARA|G_OBJECT);
 		foreach( br in b3res){
 			local ny = br.normal.y, sn = br.surfnormal;	//	sweeptestの場合はnormalは正規ベクトル
 			if( ny > FLOORANGLE && (!sn || sn.y>FLOORANGLE)){// || (ny > 0.03 && sn && sn.y > FLOORANGLE/* && br.pointb.y < pos.y+width*/)){	//	カプセルの下半球が触れてる床のみ採用
 				local f = br.fraction;	//	b3resはfractionで昇順ソートされている
-				local gy = Math.clamp( pos0.y + vec.y*f -halfh, -128.0, 128.0);
+				local gy = Math.clamp( pos0.y + vec.y*f -offsy, -128.0, 128.0);
 				local ma3d = br.bodyb.ref;
 				return a_1.set( gy, ma3d["mountable"] ? ma3d : null);
 			}
@@ -634,53 +688,13 @@ class RPG3DObject extends SK3DObject
 		};
 	}
 
-	//	
-	function turnTo( t){
-		if( t["time"]){
-			local self = this, time = (0.0,), dur = t.time;
-			local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
-			local dir1 = t["dir"]*Math.DTOR;
-			return @( dt){
-				local ddir = #deltadir( dir1, self.dir);
-				self.matdirty = true;
-				local w = (time[0]+=dt) / dur;
-				if( w >= 1.0){
-					self.dir = dir1;
-					return null;
-				}else{
-					self.dir = dir1  +ddir*(1.0-w);
-					return callee();
-				}
-			}
-		}else{
-			rp3d.dir = v.dir * 45 * Math.DTOR;
-			return null;
-		}
-	}
-	//	
-	function objTurnTo( t){
-		if( t["time"]){
-			local self = this, time = (0.0,), dur = t.time;
-			local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
-			local r1 = t["rot"], dir1 = r1[0]*Math.DTOR, pitch1 = r1[1]*Math.DTOR, bank1 = r1[2]*Math.DTOR;
-			return @( dt){
-				local dr = #( deltadir( dir1, self.dir), deltadir( pitch1, self.pitch), deltadir( bank1, self.bank));
-				self.matdirty = true;
-				local w = (time[0]+=dt) / dur;
-				if( w >= 1.0){
-					self.dir = dir1; self.pitch = pitch1; self.bank = bank1;
-					return null;
-				}else{
-					self.dir   = dir1  +dr[0]*(1.0-w);
-					self.pitch = pitch1+dr[1]*(1.0-w);
-					self.bank  = bank1 +dr[2]*(1.0-w);
-					return callee();
-				}
-			}
-		}else{
-			rp3d.dir = v.dir * 45 * Math.DTOR;
-			return null;
-		}
+	//	modifyRotateを実行しつつウェイトを調整
+	function rotateTo( t){
+		local self = this, time = (0.0,), fade = (t["fade"] * !!t["wait"])||0;	//	waitしない場合は一瞬で抜ける
+		return @( dt){
+			#self.modifyRotate( t);		//	1回しか呼ばない
+			return (time[0]+=dt)<fade && callee();
+		};
 	}
 	
 	//	指定した座標まで直線的に移動する。当たり判定、接地チェックは行わない。
@@ -797,7 +811,7 @@ class RPG3DObject extends SK3DObject
 		local r1 = t["rot"], dir1 = r1[0]*Math.DTOR, pitch1 = r1[1]*Math.DTOR, bank1 = r1[2]*Math.DTOR;
 		return @( dt){
 			self.matdirty = true;
-			local p0 = #Vector3D( self.pos), dur = #float( t["time"] || p0.hypot( p1)/t.spd*1000);
+			local p0 = #Vector3D( self.pos), dur = #float( t["fade"] || p0.hypot( p1)/t.spd*1000);
 			local dr = #( deltadir( dir1, self.dir), deltadir( pitch1, self.pitch), deltadir( bank1, self.bank));
 			local w = (time[0]+=dt) / dur;
 			if( w >= 1.0){
@@ -968,7 +982,7 @@ class RPG3DRotateModifier extends SK3DModifier
 	easing = null;
 	
 	constructor( o, d1, t, e=null){
-		dir0 = o.prevdir;	//	mmm
+		dir0 = o.dir;//o.prevdir;	//	mmm
 		dir1 = d1;
 		time = t;
 		w = 1.0 / t;
@@ -1004,6 +1018,7 @@ class RPG3DGhost extends RPG3DObject
 		//	b3body
 		local shp = b3Shape.createBox( bnd.r, bnd.s, bnd.t);
 		local offsmat = Matrix.fromTranslate( 0, bnd.y, 0);
+		offsy = bnd.y;
 		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);		//	G_STAGEとしかコリジョンは当たらない
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
@@ -1343,6 +1358,7 @@ class RPG3DVoxChara extends RPG3DObject
 		local colsize = cv["colsize"]||#(0.4,0.8,0.4);
 		local shp = createShape( cv["colshp"]||SK_SHAPE_CAPSULE, colsize);
 		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
+		offsy = colsize[1];
 		b3body = b3Body( 0.0, shp, mat, G_CHARA, G_CHARA|G_OBJECT|G_STAGE);	//	G_EVENTはいらんかな
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);

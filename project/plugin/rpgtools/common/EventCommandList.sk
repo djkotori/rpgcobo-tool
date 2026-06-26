@@ -541,7 +541,7 @@ class EventCommandSelectPopup extends Popup
 				c.setValue( "icon", (v.icon, v.color[0]));
 				c.setValue( "lbl", (v.name, v.color[1]));
 				c.ref = v;
-				c.tips = "$T.%S_tips" % v.key;
+				c.tips = v["tips"] || ("$T.%S_tips" % v.key);
 			}
 		}
 		listview.updateLayout();

@@ -143,7 +143,7 @@ class ManualMoveAction
 				wait( 0x80000004);	//	移動は待たないとかなー
 				break;
 			case "objmove":
-				move( {movetype="obj", target = Vector3D( v.pos).add( p0).scale( 0.5), rot=v["rot"], spd = v.movespd, easing=v["easing"]||0 });
+				move( {movetype="obj", target = Vector3D( v.pos).add( p0).scale( 0.5), rot=v["rot"], fade = v["fade"], easing=v["easing"]||0 });
 				wait( 0x80000004);	//	移動は待たないとかなー
 				break;
 			case "wait":
@@ -162,7 +162,6 @@ class ManualMoveAction
 				break;
 			}
 			case "turn":
-			case "objturn":
 			{
 				if( turn( v)){
 					wait( 0x80000004);	//	待たないといけないタイプ。。。
@@ -231,7 +230,7 @@ class ManualMoveAction
 
 	//	向きを変える。時間指定可。
 	function turn( x){
-		local fn = x["rot"] ? rp3d.objTurnTo( x) : rp3d.turnTo( x);
+		local fn = rp3d.rotateTo( x);
 		if( fn) moves .. fn;
 		return !!fn;
 	}

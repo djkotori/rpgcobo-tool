@@ -39,7 +39,12 @@ local srcdir = dirname( callee().getSourceName());
 	}
 */
 
-local dirlbls = [ "↑","↗","→","↘","↓","↙","←","↖", ];
+local dirbaselist = [
+	{lbl="$T.dirbase0", val=0, },
+	{lbl="$T.dirbase1", val=1, },
+	{lbl="$T.dirbase2", val=2, },
+	{lbl="$T.dirbase3", val=3, },
+]
 
 class ManualActionDialog extends UndoableDialog
 {
@@ -66,25 +71,16 @@ class ManualActionDialog extends UndoableDialog
 			bits = 3,
 		},
 		{	//	向く(キャラ)
-			act = "turn", name="$T.lbl_turn", icon="\ue577", 
+			act = "turn", name="$T.cmd_rotate", icon="\ue419", 
 			props = [
 				{ pid="dir", lbl="$T.lbl_direction", type=ROT_HEAD, range=(-360,360), }
-				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
+				{ pid="dirbase", lbl="$T.dirbase", type=LIST, list=dirbaselist, variable=1 }
+				{ pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), }
+				{ pid="wait", lbl="$T.lbl_waitfade", type=BOOL, variable=1, hide=@( pl) pl.getParam( "fade")<=0 }
 			]
-			defval={ dir=180, time=0 }
+			defval={ dir=180, fade=0, wait=false, dirbase=0 }
 			info = @( v) "%d" % v.dir,
 			bits = 1,
-		}
-		{	//	向く(オブジェクト)
-			act = "objturn", name="$T.lbl_rotation", icon="\ue577", 
-			props = [
-				{ pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6v.ui" }
-				{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,3000,20), },
-				{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
-			]
-			defval={ rot=[0,0,0], time=1000, easing=0, }
-			info = @( v) "%3d %3d %3d" % (v.rot[0],v.rot[1],v.rot[2]),
-			bits = 2,
 		}
 		{	//	アニメコマンド
 			act = "ani", name="$T.lbl_anime", icon="\ueae9", 
@@ -158,10 +154,10 @@ class ManualActionDialog extends UndoableDialog
 			props = [
 				{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-128,128), q=1, }	//	posは基準位置からの相対位置。
 				{ pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6v.ui", }
-				{ pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,7), q=10, ui="bar", }
+				{ pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,100000), ui="bar", barrange=(0,10000,100), }
 				{ pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, }
 			]
-			defval={ pos=[0,0,0], rot=[0,0,0], movetype="objmove", movespd=4, }
+			defval={ pos=[0,0,0], rot=[0,0,0], movetype="objmove", fade=1000, }
 			
 			info = @( v) "%2d %2d %2d" % (v.pos[0],v.pos[1],v.pos[2]),
 			bits = 2,
@@ -405,7 +401,7 @@ class ManualActionDialog extends UndoableDialog
 		local td = data[seltab];
 		local ep = getBasePos( seltab);
 		//	初期位置
-		local gz = SK3DRouteGizmo({ icon = "\ue838", pos = ep, idx = -1, });
+		local gz = SK3DRouteGizmo({ icon = ["\ue838",0x44ffffff], pos = ep, idx = -1, aidx = -1, });
 		canvas.scn.addObject( gz);
 		gzlist .. gz;
 		//	ルート
@@ -413,7 +409,7 @@ class ManualActionDialog extends UndoableDialog
 		foreach( i, v in td.actions){
 			if( v.act=="move" || v.act=="objmove"){
 				local mk = {
-					icon = char( 0xf123+i+1),
+					icon = char( 0xf123+ri+1),
 					pos = [v.pos[0]+ep[0], v.pos[1]+ep[1], v.pos[2]+ep[2]],
 					idx = ri,
 					aidx = i,
@@ -549,11 +545,11 @@ class ManualActionDialog extends UndoableDialog
 		}
 	}
 
-	function editItem( item){
+	function editItem( item, listpos=true){
 		local def = actiondefs.find( @( v) v.act==item.act);
 		local tab = seltab, td = data[tab];
 		local idx = td.actions.indexOf( item);
-		local v = PropertyEditPopup.run( actionlist.listview.rows[idx], def, item);
+		local v = PropertyEditPopup.run( listpos&&actionlist.listview.rows[idx], def, item);
 		if( v && v <> item){
 			local self = this;
 			local redo = [@(){ td.actions[idx] = v; }];
@@ -825,6 +821,19 @@ class ManualActionDialog extends UndoableDialog
 			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", },
 		];
 		local m = MenuPopup.run( ctxmenu);
+		local td = data[seltab], i = ezt.gz.data.aidx;
+		switch( m["id"]){
+		case "edit":
+			editItem( td.actions[i], false);
+			break;
+		case "delete":
+			local oldaction = td.actions[i];
+			local redo = [@(){ delete td.actions[i]; }];
+			local undo = [@(){ td.actions[i] <- oldaction; }];
+			submitOp( redo, undo, null);
+			refresh();
+			break;
+		}
 	}
 
 	function addActionOp( v, i){
