@@ -81,7 +81,7 @@ class ParticleEffect
 			if( g.gmat) gr.transform( g.gmat);
 			gbnd.expand( gr);
 		}
-		return alive | _alive || isActionRunning();
+		return alive || _alive || isActionRunning();
 	}
 
 	//	ParticleActionを実行する。
@@ -91,9 +91,9 @@ class ParticleEffect
 	LOOP:
 		try{
 			foreach( i, a in actions){
-				if( a.time < t1){
+				if( a.time >= t0){
 					alive = 1;
-					if( a.time >= t0){
+					if( a.time < t1){
 						rdt = a.time-t0;
 						local pa = actiondef[a.acttype];
 						pa.exec( this, a);

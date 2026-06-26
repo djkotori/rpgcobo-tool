@@ -228,8 +228,13 @@ class EfxColorEditView extends SKView
 	col = null;			//	int[div]
 	valpm = null;
 
+	cursidx = -1;
+	curscolal = 0;
+	curssp = null;
+
 	constructor(){
 		addEventListener( MOUSE_EVENT, mouseevent);
+		curssp = Sprite();
 	}
 
 	function setColors( a){
@@ -254,6 +259,11 @@ class EfxColorEditView extends SKView
 			skPopMatrix( 0);
 			skPopRenderStates();
 		}
+		if( cursidx >= 0){
+			local x = itox( cursidx), h0 = bnd.h-mgn[1]*2, y = 0, h = ah*h0;
+			if( curscolal){ y = h0*ah; h = h0*(1.0-ah); }
+			skDrawSprite( curssp, x-2, mgn[1]+y, 4, h);
+		}
 	}
 
 	//	0.0-1.0のサイズ
@@ -264,14 +274,14 @@ class EfxColorEditView extends SKView
 		local mb = #PolygonMeshBuilder();
 		mb.clear();
 		mb.setMaterial( m0);
-		mb.begin( SK_TRIANGLESTRIP);
+		mb.begin( SK_TRIANGLESTRIP);		//	color
 		for( local l = 0;l < div;l ++){
 			local x = 1.0/(div-1)*l;
 			mb.color( col[l] | 0xff);
 			mb.vertex( x, 0, 0); mb.vertex( x, ah, 0);
 		}
 		mb.end();
-		mb.begin( SK_TRIANGLESTRIP);
+		mb.begin( SK_TRIANGLESTRIP);		//	alpha
 		for( local l = 0;l < div;l ++){
 			local x = 1.0/(div-1)*l, a = col[l]&255;
 			mb.color( (a<<24)|(a<<16)|(a<<8)|255);
@@ -279,10 +289,10 @@ class EfxColorEditView extends SKView
 		}
 		mb.end();
 		mb.begin( SK_LINES);
-		mb.color( 0xff);
+		mb.color( 0x000066FF);
 		for( local l = 0;l < div;l ++){
 			local x = 1.0/(div-1)*l;
-			mb.vertex( x, ah, 0); mb.vertex( x, 1.0, 0);
+			mb.vertex( x, 0.0, 0); mb.vertex( x, 1.0, 0);
 		}
 		mb.vertex( 0.0, ah, 0); mb.vertex( 1.0, ah, 0);
 		mb.end();
@@ -324,6 +334,16 @@ class EfxColorEditView extends SKView
 	function mouseevent( e){
 		e.computeLocal( getInvMatrix());
 		switch( e.id){
+		case MOUSE_EXITED:
+			cursidx = -1;
+			repaint();
+			break;
+		case MOUSE_ENTERED:
+		case MOUSE_MOVED:
+			cursidx = xtoi( e.lx);
+			curscolal = (e.ly-mgn[1])/(bnd.h-mgn[1]*2) < ah ? 0 : 1;
+			repaint();
+			break;
 		case MOUSE_PRESSED:
 			e.consume();
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -364,7 +384,9 @@ class PropertyBehaviors.EfxModColor extends PropertyBehavior
 	function init(){
 		local curvp = view.findChild( "curvp");
 		curv = EfxColorEditView();
+		curv.stretchalign = 15;
 		curv.setRect( 0, 0, curvp.bnd.w, curvp.bnd.h);
+		(curv.viewdata = ::SKViewEntityData()).staticparams = [( SKViewPropertyID.SIZE_STATIC, (curv.bnd.w,curv.bnd.h))];	//	todo: この手順を無くさんとなー
 		curvp.addChild( curv);
 	}
 
@@ -435,7 +457,7 @@ class EfxCurveEditView extends SKView
 		local dw = (bnd.w-mgn[0]*2) / (div-1), dh = bnd.h-mgn[1]*2;
 		for( local l = 0;l < div-1;l ++){
 			divsp.color = (l&1) ? 0x1A1A76FF : 0x000066FF;
-			skDrawSprite( divsp, mgn[0]+dw*l, mgn[2], dw, dh);
+			skDrawSprite( divsp, mgn[0]+dw*l, mgn[1], dw, dh);
 		}
 		divsp.color = 0x20202020;	//	white 10%
 		skDrawSprite( divsp, 0, bnd.h/2, bnd.w, 1);
@@ -704,7 +726,9 @@ class PropertyBehaviors.EfxModUV2 extends PropertyBehavior
 		curv = EfxCurveEditView();
 		local curvp = view.findChild( "curvp");
 		curv = EfxCurveEditView();
+		curv.stretchalign = 15;
 		curv.setRect( 0, 0, curvp.bnd.w, curvp.bnd.h);
+		(curv.viewdata = ::SKViewEntityData()).staticparams = [( SKViewPropertyID.SIZE_STATIC, (curv.bnd.w,curv.bnd.h))];	//	todo: この手順を無くさんとなー
 		curvp.addChild( curv);
 		uchk = view.findChild( "uchk");
 		vchk = view.findChild( "vchk");

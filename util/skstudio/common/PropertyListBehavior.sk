@@ -1631,7 +1631,7 @@ class PropertyBehaviors.PropertyList extends PropertyBehavior
 				return;
 			}
 			if( pdef["edit"]){
-				local ret = pdef.edit( val);
+				local ret = pdef.edit( val, this);
 				if( ret && ret<>val){
 					setParam( ret);
 					postActionEvent( true);

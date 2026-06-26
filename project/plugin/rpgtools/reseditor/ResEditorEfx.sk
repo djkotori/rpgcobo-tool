@@ -33,7 +33,16 @@ class ResEditorEfx extends ResEditor
 		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,4.0), q=10, defval=1.0, ui="bar" }
 		{ pid="speed", lbl="$T.lbl_playspeed", type=SCALAR, range=(0.1,2.0), q=10, defval=1.0, ui="bar" }
 		{ pid="billboard", lbl="$T.lbl_billboard", type=BOOL, defval=false }
-		{ pid="ovfx", lbl="$T.lbl_ovfx", type=PROPERTYLIST, propdef=OverlayEffect.ovfxpropdef, defval={} }
+		{ pid="ovfx", lbl="$T.lbl_ovfx", type=PROPERTYLIST, 
+			propdef={ ...OverlayEffect.ovfxpropdef,
+				edit = @( val, pl){
+					local mdlid = ::skstudio.editor.preview.resid;
+					if( mdlid=="CE000") mdlid="CV000";
+					local newval = OVFXPropertyEditPopupV.run( null, pl.prop.propdef, val, {mdlid=mdlid});
+					return newval;
+				}
+			}, defval={}
+		}
 		{ pid="eventuse", lbl="$T.lbl_eventuse", type=BOOL, defval=false },
 		{ pid="waittime", lbl="$T.lbl_waittime", type=SCALAR, range=(0,4000), defval=500, ui="bar", barrange=(0,1000,10) }
 	];
@@ -50,6 +59,8 @@ class ResEditorEfx extends ResEditor
 		//
 		proplist.bindProperties( props);
 		proplist.setParameters( d);
+		//
+		preview.efxid = v.id;
 	}
 
 	function propevent( e){
@@ -117,6 +128,7 @@ class ResEditorEfx.ResPreview
 	view = null;
 	editor = null;
 	resid = null;
+	efxid = null;
 
 	canvas = null;		//	CanvasBehavior
 	envmenu = null;		//	MenuBehavior
@@ -124,11 +136,13 @@ class ResEditorEfx.ResPreview
 	datamenu = null;
 	playbtn = null;		//	GPUIButton
 	pntchk = null;
+	loopchk = null;
 
 	sk3d = null;
 	efxsk = null;
 
 	constructor( v, e){
+		view = v;
 		editor = e;
 		canvas = CanvasBehavior( v.findChild( "3d"), v);
 		canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
@@ -138,6 +152,7 @@ class ResEditorEfx.ResPreview
 		datamenu.setVisible( true);
 		setResourceID( "CE000");
 		v.addEventListener( ACTION_EVENT, actionevent);
+		loopchk = v.findChild( "loopchk");
 	}
 
 	function setResourceID( rid){
@@ -170,12 +185,27 @@ class ResEditorEfx.ResPreview
 		efxsk?.kill();
 		efxsk = sk3d.effect( v)["sk"];
 	}
+
+	function updateLoop(){
+		if( efxid){
+			if( !efxsk["alive"] && !sk3d["ovfx"] && efxid){
+				local d = editor.data[efxid];
+				efxsk = sk3d.effect( d)["sk"];
+			}
+		}
+		return loopchk.isSelected();
+	}
 	
 	function actionevent( e){
 		switch( e.src["name"]){
 		case "playbtn":
-			local resid = editor.selitem.id, d = editor.data[resid];
+			local d = editor.data[efxid];
 			startEffect( d);
+			break;
+		case "loopchk":
+			if( e.src.isSelected()){
+				canvas.view.addUpdateFunc( updateLoop.bindenv( this));
+			}
 			break;
 		case "datamenu":
 			local ret = ResourceSelectDialog.run( e, { restype = ["chara_etc", "chara_vox", "enemy_pic"] }, resid);

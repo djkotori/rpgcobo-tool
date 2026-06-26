@@ -29,6 +29,7 @@ local charataglist = [
 	{ lbl="$T.charavox_mob", icon="\uf251", val=1 },
 	{ lbl="$T.charavox_enemy", icon="\uf252", val=2 },
 	{ lbl="$T.charavox_box", icon="\uf255", val=3 },
+	{ lbl="$T.charavox_animal", icon="\uf251", val=4 },
 ];
 
 //	

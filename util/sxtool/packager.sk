@@ -70,7 +70,7 @@ function getCompressFlag( file, bbuf){
 	}
 }
 
-local cryptext = {"sk"=1,"conf"=1,"proj"=1,"sk3"=1,"ks"=1,"json"=1,"scp"=1,"ui"=1,"pm"=1,"ptd"=1};
+local cryptext = {"sk"=1,"conf"=1,"proj"=1,"sk3"=1,"ks"=1,"json"=1,"scp"=1,"ui"=1,"pm"=1,"ptd"=1,"plugsk"=1};
 const appnamechk = "-;:/=?~|&!#$%";
 
 //	基本テキストのみ暗号化する？？？

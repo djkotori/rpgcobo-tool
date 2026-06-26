@@ -318,6 +318,7 @@
 	"charavox_mob"						: {"ja":"モブキャラ", "en":"Mob Chara"}
 	"charavox_enemy"					: {"ja":"エネミーキャラ", "en":"Enemy Chara"}
 	"charavox_box"						: {"ja":"ボックス", "en":"Box"}
+	"charavox_animal"					: {"ja":"動物キャラ", "en":"Animal Chara"}
 	
 	//	リバーブ
 	"reverb"							: {"ja":"リバーブ", "en":"Reverb"}

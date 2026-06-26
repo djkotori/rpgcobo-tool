@@ -18,10 +18,10 @@ class OverlayEffect
 		name = "$T.lbl_ovfx"
 		props = [
 			{ pid="enabled", lbl="$T.lbl_enabled", type=BOOL, defval=false }
-			{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(1,10000), defval=1000 }
-			{ pid="delay", lbl="$T.lbl_delaytime", type=SCALAR, range=(0,10000), defval=0 }
+			{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(1,10000), ui="bar", barrange=(0,2000,20), defval=1000 }
+			{ pid="delay", lbl="$T.lbl_delaytime", type=SCALAR, ui="bar", barrange=(0,2000,20), range=(0,10000), defval=0 }
 			{ pid="tex",  lbl="$T.lbl_texture", type=GRAPHIC, dir="/resource/efx/tex", nullable=true, restype="texture", defval=null }
-			{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,10.0), q=100, defval=1.0 },	//	rp3d.gbndに対するスケール。1.0だと全身を1週
+			{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,10.0), ui="bar", barrange=(0.1,4.0,0.1), q=100, defval=1.0 },	//	rp3d.gbndに対するスケール。1.0だと全身を1週
 			{ pid="uvaxis", lbl="$T.lbl_uvaxis", type=LIST, list=["X","Y"] defval=1 },	//	
 			{ pid="color", lbl="$T.lbl_color", type=3312, defval={color=[0xffffffff, 0x00000080]} },
 			{ pid="uvscr", lbl="$T.lbl_uvscroll", type=3318, defval={ uv = 2, scale=1.0, scroll=[0.0,1.0], }},

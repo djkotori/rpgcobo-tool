@@ -2318,25 +2318,27 @@ eventcmd .. {
 			{ lbl="$T.movetype_obj", val="obj", }
 		], set = @( prop, data, val){
 			if( val == "obj" && data["val"] != "obj"){
-				data.pos <- [0,0,0]; data.rot <- [0,0,0]; data.easing <- 0;
+				data.pos <- [0,0,0]; data.rot <- [0,0,0]; data.easing <- 0; data.fade <- 1000;
 			}else
 			if( val != "obj" && data["val"] == "obj"){
-				data.pos = [0,0]; delete data["rot"]; delete data["easing"];
+				data.pos <- [0,0]; delete data["rot"]; delete data["easing"]; delete data["fade"];
 			}
 			data[prop.pid] <- val;
 		}
 		};
-		a .. { pid="pos", lbl="$T.lbl_position", type=isobj?VEC3:VEC2, range=(-128,128), q=10, variable=1, }
 		if( isobj){
+			a .. { pid="pos", lbl="$T.lbl_position(X Y Z)", type=VEC3, range=(-128,128), q=10, variable=1, }
 			a .. { pid="rot", lbl="$T.lbl_rotation", type=ROT_HPB, range=(-360,360), cnt="cnt6.ui", variable=1 }
-			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
+			a .. { pid="fade", lbl="$T.lbl_fadetime", type=SCALAR, range=(0,3000), ui="bar", barrange=(0,3000,100), variable=1 }
 			a .. { pid="easing", lbl="$T.lbl_easing", type=LIST, list=RPGProperties.easinglist, variable=1 }
+			a .. { pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 }
 		}else{
+			a .. { pid="pos", lbl="$T.lbl_position(X Z)", type=VEC2, range=(-128,128), q=10, variable=1, }
 			a .. { pid="movespd", lbl="$T.lbl_movespd", type=SCALAR, range = (0,10), q=10, ui="bar", variable=1, }
 			a .. { pid="dirbase", lbl="$T.dirbase", type=LIST, list=dirbaselist, variable=1 }
+			a .. { pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 }
+			a .. { pid="playani", lbl="$T.lbl_playani", type=BOOL, variable=1 }
 		}
-		a .. { pid="wait", lbl="$T.lbl_waitaction", type=BOOL, variable=1 }
-		a .. { pid="playani", lbl="$T.lbl_playani", type=BOOL, variable=1 }
 		return a;
 	}
 	

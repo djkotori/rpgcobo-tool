@@ -203,3 +203,57 @@ class PicPropertyEditPopupV extends PropertyEditPopupV
 		}
 	}
 }
+
+//	オーバーレイFX用。
+//	
+//	
+class OVFXPropertyEditPopupV extends PropertyEditPopupV
+{
+	static POPUPUIPATH = srcdir .. "/ui/ovfxproppopup.ui";
+
+	preview = null;
+	rp3d = null;
+
+	constructor( v, p, d, ref){
+		super( v, p, d, ref);
+		preview = CanvasBehavior( v.findChild( "preview"), null);
+		preview.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
+		
+		rp3d = RPG3DObject.create3DObject( ref || { mdlid="CV000" });
+		rp3d.setDir( Math.PI);
+		preview.scn.addObject( rp3d);
+
+		preview.view.addEventListener( MOUSE_EVENT, previewevent);
+		preview.view.addEventListener( KEY_EVENT, previewevent);
+	}
+
+	function shown(){
+		preview.view.requestFocus();
+	}
+
+	function startOvfx(){
+		rp3d.overlay( data);
+	}
+
+	function propevent( e){
+		super.propevent( e);
+		startOvfx();
+	}
+
+	function previewevent( e){
+		switch( e.id){
+		case MOUSE_PRESSED:
+			if( e.isMouseDown( BUTTON1_MASK)){
+				startOvfx();
+				preview.view.requestFocus();
+			}
+			break;
+		case KEY_PRESSED:
+			if( e.keycode == VK_SPACE){
+				startOvfx();
+			}
+			break;
+		}
+	}
+
+}

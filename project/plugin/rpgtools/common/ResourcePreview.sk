@@ -911,6 +911,14 @@ class BGMSelectPopup extends Popup
 			close();
 			break;
 		}
+		case "btn_ok":
+		{
+			retid = bgmlist.getSelectedItems()[0]["id"];
+			ret = 1;
+			close();
+			e.consume();
+			break;
+		}
 		case "sndlist":
 		{
 			local cmd = e.actioncmd;
@@ -925,7 +933,7 @@ class BGMSelectPopup extends Popup
 			break;
 		}
 		}
-		super.actionevent( e);
+		if( !e.consumed) super.actionevent( e);
 	}
 
 	function playbgm( d){
