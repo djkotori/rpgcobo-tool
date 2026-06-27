@@ -41,19 +41,38 @@ RandomDungeon.Generator <- {
 
 		if( cfg.bossRoom){
 			local boss = draft.rooms[length( draft.rooms)-1];
-			local exitRoom = deepclone( boss);
-			exitRoom.id = RandomDungeon.Util.makeId( "room", length( draft.rooms)+1);
-			exitRoom.type = "exit";
-			exitRoom.x = int( Math.min( cfg.bounds.x + cfg.bounds.w - exitRoom.w - 2, boss.x + boss.w + 2));
-			exitRoom.z = int( Math.max( cfg.bounds.z + 1, Math.min( boss.z, cfg.bounds.z + cfg.bounds.d - exitRoom.d - 1)));
-			exitRoom.tags = ["exit"];
-			draft.rooms.push( exitRoom);
+			local exitRoom = placeExitRoom( draft, cfg, rng, boss);
+			if( exitRoom){
+				draft.rooms.push( exitRoom);
+			}else{
+				boss.type = "exit";
+				boss.tags.push( "boss_exit" );
+			}
 		}else{
 			draft.rooms[length( draft.rooms)-1].type = "exit";
 		}
 
 		addTreasureRooms( draft, cfg, rng);
 		sortRooms( draft);
+	},
+
+	function placeExitRoom( draft, cfg, rng, boss){
+		local w = Math.max( 5, Math.min( boss.w, 8));
+		local d = Math.max( 5, Math.min( boss.d, 8));
+		local candidates = [
+			{ x=boss.x+boss.w+3, z=boss.z },
+			{ x=boss.x-w-3, z=boss.z },
+			{ x=boss.x, z=boss.z+boss.d+3 },
+			{ x=boss.x, z=boss.z-d-3 },
+		];
+		foreach( c in candidates){
+			local x = int( Math.max( cfg.bounds.x + 1, Math.min( c.x, cfg.bounds.x + cfg.bounds.w - w - 1)));
+			local z = int( Math.max( cfg.bounds.z + 1, Math.min( c.z, cfg.bounds.z + cfg.bounds.d - d - 1)));
+			local room = makeRoom( length( draft.rooms)+1, "exit", x, z, w, d);
+			room.tags.push( "exit" );
+			if( !overlapsExistingRoom( draft, room, 1)) return room;
+		}
+		return null;
 	},
 
 	function placeRoomNearColumn( draft, cfg, rng, index, step, roomType){
@@ -82,18 +101,30 @@ RandomDungeon.Generator <- {
 			local anchor = draft.rooms[anchorIndex];
 			local w = rng.range( cfg.minRoomW, cfg.maxRoomW);
 			local d = rng.range( cfg.minRoomD, cfg.maxRoomD);
-			local x = anchor.x;
-			local z = anchor.z + anchor.d + 4 + (i % 2) * -Math.max( 8, d + 2);
-			z = Math.max( cfg.bounds.z + 1, Math.min( z, cfg.bounds.z + cfg.bounds.d - d - 1));
-			local room = makeRoom( length( draft.rooms)+1, "treasure", x, z, w, d);
-			if( overlapsExistingRoom( draft, room, 1)){
-				room.x = int( Math.max( cfg.bounds.x + 1, Math.min( anchor.x + anchor.w + 4, cfg.bounds.x + cfg.bounds.w - w - 1)));
-				room.z = int( Math.max( cfg.bounds.z + 1, Math.min( anchor.z, cfg.bounds.z + cfg.bounds.d - d - 1)));
+			local room = placeTreasureRoom( draft, cfg, rng, anchor, w, d);
+			if( !room){
+				continue;
 			}
 			room.anchorId <- anchor.id;
 			room.tags.push( "reward" );
 			draft.rooms.push( room);
 		}
+	},
+
+	function placeTreasureRoom( draft, cfg, rng, anchor, w, d){
+		local offsets = [
+			{ x=0, z=anchor.d+4 },
+			{ x=0, z=-(d+4) },
+			{ x=anchor.w+4, z=0 },
+			{ x=-(w+4), z=0 },
+		];
+		foreach( off in offsets){
+			local x = int( Math.max( cfg.bounds.x + 1, Math.min( anchor.x + off.x, cfg.bounds.x + cfg.bounds.w - w - 1)));
+			local z = int( Math.max( cfg.bounds.z + 1, Math.min( anchor.z + off.z, cfg.bounds.z + cfg.bounds.d - d - 1)));
+			local room = makeRoom( length( draft.rooms)+1, "treasure", x, z, w, d);
+			if( !overlapsExistingRoom( draft, room, 1)) return room;
+		}
+		return null;
 	},
 
 	function makeRoom( idx, roomType, x, z, w, d){
