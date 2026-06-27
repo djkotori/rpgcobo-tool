@@ -125,6 +125,7 @@ def startup_regression_checks() -> list[CheckResult]:
     plugin_sk = read_text(PLUGIN_ROOT / "plugin.sk")
     loader_sk = read_text(PLUGIN_ROOT / "src" / "dungeon-loader.sk")
     core_sk = read_text(PLUGIN_ROOT / "src" / "randomdungeon.sk")
+    dialog_sk = read_text(PLUGIN_ROOT / "src" / "dungeon-dialog.sk")
     src_text = "\n".join(
         read_text(path)
         for path in sorted((PLUGIN_ROOT / "src").glob("*.sk"))
@@ -183,6 +184,12 @@ def startup_regression_checks() -> list[CheckResult]:
         check("super(" not in src_text, "Phase 1 source avoids super constructor pitfalls"),
         check("getroottable()" not in src_text, "Phase 1 source avoids getroottable namespace checks"),
         check(".tointeger(" not in src_text, "Phase 1 source uses int() instead of tointeger"),
+        check(
+            "formatConfirmMessage" in dialog_sk
+            and "Seed:" not in dialog_sk
+            and "マップに反映しますか？" in dialog_sk,
+            "confirmation dialog stays compact and avoids button overlap",
+        ),
     ]
 
 

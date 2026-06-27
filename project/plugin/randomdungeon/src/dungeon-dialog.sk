@@ -49,8 +49,7 @@ RandomDungeon.Dialog <- {
 			return;
 		}
 
-		local preview = formatPreview( draft);
-		if( !Dialogs.confirm( { msg=preview + "\n\nマップに反映しますか？", yestxt="反映", notxt="キャンセル" })){
+		if( !Dialogs.confirm( { msg=formatConfirmMessage( draft), yestxt="反映", notxt="キャンセル" })){
 			return;
 		}
 
@@ -116,17 +115,15 @@ RandomDungeon.Dialog <- {
 		};
 	},
 
-	function formatPreview( draft){
+	function formatConfirmMessage( draft){
 		local s = draft.stats;
 		local msg = StringBuffer();
 		msg .. "生成結果: OK\n";
-		msg .. "Seed: " .. draft.seed .. "\n";
-		msg .. sprintf( "部屋:%d 通路:%d\n", s.rooms, s.connections );
-		msg .. sprintf( "床:%d 壁:%d\n", s.floors, s.walls );
-		msg .. sprintf( "入口:%d 出口:%d 宝箱:%d 敵:%d", s.entrance, s.exit, s.chests, s.enemies );
+		msg .. sprintf( "部屋:%d 通路:%d 床:%d 壁:%d\n", s.rooms, s.connections, s.floors, s.walls );
+		msg .. sprintf( "入口:%d 出口:%d 宝箱:%d 敵:%d\n", s.entrance, s.exit, s.chests, s.enemies );
+		msg .. "マップに反映しますか？";
 		if( length( draft.validation.warnings)){
-			msg .. "\n\n警告:\n";
-			foreach( w in draft.validation.warnings) msg .. "- " .. w .. "\n";
+			msg .. "\n警告あり";
 		}
 		return string( msg);
 	},
