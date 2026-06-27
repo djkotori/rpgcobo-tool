@@ -86,7 +86,7 @@ if (pluginJson) {
 const pluginSkPath = path.join(PLUGIN_ROOT, "plugin.sk");
 if (exists(pluginSkPath, "plugin.sk exists")) {
   const sk = fs.readFileSync(pluginSkPath, "utf8");
-  for (const needle of ["pluginfo", "loadPlugin", '::["SKStudio"]', "editor_postload", "randomdungeon_generate"]) {
+  for (const needle of ["pluginfo", "loadPlugin", '::["SKStudio"]', "randomdungeon_generate"]) {
     if (sk.includes(needle)) pass(`plugin-sk: includes ${needle}`);
     else fail(`plugin-sk: missing ${needle}`, pluginSkPath);
   }
@@ -99,6 +99,11 @@ if (exists(pluginSkPath, "plugin.sk exists")) {
     pass("phase1-plugin: menu opens DungeonDialog");
   } else {
     fail("phase1-plugin", "plugin.sk must open DungeonDialog and must not be Phase 0 notice only");
+  }
+  if (!sk.includes('module.hookAction( "editor_postload"')) {
+    pass("startup-guard: direct init without editor_postload");
+  } else {
+    fail("startup-guard", "randomdungeon must not initialize through editor_postload");
   }
 }
 

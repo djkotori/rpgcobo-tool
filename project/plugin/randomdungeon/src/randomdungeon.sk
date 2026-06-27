@@ -2,8 +2,6 @@
 //	Random Dungeon Generator — namespace and common helpers.
 //
 
-import PropertyType;
-
 if( !("RandomDungeon" in ::getroottable())) RandomDungeon <- {};
 
 RandomDungeon.VERSION <- "0.1.0-phase1";

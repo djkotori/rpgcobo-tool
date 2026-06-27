@@ -4,6 +4,10 @@
 
 local srcdir = dirname( callee().getSourceName());
 
+function _rdRunPhase1Script( label, path){
+	::runsk( path);
+}
+
 pluginfo <- {
 	name : { "ja":"ランダムダンジョン生成", "en":"Random Dungeon Generator" }
 	auther : "matrix9neonebuchadnezzar2199-sketch"
@@ -24,27 +28,25 @@ function loadPlugin( args, opt){
 		return true;
 	}
 
-	module.hookAction( "editor_postload", @(){
-		::runsk( srcdir + "/src/randomdungeon.sk");
-		::runsk( srcdir + "/src/dungeon-rng.sk");
-		::runsk( srcdir + "/src/dungeon-theme.sk");
-		::runsk( srcdir + "/src/dungeon-validation.sk");
-		::runsk( srcdir + "/src/dungeon-generator.sk");
-		::runsk( srcdir + "/src/dungeon-apply.sk");
-		::runsk( srcdir + "/src/dungeon-dialog.sk");
+	_rdRunPhase1Script( "core", srcdir + "/src/randomdungeon.sk");
+	_rdRunPhase1Script( "rng", srcdir + "/src/dungeon-rng.sk");
+	_rdRunPhase1Script( "theme", srcdir + "/src/dungeon-theme.sk");
+	_rdRunPhase1Script( "validation", srcdir + "/src/dungeon-validation.sk");
+	_rdRunPhase1Script( "generator", srcdir + "/src/dungeon-generator.sk");
+	_rdRunPhase1Script( "apply", srcdir + "/src/dungeon-apply.sk");
+	_rdRunPhase1Script( "dialog", srcdir + "/src/dungeon-dialog.sk");
 
-		::skstudio.registerMenu( {
-			uid = "randomdungeon_generate",
-			parentid = "menu_edit",
-			block = "*10",
-			where = ["editor_map"],
-			lbl = { "ja":"ランダムダンジョン生成", "en":"Random Dungeon Generator" },
-			func = @( m){
-				DungeonDialog.run();
-			},
-		});
-		printf( "[randomdungeon] plugin loaded (v0.1.0-phase1)\n");
-	}, 110);
+	::skstudio.registerMenu( {
+		uid = "randomdungeon_generate",
+		parentid = "menu_edit",
+		block = "*10",
+		where = ["editor_map"],
+		lbl = { "ja":"ランダムダンジョン生成", "en":"Random Dungeon Generator" },
+		func = @( m){
+			DungeonDialog.run();
+		},
+	});
 
+	printf( "[randomdungeon] plugin loaded (v0.1.0-phase1 direct)\n");
 	return true;
 }

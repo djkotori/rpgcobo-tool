@@ -4,7 +4,7 @@
 
 import PropertyType;
 
-if( !("RandomDungeon" in ::getroottable())) RandomDungeon <- {};
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
 
 RandomDungeon.Dialog <- {
 	PROPDEF = {

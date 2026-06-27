@@ -2,7 +2,7 @@
 //	Random Dungeon Generator — apply draft to the active map editor.
 //
 
-if( !("RandomDungeon" in ::getroottable())) RandomDungeon <- {};
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
 
 RandomDungeon.Apply <- {
 	EVENT_ID_MIN = 1000000,

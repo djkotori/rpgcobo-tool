@@ -2,7 +2,7 @@
 //	Random Dungeon Generator — pure Classic / Graph-first v0.1 generator.
 //
 
-if( !("RandomDungeon" in ::getroottable())) RandomDungeon <- {};
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
 
 RandomDungeon.Generator <- {
 	function generate( config=null){

@@ -2,7 +2,7 @@
 //	Random Dungeon Generator — draft validation.
 //
 
-if( !("RandomDungeon" in ::getroottable())) RandomDungeon <- {};
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
 
 RandomDungeon.Validation <- {
 	function validateDraft( draft){
