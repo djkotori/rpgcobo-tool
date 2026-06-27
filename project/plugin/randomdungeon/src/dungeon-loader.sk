@@ -5,8 +5,10 @@
 RandomDungeonLoader <- {
 	loaded = false,
 	loaderror = null,
+	loading = null,
 
 	function runScript( srcdir, path){
+		loading = path;
 		::runsk( srcdir + path);
 	},
 
@@ -22,11 +24,12 @@ RandomDungeonLoader <- {
 			runScript( srcdir, "/src/dungeon-dialog.sk");
 			loaded = true;
 			loaderror = null;
+			loading = null;
 			printf( "[randomdungeon] phase1 sources loaded\n");
 			return true;
 		}catch( ex){
-			loaderror = string( ex);
-			printf( "[randomdungeon] phase1 source load failed: %S\n", ex);
+			loaderror = (loading || "(unknown)") + " : " + string( ex);
+			printf( "[randomdungeon] phase1 source load failed at %S: %S\n", loading, ex);
 			printexception( ex);
 			return false;
 		}
