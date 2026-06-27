@@ -147,6 +147,11 @@ def startup_regression_checks() -> list[CheckResult]:
             "registerMenu only updates the registry; updateAllMenus is required for visible editor menus.",
         ),
         check(
+            'where = ["editor_map"]' not in plugin_sk,
+            "plugin menu is globally visible during Phase 1 verification",
+            "This mirrors aiscenario visibility until map-editor scoped menu timing is verified.",
+        ),
+        check(
             "import PropertyType" not in core_sk,
             "core namespace file has no UI import",
             "randomdungeon.sk must stay host-API-light; UI imports belong in dungeon-dialog.sk.",

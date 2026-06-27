@@ -40,7 +40,6 @@ function loadPlugin( args, opt){
 		uid = "randomdungeon_generate",
 		parentid = "menu_edit",
 		block = "*10",
-		where = ["editor_map"],
 		lbl = { "ja":"ランダムダンジョン生成", "en":"Random Dungeon Generator" },
 		func = @( m){
 			DungeonDialog.run();

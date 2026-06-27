@@ -90,10 +90,10 @@ if (exists(pluginSkPath, "plugin.sk exists")) {
     if (sk.includes(needle)) pass(`plugin-sk: includes ${needle}`);
     else fail(`plugin-sk: missing ${needle}`, pluginSkPath);
   }
-  if (sk.includes('where = ["editor_map"]')) {
-    pass("plugin-sk: editor_map menu scope");
+  if (!sk.includes('where = ["editor_map"]')) {
+    pass("plugin-sk: global edit menu visibility");
   } else {
-    fail("plugin-sk: editor_map scope", pluginSkPath);
+    fail("plugin-sk: global edit menu visibility", "Phase 1 menu should match aiscenario visibility while menu scope is investigated");
   }
   if (sk.includes("DungeonDialog.run();") && !sk.includes("設計 Phase 0")) {
     pass("phase1-plugin: menu opens DungeonDialog");
