@@ -27,7 +27,7 @@ RandomDungeon.Generator <- {
 
 	function buildRooms( draft, cfg, rng){
 		local mainCount = Math.max( 4, cfg.roomCount - cfg.treasureCount);
-		local step = Math.max( 4, cfg.bounds.w / mainCount).tointeger();
+		local step = int( Math.max( 4, cfg.bounds.w / mainCount));
 		for( local i = 0; i < mainCount; i ++){
 			local roomType = "normal";
 			if( i == 0) roomType = "entrance";
@@ -44,8 +44,8 @@ RandomDungeon.Generator <- {
 			local exitRoom = deepclone( boss);
 			exitRoom.id = RandomDungeon.Util.makeId( "room", length( draft.rooms)+1);
 			exitRoom.type = "exit";
-			exitRoom.x = Math.min( cfg.bounds.x + cfg.bounds.w - exitRoom.w - 2, boss.x + boss.w + 2).tointeger();
-			exitRoom.z = Math.max( cfg.bounds.z + 1, Math.min( boss.z, cfg.bounds.z + cfg.bounds.d - exitRoom.d - 1)).tointeger();
+			exitRoom.x = int( Math.min( cfg.bounds.x + cfg.bounds.w - exitRoom.w - 2, boss.x + boss.w + 2));
+			exitRoom.z = int( Math.max( cfg.bounds.z + 1, Math.min( boss.z, cfg.bounds.z + cfg.bounds.d - exitRoom.d - 1)));
 			exitRoom.tags = ["exit"];
 			draft.rooms.push( exitRoom);
 		}else{
@@ -87,8 +87,8 @@ RandomDungeon.Generator <- {
 			z = Math.max( cfg.bounds.z + 1, Math.min( z, cfg.bounds.z + cfg.bounds.d - d - 1));
 			local room = makeRoom( length( draft.rooms)+1, "treasure", x, z, w, d);
 			if( overlapsExistingRoom( draft, room, 1)){
-				room.x = Math.max( cfg.bounds.x + 1, Math.min( anchor.x + anchor.w + 4, cfg.bounds.x + cfg.bounds.w - w - 1)).tointeger();
-				room.z = Math.max( cfg.bounds.z + 1, Math.min( anchor.z, cfg.bounds.z + cfg.bounds.d - d - 1)).tointeger();
+				room.x = int( Math.max( cfg.bounds.x + 1, Math.min( anchor.x + anchor.w + 4, cfg.bounds.x + cfg.bounds.w - w - 1)));
+				room.z = int( Math.max( cfg.bounds.z + 1, Math.min( anchor.z, cfg.bounds.z + cfg.bounds.d - d - 1)));
 			}
 			room.anchorId <- anchor.id;
 			room.tags.push( "reward" );
@@ -100,11 +100,11 @@ RandomDungeon.Generator <- {
 		return {
 			id = RandomDungeon.Util.makeId( "room", idx),
 			type = roomType,
-			x = x.tointeger(),
+			x = int( x),
 			y = 0,
-			z = z.tointeger(),
-			w = w.tointeger(),
-			d = d.tointeger(),
+			z = int( z),
+			w = int( w),
+			d = int( d),
 			locked = false,
 			tags = [],
 		};
@@ -215,11 +215,11 @@ RandomDungeon.Generator <- {
 		for( local i = 0; i < length( key); i ++){
 			if( key[i] == ':'){ sep = i; break; }
 		}
-		return { x=key.slice( 0, sep).tointeger(), z=key.slice( sep+1).tointeger() };
+		return { x=int( key.slice( 0, sep)), z=int( key.slice( sep+1)) };
 	},
 
 	function makePatch( x, y, z, tileId, kind){
-		return { x=x.tointeger(), y=y.tointeger(), z=z.tointeger(), tileId=tileId, kind=kind };
+		return { x=int( x), y=int( y), z=int( z), tileId=tileId, kind=kind };
 	},
 
 	function isInsideBounds2D( bounds, x, z){
@@ -250,9 +250,9 @@ RandomDungeon.Generator <- {
 			id = RandomDungeon.Util.makeId( "entity", idx),
 			type = entityType,
 			roomId = room.id,
-			x = x.tointeger(),
-			y = y.tointeger(),
-			z = z.tointeger(),
+			x = int( x),
+			y = int( y),
+			z = int( z),
 			templateId = templateId,
 			params = params,
 			source = "randomdungeon",

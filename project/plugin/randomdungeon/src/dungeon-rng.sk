@@ -26,8 +26,8 @@ RandomDungeon.RNG <- {
 			},
 
 			function range( minv, maxv){
-				minv = minv.tointeger();
-				maxv = maxv.tointeger();
+				minv = int( minv);
+				maxv = int( maxv);
 				if( maxv <= minv) return minv;
 				local span = maxv - minv + 1;
 				return minv + (nextInt() % span);

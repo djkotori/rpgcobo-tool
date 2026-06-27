@@ -95,7 +95,7 @@ RandomDungeon.Apply <- {
 			s = s.slice( 1, length( s)-1);
 		}
 		try{
-			return s.tointeger();
+			return int( s);
 		}catch( ex){
 			return null;
 		}

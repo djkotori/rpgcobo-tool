@@ -30,7 +30,7 @@ RandomDungeon.Util <- {
 	},
 
 	function clampInt( value, minv, maxv){
-		value = value.tointeger();
+		value = int( value);
 		if( value < minv) return minv;
 		if( value > maxv) return maxv;
 		return value;
@@ -76,8 +76,8 @@ RandomDungeon.Util <- {
 
 	function centerOfRoom( room){
 		return {
-			x = (room.x + room.w / 2).tointeger(),
-			z = (room.z + room.d / 2).tointeger(),
+			x = int( room.x + room.w / 2),
+			z = int( room.z + room.d / 2),
 		};
 	},
 
