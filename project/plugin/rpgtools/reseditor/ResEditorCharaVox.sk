@@ -29,7 +29,7 @@ local charataglist = [
 	{ lbl="$T.charavox_mob", icon="\uf251", val=1 },
 	{ lbl="$T.charavox_enemy", icon="\uf252", val=2 },
 	{ lbl="$T.charavox_box", icon="\uf255", val=3 },
-	{ lbl="$T.charavox_animal", icon="\uf251", val=4 },
+	{ lbl="$T.charavox_animal", icon="\uf823", val=4 },
 ];
 
 //	
@@ -270,16 +270,16 @@ class ResEditorCharaVox.ResPreview extends ResEditor.ResPreview
 		switch( e.src["name"]){
 		case "playbtn":
 			local v = animenu.selitem.val;
-			sk3d.tanime( v);
+			if( sk3d) sk3d.tanime( v);
 			break;
 		case "stopbtn":
-			sk3d.tanime( { st=0});
+			if( sk3d) sk3d.tanime( { st=0});
 			break;
 		case "pntchk":
 			if( sk3d) skcol?.setVisible( pntchk.isSelected());
 		case "animenu":
 			local v = animenu.selitem.val;
-			sk3d.tanime( v);
+			if( sk3d) sk3d.tanime( v);
 			break;
 		case "rbtn":
 		case "lbtn":
@@ -287,7 +287,7 @@ class ResEditorCharaVox.ResPreview extends ResEditor.ResPreview
 			i = Math.clamp( i+(e.src.name=="rbtn"?1:-1), 0, length( animenu.menuitems)-1);
 			local v = animenu.menuitems[i];
 			animenu.selectItem( v);
-			sk3d.tanime( v.val);
+			if( sk3d) sk3d.tanime( v.val);
 			break;
 		}
 		if( !e.consumed) super.actionevent( e);

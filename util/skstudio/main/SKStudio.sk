@@ -297,8 +297,11 @@ class SKStudio extends SKView
 			filetabbar.closeOtherTabs( cmd.path);
 			break;
 		case "fileview":
-			fileview.setCurrentPath( cmd.path);
-			openSideView( "side_fileview");
+			if( fileview.setCurrentPath( cmd.path)){
+				openSideView( "side_fileview");
+			}else{
+				Popups.showError( "$T.dlg_dir_notfound_error");
+			}
 			break;
 		case "explor":
 			explor( cmd.path);
@@ -335,6 +338,7 @@ class SKStudio extends SKView
 	function explor( path){
 		local fref;
 		local r = getResource( path);
+		if( !r) return Popups.showError( "$T.dlg_dir_notfound_error");
 		do{
 			if( fref = r["file"]) break;
 			r = r.pres;

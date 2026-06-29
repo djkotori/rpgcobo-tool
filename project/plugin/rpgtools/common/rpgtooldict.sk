@@ -1047,12 +1047,15 @@
 	"pop_bgmimport"						: {"ja":"BGMファイルをインポートしました", "en":"Imported a BGM file"}
 
 	"lbl_baseui"						: {"ja":"ベースとなるUI", "en":"Base UI"}
-	"lbl_langui"						: {"ja":"使用するUI(言語ごとに選択)", "en":"UI used (Select for each language)"}
-	"lbl_addui"							: {"ja":"UIを追加", "en":"Add UI"}
+	"lbl_langui"						: {"ja":"使用するUIの選択(言語ごと)", "en":"Select UI to use (by language)"}
+	"lbl_dupbaseui"						: {"ja":"ベースUIを複製", "en":"Duplicate base UI"}
+	"lbl_addui"							: {"ja":"ファイルを指定してUIを追加", "en":"Add UI from file"}
+	"lbl_copylibui"						: {"ja":"参照するUIをコピー", "en":"Copy linked UIs"}
 	"lbl_useui"							: {"ja":"このUIを使用する", "en":"Use this UI"}
 	"lbl_editui"						: {"ja":"UIを編集", "en":"Edit UI"}
 	"lbl_changeui"						: {"ja":"UIを置き換える", "en":"Replace UI"}
 	"confirm_editbaseui"				: {"ja":"ベースUIを編集しますか？\nゲームが正常に起動しなくなる恐れがあります。", "en":"Would you like to edit the base UI? \nThe game may get not to start properly."}
+	"pop_file_exists"					: {"ja":"指定したファイル名は既に存在します", "en":"The specified file name already exists"}
 
 	"icon_general"						: {"ja":"一般アイコン", "en":"General Icons"}
 	"icon_tribe"						: {"ja":"種族アイコン", "en":"Tribe Icons"}

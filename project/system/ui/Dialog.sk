@@ -323,6 +323,7 @@ class MobablePopup extends Popup
 			movx = e.lx; movy = e.ly;
 			view.pos.add( dx, dy, 0);
 			view.matdirty = true;
+			view.repaint();
 			break;
 		case MOUSE_RELEASED:
 			break;

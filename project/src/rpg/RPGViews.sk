@@ -90,7 +90,9 @@ class CharaPreview extends SK3DView
 //	
 /*
 	"PC000":{
-		"animap":[],
+		"animap":[
+			{"en":4,"id":"stand","loop":true,"replay":true,"spd":5.0,"st":0}
+		],
 		"aniuv":[1,1],
 		"cntpos":[0.5,0.5],
 		"pic":"/resource/event_pic/rpgcobo-icon.webp",
@@ -102,7 +104,7 @@ class EventPicView extends SKView
 {
 	static icontype = "evpic";
 	static picidprop = { pid=6678, lbl="$T.side_res_event_pic", type=RESID, restype=["event_pic"], nullable=true, };
-	static animprop = { pid=6679, type=LIST, list=[], };
+	static picframeprop = { pid=6679, lbl="$T.lbl_imgframe", type=SCALAR, range=(0,64), ui="bar", barrange=(0.0,32.0,1.0), anime=2, defval=0.0, q=10};
 	
 	picid = null;				//	PC000
 	picdata = null;
@@ -111,7 +113,8 @@ class EventPicView extends SKView
 
 	//	アニメーションフレーム
 	aniu = 1; aniv = 1;
-	aniid = null;
+	picframe = 0.0;				//	ピクチャフレーム => UIEditorはこっちで操作
+	aniid = null;				//	アニメID => イベントコマンドはこっちで操作
 
 	first = true;
 	cmdfunc = null;				//	モーション用コマンド
@@ -127,13 +130,17 @@ class EventPicView extends SKView
 		}
 	}
 
+	static emptypic = { pic="/skstudio/img/palette.png", scale=1.0, cntpos=[0.5,0.5]};
+
 	function setPicID( pi){
 		picid = pi;
-		local pc = picdata = ::conf._resource.event_pic[pi] || ::conf._resource.enemy_pic[pi] || ::conf._resource.event_pic["PC000"];
+		local pc = picdata = ::conf._resource.event_pic[pi] || ::conf._resource.enemy_pic[pi] || emptypic;
 		local tex = ::getTexture( pc["pic"]||pc["pic3d"], 16);
 		if( pc["aniuv"]){
 			aniu = Math.max( 1, pc.aniuv[0]);
 			aniv = Math.max( 1, pc.aniuv[1]);
+		}else{
+			aniu = aniv = 1;
 		}
 		local w = tex.width / aniu, h = tex.height / aniv;
 		sp = Sprite( tex);
@@ -166,6 +173,13 @@ class EventPicView extends SKView
 			}
 			addUpdateFunc( picanifunc);
 		}
+	}
+
+	function setPicFrame( f){
+		picframe = f;
+		local fi = Math.clamp( int( f), 0, aniu*aniv-1), us = 1.0 / aniu, vs = 1.0 / aniv;
+		sp.uvmat0.set( us,0,0,0, 0,vs,0,0, 0,0,1,0, (fi%aniu)*us,(fi/aniv)*vs,0,1);
+		repaint();
 	}
 
 	//	イベントコマンドからのオペレーション
@@ -245,6 +259,7 @@ class EventPicView extends SKView
 		return #[
 		( SKVP[VISIBLE]),
 		picidprop,
+		picframeprop,
 		( SKVP[POSITION]),
 		( SKVP[SCALE]),
 		( SKVP[ROTATION]),
@@ -256,19 +271,17 @@ class EventPicView extends SKView
 	
 	function getParam( pid){
 		switch( pid){
-		case IMAGE : return imageref;
+		case 6678 : return picid;
+		case 6679 : return picframe;
 		case IMAGECOLOR : return spcolor;
-		case IMAGEBLEND : return sp.blend;
-		case IMAGESTRETCH : 
-			local s = sp.streach;
-			return s?[s.x|0,s.y|0,s.w|0,s.h|0,sp.punch?1:0]:null;
-		case IMAGEALIGN: return imagealign;
 		}
 		return super.getParam( pid);
 	}
 	
 	function setParam( pid, p0, p1=null, w=0.0){
 		switch( pid){
+		case 6678 : setPicID( p0); setPicFrame( picframe); break;
+		case 6679 : setPicFrame( Math.lerp( p0, p1, w)); break;
 		case IMAGECOLOR :
 			spcolor = Math.lerpcolor( p0, p1, w);
 			sp.color0 = (sp.blend==SK_PMAMIX) ? Math.lerpcolor( spcolor&0xff, spcolor, (spcolor&0xff)/255.0) : spcolor;

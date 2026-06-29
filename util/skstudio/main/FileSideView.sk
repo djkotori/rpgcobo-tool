@@ -166,6 +166,7 @@ class FileSideView extends SKView
 
 	function setCurrentPath( path){
 		local r = skstudio.rootdir.getResource( path);
+		if( !r) return false;
 		if( r.isdir){
 			setCurrentDir( path);
 			setDirToVisible( path);
@@ -220,7 +221,12 @@ class FileSideView extends SKView
 			//	refresh
 			if( dirpathmap[path]) dirpathmap[path]._children = null;	//	遅延評価のキャッシュを解放
 			dirtree.refreshItems();
-			if( cpath) setCurrentDir( cpath, false, true);
+			if( cpath){
+				while( !getResource( cpath)){
+					cpath = cpath.substring( 0, cpath.lastIndexOf( "/"));	//	親dir
+				}
+				setCurrentDir( cpath, false, true);
+			}
 		}else{
 			printf( "DIR is up to date. %S\n", r.path);
 		}
