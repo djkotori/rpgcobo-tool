@@ -1,0 +1,42 @@
+//
+//	Random Dungeon Generator — ランダムダンジョン生成（Phase 1）
+//
+
+local srcdir = dirname( callee().getSourceName());
+
+pluginfo <- {
+	name : { "ja":"[RD] ランダムダンジョン生成", "en":"[RD] Random Dungeon Generator" }
+	auther : "matrix9neonebuchadnezzar2199-sketch"
+	ver : "0.1.0-phase1"
+	tags : [ "editor", "randomdungeon", "map" ]
+	order : 110
+	lock : false
+	desc : {
+		"ja":"半自動ダンジョン生成・プレビュー・確定反映",
+		"en":"Semi-auto dungeon generation with preview and commit",
+	}
+	props : []
+}
+
+function loadPlugin( args, opt){
+	if( !::["SKStudio"]) return false;
+	if( !::getResource( "/data/setting.json")){
+		return true;
+	}
+
+	module.hookAction( "editor_postload", @(){
+		::skstudio.registerMenu( {
+			uid = "randomdungeon_generate",
+			parentid = "menu_edit",
+			block = "*10",
+			lbl = { "ja":"[RD] ランダムダンジョン生成", "en":"[RD] Random Dungeon Generator" },
+			func = @( m){
+				::runsk( srcdir + "/src/dungeon-loader.sk");
+				RandomDungeonLoader.run( srcdir);
+			},
+		});
+		printf( "[randomdungeon] menu registered (phase1 lazy)\n");
+	}, 100);
+
+	return true;
+}

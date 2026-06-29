@@ -1,0 +1,22 @@
+//
+//	M5: AI 生成パイプライン（設計スタブ）
+//
+//	境界:
+//	- AI は中間 JSON 文字列だけを生成する
+//	- map.json / MapEditor.data には直接触らない
+//	- 生成結果は必ず validate → preview → import の ImportDialog 経路を通す
+//
+
+ScenarioAI <- {
+	//	将来: 外部 API / ローカル LLM 連携をここに実装する。
+	function generateJsonFromPrompt( prompt){
+		if( !length( prompt)) throw Exception( "prompt is empty");
+		throw Exception( "ScenarioAI is not implemented yet. Use Scenario Maker or paste JSON via ImportDialog.");
+	},
+
+	function runGenerateAndImport( prompt){
+		local json = generateJsonFromPrompt( prompt);
+		local report = ScenarioImporter.validateText( json);
+		return ImportDialog.importValidated( report, "ai");
+	},
+};

@@ -1,0 +1,32 @@
+//
+//	Random Dungeon Generator — Phase 1 fixed tile theme.
+//
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.Theme <- {
+	DEFAULT_THEME = {
+		themeId = "classic_stone",
+		floorTileId = 1,
+		wallTileId = 129,
+	},
+
+	function resolve( config){
+		local theme = deepclone( DEFAULT_THEME);
+		if( "themeId" in config) theme.themeId = config.themeId;
+		if( "floorTileId" in config) theme.floorTileId = config.floorTileId;
+		if( "wallTileId" in config) theme.wallTileId = config.wallTileId;
+		return theme;
+	},
+
+	function validate( theme){
+		local errors = [];
+		if( !("floorTileId" in theme) || theme.floorTileId == null){
+			errors.push( "床タイル ID が未設定です。" );
+		}
+		if( !("wallTileId" in theme) || theme.wallTileId == null){
+			errors.push( "壁タイル ID が未設定です。" );
+		}
+		return { ok=length( errors)==0, errors=errors };
+	},
+}

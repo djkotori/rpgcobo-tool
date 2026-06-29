@@ -1,0 +1,47 @@
+{
+  "schema": "rpgcobo.randomdungeon.draft",
+  "schemaVersion": 1,
+  "generatorVersion": "0.1.0-phase1",
+  "seed": "ruin-2026",
+  "mode": "classic",
+  "bounds": { "x": 0, "y": 1, "z": 0, "w": 80, "h": 64, "d": 80 },
+  "config": {
+    "seed": "ruin-2026",
+    "mode": "classic",
+    "roomCount": 12,
+    "corridorWidth": 1,
+    "treasureCount": 3,
+    "enemyDensity": "normal",
+    "bossRoom": true,
+    "floorTileId": 1,
+    "wallTileId": 129
+  },
+  "rooms": [
+    { "id": "room_001", "type": "entrance", "x": 2, "y": 0, "z": 28, "w": 8, "d": 8, "locked": false, "tags": [] },
+    { "id": "room_002", "type": "normal", "x": 14, "y": 0, "z": 20, "w": 10, "d": 9, "locked": false, "tags": [] },
+    { "id": "room_003", "type": "combat", "x": 28, "y": 0, "z": 32, "w": 11, "d": 10, "locked": false, "tags": [] },
+    { "id": "room_004", "type": "treasure", "x": 30, "y": 0, "z": 12, "w": 7, "d": 7, "locked": false, "tags": ["reward"] },
+    { "id": "room_005", "type": "boss", "x": 58, "y": 0, "z": 24, "w": 13, "d": 11, "locked": false, "tags": [] },
+    { "id": "room_006", "type": "exit", "x": 72, "y": 0, "z": 28, "w": 6, "d": 6, "locked": false, "tags": ["exit"] }
+  ],
+  "connections": [
+    { "from": "room_001", "to": "room_002", "type": "corridor" },
+    { "from": "room_002", "to": "room_003", "type": "corridor" },
+    { "from": "room_003", "to": "room_004", "type": "corridor" },
+    { "from": "room_003", "to": "room_005", "type": "corridor" },
+    { "from": "room_005", "to": "room_006", "type": "corridor" }
+  ],
+  "tilePatches": [
+    { "x": 2, "y": 1, "z": 28, "tileId": 1, "kind": "floor" },
+    { "x": 1, "y": 1, "z": 28, "tileId": 129, "kind": "wall" }
+  ],
+  "entities": [
+    { "id": "entity_001", "type": "entrance", "roomId": "room_001", "x": 6, "y": 2, "z": 32, "templateId": "entrance_marker", "params": {}, "source": "randomdungeon" },
+    { "id": "entity_002", "type": "chest", "roomId": "room_004", "x": 33, "y": 2, "z": 15, "templateId": "chest_phase1", "params": {}, "source": "randomdungeon" },
+    { "id": "entity_003", "type": "enemy", "roomId": "room_003", "x": 33, "y": 2, "z": 37, "templateId": "enemy_normal", "params": { "gid": 1 }, "source": "randomdungeon" },
+    { "id": "entity_004", "type": "enemy", "roomId": "room_005", "x": 64, "y": 2, "z": 29, "templateId": "enemy_boss", "params": { "gid": 1 }, "source": "randomdungeon" },
+    { "id": "entity_005", "type": "exit", "roomId": "room_006", "x": 75, "y": 2, "z": 31, "templateId": "exit_marker", "params": {}, "source": "randomdungeon" }
+  ],
+  "validation": { "ok": true, "errors": [], "warnings": [] },
+  "stats": { "rooms": 6, "connections": 5, "floors": 1, "walls": 1, "entrance": 1, "exit": 1, "chests": 1, "enemies": 2 }
+}

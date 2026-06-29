@@ -1,0 +1,142 @@
+//
+//	Random Dungeon Generator — draft validation.
+//
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.Validation <- {
+	function validateDraft( draft){
+		local result = { ok=true, errors=[], warnings=[] };
+		checkRequiredRooms( draft, result);
+		checkRoomBounds( draft, result);
+		checkRoomOverlap( draft, result);
+		checkTilePatches( draft, result);
+		checkEntityPlacement( draft, result);
+		checkReachability( draft, result);
+		result.ok = length( result.errors)==0;
+		return result;
+	},
+
+	function addError( result, msg){
+		result.errors.push( msg);
+	},
+
+	function addWarning( result, msg){
+		result.warnings.push( msg);
+	},
+
+	function checkRequiredRooms( draft, result){
+		if( countRoomsByType( draft, "entrance") != 1){
+			addError( result, "入口部屋が 1 つではありません。" );
+		}
+		local exits = countRoomsByType( draft, "exit");
+		local bosses = countRoomsByType( draft, "boss");
+		if( exits < 1 && bosses < 1){
+			addError( result, "出口またはボス部屋がありません。" );
+		}
+	},
+
+	function countRoomsByType( draft, roomType){
+		local count = 0;
+		foreach( room in draft.rooms){
+			if( room.type == roomType) ++count;
+		}
+		return count;
+	},
+
+	function checkRoomBounds( draft, result){
+		local b = draft.bounds;
+		foreach( room in draft.rooms){
+			if( room.x < b.x || room.z < b.z ||
+				room.x + room.w > b.x + b.w ||
+				room.z + room.d > b.z + b.d ){
+				addError( result, "部屋が生成範囲外です: " + room.id );
+			}
+		}
+	},
+
+	function checkRoomOverlap( draft, result){
+		for( local i = 0; i < length( draft.rooms); i ++){
+			for( local j = i+1; j < length( draft.rooms); j ++){
+				if( RandomDungeon.Util.rectsOverlap( draft.rooms[i], draft.rooms[j], 0)){
+					addError( result, "部屋が重なっています: " + draft.rooms[i].id + " / " + draft.rooms[j].id );
+				}
+			}
+		}
+	},
+
+	function checkTilePatches( draft, result){
+		local b = draft.bounds;
+		foreach( patch in draft.tilePatches){
+			if( patch.x < b.x || patch.z < b.z ||
+				patch.x >= b.x + b.w || patch.z >= b.z + b.d ){
+				addError( result, "tilePatches が範囲外です: " + patch.x + "," + patch.z );
+			}
+			if( !("tileId" in patch) || patch.tileId == null){
+				addError( result, "tileId が未解決です。" );
+			}
+		}
+	},
+
+	function checkEntityPlacement( draft, result){
+		local floorMap = collectFloors( draft);
+		local occupied = {};
+		local b = draft.bounds;
+		foreach( entity in draft.entities){
+			if( entity.x < b.x || entity.z < b.z ||
+				entity.x >= b.x + b.w || entity.z >= b.z + b.d ){
+				addError( result, "entity が範囲外です: " + entity.id );
+			}
+			if( !floorMap[RandomDungeon.Util.posKey( entity.x, entity.z)]){
+				addError( result, "entity が床以外に配置されています: " + entity.id );
+			}
+			local k = entity.x + ":" + entity.y + ":" + entity.z;
+			if( occupied[k]){
+				addError( result, "entity が同一座標に重複しています: " + entity.id );
+			}
+			occupied[k] <- true;
+		}
+	},
+
+	function collectFloors( draft){
+		local floors = {};
+		foreach( patch in draft.tilePatches){
+			if( patch.kind == "floor") floors[RandomDungeon.Util.posKey( patch.x, patch.z)] <- true;
+		}
+		return floors;
+	},
+
+	function checkReachability( draft, result){
+		local entrance = firstRoomByType( draft, "entrance");
+		if( !entrance) return;
+		local graph = {};
+		foreach( room in draft.rooms) graph[room.id] <- [];
+		foreach( conn in draft.connections){
+			if( graph[conn.from]) graph[conn.from].push( conn.to);
+			if( graph[conn.to]) graph[conn.to].push( conn.from);
+		}
+		local seen = {};
+		local queue = [entrance.id];
+		local qidx = 0;
+		while( qidx < length( queue)){
+			local id = queue[qidx++];
+			if( seen[id]) continue;
+			seen[id] <- true;
+			foreach( nextId in graph[id]){
+				if( !seen[nextId]) queue.push( nextId);
+			}
+		}
+		foreach( room in draft.rooms){
+			if( !seen[room.id]){
+				addError( result, "入口から到達できない部屋があります: " + room.id );
+			}
+		}
+	},
+
+	function firstRoomByType( draft, roomType){
+		foreach( room in draft.rooms){
+			if( room.type == roomType) return room;
+		}
+		return null;
+	},
+}

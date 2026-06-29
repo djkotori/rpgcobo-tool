@@ -75,6 +75,14 @@ RPG-Cobo は複数のリポジトリで構成されています。
 ### 4. ゲームエンジン / ネイティブコード（C++）
 ツール及びゲームランタイムのネイティブコード（C++）については、詳細な説明を後日ドキュメントにて公開予定です。
 
+## 🔌 本フォーク追加: AI Scenario Importer (PoC v1)
+
+`project/plugin/aiscenario/` — 外部 JSON から **villager** イベントを `map.json` に追記する PoC プラグイン。
+
+- 有効化: `project/plugin/plugin.json` の `aiscenario.enable: true`（本フォークでは既定 ON）
+- 実行: ツール起動後 **編集 → [PoC] シナリオJSON取り込み**
+- 詳細: [`project/plugin/aiscenario/README.md`](project/plugin/aiscenario/README.md)
+
 ## 🤝 コントリビューション
 Issue / Pull Request は歓迎します。
 バグ報告、改善提案、プラグイン開発など、ぜひご参加ください。

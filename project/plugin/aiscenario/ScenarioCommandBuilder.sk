@@ -1,0 +1,131 @@
+//
+//	中間 JSON commands[] → map.json cmdblock[] 変換（custom イベント用）。
+//
+
+ScenarioCommandBuilder <- {
+	//	type → ビルダー関数
+	builders = {
+		"message" = null,
+		"wait"    = null,
+		"setvar"  = null,
+		"choice"  = null,
+		"if"      = null,
+	},
+
+	function init(){
+		builders.message <- buildMessage.bindenv( this);
+		builders.wait    <- buildWait.bindenv( this);
+		builders.setvar  <- buildSetvar.bindenv( this);
+		builders.choice  <- buildChoice.bindenv( this);
+		builders["if"]   <- buildIf.bindenv( this);
+	},
+
+	function buildBlock( commands){
+		if( typeof( commands) != SS_ARRAY) return [];
+		local block = [];
+		foreach( c in commands){
+			if( typeof( c) != SS_TABLE){
+				printf( "[aiscenario] WARN: skip non-table command\n");
+				continue;
+			}
+			local typ = c["type"];
+			if( !length( typ)){
+				printf( "[aiscenario] WARN: command without type (skipped)\n");
+				continue;
+			}
+			local fn = builders[typ];
+			if( !fn){
+				printf( "[aiscenario] WARN: unknown command type=%S (skipped)\n", typ);
+				continue;
+			}
+			block.push( fn( c));
+		}
+		return block;
+	},
+
+	function buildMessage( c){
+		//	uiclose confirmed by author (PR#3):
+		//	  0 = keep open / 1 = close at event end / 2 = close immediately (default)
+		//	中間JSONで uiclose 指定があればその値、無ければ既定 2 を使う。
+		//	※ c["uiclose"] が 0 のとき || では 2 に落ちてしまうため in で判定する。
+		local uic = ("uiclose" in c) ? c["uiclose"] : 2;
+		return {
+			cmd = "cmd_showmsg",
+			key = c["key"] || "message_talk",
+			name = c["name"] || "",
+			text = c["text"] || "",
+			uiclose = uic,
+		};
+	},
+
+	function buildWait( c){
+		return {
+			cmd = "cmd_wait",
+			time = c["time"] || 1000,
+		};
+	},
+
+	function buildSetvar( c){
+		return {
+			cmd = "cmd_compute",
+			lvar = c["var"],
+			op = c["op"] || "=",
+			rvar = c["value"],
+		};
+	},
+
+	function buildChoice( c){
+		//	TODO(verify): 選択肢ラベルは生文字列で動作確認済み（$T.キー不要）
+		local options = c["options"] || [];
+		local branches = c["branches"] || [];
+		local nopt = length( options);
+		local nbr = length( branches);
+		if( nopt != nbr){
+			printf( "[aiscenario] WARN: choice options(%d) != branches(%d); padding with empty blocks\n", nopt, nbr);
+		}
+		local n = nopt > nbr ? nopt : nbr;
+		local cmdblocks = [];
+		for( local i = 0; i < n; i ++){
+			local branch = i < nbr ? branches[i] : [];
+			cmdblocks.push( buildBlock( branch));
+		}
+		local cmd = {
+			cmd = "cmd_choices",
+			backenable = c["backenable"] || false,
+			cmdblocks = cmdblocks,
+		};
+		for( local i = 0; i < nopt; i ++){
+			cmd["text" + i] <- options[i];
+		}
+		return cmd;
+	},
+
+	function buildIf( c){
+		local conds = normalizeReqs( c["conditions"] || []);
+		local cmdblocks = [ buildBlock( c["then"] || []) ];
+		//	confirmed by author (PR#3): cmd_if は cmdblocks[0]=then, cmdblocks[1]=else
+		if( c["else"]){
+			cmdblocks.push( buildBlock( c["else"]));
+		}
+		return {
+			cmd = "cmd_if",
+			cmdblocks = cmdblocks,
+			reqs = conds,
+		};
+	},
+
+	//	ページ条件・cmd_if 共用。key 無し要素に varcmp を補完。
+	function normalizeReqs( conds){
+		if( typeof( conds) != SS_ARRAY || !length( conds)) return [];
+		local out = [];
+		foreach( r in conds){
+			if( typeof( r) != SS_TABLE) continue;
+			local req = deepclone( r);
+			if( !("key" in req)) req.key <- "varcmp";
+			out.push( req);
+		}
+		return out;
+	},
+};
+
+ScenarioCommandBuilder.init();

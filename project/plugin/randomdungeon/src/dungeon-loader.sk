@@ -1,0 +1,48 @@
+//
+//	Random Dungeon Generator — menu-time loader.
+//
+
+RandomDungeonLoader <- {
+	loaded = false,
+	loaderror = null,
+	loading = null,
+
+	function runScript( srcdir, path){
+		loading = path;
+		::runsk( srcdir + path);
+	},
+
+	function ensureLoaded( srcdir){
+		if( loaded) return true;
+		try{
+			runScript( srcdir, "/src/randomdungeon.sk");
+			runScript( srcdir, "/src/dungeon-rng.sk");
+			runScript( srcdir, "/src/dungeon-theme.sk");
+			runScript( srcdir, "/src/dungeon-validation.sk");
+			runScript( srcdir, "/src/dungeon-generator.sk");
+			runScript( srcdir, "/src/dungeon-apply.sk");
+			runScript( srcdir, "/src/dungeon-dialog.sk");
+			loaded = true;
+			loaderror = null;
+			loading = null;
+			printf( "[randomdungeon] phase1 sources loaded\n");
+			return true;
+		}catch( ex){
+			loaderror = (loading || "(unknown)") + " : " + string( ex);
+			printf( "[randomdungeon] phase1 source load failed at %S: %S\n", loading, ex);
+			printexception( ex);
+			return false;
+		}
+	},
+
+	function run( srcdir){
+		if( ensureLoaded( srcdir) && ::["DungeonDialog"]){
+			DungeonDialog.run();
+			return;
+		}
+		Dialogs.notice( {
+			msg = "ランダムダンジョン生成の読み込みに失敗しました。\nシステムコンソールを確認してください。\n" + (loaderror || ""),
+			icon = "\ue002",
+		});
+	},
+}

@@ -1,0 +1,22 @@
+{
+  "role": "custom",
+  "name": "*dungeon-chest-score",
+  "mdlid": "CV370",
+  "pos": [33, 1, 15, 0],
+  "page": [
+    {
+      "trigger": 3,
+      "reqs": { "lvar": "A", "op": "!=", "rvar": "REMAPID" },
+      "cmdblock": [
+        { "cmd": "cmd_showmsg", "msg": "宝箱を開けた！" },
+        { "cmd": "cmd_compute", "lvar": "G101", "op": "+=", "rvar": 150 },
+        { "cmd": "cmd_compute", "lvar": "A", "op": "=", "rvar": "REMAPID" }
+      ]
+    },
+    {
+      "trigger": 0,
+      "reqs": { "lvar": "A", "op": "==", "rvar": "REMAPID" },
+      "cmdblock": []
+    }
+  ]
+}

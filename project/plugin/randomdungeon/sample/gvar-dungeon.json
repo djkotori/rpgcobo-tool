@@ -1,0 +1,8 @@
+{
+  "G100": { "name": "ダンジョン探索中", "type": 1, "defval": false },
+  "G101": { "name": "今回の戦利品スコア", "type": 2, "defval": 0 },
+  "G102": { "name": "ダンジョンポイント", "type": 2, "defval": 0 },
+  "G103": { "name": "リザルト表示用", "type": 2, "defval": 0 },
+  "G110": { "name": "交換:初回クリア解放", "type": 1, "defval": false },
+  "G111": { "name": "交換:PT1000解放", "type": 1, "defval": false }
+}

@@ -1,0 +1,186 @@
+//
+//	Random Dungeon Generator — Phase 1 settings dialog.
+//
+
+import PropertyType;
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.Dialog <- {
+	PROPDEF = {
+		name = { "ja":"ランダムダンジョン生成", "en":"Random Dungeon Generator" },
+		width = 560,
+		props = [
+			{ pid="seed", lbl="シード", type=STRING },
+			{ pid="width", lbl="幅", type=SCALAR, range=(16,256) },
+			{ pid="depth", lbl="高さ", type=SCALAR, range=(16,256) },
+			{ pid="roomCount", lbl="部屋数", type=SCALAR, range=(4,40) },
+			{ pid="minRoomW", lbl="最小部屋幅", type=SCALAR, range=(3,32) },
+			{ pid="minRoomD", lbl="最小部屋高さ", type=SCALAR, range=(3,32) },
+			{ pid="maxRoomW", lbl="最大部屋幅", type=SCALAR, range=(3,64) },
+			{ pid="maxRoomD", lbl="最大部屋高さ", type=SCALAR, range=(3,64) },
+			{ pid="corridorWidth", lbl="通路幅", type=SCALAR, range=(1,5) },
+			{ pid="treasureCount", lbl="宝箱", type=SCALAR, range=(0,20) },
+			{ pid="enemyDensity", lbl="敵密度", type=LIST, list=[
+				{ lbl="少ない", val="low" },
+				{ lbl="普通", val="normal" },
+				{ lbl="多い", val="high" },
+			] },
+			{ pid="bossRoom", lbl="ボス部屋を作成", type=BOOL },
+			{ pid="floorTileId", lbl="床タイルID", type=SCALAR, range=(0,4096) },
+			{ pid="wallTileId", lbl="壁タイルID", type=SCALAR, range=(0,4096) },
+			{ pid="preserveTerrain", lbl="既存地形を保護", type=BOOL },
+		],
+	},
+
+	function run(){
+		local editor = ::skstudio["editor"];
+		if( !isUsableMapEditor( editor)){
+			Dialogs.notice( { msg="通常マップをマップエディタで開いてください。", icon="\ue002" } );
+			return;
+		}
+		local data = makeInitialData( editor);
+		local ret = PropertyEditPopup_OK.run( null, PROPDEF, data);
+		if( !ret) return;
+
+		local config = makeConfig( editor, ret);
+		local draft = RandomDungeon.Generator.generate( config);
+		if( !draft.validation.ok){
+			Dialogs.notice( { msg=formatValidationErrors( draft), icon="\ue002" } );
+			return;
+		}
+
+		if( !Dialogs.confirm( { msg=formatConfirmMessage( draft), yestxt="反映", notxt="キャンセル" })){
+			return;
+		}
+
+		try{
+			local result = RandomDungeon.Apply.applyDraft( editor, draft, {
+				overwriteMode = "merge",
+				preserveTerrain = ret.preserveTerrain,
+			} );
+			Dialogs.notice( {
+				msg = sprintf( "ランダムダンジョンを反映しました。\nタイル: %d\nイベント: %d\n\nUndo 1回で生成前に戻せます。", result.tiles, result.events ),
+				icon = "\ue86c",
+			});
+		}catch( ex){
+			printf( "[randomdungeon] apply failed: %S\n", ex);
+			printexception( ex);
+			Dialogs.notice( { msg="ランダムダンジョン反映に失敗しました:\n" + ex, icon="\ue002" } );
+		}
+	},
+
+	function isUsableMapEditor( editor){
+		if( !editor) return false;
+		if( !("mapid" in editor) || !editor.mapid) return false;
+		if( !("bw" in editor) || !editor.bw) return false;
+		if( !("data" in editor) || !editor.data) return false;
+		return true;
+	},
+
+	function makeInitialData( editor){
+		local width = Math.min( 80, editor.bw.w );
+		local depth = Math.min( 80, editor.bw.d );
+		local tileGuess = guessThemeTiles( editor, width, depth);
+		return {
+			seed = "ruin-2026",
+			width = width,
+			depth = depth,
+			roomCount = 12,
+			minRoomW = 5,
+			minRoomD = 5,
+			maxRoomW = 13,
+			maxRoomD = 11,
+			corridorWidth = 1,
+			treasureCount = 3,
+			enemyDensity = "normal",
+			bossRoom = true,
+			floorTileId = tileGuess.floorTileId,
+			wallTileId = tileGuess.wallTileId,
+			preserveTerrain = true,
+		};
+	},
+
+	function guessThemeTiles( editor, width, depth){
+		local counts = {};
+		for( local z = 0; z < depth; z += 4){
+			for( local x = 0; x < width; x += 4){
+				local tile = topBlockAt( editor, x, z);
+				if( tile){
+					counts[tile] <- (counts[tile] || 0) + 1;
+				}
+			}
+		}
+		local floorTile = mostCommonBlock( counts, 1);
+		return {
+			floorTileId = floorTile,
+			wallTileId = floorTile,
+		};
+	},
+
+	function topBlockAt( editor, x, z){
+		for( local y = editor.bw.h-1; y >= 0; y --){
+			local blk = editor.bw.blockat( x, y, z);
+			if( blk) return blk;
+		}
+		return 0;
+	},
+
+	function mostCommonBlock( counts, fallback){
+		local best = fallback, bestCount = 0;
+		foreach( blk, count in counts){
+			if( count > bestCount){
+				best = int( blk);
+				bestCount = count;
+			}
+		}
+		return best;
+	},
+
+	function makeConfig( editor, data){
+		return {
+			seed = data.seed,
+			mode = "classic",
+			bounds = { x=0, y=1, z=0, w=int( data.width), h=editor.bw.h, d=int( data.depth) },
+			roomCount = data.roomCount,
+			minRoomW = data.minRoomW,
+			minRoomD = data.minRoomD,
+			maxRoomW = data.maxRoomW,
+			maxRoomD = data.maxRoomD,
+			corridorWidth = data.corridorWidth,
+			treasureCount = data.treasureCount,
+			enemyDensity = data.enemyDensity,
+			bossRoom = data.bossRoom,
+			themeId = "classic_stone",
+			floorTileId = data.floorTileId,
+			wallTileId = data.wallTileId,
+			preserveTerrain = data.preserveTerrain,
+		};
+	},
+
+	function formatConfirmMessage( draft){
+		local s = draft.stats;
+		local msg = StringBuffer();
+		msg .. "生成結果: OK\n";
+		msg .. sprintf( "部屋:%d 通路:%d 床:%d 壁:%d\n", s.rooms, s.connections, s.floors, s.walls );
+		msg .. sprintf( "入口:%d 出口:%d 宝箱:%d 敵:%d\n", s.entrance, s.exit, s.chests, s.enemies );
+		msg .. "マップに反映しますか？";
+		if( length( draft.validation.warnings)){
+			msg .. "\n警告あり";
+		}
+		return string( msg);
+	},
+
+	function formatValidationErrors( draft){
+		local msg = StringBuffer();
+		msg .. "生成結果に問題があります。\n\n";
+		foreach( err in draft.validation.errors) msg .. "- " .. err .. "\n";
+		return string( msg);
+	},
+}
+
+DungeonDialog <- {
+	function run(){
+		return RandomDungeon.Dialog.run();
+	},
+}

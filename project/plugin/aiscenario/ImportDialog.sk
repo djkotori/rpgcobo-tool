@@ -1,0 +1,423 @@
+import PropertyType;
+import VirtualKeyCode;
+import ModifiersMask;
+
+//
+//	JSON 貼り付け / ファイル選択 → 検証プレビュー → import
+//
+
+ImportDialog <- {
+	TAB_PASTE = 0,
+	TAB_HISTORY = 1,
+
+	//	multiline=18 の 1.5 倍 → さらに 1.3 倍。STRING で日本語表示とスクロールを改善。
+	PASTE_PROPDEF = {
+		name = { "ja":"シナリオ JSON 取り込み", "en":"Import Scenario JSON" },
+		width = 1040,
+		tipskey = "aiscenario_import_paste",
+		menu = [
+			{ id="clip", lbl={ "ja":"クリップボード再読込", "en":"Reload clipboard" }, icon="\ue14d" },
+			{ id="preview", lbl={ "ja":"プレビューのみ", "en":"Preview only" }, icon="\ue417" },
+		],
+		props = [
+			{
+				pid = "json",
+				lbl = { "ja":"シナリオ JSON", "en":"Scenario JSON" },
+				type = STRING,
+				multiline = 35,
+				cnt = "cnt6v.ui",
+			},
+		],
+	},
+
+	POPUP_MIN_HEIGHT = 676,
+
+	function formatPreview( report){
+		local sb = StringBuffer();
+		sb .. "対象マップ: " .. (report.mapid || "(未指定)") .. "\n";
+		sb .. sprintf( "イベント数: %d（取り込み可: %d）\n\n", report.eventCount, report.importableCount);
+		foreach( item in report.items){
+			local mark = item.ok ? "[OK]" : "[NG]";
+			sb .. mark .. " " .. item.message .. "\n";
+		}
+		if( length( report.warnings)){
+			sb .. "\n警告:\n";
+			foreach( w in report.warnings) sb .. "- " .. w .. "\n";
+		}
+		return string( sb);
+	},
+
+	function formatErrors( report){
+		local sb = StringBuffer();
+		sb .. "取り込み前チェックでエラーがあります:\n\n";
+		foreach( err in report.errors) sb .. "- " .. err .. "\n";
+		return string( sb);
+	},
+
+	function showErrorNotice( msg){
+		Dialogs.notice( { msg=msg, icon="\ue002" });
+	},
+
+	function showPreviewOnly( raw){
+		local report = ScenarioImporter.validateText( raw);
+		if( !report.ok){
+			showErrorNotice( formatErrors( report));
+			return;
+		}
+		Dialogs.notice( { msg=formatPreview( report), icon="\ue417" });
+	},
+
+	function showResultNotice( result){
+		local msg = sprintf(
+			"%d 件のイベントを %S に取り込みました（%S 経路）\nID: %S",
+			result.imported, result.mapid, result.route || "unknown", result.ids
+		);
+		if( result.route == "editor"){
+			msg += "\n\nエディタ表示を更新しました。";
+		}else{
+			msg += "\n\nマップを開き直すとエディタ表示が更新されます。";
+		}
+		Dialogs.notice( { msg=msg, icon="\ue86c" });
+	},
+
+	function confirmImport( report){
+		local msg = sprintf(
+			"対象マップ: %S\nイベント数: %d（取り込み可: %d）",
+			report.mapid || "(未指定)", report.eventCount, report.importableCount
+		);
+		if( length( report.warnings)){
+			msg = "警告があります。\n\n" + msg;
+		}
+		msg += "\n\n取り込みますか？";
+		return Dialogs.confirm( { msg=msg, yestxt="取り込む", notxt="キャンセル" });
+	},
+
+	function importValidated( report, sourceLabel, raw=null){
+		if( !report.ok){
+			showErrorNotice( formatErrors( report));
+			return false;
+		}
+		if( !report.importableCount){
+			showErrorNotice( "取り込めるイベントがありません。\n\n- events が空\n- すべて NG 判定\n\nプレビューのみで内容を確認してください。");
+			return false;
+		}
+		if( !confirmImport( report)) return false;
+		try{
+			local result = ScenarioImporter.importFromScenario( report.scenario, sourceLabel);
+			if( result.imported > 0){
+				local historyRaw = raw;
+				if( !length( historyRaw) && ("scenario" in report)){
+					historyRaw = encodeJSON( report.scenario, 5);
+				}
+				ScenarioImporter.appendHistory( historyRaw, sourceLabel, result, report);
+				showResultNotice( result);
+				return true;
+			}
+			showErrorNotice( "イベントは 1 件も取り込まれませんでした。\n\nシステムコンソール（Ctrl+@）の [aiscenario] ログを確認してください。");
+		}catch( ex){
+			printf( "[aiscenario] import failed: %S\n", ex);
+			printexception( ex);
+			showErrorNotice( ScenarioImporter.formatExceptionDetail( ex, "取り込み中にエラーが発生しました"));
+		}
+		return false;
+	},
+
+	function readClipboardJson(){
+		try{
+			local clip = null;
+			if( skCheckClipboardType( ClipboardType.CLIPBOARD_TEXT)){
+				clip = skGetClipboardData( ClipboardType.CLIPBOARD_TEXT);
+			}else{
+				clip = skGetClipboardData();
+			}
+			if( length( clip)) return ScenarioImporter.normalizeJsonRaw( clip);
+		}catch( ex){
+			printf( "[aiscenario] clipboard read skipped: %S\n", ex);
+		}
+		return "";
+	},
+
+	function runPaste(){
+		local data = { json = readClipboardJson() };
+		return ImportPastePopup.runDialog( data);
+	},
+
+	function pickJsonFile(){
+		local d = FileDialog();
+		d.setTitle( "シナリオ JSON を開く");
+		d.setMode( FileDialogMode.FILEDIALOG_SELECT);
+		d.show();
+		while( d.isShown()){
+			suspend();
+			sleep( 100);
+		}
+		return d.getResult();
+	},
+
+	function runFile(){
+		local path = pickJsonFile();
+		if( !length( path)) return false;
+		try{
+			local f = FileRef( path);
+			local raw = f.load();
+			if( typeof( raw) != SS_STRING) raw = string( raw);
+			local scenario = ScenarioImporter.parseScenarioText( raw);
+			local report = ScenarioImporter.validateScenario( scenario);
+			report.scenario <- scenario;
+			return importValidated( report, path, raw);
+		}catch( ex){
+			printf( "[aiscenario] file load failed: %S\n", ex);
+			printexception( ex);
+			showErrorNotice( ScenarioImporter.formatExceptionDetail( ex, "ファイル読込に失敗しました: " + path));
+		}
+		return false;
+	},
+
+	function buildHistoryListItems( entries){
+		local items = [];
+		foreach( i, entry in entries){
+			items.push( { entry=entry, idx=i });
+		}
+		if( !length( items)){
+			items.push( {
+				entry = null,
+				idx = -1,
+				disable = true,
+				lbl = "履歴がありません（import 成功時に自動保存）",
+			});
+		}
+		return items;
+	},
+
+	function importHistoryEntry( entry, idx=0){
+		if( !entry || !length( entry.raw || "")){
+			showErrorNotice( "履歴エントリが空です。");
+			return false;
+		}
+		local raw = entry.raw;
+		local report = ScenarioImporter.validateText( raw);
+		local label = "history:" + (entry.savedAtText || entry.id || string( idx));
+		return importValidated( report, label, raw);
+	},
+
+	function run(){
+		local choice = MenuPopup.run( [
+			{ id="paste", lbl={ "ja":"JSON を貼り付け", "en":"Paste JSON" }, icon="\ue157" },
+			{ id="file", lbl={ "ja":"JSON ファイルを選択", "en":"Select JSON file" }, icon="\ue2c6" },
+		]);
+		if( !choice) return false;
+		if( choice.id == "file") return runFile();
+		return runPaste();
+	},
+};
+
+ImportDialog.PASTE_PROPDEF.menufunc <- function( cmd, d){
+	switch( cmd.id){
+	case "clip":
+		d.json = ImportDialog.readClipboardJson();
+		return d;
+	case "preview":
+		ImportDialog.showPreviewOnly( d.json || "");
+		return null;
+	}
+	return null;
+};
+
+class ImportPastePopup extends PropertyEditPopup_OK
+{
+	tabs = null;
+	historylist = null;
+	historyview = null;
+	seltab = ImportDialog.TAB_PASTE;
+	menubtn = null;
+
+	static function createTabsContainer( width){
+		local paths = [
+			"/skstudio/ui/dialog/makesrcdict.ui",
+			"/skstudio/ui/editor/uiright.ui",
+		];
+		foreach( path in paths){
+			try{
+				local root = ::loadSKView( path);
+				local t = root.findChild( "tabs");
+				if( t){
+					t.removeFromParent();
+					t.stretchSize( width, t.bnd.h);
+					return t;
+				}
+			}catch( ex){
+				printf( "[aiscenario] tabs ui skip %S: %S\n", path, ex);
+			}
+		}
+		local wrap = SKView();
+		wrap.name = "tabs";
+		local lv = GPUIListView();
+		lv.name = "LIST";
+		wrap.addChild( lv);
+		wrap.stretchSize( width, 30);
+		lv.stretchSize( width, 30);
+		return wrap;
+	}
+
+	static function createHistoryListView( width, height){
+		try{
+			local root = ::loadSKView( "/skstudio/ui/dialog/checklistpopup.ui");
+			local lv = root.findChild( "LIST");
+			if( lv){
+				lv.removeFromParent();
+				lv.stretchSize( width, height);
+				return lv;
+			}
+		}catch( ex){
+			printf( "[aiscenario] history list ui fallback: %S\n", ex);
+		}
+		local lv = GPUIListView();
+		lv.stretchSize( width, height);
+		return lv;
+	}
+
+	static function runDialog( data){
+		local p = ImportPastePopup(
+			::loadSKView( PropertyEditPopup_OK.POPUPUIPATH),
+			ImportDialog.PASTE_PROPDEF,
+			data,
+			null
+		);
+		p.minheight = ImportDialog.POPUP_MIN_HEIGHT;
+		p.proplist.ref = p;
+		p.setupTabsAndHistory();
+		p.tuneJsonEditor();
+		p.show();
+		return p.ret;
+	}
+
+	function setupTabsAndHistory(){
+		local plv = proplist.listview;
+		local parent = plv.parent;
+		if( !parent) return;
+
+		local width = propdef["width"] || plv.bnd.w;
+		local height = plv.bnd.h;
+
+		local tabsRoot = createTabsContainer( width);
+		historyview = createHistoryListView( width, height);
+		historyview.setVisible( false);
+
+		local idx = parent.childIndexOf( plv);
+		if( idx >= 0){
+			parent.insertChild( idx, tabsRoot);
+		}else{
+			parent.addChild( tabsRoot);
+		}
+		parent.addChild( historyview);
+
+		tabs = TabsBehavior( tabsRoot, [
+			{ lbl={ "ja":"JSON 貼り付け", "en":"Paste JSON" } },
+			{ lbl={ "ja":"履歴", "en":"History" } },
+		]);
+		tabs.listview.addEventListener( ACTION_EVENT, tabevent);
+
+		historylist = ListBehavior( historyview);
+		historylist.setviewfunc = @( la, v, i){
+			if( i["disable"]){
+				v.setValue( "lbl", i["lbl"] || "(empty)");
+				v.setValue( "icon", null);
+			}else{
+				v.setValue( "lbl", ScenarioImporter.formatHistoryLabel( i.entry));
+				v.setValue( "icon", "\ue889");
+			}
+			v.pickable = false;
+		};
+		historylist.listview.addEventListener( ACTION_EVENT, historyevent);
+		refreshHistoryList();
+
+		menubtn = view.findChild( "menubtn");
+		switchImportTab( ImportDialog.TAB_PASTE);
+	}
+
+	function refreshHistoryList(){
+		if( !historylist) return;
+		local entries = ScenarioImporter.loadHistory();
+		historylist.setListItems( ImportDialog.buildHistoryListItems( entries));
+		if( length( entries)) historylist.setSelectedIndex( 0);
+	}
+
+	function switchImportTab( ti){
+		seltab = ti;
+		local showPaste = ti == ImportDialog.TAB_PASTE;
+		proplist.listview.setVisible( showPaste);
+		historyview?.setVisible( !showPaste);
+		if( menubtn) menubtn.setVisible( showPaste);
+		if( !showPaste) refreshHistoryList();
+		updateViewSize();
+	}
+
+	function tabevent( e){
+		e.consume();
+		switchImportTab( e.actioncmd);
+	}
+
+	function historyevent( e){
+		if( seltab != ImportDialog.TAB_HISTORY) return;
+		if( e.id != ACTION_PERFORMED) return;
+		e.consume();
+		if( importSelectedHistory()){
+			ret = 1;
+			close();
+		}
+	}
+
+	function importSelectedHistory(){
+		local sels = historylist.getSelectedItems();
+		if( !length( sels) || sels[0]["disable"]){
+			ImportDialog.showErrorNotice( "履歴から項目を選択してください。");
+			return false;
+		}
+		local item = sels[0];
+		return ImportDialog.importHistoryEntry( item.entry, item.idx);
+	}
+
+	function importCurrentTab(){
+		if( seltab == ImportDialog.TAB_PASTE){
+			local report = ScenarioImporter.validateText( data.json || "");
+			return ImportDialog.importValidated( report, "paste", data.json || "");
+		}
+		return importSelectedHistory();
+	}
+
+	//	日本語表示・長文 JSON・マウスホイールスクロール向け調整
+	function tuneJsonEditor(){
+		if( !proplist || !proplist.listview) return;
+		foreach( row in proplist.listview.rows){
+			//	listview.rows は行 View。row.ref は pid などの値になる場合がある。
+			local edit = row.findChild( "edit");
+			if( !edit) continue;
+			edit.updateMaxLength( 65536);
+			if( edit.textedit){
+				edit.textedit.maxlen = 65536;
+				edit.textedit.areatrim = false;
+				local tb = edit.textedit.textbox;
+				if( tb){
+					tb.wrapmode = 1;
+				}
+			}
+		}
+		local gpui = proplist.listview.gpui;
+		if( gpui){
+			gpui.contentdraggable = true;
+		}
+		updateViewSize();
+	}
+
+	function actionevent( e){
+		if( e.src["name"] == "btn_apply"){
+			e.consume();
+			if( importCurrentTab()){
+				ret = 1;
+				close();
+			}
+			return;
+		}
+		super.actionevent( e);
+	}
+}

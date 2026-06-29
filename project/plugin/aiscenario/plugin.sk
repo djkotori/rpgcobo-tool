@@ -1,0 +1,45 @@
+//
+//	AI Scenario Importer — JSON から map.json へイベント取り込み（villager / custom）。
+//
+
+local srcdir = dirname( callee().getSourceName());
+
+pluginfo <- {
+	name : { "ja":"AI Scenario Importer", "en":"AI Scenario Importer" }
+	auther : "matrix9neonebuchadnezzar2199-sketch"
+	ver : "0.3.3"
+	tags : [ "editor", "aiscenario" ]
+	order : 100
+	lock : false
+	desc : {
+		"ja":"JSONシナリオから villager / custom イベントを map.json へ取り込む",
+		"en":"Import villager and custom events from scenario JSON into map.json",
+	}
+	props : []
+}
+
+function loadPlugin( args, opt){
+	if( !::["SKStudio"]) return false;
+	if( !::getResource( "/data/setting.json")){	//	プロジェクトセットアップ前。メニュー登録は行わない。
+		return true;
+	}
+
+	module.hookAction( "editor_postload", @(){
+		::runsk( srcdir + "/ScenarioCommandBuilder.sk");
+		::runsk( srcdir + "/ScenarioImporter.sk");
+		::runsk( srcdir + "/ImportDialog.sk");
+		::runsk( srcdir + "/ScenarioAI.sk");
+		::skstudio.registerMenu( {
+			uid = "aiscenario_import_json",
+			parentid = "menu_edit",
+			block = "*9",
+			lbl = { "ja":"シナリオメーカー読み込み", "en":"Scenario Maker Import" },
+			func = @( m){
+				ImportDialog.run();
+			},
+		});
+		printf( "[aiscenario] plugin loaded (v0.3.3 paste/history tabs)\n");
+	}, 100);
+
+	return true;
+}

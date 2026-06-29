@@ -3,5 +3,13 @@
 		"enable":true,
 		"lock":true,
 		"prop1":1234
+	},
+	"aiscenario":{
+		"enable":true,
+		"lock":false
+	},
+	"randomdungeon":{
+		"enable":true,
+		"lock":false
 	}
 }

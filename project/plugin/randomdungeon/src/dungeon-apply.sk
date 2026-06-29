@@ -1,0 +1,194 @@
+//
+//	Random Dungeon Generator — apply draft to the active map editor.
+//
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.Apply <- {
+	EVENT_ID_MIN = 1000000,
+	EVENT_ID_MAX = 1999999,
+
+	function applyDraft( editor, draft, options=null){
+		options = options || {};
+		if( !editor || !("bw" in editor) || !editor.bw || !("data" in editor) || !editor.data){
+			throw Exception( "マップエディタで通常マップを開いてください。" );
+		}
+		if( !draft.validation.ok){
+			throw Exception( "validation NG の draft は反映できません。" );
+		}
+
+		local snapshot = makeSnapshot( editor, draft);
+		local eventPlans = buildEventPlans( editor.data.event, draft);
+		local applyOptions = clone options;
+		local self = this, ed = editor;
+		local redo = [@(){
+			self.applyTiles( ed, draft, applyOptions);
+			self.applyEvents( ed, eventPlans);
+			self.refreshEditor( ed);
+		}];
+		local undo = [@(){
+			self.restoreTiles( ed, snapshot);
+			self.removeGeneratedEvents( ed, eventPlans);
+			self.refreshEditor( ed);
+		}];
+		editor.submitOp( redo, undo, "randomdungeon");
+		return { tiles=length( draft.tilePatches), events=length( eventPlans) };
+	},
+
+	function makeSnapshot( editor, draft){
+		local oldBlocks = [];
+		foreach( patch in draft.tilePatches){
+			oldBlocks.push( {
+				x = patch.x,
+				y = patch.y,
+				z = patch.z,
+				tileId = editor.bw.blockat( patch.x, patch.y, patch.z),
+			});
+		}
+		return { oldBlocks=oldBlocks };
+	},
+
+	function applyTiles( editor, draft, options=null){
+		options = options || {};
+		local preserveTerrain = !!options["preserveTerrain"];
+		local pos = IPos( 0, 0, 0, 0);
+		foreach( patch in draft.tilePatches){
+			if( preserveTerrain && shouldPreserveBlock( editor, patch)){
+				continue;
+			}
+			pos.x = patch.x; pos.y = patch.y; pos.z = patch.z;
+			editor.bw.placeBlock( pos, patch.tileId, 0);
+		}
+	},
+
+	function shouldPreserveBlock( editor, patch){
+		local current = editor.bw.blockat( patch.x, patch.y, patch.z);
+		if( !current) return false;
+		return current != patch.tileId;
+	},
+
+	function restoreTiles( editor, snapshot){
+		local pos = IPos( 0, 0, 0, 0);
+		foreach( patch in snapshot.oldBlocks){
+			pos.x = patch.x; pos.y = patch.y; pos.z = patch.z;
+			editor.bw.placeBlock( pos, patch.tileId, 0);
+		}
+	},
+
+	function buildEventPlans( eventTb, draft){
+		local plans = [];
+		foreach( entity in draft.entities){
+			local ev = buildEvent( entity, draft);
+			if( !ev) continue;
+			local evid = allocNextEventId( eventTb, plans);
+			plans.push( { id=evid, event=ev } );
+		}
+		return plans;
+	},
+
+	function allocNextEventId( eventTb, plans){
+		local maxi = EVENT_ID_MIN;
+		foreach( i, v in eventTb){
+			local n = parseEventIdKey( i);
+			if( n != null && n > maxi) maxi = n;
+		}
+		foreach( p in plans){
+			if( p.id > maxi) maxi = p.id;
+		}
+		local next = maxi + 1;
+		if( next > EVENT_ID_MAX) throw Exception( "event id exhausted" );
+		return next;
+	},
+
+	function parseEventIdKey( key){
+		if( typeof( key)==SS_INTEGER) return key;
+		local s = "" + key;
+		if( length( s) >= 3 && s[0]=='#' && s[length( s)-1]=='#'){
+			s = s.slice( 1, length( s)-1);
+		}
+		try{
+			return int( s);
+		}catch( ex){
+			return null;
+		}
+	},
+
+	function buildEvent( entity, draft){
+		switch( entity.type ){
+		case "entrance":
+			return makeMarkerEvent( entity, "*rd-entrance", "CV000" );
+		case "exit":
+			return makeMarkerEvent( entity, "*rd-exit", "CV000" );
+		case "chest":
+			return makeMarkerEvent( entity, "*rd-chest", "CV036" );
+		case "enemy":
+			return makeMarkerEvent( entity, "*rd-enemy", "CV000" );
+		}
+		return null;
+	},
+
+	function makeBaseEvent( entity, name, mdlid){
+		return {
+			name = name,
+			pos = [entity.x, entity.y, entity.z, 0],
+			col = 0,
+			flags = 1,
+			mdlid = mdlid,
+			spawndist = 1,
+			source = "randomdungeon",
+			draftId = "phase1",
+			roomId = entity.roomId,
+		};
+	},
+
+	function makeMarkerEvent( entity, name, mdlid){
+		local ev = makeBaseEvent( entity, name, mdlid);
+		ev.role <- "custom";
+		ev.page <- [
+			{
+				memo = "Random Dungeon Phase 1 marker",
+				moveaction = "stop",
+				movespd = 4,
+				standani = { id="stand" },
+				trigger = 0,
+				pararun = false,
+				reqs = null,
+				cmdblock = [],
+			},
+		];
+		return ev;
+	},
+
+	function applyEvents( editor, eventPlans){
+		if( !("event" in editor.data) || typeof( editor.data.event) != SS_TABLE){
+			editor.data.event <- {};
+		}
+		foreach( plan in eventPlans){
+			editor.data.event[plan.id] <- plan.event;
+			editor.canvas.placeEventGizmo( plan.id, plan.event);
+		}
+	},
+
+	function removeGeneratedEvents( editor, eventPlans){
+		foreach( plan in eventPlans){
+			delete editor.data.event[plan.id];
+			editor.canvas.removeEventGizmo( plan.id);
+		}
+	},
+
+	function refreshEditor( editor){
+		if( editor.canvas){
+			editor.canvas.loadInCameraMesh( 20);
+			editor.canvas.view.repaint();
+		}
+		if( editor.tool ){
+			try{
+				if( editor.tool["updateEventList"] ) editor.tool.updateEventList();
+				if( editor.tool["updateGizmoStates"] ) editor.tool.updateGizmoStates();
+			}catch( ex){
+				printf( "[randomdungeon] WARN: event list refresh failed: %S\n", ex);
+				printexception( ex);
+			}
+		}
+	},
+}

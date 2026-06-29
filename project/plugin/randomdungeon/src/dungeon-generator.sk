@@ -1,0 +1,307 @@
+//
+//	Random Dungeon Generator — pure Classic / Graph-first v0.1 generator.
+//
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.Generator <- {
+	function generate( config=null){
+		local cfg = RandomDungeon.Util.mergeConfig( config);
+		local draft = RandomDungeon.Util.makeDraft( cfg);
+		local rng = RandomDungeon.RNG.create( cfg.seed + ":" + encodeJSON( cfg));
+		local theme = RandomDungeon.Theme.resolve( cfg);
+		local themeCheck = RandomDungeon.Theme.validate( theme);
+		if( !themeCheck.ok){
+			foreach( err in themeCheck.errors) draft.validation.errors.push( err);
+			return draft;
+		}
+
+		buildRooms( draft, cfg, rng);
+		buildConnections( draft, cfg);
+		buildTiles( draft, cfg, theme);
+		buildEntities( draft, cfg, rng);
+		draft.validation = RandomDungeon.Validation.validateDraft( draft);
+		draft.stats = makeStats( draft);
+		return draft;
+	},
+
+	function buildRooms( draft, cfg, rng){
+		local mainCount = Math.max( 4, cfg.roomCount - cfg.treasureCount);
+		local step = int( Math.max( 4, cfg.bounds.w / mainCount));
+		for( local i = 0; i < mainCount; i ++){
+			local roomType = "normal";
+			if( i == 0) roomType = "entrance";
+			else if( i == mainCount-1) roomType = cfg.bossRoom ? "boss" : "exit";
+			else if( i == mainCount-2 && cfg.bossRoom) roomType = "combat";
+			else if( i % 3 == 0) roomType = "combat";
+
+			local room = placeRoomNearColumn( draft, cfg, rng, i, step, roomType);
+			draft.rooms.push( room);
+		}
+
+		if( cfg.bossRoom){
+			local boss = draft.rooms[length( draft.rooms)-1];
+			local exitRoom = placeExitRoom( draft, cfg, rng, boss);
+			if( exitRoom){
+				draft.rooms.push( exitRoom);
+			}else{
+				boss.type = "exit";
+				boss.tags.push( "boss_exit" );
+			}
+		}else{
+			draft.rooms[length( draft.rooms)-1].type = "exit";
+		}
+
+		addTreasureRooms( draft, cfg, rng);
+		sortRooms( draft);
+	},
+
+	function placeExitRoom( draft, cfg, rng, boss){
+		local w = Math.max( 5, Math.min( boss.w, 8));
+		local d = Math.max( 5, Math.min( boss.d, 8));
+		local candidates = [
+			{ x=boss.x+boss.w+3, z=boss.z },
+			{ x=boss.x-w-3, z=boss.z },
+			{ x=boss.x, z=boss.z+boss.d+3 },
+			{ x=boss.x, z=boss.z-d-3 },
+		];
+		foreach( c in candidates){
+			local x = int( Math.max( cfg.bounds.x + 1, Math.min( c.x, cfg.bounds.x + cfg.bounds.w - w - 1)));
+			local z = int( Math.max( cfg.bounds.z + 1, Math.min( c.z, cfg.bounds.z + cfg.bounds.d - d - 1)));
+			local room = makeRoom( length( draft.rooms)+1, "exit", x, z, w, d);
+			room.tags.push( "exit" );
+			if( !overlapsExistingRoom( draft, room, 1)) return room;
+		}
+		return null;
+	},
+
+	function placeRoomNearColumn( draft, cfg, rng, index, step, roomType){
+		local room = null;
+		for( local attempt = 0; attempt < 200; attempt ++){
+			local w = rng.range( cfg.minRoomW, cfg.maxRoomW);
+			local d = rng.range( cfg.minRoomD, cfg.maxRoomD);
+			local baseX = cfg.bounds.x + 2 + index * step;
+			local x = baseX + rng.range( -step/3, step/3);
+			local z = cfg.bounds.z + rng.range( 2, Math.max( 2, cfg.bounds.d - d - 2));
+			x = Math.max( cfg.bounds.x + 1, Math.min( x, cfg.bounds.x + cfg.bounds.w - w - 1));
+			z = Math.max( cfg.bounds.z + 1, Math.min( z, cfg.bounds.z + cfg.bounds.d - d - 1));
+			room = makeRoom( length( draft.rooms)+1, roomType, x, z, w, d);
+			if( !overlapsExistingRoom( draft, room, 2)) return room;
+		}
+		local fallbackX = cfg.bounds.x + 2 + index * step;
+		room = makeRoom( length( draft.rooms)+1, roomType, fallbackX, cfg.bounds.z + 2, cfg.minRoomW, cfg.minRoomD);
+		room.tags.push( "placement_fallback" );
+		return room;
+	},
+
+	function addTreasureRooms( draft, cfg, rng){
+		local maxTreasure = Math.min( cfg.treasureCount, Math.max( 0, length( draft.rooms)-2));
+		for( local i = 0; i < maxTreasure; i ++){
+			local anchorIndex = 1 + (i * 2) % Math.max( 1, length( draft.rooms)-2);
+			local anchor = draft.rooms[anchorIndex];
+			local w = rng.range( cfg.minRoomW, cfg.maxRoomW);
+			local d = rng.range( cfg.minRoomD, cfg.maxRoomD);
+			local room = placeTreasureRoom( draft, cfg, rng, anchor, w, d);
+			if( !room){
+				continue;
+			}
+			room.anchorId <- anchor.id;
+			room.tags.push( "reward" );
+			draft.rooms.push( room);
+		}
+	},
+
+	function placeTreasureRoom( draft, cfg, rng, anchor, w, d){
+		local offsets = [
+			{ x=0, z=anchor.d+4 },
+			{ x=0, z=-(d+4) },
+			{ x=anchor.w+4, z=0 },
+			{ x=-(w+4), z=0 },
+		];
+		foreach( off in offsets){
+			local x = int( Math.max( cfg.bounds.x + 1, Math.min( anchor.x + off.x, cfg.bounds.x + cfg.bounds.w - w - 1)));
+			local z = int( Math.max( cfg.bounds.z + 1, Math.min( anchor.z + off.z, cfg.bounds.z + cfg.bounds.d - d - 1)));
+			local room = makeRoom( length( draft.rooms)+1, "treasure", x, z, w, d);
+			if( !overlapsExistingRoom( draft, room, 1)) return room;
+		}
+		return null;
+	},
+
+	function makeRoom( idx, roomType, x, z, w, d){
+		return {
+			id = RandomDungeon.Util.makeId( "room", idx),
+			type = roomType,
+			x = int( x),
+			y = 0,
+			z = int( z),
+			w = int( w),
+			d = int( d),
+			locked = false,
+			tags = [],
+		};
+	},
+
+	function overlapsExistingRoom( draft, room, margin){
+		foreach( other in draft.rooms){
+			if( RandomDungeon.Util.rectsOverlap( room, other, margin)) return true;
+		}
+		return false;
+	},
+
+	function sortRooms( draft){
+		draft.rooms.sort( @( v) v.id);
+	},
+
+	function buildConnections( draft, cfg){
+		local mainRooms = draft.rooms.filter( @( r) r.type != "treasure");
+		mainRooms.sort( @( v) v.x);
+		for( local i = 0; i < length( mainRooms)-1; i ++){
+			addConnection( draft, mainRooms[i], mainRooms[i+1], "corridor");
+		}
+		foreach( room in draft.rooms){
+			if( room.type == "treasure" && ("anchorId" in room)){
+				local anchor = findRoom( draft, room.anchorId);
+				if( anchor) addConnection( draft, anchor, room, "corridor");
+			}
+		}
+		draft.connections.sort( @( v) v.from + ":" + v.to);
+	},
+
+	function addConnection( draft, fromRoom, toRoom, connType){
+		draft.connections.push( { from=fromRoom.id, to=toRoom.id, type=connType } );
+	},
+
+	function findRoom( draft, roomId){
+		foreach( room in draft.rooms){
+			if( room.id == roomId) return room;
+		}
+		return null;
+	},
+
+	function buildTiles( draft, cfg, theme){
+		local floors = {};
+		foreach( room in draft.rooms){
+			fillRect( floors, room.x, room.z, room.w, room.d);
+		}
+		foreach( conn in draft.connections){
+			local a = findRoom( draft, conn.from), b = findRoom( draft, conn.to);
+			if( a && b) carveCorridor( floors, a, b, cfg.corridorWidth);
+		}
+
+		local patches = [];
+		foreach( key, val in floors){
+			local parts = splitKey( key);
+			patches.push( makePatch( parts.x, cfg.bounds.y, parts.z, theme.floorTileId, "floor" ) );
+		}
+		foreach( key, val in floors){
+			local p = splitKey( key);
+			for( local dz = -1; dz <= 1; dz ++){
+				for( local dx = -1; dx <= 1; dx ++){
+					if( Math.abs( dx) + Math.abs( dz) != 1) continue;
+					local wx = p.x + dx, wz = p.z + dz;
+					local wkey = RandomDungeon.Util.posKey( wx, wz);
+					if( floors[wkey]) continue;
+					if( !isInsideBounds2D( cfg.bounds, wx, wz)) continue;
+					patches.push( makePatch( wx, cfg.bounds.y, wz, theme.wallTileId, "wall" ) );
+				}
+			}
+		}
+		patches.sort( @( v) v.z * 10000 + v.x);
+		draft.tilePatches = patches;
+	},
+
+	function fillRect( floors, x, z, w, d){
+		for( local dz = 0; dz < d; dz ++){
+			for( local dx = 0; dx < w; dx ++){
+				floors[RandomDungeon.Util.posKey( x+dx, z+dz)] <- true;
+			}
+		}
+	},
+
+	function carveCorridor( floors, a, b, width){
+		local ca = RandomDungeon.Util.centerOfRoom( a);
+		local cb = RandomDungeon.Util.centerOfRoom( b);
+		carveLine( floors, ca.x, ca.z, cb.x, ca.z, width);
+		carveLine( floors, cb.x, ca.z, cb.x, cb.z, width);
+	},
+
+	function carveLine( floors, x0, z0, x1, z1, width){
+		local dx = x1 < x0 ? -1 : 1;
+		local dz = z1 < z0 ? -1 : 1;
+		for( local x = x0; x != x1 + dx; x += dx) carveBrush( floors, x, z0, width);
+		for( local z = z0; z != z1 + dz; z += dz) carveBrush( floors, x1, z, width);
+	},
+
+	function carveBrush( floors, x, z, width){
+		local r = width / 2;
+		for( local dz = -r; dz <= r; dz ++){
+			for( local dx = -r; dx <= r; dx ++){
+				floors[RandomDungeon.Util.posKey( x+dx, z+dz)] <- true;
+			}
+		}
+	},
+
+	function splitKey( key){
+		local sep = 0;
+		for( local i = 0; i < length( key); i ++){
+			if( key[i] == ':'){ sep = i; break; }
+		}
+		return { x=int( key.slice( 0, sep)), z=int( key.slice( sep+1)) };
+	},
+
+	function makePatch( x, y, z, tileId, kind){
+		return { x=int( x), y=int( y), z=int( z), tileId=tileId, kind=kind };
+	},
+
+	function isInsideBounds2D( bounds, x, z){
+		return x >= bounds.x && z >= bounds.z && x < bounds.x + bounds.w && z < bounds.z + bounds.d;
+	},
+
+	function buildEntities( draft, cfg, rng){
+		local entityIndex = 1;
+		foreach( room in draft.rooms){
+			local center = RandomDungeon.Util.centerOfRoom( room);
+			if( room.type == "entrance"){
+				draft.entities.push( makeEntity( entityIndex++, "entrance", room, center.x, cfg.bounds.y+1, center.z, "entrance_marker", {} ) );
+			}else if( room.type == "exit"){
+				draft.entities.push( makeEntity( entityIndex++, "exit", room, center.x, cfg.bounds.y+1, center.z, "exit_marker", {} ) );
+			}else if( room.type == "boss"){
+				draft.entities.push( makeEntity( entityIndex++, "enemy", room, center.x, cfg.bounds.y+1, center.z, "enemy_boss", { gid=1 } ) );
+			}else if( room.type == "treasure"){
+				draft.entities.push( makeEntity( entityIndex++, "chest", room, center.x, cfg.bounds.y+1, center.z, "chest_phase1", {} ) );
+			}else if( room.type == "combat"){
+				draft.entities.push( makeEntity( entityIndex++, "enemy", room, center.x, cfg.bounds.y+1, center.z, "enemy_normal", { gid=1 } ) );
+			}
+		}
+		draft.entities.sort( @( v) v.id);
+	},
+
+	function makeEntity( idx, entityType, room, x, y, z, templateId, params){
+		return {
+			id = RandomDungeon.Util.makeId( "entity", idx),
+			type = entityType,
+			roomId = room.id,
+			x = int( x),
+			y = int( y),
+			z = int( z),
+			templateId = templateId,
+			params = params,
+			source = "randomdungeon",
+		};
+	},
+
+	function makeStats( draft){
+		local stats = { rooms=length( draft.rooms), connections=length( draft.connections), floors=0, walls=0, entrance=0, exit=0, chests=0, enemies=0 };
+		foreach( patch in draft.tilePatches){
+			if( patch.kind == "floor") ++stats.floors;
+			else if( patch.kind == "wall") ++stats.walls;
+		}
+		foreach( entity in draft.entities){
+			if( entity.type == "entrance") ++stats.entrance;
+			else if( entity.type == "exit") ++stats.exit;
+			else if( entity.type == "chest") ++stats.chests;
+			else if( entity.type == "enemy") ++stats.enemies;
+		}
+		return stats;
+	},
+}

@@ -1,0 +1,642 @@
+//
+//	外部シナリオJSON → map.json へイベントを追記（villager / custom）。
+//
+
+ScenarioImporter <- {
+	EVENT_ID_MIN = 1000000,
+	EVENT_ID_MAX = 1999999,
+	HISTORY_MAX = 30,
+	HISTORY_PATH = "tmp/aiscenario-history.json",
+
+	//	event キーは int または "#1000001#" 文字列の両方があり得る。
+	function parseEventIdKey( key){
+		if( typeof( key) == SS_INTEGER) return key;
+		if( typeof( key) == SS_STRING){
+			if( key.len() >= 2 && key[0] == '#' && key[key.len()-1] == '#'){
+				return int( key.slice( 1, key.len()-1));
+			}
+			if( key[0] >= '0' && key[0] <= '9') return int( key);
+		}
+		return null;
+	},
+
+	function allocNextEventId( eventTb){
+		local maxi = this.EVENT_ID_MIN;
+		foreach( i, v in eventTb){
+			local n = parseEventIdKey( i);
+			if( n != null && n > maxi) maxi = n;
+		}
+		local next = maxi + 1;
+		if( next > this.EVENT_ID_MAX){
+			throw Exception( "event id exhausted (max " + this.EVENT_ID_MAX + ")");
+		}
+		//	将来: EVENT_ID_MAX 付近では max+1 ではなく範囲内の空き番号探索に切り替える。
+		return next;
+	},
+
+	function formatDisplayName( name, evid, role="villager"){
+		if( !length( name)) return sprintf( "*%s-%d", role, evid % 1000000);
+		if( name[0] != '*') return "*" + name;
+		return name;
+	},
+
+	//	trigger codes confirmed by author (PR#3): contact=3, examine=2, auto=6
+	function convertTrigger( t){
+		if( typeof( t) == SS_INTEGER) return t;
+		if( typeof( t) == SS_STRING){
+			local m = { examine=2, auto=6, contact=3 };
+			if( t in m) return m[t];
+		}
+		return 2;
+	},
+
+	function convertConditions( conds){
+		if( typeof( conds) != SS_ARRAY || !length( conds)) return null;
+		return ScenarioCommandBuilder.normalizeReqs( conds);
+	},
+
+	function buildPage( p){
+		return {
+			cmdblock = ScenarioCommandBuilder.buildBlock( p["commands"] || []),
+			memo = p["memo"] || "",
+			moveaction = p["move"] || "stop",
+			movespd = p["movespd"] || 4,
+			pararun = p["parallel"] || false,
+			reqs = convertConditions( p["conditions"]),
+			standani = p["standani"] || { id="stand" },
+			trigger = convertTrigger( p["trigger"]),
+		};
+	},
+
+	function buildCustomEvent( src, evid){
+		local pos = src["pos"];
+		if( typeof( pos) != SS_ARRAY || pos.len() < 4){
+			throw Exception( "custom.pos must be [x,y,z,dir]");
+		}
+		local pages = src["pages"];
+		if( typeof( pages) != SS_ARRAY || !length( pages)){
+			throw Exception( "custom.pages is required");
+		}
+		local page = [];
+		foreach( p in pages) page.push( buildPage( p));
+		return {
+			col = 0,
+			flags = 1,
+			mdlid = src["mdlid"] || "CV000",
+			name = formatDisplayName( src["name"], evid, "custom"),
+			page = page,
+			pos = [ pos[0], pos[1], pos[2], pos[3] ],
+			role = "custom",
+			spawndist = src["spawndist"] || 1,
+		};
+	},
+
+	function buildEvent( src, evid){
+		local role = src["role"] || "villager";
+		switch( role){
+		case "villager":
+			return buildVillagerEvent( src, evid);
+		case "custom":
+			return buildCustomEvent( src, evid);
+		default:
+			return null;
+		}
+	},
+
+	function buildVillagerEvent( src, evid){
+		local pos = src["pos"];
+		if( typeof( pos) != SS_ARRAY || pos.len() < 4){
+			throw Exception( "villager.pos must be [x,y,z,dir]");
+		}
+		//	col/flags/pop/reqs0/standani 等は map.json 実データから観察した villager の既定値。
+		//	正規仕様は要確認（Issue #2 で作者に質問予定）。
+		return {
+			role = "villager",
+			col = 0,
+			flags = 1,
+			mdlid = src["mdlid"] || "CV000",
+			moveaction = src["moveaction"] || "stop",
+			movespd = src["movespd"] || 4,
+			msg = src["msg"] || "",
+			name = formatDisplayName( src["name"], evid, "villager"),
+			pop = null,
+			pos = [ pos[0], pos[1], pos[2], pos[3] ],
+			reqs0 = null,
+			spawndist = src["spawndist"] || 1,
+			standani = null,
+		};
+	},
+
+	function normalizeJsonRaw( raw){
+		if( raw == null || raw == undefined) return "";
+		if( typeof( raw) != SS_STRING) raw = string( raw);
+		//	UTF-16 BOM（デコード済み文字列先頭）
+		if( raw.len() >= 1 && raw.slice( 0, 1) == "\uFEFF") raw = raw.slice( 1);
+		//	UTF-8 BOM（先頭 3 バイト）
+		if( raw.len() >= 3 && raw[0] == 0xEF && raw[1] == 0xBB && raw[2] == 0xBF){
+			raw = raw.slice( 3);
+		}
+		return raw;
+	},
+
+	function formatExceptionDetail( ex, context=null){
+		local msg = string( ex);
+		if( typeof( ex) == "object" && ex ){
+			if( "message" in ex && length( ex.message)) msg = string( ex.message);
+			else if( "msg" in ex && length( ex.msg)) msg = string( ex.msg);
+		}
+		if( msg.find( "Exception:") == 0 && msg.len() < 32){
+			msg += "\n(内部エラー。JSON 構文・文字コード UTF-8・括弧/カンマの不足を確認してください)";
+		}
+		if( context) msg = context + "\n\n" + msg;
+		return msg;
+	},
+
+	function formatJsonParseError( ex, raw){
+		local detail = formatExceptionDetail( ex);
+		local hints = [
+			"JSON 構文が不正です",
+			"Scenario Maker からコピーした JSON をそのまま貼り付けてください",
+			"ファイル保存時は UTF-8 を使用してください",
+			"末尾カンマ・括弧の閉じ忘れ・ダブルクォートの不足がないか確認してください",
+		];
+		local sb = StringBuffer();
+		sb .. detail .. "\n\n";
+		foreach( h in hints) sb .. "- " .. h .. "\n";
+		local preview = normalizeJsonRaw( raw);
+		if( length( preview)){
+			if( preview.len() > 120) preview = preview.slice( 0, 120) .. "...";
+			sb .. "\n先頭:\n" .. preview;
+		}
+		return string( sb);
+	},
+
+	function parseScenarioText( raw){
+		raw = normalizeJsonRaw( raw);
+		if( !length( raw)) throw Exception( "JSON が空です");
+		local scenario = null;
+		try{
+			scenario = decodeJSON( raw);
+		}catch( ex){
+			throw Exception( formatJsonParseError( ex, raw));
+		}
+		if( typeof( scenario) != SS_TABLE) throw Exception( "JSON のルートはオブジェクト { ... } である必要があります");
+		return scenario;
+	},
+
+	function loadScenarioJson( jsonPath){
+		local raw = null;
+		//	/plugin/... は Resource 仮想パス。FileRef では開けない。
+		if( jsonPath.len() > 0 && jsonPath[0] == '/'){
+			local res = ::getResource( jsonPath);
+			if( !res) throw Exception( "scenario resource not found: " + jsonPath);
+			raw = res.loadData();
+		}else{
+			local f = FileRef( jsonPath);
+			if( !f.exists()) throw Exception( "scenario file not found: " + jsonPath);
+			raw = f.load();
+		}
+		return parseScenarioText( raw);
+	},
+
+	function summarizeEvent( src, index){
+		local role = src["role"] || "villager";
+		local name = src["name"] || role;
+		local line = sprintf( "#%d %S \"%S\"", index, role, name);
+		if( role == "villager"){
+			local pos = src["pos"];
+			if( typeof( pos) == SS_ARRAY && pos.len() >= 4){
+				line += sprintf( " pos=[%d,%d,%d,%d]", pos[0], pos[1], pos[2], pos[3]);
+			}
+		}else
+		if( role == "custom"){
+			local pages = src["pages"];
+			local pcnt = typeof( pages) == SS_ARRAY ? length( pages) : 0;
+			line += sprintf( " pages=%d", pcnt);
+		}
+		return line;
+	},
+
+	function validateEvent( src, index){
+		local role = src["role"] || "villager";
+		if( typeof( src) != SS_TABLE){
+			return { ok=false, role=role, name="", message="events[] の各要素はオブジェクトである必要があります" };
+		}
+		try{
+			local ev = buildEvent( src, 0);
+			if( !ev){
+				return { ok=false, role=role, name=src["name"]||"", message="未対応 role（villager / custom のみ）" };
+			}
+			return {
+				ok = true,
+				role = role,
+				name = src["name"] || "",
+				message = summarizeEvent( src, index),
+			};
+		}catch( ex){
+			return { ok=false, role=role, name=src["name"]||"", message=string( ex) };
+		}
+	},
+
+	//	取り込み前プレビュー用。errors が空なら import 可能。
+	function validateScenario( scenario){
+		local errors = [];
+		local warnings = [];
+		local items = [];
+		if( typeof( scenario) != SS_TABLE){
+			errors.push( "JSON のルートはオブジェクト { ... } である必要があります");
+			return { ok=false, errors=errors, warnings=warnings, items=items, mapid=null, eventCount=0, importableCount=0 };
+		}
+		local mapid = scenario["map"];
+		if( !length( mapid)){
+			errors.push( "map が未指定です（例: \"map\": \"M001\"）");
+		}else
+		if( !::getResource( "/.x/map/" + mapid)){
+			errors.push( "map が見つかりません: " + mapid + "（プロジェクトに存在する mapid か確認）");
+		}
+		local events = scenario["events"];
+		local eventCount = 0;
+		local importableCount = 0;
+		if( typeof( events) != SS_ARRAY){
+			errors.push( "events は配列 [ ... ] である必要があります");
+		}else{
+			eventCount = length( events);
+			if( !eventCount) warnings.push( "events が空です（取り込むイベントがありません）");
+			foreach( i, src in events){
+				local item = validateEvent( src, i);
+				items.push( item);
+				if( item.ok) ++importableCount;
+				else errors.push( sprintf( "events[%d]: %S", i, item.message));
+			}
+		}
+		return {
+			ok = !length( errors),
+			errors = errors,
+			warnings = warnings,
+			items = items,
+			mapid = mapid,
+			eventCount = eventCount,
+			importableCount = importableCount,
+		};
+	},
+
+	function validateText( raw){
+		try{
+			local scenario = parseScenarioText( raw);
+			local report = validateScenario( scenario);
+			report.scenario <- scenario;
+			return report;
+		}catch( ex){
+			return {
+				ok = false,
+				errors = [ formatExceptionDetail( ex) ],
+				warnings = [],
+				items = [],
+				mapid = null,
+				eventCount = 0,
+				importableCount = 0,
+			};
+		}
+	},
+
+	function importFromText( raw, sourceLabel="paste"){
+		local scenario = parseScenarioText( raw);
+		return importFromScenario( scenario, sourceLabel);
+	},
+
+	function syncImportedEventsToEditor( ed, importedEvents){
+		local synced = 0;
+		if( !ed || !("canvas" in ed) || !ed.canvas) return synced;
+		foreach( item in importedEvents){
+			ed.canvas.placeEventGizmo( item.id, item.event);
+			++synced;
+		}
+		if( ("tool" in ed) && ed.tool ){
+			try{
+				if( ed.tool["updateEventList"] ) ed.tool.updateEventList();
+				if( ed.tool["updateGizmoStates"] ) ed.tool.updateGizmoStates();
+			}catch( ex){
+				printf( "[aiscenario] WARN: editor event list refresh failed: %S\n", ex);
+				printexception( ex);
+			}
+		}
+		ed.canvas.view.repaint();
+		return synced;
+	},
+
+	function isTargetMapEditor( ed, mapid){
+		if( !ed) return null;
+		if( !("mapid" in ed)) return null;	//	マップエディタ以外
+		if( ed.mapid != mapid) return null;	//	別マップを編集中
+		if( !("data" in ed) || typeof( ed.data) != SS_TABLE) return null;
+		return ed;
+	},
+
+	//	対象 mapid が開いているマップエディタ（非アクティブタブ含む）を返す。
+	//	::skstudio.tabeditors は {path:editor} なので、まず作者提示 API で全タブを確認する。
+	function getOpenMapEditor( mapid){
+		local editors = ::skstudio["tabeditors"];
+		if( editors){
+			local targetPath = "/.x/map/" + mapid;
+			foreach( path, ed in editors){
+				if( path != targetPath) continue;
+				local matched = isTargetMapEditor( ed, mapid);
+				if( matched) return matched;
+			}
+		}
+		//	古い環境や tabeditors 未初期化時の保険。通常は上の分岐で active tab も拾える。
+		return isTargetMapEditor( ::skstudio["editor"], mapid);
+	},
+
+	function importFromScenario( scenario, sourceLabel="file"){
+		local mapid = scenario["map"];
+		if( !length( mapid)) throw Exception( "scenario.map is required");
+
+		local events = scenario["events"];
+		if( typeof( events) != SS_ARRAY || !length( events)){
+			printf( "[aiscenario] no events in %S\n", sourceLabel);
+			return { imported=0, skipped=0, ids=[], mapid=mapid, route=null, source=sourceLabel };
+		}
+
+		//	NOTE(PR#3): 編集中マップは MapEditor.data に最新が保持されるため、
+		//	開いている対象マップ（非アクティブタブ含む）があれば editor.data へ追記する。
+		local activeEd = getOpenMapEditor( mapid);
+		local eventTb;		//	追記先イベントテーブル
+		local mapdata = null;	//	経路B でのみ使用（保存対象）
+		local mapres = null;	//	経路B でのみ使用
+		if( activeEd){
+			//	経路A: 編集中エディタの data に直接追記する。
+			//	ギズモ（3D表示）の即時生成は PoC スコープ外。マップ再オープンで反映。
+			if( !("event" in activeEd.data) || typeof( activeEd.data.event) != SS_TABLE){
+				activeEd.data.event <- {};
+			}
+			eventTb = activeEd.data.event;
+			printf( "[aiscenario] target map %S is open in editor; importing into editor data\n", mapid);
+		}else{
+			//	経路B: 従来どおりディスクの map.json を読んで追記する。
+			mapres = ::getResource( "/.x/map/" + mapid);
+			if( !mapres) throw Exception( "map resource not found: " + mapid);
+			mapdata = deepclone( mapres.getContent()) || {};
+			if( !("event" in mapdata) || typeof( mapdata.event) != SS_TABLE){
+				mapdata.event <- {};
+			}
+			eventTb = mapdata.event;
+		}
+
+		local imported = 0;
+		local skipped = 0;
+		local ids = [];
+		local importedEvents = [];
+		foreach( src in events){
+			try{
+				local role = src["role"] || "villager";
+				//	採番前に構築。evid=0 は空 name 時のプレースホルダ（成功後に再設定）。
+				local ev = buildEvent( src, 0);
+				if( !ev){
+					printf( "[aiscenario] WARN: unsupported role=%S (skipped)\n", role);
+					++skipped;
+					continue;
+				}
+				local evid = allocNextEventId( eventTb);
+				if( !length( src["name"])){
+					local prefix = role == "custom" ? "custom" : "villager";
+					ev.name = formatDisplayName( "", evid, prefix);
+				}
+				eventTb[evid] <- ev;
+				ids.push( evid);
+				importedEvents.push( { id=evid, event=ev } );
+				++imported;
+			}catch( ex){
+				printf( "[aiscenario] WARN: skip event (%S)\n", ex);
+				++skipped;
+			}
+		}
+
+		if( !imported){
+			printf( "[aiscenario] nothing imported from %S (skipped %d)\n", sourceLabel, skipped);
+			return { imported=0, skipped=skipped, ids=ids, mapid=mapid, route=null, source=sourceLabel };
+		}
+
+		local route = null;
+		//	保存（経路で分岐）
+		if( activeEd){
+			//	経路A: 本家 savefunc に倣った保存作法。
+			local syncedGizmos = syncImportedEventsToEditor( activeEd, importedEvents);
+			activeEd.save();
+			activeEd.op.markSaved();
+			::skstudio.updateChangeFile( activeEd);
+			route = "editor";
+			printf( "[aiscenario] imported %d, skipped %d into %S (editor) ids=%S gizmos=%d\n", imported, skipped, mapid, ids, syncedGizmos);
+		}else{
+			//	経路B: ディスク保存。
+			mapres.save( mapdata);
+			route = "disk";
+			printf( "[aiscenario] imported %d, skipped %d into %S (disk) ids=%S\n", imported, skipped, mapid, ids);
+		}
+		return { imported=imported, skipped=skipped, ids=ids, mapid=mapid, route=route, source=sourceLabel };
+	},
+
+	function importFromFile( jsonPath){
+		local scenario = loadScenarioJson( jsonPath);
+		return importFromScenario( scenario, jsonPath);
+	},
+
+	function importSample( jsonPath){
+		try{
+			local result = importFromFile( jsonPath);
+			return result.imported;
+		}catch( ex){
+			printf( "[aiscenario] import failed: %S\n", ex);
+			printexception( ex);
+			return -1;
+		}
+	},
+
+	function formatHistoryTimestamp( d=null){
+		if( !d) d = Date();
+		return sprintf( "%04d-%02d-%02d %02d:%02d",
+			d.tm_year + 1900, d.tm_mon + 1, d.tm_mday, d.tm_hour, d.tm_min);
+	},
+
+	function truncateText( text, maxLen){
+		if( !length( text)) return "";
+		if( text.len() <= maxLen) return text;
+		return text.slice( 0, maxLen) .. "...";
+	},
+
+	function summarizeCommand( c){
+		local typ = c["type"] || "";
+		switch( typ){
+		case "message":
+			local t = c["text"] || "";
+			return length( t) ? truncateText( t, 40) : "(message)";
+		case "wait":
+			return "wait " + (c["time"] || 0) + "ms";
+		case "setvar":
+			return "setvar " + (c["var"] || "?");
+		case "choice":
+			local opts = c["options"];
+			if( typeof( opts) == SS_ARRAY && length( opts)) return "choice: " + opts[0];
+			return "choice";
+		case "if":
+			return "if";
+		default:
+			return length( typ) ? typ : "(command)";
+		}
+	},
+
+	function findFirstContentInCommands( commands){
+		if( typeof( commands) != SS_ARRAY || !length( commands)) return null;
+		foreach( c in commands){
+			if( typeof( c) != SS_TABLE) continue;
+			local typ = c["type"];
+			if( typ == "message" || typ == "wait" || typ == "setvar" || typ == "choice" || typ == "if"){
+				return summarizeCommand( c);
+			}
+		}
+		foreach( c in commands){
+			if( typeof( c) != SS_TABLE) continue;
+			local typ = c["type"];
+			local nested = null;
+			if( typ == "choice"){
+				foreach( br in (c["branches"] || [])){
+					nested = findFirstContentInCommands( br);
+					if( nested) return nested;
+				}
+			}else
+			if( typ == "if"){
+				nested = findFirstContentInCommands( c["then"] || []);
+				if( nested) return nested;
+				nested = findFirstContentInCommands( c["else"] || []);
+				if( nested) return nested;
+			}
+		}
+		return null;
+	},
+
+	function commandTreeHasBranch( commands){
+		if( typeof( commands) != SS_ARRAY || !length( commands)) return false;
+		foreach( c in commands){
+			if( typeof( c) != SS_TABLE) continue;
+			local typ = c["type"];
+			if( typ == "choice" || typ == "if") return true;
+			if( typ == "choice"){
+				foreach( br in (c["branches"] || [])){
+					if( commandTreeHasBranch( br)) return true;
+				}
+			}else
+			if( typ == "if"){
+				if( commandTreeHasBranch( c["then"] || [])) return true;
+				if( commandTreeHasBranch( c["else"] || [])) return true;
+			}
+		}
+		return false;
+	},
+
+	function extractDisplayName( scenario){
+		local events = scenario["events"];
+		if( typeof( events) != SS_ARRAY || !length( events)) return "(無名)";
+		local name0 = events[0]["name"] || "(無名)";
+		local cnt = length( events);
+		if( cnt == 1) return name0;
+		return sprintf( "%S 他%d件", name0, cnt - 1);
+	},
+
+	function extractFirstContent( scenario){
+		local events = scenario["events"];
+		if( typeof( events) != SS_ARRAY || !length( events)) return "(なし)";
+		local ev = events[0];
+		local role = ev["role"] || "villager";
+		if( role == "villager"){
+			local msg = ev["msg"] || "";
+			if( !length( msg)) return "(msg なし)";
+			return truncateText( msg, 40);
+		}
+		local pages = ev["pages"];
+		if( typeof( pages) != SS_ARRAY || !length( pages)) return "(pages なし)";
+		local content = findFirstContentInCommands( pages[0]["commands"] || []);
+		return content || "(command なし)";
+	},
+
+	function scenarioHasBranch( scenario){
+		local events = scenario["events"];
+		if( typeof( events) != SS_ARRAY || !length( events)) return false;
+		foreach( ev in events){
+			local role = ev["role"] || "villager";
+			if( role == "villager") continue;
+			local pages = ev["pages"];
+			if( typeof( pages) != SS_ARRAY) continue;
+			if( length( pages) > 1) return true;
+			foreach( p in pages){
+				local conds = p["conditions"];
+				if( typeof( conds) == SS_ARRAY && length( conds)) return true;
+				if( commandTreeHasBranch( p["commands"] || [])) return true;
+			}
+		}
+		return false;
+	},
+
+	function makeHistoryEntry( raw, sourceLabel, result, report){
+		local scenario = report.scenario;
+		local d = Date();
+		return {
+			id = string( Date.currentTime()),
+			savedAt = Date.currentTime(),
+			savedAtText = formatHistoryTimestamp( d),
+			sourceLabel = sourceLabel,
+			mapid = result.mapid || report.mapid,
+			imported = result.imported,
+			displayName = extractDisplayName( scenario),
+			firstContent = extractFirstContent( scenario),
+			hasBranch = scenarioHasBranch( scenario),
+			raw = normalizeJsonRaw( raw),
+		};
+	},
+
+	function formatHistoryLabel( entry){
+		local branch = entry.hasBranch ? "あり" : "なし";
+		local first = truncateText( entry.firstContent || "", 24);
+		local name = truncateText( entry.displayName || "", 16);
+		return sprintf( "%S | %S | %S | %S", entry.savedAtText, name, first, branch);
+	},
+
+	function loadHistory(){
+		local f = FileRef( this.HISTORY_PATH);
+		if( !f.exists()) return [];
+		try{
+			local root = decodeJSON( f.load());
+			if( typeof( root) != SS_TABLE) return [];
+			local entries = root["entries"];
+			if( typeof( entries) != SS_ARRAY) return [];
+			return entries;
+		}catch( ex){
+			printf( "[aiscenario] WARN: history load failed: %S\n", ex);
+			return [];
+		}
+	},
+
+	function saveHistory( entries){
+		try{
+			local root = { version=1, entries=entries };
+			local bb = encodeJSON( root, 5, ByteBuffer());
+			FileRef( this.HISTORY_PATH).save( bb);
+			return true;
+		}catch( ex){
+			printf( "[aiscenario] WARN: history save failed: %S\n", ex);
+			printexception( ex);
+			return false;
+		}
+	},
+
+	function appendHistory( raw, sourceLabel, result, report){
+		if( !result || result.imported <= 0) return false;
+		if( !report || !("scenario" in report)) return false;
+		local entry = makeHistoryEntry( raw, sourceLabel, result, report);
+		local entries = loadHistory();
+		entries.insert( 0, entry);
+		while( entries.len() > this.HISTORY_MAX){
+			entries.remove( entries.len() - 1);
+		}
+		return saveHistory( entries);
+	},
+};

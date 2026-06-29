@@ -1,0 +1,105 @@
+//
+//	Random Dungeon Generator — namespace and common helpers.
+//
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.VERSION <- "0.1.0-phase1";
+
+RandomDungeon.DEFAULT_CONFIG <- {
+	seed = "ruin-2026",
+	mode = "classic",
+	bounds = { x=0, y=0, z=0, w=80, h=64, d=80 },
+	roomCount = 12,
+	minRoomW = 5,
+	minRoomD = 5,
+	maxRoomW = 13,
+	maxRoomD = 11,
+	corridorWidth = 1,
+	treasureCount = 3,
+	enemyDensity = "normal",
+	bossRoom = true,
+	themeId = "classic_stone",
+	floorTileId = 1,
+	wallTileId = 129,
+}
+
+RandomDungeon.Util <- {
+	function cloneTable( value){
+		return deepclone( value);
+	},
+
+	function clampInt( value, minv, maxv){
+		value = int( value);
+		if( value < minv) return minv;
+		if( value > maxv) return maxv;
+		return value;
+	},
+
+	function mergeConfig( config){
+		local c = deepclone( RandomDungeon.DEFAULT_CONFIG);
+		if( config){
+			foreach( k, v in config){
+				if( k == "bounds" && typeof( v)==SS_TABLE){
+					foreach( bk, bv in v) c.bounds[bk] <- bv;
+				}else{
+					c[k] <- v;
+				}
+			}
+		}
+		c.roomCount = clampInt( c.roomCount, 4, 80);
+		c.minRoomW = clampInt( c.minRoomW, 3, 64);
+		c.minRoomD = clampInt( c.minRoomD, 3, 64);
+		c.maxRoomW = clampInt( c.maxRoomW, c.minRoomW, 96);
+		c.maxRoomD = clampInt( c.maxRoomD, c.minRoomD, 96);
+		c.corridorWidth = clampInt( c.corridorWidth, 1, 5);
+		c.treasureCount = clampInt( c.treasureCount, 0, 20);
+		c.bounds.x = clampInt( c.bounds.x, 0, 4096);
+		c.bounds.y = clampInt( c.bounds.y, 0, 128);
+		c.bounds.z = clampInt( c.bounds.z, 0, 4096);
+		c.bounds.w = clampInt( c.bounds.w, 16, 1024);
+		c.bounds.h = clampInt( c.bounds.h, 1, 128);
+		c.bounds.d = clampInt( c.bounds.d, 16, 1024);
+		return c;
+	},
+
+	function makeId( prefix, index){
+		return prefix + "_" + ("%03d" % index);
+	},
+
+	function rectsOverlap( a, b, margin=0){
+		return a.x - margin < b.x + b.w &&
+			a.x + a.w + margin > b.x &&
+			a.z - margin < b.z + b.d &&
+			a.z + a.d + margin > b.z;
+	},
+
+	function centerOfRoom( room){
+		return {
+			x = int( room.x + room.w / 2),
+			z = int( room.z + room.d / 2),
+		};
+	},
+
+	function posKey( x, z){
+		return x + ":" + z;
+	},
+
+	function makeDraft( config){
+		return {
+			schema = "rpgcobo.randomdungeon.draft",
+			schemaVersion = 1,
+			generatorVersion = RandomDungeon.VERSION,
+			seed = config.seed,
+			mode = config.mode,
+			config = deepclone( config),
+			bounds = deepclone( config.bounds),
+			rooms = [],
+			connections = [],
+			tilePatches = [],
+			entities = [],
+			validation = { ok=false, errors=[], warnings=[] },
+			stats = {},
+		};
+	},
+}

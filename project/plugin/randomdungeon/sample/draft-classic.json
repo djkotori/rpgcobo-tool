@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "seed": "ruin-2026",
+  "mode": "classic",
+  "themeId": "stone_ruins",
+  "bounds": { "x": 4, "y": 0, "z": 4, "w": 72, "h": 64, "d": 72 },
+  "settings": {
+    "roomCount": 12,
+    "corridorWidth": 1,
+    "branchRate": 0.35,
+    "treasureCount": 3,
+    "trapCount": 5,
+    "enemyDensity": "medium",
+    "bossRoom": true
+  },
+  "rooms": [
+    { "id": "room_001", "type": "entrance", "x": 4, "y": 0, "z": 35, "w": 8, "h": 8, "locked": false, "tags": ["safe"] },
+    { "id": "room_002", "type": "normal", "x": 16, "y": 0, "z": 32, "w": 10, "h": 9, "locked": false, "tags": [] },
+    { "id": "room_003", "type": "combat", "x": 30, "y": 0, "z": 28, "w": 11, "h": 10, "locked": false, "tags": ["combat"] },
+    { "id": "room_004", "type": "treasure", "x": 30, "y": 0, "z": 12, "w": 7, "h": 7, "locked": false, "tags": ["reward"] },
+    { "id": "room_005", "type": "trap", "x": 44, "y": 0, "z": 40, "w": 9, "h": 8, "locked": false, "tags": ["hazard"] },
+    { "id": "room_006", "type": "normal", "x": 48, "y": 0, "z": 24, "w": 10, "h": 9, "locked": false, "tags": [] },
+    { "id": "room_007", "type": "combat", "x": 58, "y": 0, "z": 14, "w": 12, "h": 11, "locked": false, "tags": ["combat"] },
+    { "id": "room_008", "type": "treasure", "x": 58, "y": 0, "z": 48, "w": 8, "h": 7, "locked": false, "tags": ["reward"] },
+    { "id": "room_009", "type": "mini_boss", "x": 50, "y": 0, "z": 58, "w": 12, "h": 10, "locked": false, "tags": ["combat"] },
+    { "id": "room_010", "type": "boss", "x": 62, "y": 0, "z": 10, "w": 14, "h": 12, "locked": false, "tags": ["combat", "boss"] },
+    { "id": "room_011", "type": "exit", "x": 66, "y": 0, "z": 28, "w": 8, "h": 8, "locked": false, "tags": ["exit"] }
+  ],
+  "connections": [
+    { "from": "room_001", "to": "room_002", "type": "corridor" },
+    { "from": "room_002", "to": "room_003", "type": "corridor" },
+    { "from": "room_003", "to": "room_004", "type": "corridor" },
+    { "from": "room_003", "to": "room_005", "type": "corridor" },
+    { "from": "room_003", "to": "room_006", "type": "corridor" },
+    { "from": "room_006", "to": "room_007", "type": "corridor" },
+    { "from": "room_005", "to": "room_008", "type": "corridor" },
+    { "from": "room_006", "to": "room_009", "type": "corridor" },
+    { "from": "room_007", "to": "room_010", "type": "corridor" },
+    { "from": "room_010", "to": "room_011", "type": "corridor" }
+  ],
+  "entities": [
+    { "type": "entrance_marker", "roomId": "room_001", "x": 8, "y": 1, "z": 39, "templateId": "spawn" },
+    { "type": "chest", "roomId": "room_004", "x": 33, "y": 1, "z": 15, "templateId": "chest_score", "params": { "score": 150 } },
+    { "type": "enemy", "roomId": "room_003", "x": 35, "y": 1, "z": 33, "templateId": "enemy_normal", "params": { "gid": 1 } },
+    { "type": "enemy", "roomId": "room_010", "x": 69, "y": 1, "z": 16, "templateId": "enemy_boss", "params": { "gid": 2, "postScore": 500 } },
+    { "type": "exit", "roomId": "room_011", "x": 70, "y": 1, "z": 32, "templateId": "exit_return" }
+  ],
+  "locks": [],
+  "quality": {
+    "score": 86,
+    "checks": [
+      { "id": "reachability", "ok": true },
+      { "id": "boss_distance", "ok": true },
+      { "id": "room_overlap", "ok": true }
+    ]
+  },
+  "runtimeHooks": {
+    "hubMapId": "M001",
+    "dungeonMapId": "M050",
+    "returnDest": { "mapid": "M001", "evid": null, "pos": [10, 1, 10, 0] },
+    "goldRate": 1.0,
+    "pointRate": 0.5
+  }
+}

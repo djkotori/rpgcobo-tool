@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "map": "M001",
+  "events": [
+    {
+      "role": "custom",
+      "name": "JSONカスタムテスト",
+      "mdlid": "CV000",
+      "pos": [80, 5, 65, 2],
+      "pages": [
+        {
+          "trigger": "examine",
+          "move": "stop",
+          "parallel": false,
+          "conditions": [],
+          "commands": [
+            { "type": "message", "text": "こんにちは、旅の人。", "uiclose": 0 },
+            { "type": "wait", "time": 500 },
+            {
+              "type": "choice",
+              "options": ["はい", "いいえ"],
+              "branches": [
+                [
+                  { "type": "message", "text": "気をつけてな。" },
+                  { "type": "setvar", "var": "A", "op": "=", "value": true }
+                ],
+                [
+                  { "type": "message", "text": "そうか…。" }
+                ]
+              ]
+            },
+            {
+              "type": "if",
+              "conditions": [ { "lvar": "A", "op": "==", "rvar": true } ],
+              "then": [ { "type": "message", "text": "また会おう。" } ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "X050": {
+    "name": "ダンジョンリザルト",
+    "desc": "Random Dungeon Generator — 戦利品評価・換金・ポイント加算・帰還",
+    "page": [{
+      "cmdblock": [
+        { "cmd": "cmd_showmsg", "msg": "獲得品を評価しています…" },
+        { "cmd": "cmd_compute", "lvar": "G103", "op": "=", "rvar": "G101" },
+        { "cmd": "cmd_compute", "lvar": "W", "op": "=", "rvar": "G103" },
+        { "cmd": "cmd_moneyop", "who": 0, "op": "+=", "_var": { "amount": "W" } },
+        { "cmd": "cmd_compute", "lvar": "X", "op": "=", "rvar": "G103" },
+        { "cmd": "cmd_compute", "lvar": "X", "op": "/=", "rvar": 2 },
+        { "cmd": "cmd_compute", "lvar": "G102", "op": "+=", "rvar": "X" },
+        { "cmd": "cmd_showmsg", "msg": "換金とポイントを受け取った。" },
+        { "cmd": "cmd_compute", "lvar": "G101", "op": "=", "rvar": 0 },
+        { "cmd": "cmd_compute", "lvar": "G100", "op": "=", "rvar": false },
+        { "cmd": "cmd_mapmove", "dest": { "mapid": "M001", "pos": [10, 1, 10, 0] }, "wipe": 1, "remap": false }
+      ]
+    }]
+  }
+}

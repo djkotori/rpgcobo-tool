@@ -1,0 +1,12 @@
+{
+  "role": "custom",
+  "name": "*dungeon-exit",
+  "mdlid": "CV000",
+  "pos": [70, 1, 32, 0],
+  "page": [{
+    "trigger": 3,
+    "cmdblock": [
+      { "cmd": "cmd_macro", "macroid": "X050" }
+    ]
+  }]
+}

@@ -1,0 +1,21 @@
+{
+  "role": "custom",
+  "name": "*dungeon-entrance-talk",
+  "mdlid": "CV000",
+  "pos": [10, 1, 10, 0],
+  "spawndist": 1,
+  "page": [{
+    "trigger": 3,
+    "cmdblock": [
+      { "cmd": "cmd_showmsg", "msg": "ダンジョンに入りますか？" },
+      { "cmd": "cmd_choices", "choices": ["入る", "やめる"], "cancel": 1 },
+      { "cmd": "cmd_if", "cond": { "lvar": "RESULT", "op": "==", "rvar": 0 },
+        "cmdblocks": [
+          { "cmd": "cmd_compute", "lvar": "G100", "op": "=", "rvar": true },
+          { "cmd": "cmd_compute", "lvar": "G101", "op": "=", "rvar": 0 },
+          { "cmd": "cmd_mapmove", "dest": { "mapid": "M050", "pos": [8, 1, 39, 0] }, "wipe": 1, "remap": true }
+        ]
+      }
+    ]
+  }]
+}

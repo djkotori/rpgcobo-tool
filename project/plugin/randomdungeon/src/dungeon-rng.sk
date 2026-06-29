@@ -1,0 +1,46 @@
+//
+//	Random Dungeon Generator — deterministic RNG.
+//
+
+if( !::["RandomDungeon"]) ::RandomDungeon <- {};
+
+RandomDungeon.RNG <- {
+	function hashSeed( seed){
+		local text = "" + (seed || "randomdungeon");
+		local h = 2166136261;
+		for( local i = 0; i < length( text); i ++){
+			h = h ^ text[i];
+			h = (h * 16777619) & 0x7fffffff;
+		}
+		if( h == 0) h = 1;
+		return h;
+	},
+
+	function create( seed){
+		return {
+			state = RandomDungeon.RNG.hashSeed( seed),
+
+			function nextInt(){
+				state = (state * 1103515245 + 12345) & 0x7fffffff;
+				return state;
+			},
+
+			function range( minv, maxv){
+				minv = int( minv);
+				maxv = int( maxv);
+				if( maxv <= minv) return minv;
+				local span = maxv - minv + 1;
+				return minv + (nextInt() % span);
+			},
+
+			function chance( pct){
+				return (nextInt() % 1000) < (pct * 1000);
+			},
+
+			function pick( items){
+				if( !items || !length( items)) return null;
+				return items[range( 0, length( items)-1)];
+			},
+		};
+	},
+}
