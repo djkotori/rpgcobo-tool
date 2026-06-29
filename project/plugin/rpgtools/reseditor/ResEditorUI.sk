@@ -3,6 +3,7 @@
 import VirtualKeyCode;
 import ModifiersMask;
 import PropertyType;
+import SKViewPropertyID;
 import RPGPropertyType;
 
 local srcdir = dirname( callee().getSourceName());
@@ -125,7 +126,7 @@ class ResEditorUI extends EditorViewBase
 		c.setValue( "id", "%03d" % id);
 		local pic = c.findChild( "pic");
 		pic.setValue( defpic);
-		pic.updateLayout()
+		pic.updateLayout();
 		if( d){
 			local ld = d[sellang] || #{name="",useidx=-1,};
 			c.setValue( "name", ld.name);
@@ -384,10 +385,39 @@ class ResEditorUI extends EditorViewBase
 
 	function showAddUI( e){
 		local menudata = [
+			{ id="dup", lbl="$T.lbl_dupbaseui", icon="\ue173" }
 			{ id="add", lbl="$T.lbl_addui", icon="\ue146", },
 		]
 		local ret = MenuPopup.run( menudata);
-		if( ret["id"] == "add"){
+		switch( ret["id"]){
+		case "dup":
+		{
+			local propdef = {
+				name = "$T.lbl_dupbaseui"
+				props = [
+					{ pid="path", lbl="$T.lbl_path", type=PATH, cnt="cnt5.ui" },	//
+					{ pid="copylibs", lbl="$T.lbl_copylibui", type=LIST, list=["$T.lbl_no","$T.lbl_yes"] },
+				]
+				cnt = "cnt.ui"
+			};
+			local d = getItem( seltab, selid);
+			local n0 = d.baseui.substring( d.baseui.lastIndexOf( "/")+1, length( d.baseui)-3), p0;
+			for( local l = 1;l < 100; l ++){
+				p0 = "/resource/ui_new/%S_1" % n0;
+				if( !FileRef( "project"..p0).exists() || !FileRef( "project"..p0..".ui").exists()) break;
+			}
+			local ret = PropertyEditPopup_OK.run( null, propdef, { path=p0, copylibs=0});
+			if( ret){
+				local p = ret.path;
+				if( FileRef( "project"..p).exists() || FileRef( "project"..p..".ui").exists()){
+					Popups.showError( "$T.pop_file_exists");
+					break;
+				}
+				duplicateBaseUI( d.baseui, ret);
+			}
+			break;
+		}
+		case "add":
 			local p = skstudio.showFileOpen( { dirpath="/resource/ui", filter=["*.ui"], });
 			if( !p) return;
 			//
@@ -397,7 +427,76 @@ class ResEditorUI extends EditorViewBase
 			local undo = [@(){ d.uilist.pop(); }];
 			submitOp( redo, undo, null);
 			refresh();
+			break;
 		}
+	}
+
+	static chkpid = [ROWPATH, BARPATH, ENVPATH];
+	
+	//	ベースUIを複製する。pathにパス、copylibs!=0だと、内部の.uiリンクを全てコピーする。リストも。
+	function duplicateBaseUI( baseui, prm){
+		local vd = deepclone( ::getResourceContent( baseui));
+		local saveuis = {}, savedirs = {};		//	path, vd
+		local addui( p, vd){
+			saveuis[p] <- vd;
+			savedirs[p.substring( 0, p.lastIndexOf( "/"))] <- 1;
+		}
+		addui( prm.path..".ui", vd);
+		if( prm["copylibs"]){
+			local p0 = prm.path;
+			local chklink( ve){
+				if( ve.link){
+					local ln = ve.link.substring( ve.link.lastIndexOf( "/")+1);
+					local p1 = p0 .. "/" .. ln;
+					ve.link = p1;
+					addui( p1, ::getResourceContent( ve.link));
+				}
+				foreach( pid in chkpid){
+					local p = ve.getStatic( pid);
+					if( length( p)){	//	コピー対象パスがパラメータにあった
+						local ln = p.substring( p.lastIndexOf( "/")+1);
+						local p1 = p0 .. "/" .. ln;
+						ve.setStatic( pid, p1);
+						addui( p1, ::getResourceContent( p));
+					}
+				}
+				foreach( ce in ve.children){
+					chklink( ce);
+				}
+			}
+			chklink( vd.rootdata);
+		}
+		//	saveuisを全部保存～
+		//	※undoでファイルを消す！ちょっと危険。。。※1秒以内にundo,redoを繰り返すとrefreshがおかしくなる！undo,redo間でウェイトかけるしか？？？
+		local self = this;
+		local d = getItem( seltab, selid);
+		local redo = [@(){
+			foreach( path,_ in savedirs){
+				local f = FileRef( "project" .. path);
+				if( !f.isDirectory()){ f.mkdirs(); suspend(); }	//	mkdirとかは連続でやるとたまにおかしくなる
+			}
+			foreach( path, vd in saveuis){
+				local f = FileRef( "project" .. path);
+				local bb = ObjectOutput.encode( vd);
+				f.save( bb);
+			}
+			::skstudio.fileview.refreshDir( "/resource");
+			d.uilist .. (prm.path..".ui");
+		}];
+		local undo = [@(){
+			d.uilist.pop();
+			foreach( path, vd in saveuis){
+				local f = FileRef( "project" .. path);
+				f.deleteFile();
+			}
+			foreach( path in Table.keys( savedirs).sort().reverse()){
+				local f = FileRef( "project" .. path);
+				if( !length( f.getList())){ f.deleteAll(); suspend(); }	//	mkdirとかは連続でやるとたまにおかしくなる
+			}
+			::skstudio.fileview.refreshDir( "/resource");
+		}];
+		submitOp( redo, undo, null);
+		refresh();
 	}
 
 	//	name, desc, useidx

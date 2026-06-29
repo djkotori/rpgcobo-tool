@@ -119,7 +119,7 @@ eventcmd .. {
 	// }
 	
 	cmdinfo = @( cmd)({
-		info = varstr( cmd.time),
+		info = "\uf81e" .. varstr( cmd.time),
 	})
 	
 	defval = { time = 1000 }
@@ -1286,7 +1286,7 @@ eventcmd .. {
 	cmdinfo = @( cmd){
 		local cmddef = RPGSystem.eventcmd[cmd.cmd], props = fget( cmddef, "props", cmddef, cmd);
 		local op = propstr( props, cmd, "op"), info;
-		local w = cmd["wait"] ? "⌛" : "";
+		local w = cmd["wait"] ? "\uf81e" : "";
 		if( !cmd["op"]){
 			local pic = ::conf._resource.event_pic[cmd.picid];
 			info = sprintf( "%S [%d]  %S   %S", op, cmd.idx, cmd.picid, w);
@@ -1451,7 +1451,7 @@ eventcmd .. {
 		local idx = propstr( props, cmd, "idx");
 		local op = propstr( props, cmd, "op");
 		local info = sprintf( "[%S] %S", idx, op);
-		local w = cmd["wait"] ? "⌛" : "";
+		local w = cmd["wait"] ? "\uf81e" : "";
 		switch( cmd["op"]){
 		case "show": info = info .. sprintf( " %S %S", cmd["uipath"], w); break;
 		case "value": info = info .. sprintf( " %S ⇐ %S", cmd["target"], cmd["text"] || cmd["path"] || propstr( props, cmd, "rvar")); break;
@@ -1908,7 +1908,7 @@ eventcmd .. {
 		local cmddef = RPGSystem.eventcmd[cmd.cmd];
 		local ws = propstr( cmddef.props, cmd, "who");
 		local es = propstr( cmddef.props, cmd, "efxid");
-		local w = cmd["wait"] ? "⌛" : "";
+		local w = cmd["wait"] ? "\uf81e" : "";
 		local info = sprintf( "%S %S %S", ws, es, w);
 		return {
 			info = info,
@@ -1942,7 +1942,7 @@ eventcmd .. {
 	cmdinfo = @( cmd){
 		local cmddef = RPGSystem.eventcmd[cmd.cmd];
 		local o0 = cmd.opacity[0], o1 = cmd.opacity.last();
-		local w = cmd["wait"] ? "⌛" : "";
+		local w = cmd["wait"] ? "\uf81e" : "";
 		local l = cmd["loop"] ? "\uf81d" : "";
 		local info = sprintf( "%.1f～%.1f  %S%S", o0, o1, w, l);
 		return {
@@ -2346,7 +2346,7 @@ eventcmd .. {
 		local cmddef = RPGSystem.eventcmd[cmd.cmd], props = fget( cmddef, "props", cmddef, cmd);
 		local who = propstr( props, cmd, "who");
 		local pos = propstr( props, cmd, "pos");// sprintf( "[%d %d]", cmd.pos[0]||0, cmd.pos[1]||0);
-		local w = cmd["wait"] ? "⌛" : "";
+		local w = cmd["wait"] ? "\uf81e" : "";
 		local info = sprintf( "%S %S %S\n", who, pos, w);
 		return { info = info, }
 	}
@@ -2380,7 +2380,7 @@ eventcmd .. {
 		local cmddef = RPGSystem.eventcmd[cmd.cmd];
 		local wi = propstr( cmddef.props, cmd, "who");
 		local di = propstr( cmddef.props, cmd, "dir");
-		local w = cmd["wait"] ? "⌛" : "";
+		local w = cmd["wait"] ? "\uf81e" : "";
 		local info = sprintf( "%S ⊿ %S %S", wi, di, w);
 		return {
 			info = info,

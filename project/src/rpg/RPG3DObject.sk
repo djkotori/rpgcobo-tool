@@ -125,7 +125,7 @@ local animelist_leg4 = [
 ];
 
 //	翼付きキャラクター用のモーション。飛行や滑空などの動作を含む。
-local animelist_wings = [
+local animelist_wing = [
 	//	基本動作
 	{ ...AI, id:"stand", st:5, en:9, spd:4, loop:true, replay=false }	//	立ち *
 	{ ...AI, id:"walk", st:10, en:18, spd:12, loop:true, replay=false }	//	歩き *
@@ -175,7 +175,7 @@ class RPG3DObject extends SK3DObject
 	static animelistmap = {
 		"leg2" = animelist_leg2,
 		"leg4" = animelist_leg4,
-		"wings" = animelist_wings,
+		"wing" = animelist_wing,
 		"box" = animelist_box,
 		"obj" = animelist_obj,
 	};

@@ -135,6 +135,7 @@ class ColorPanelBehavior
 		(pal=v.findChild( "pal")).addEventListener( MOUSE_EVENT, palmouseevent);
 		v.addEventListener( TEXT_EVENT, ctextevent);
 		valuemode = ValueBars( this, v.findChild( "val"));
+		favomode = Favorites( this, v.findChild( "favo"));
 		setTab( lasttab);
 		v.addEventListener( ACTION_EVENT, actionevent);
 	}
@@ -151,9 +152,9 @@ class ColorPanelBehavior
 	function setTab( idx){
 		foreach( i, tab in tabs) tab.setSelected( i==idx);
 		switch( idx){
-		case 0: pal.setVisible( false); valuemode.view.setVisible( true); break;
-		case 1: pal.setVisible( true); valuemode.view.setVisible( false); break;
-		case 2: 
+		case 0: pal.setVisible( false); valuemode.view.setVisible( true); favomode.view.setVisible( false); break;
+		case 1: pal.setVisible( true); valuemode.view.setVisible( false); favomode.view.setVisible( false); break;
+		case 2: pal.setVisible( false); valuemode.view.setVisible( false); favomode.view.setVisible( true); break;
 		}
 		ColorPanelBehavior.lasttab <- idx;
 	}
@@ -425,5 +426,164 @@ class ColorPanelBehavior.ValueBars
 		cp.setColor( hsvtorgb( hsv), false);
 		updateBarColors( false);
 		cp.view.postIDEvent( VALUE_CHANGED, cp.color);
+	}
+}
+
+//	
+class ColorPanelBehavior.Favorites
+{
+	static inicols = [0xff0000ff,0x00ff00ff,0x0000ffff,];
+	
+	cp = null;		//	ColorPicker
+	view = null;
+
+	//	favo img
+	favoimg = null;		//	SKImageView
+	img = null;			//	16*8
+	tex = null;			
+
+	//	mouse
+	dcurs = -1;
+	dimg = null;		//	SKImageView
+	mimg = null;		//	SKImageView
+	
+	cols = null;
+	
+	constructor( p, v){
+		cp = p;
+		view = v;
+		favoimg = v.findChild( "favoimg");
+		favoimg.addEventListener( MOUSE_EVENT, imgevent);
+		//	mimg
+		dimg = SKImageView();
+		dimg.setParam( SKViewPropertyID.IMAGE, "/skstudio/img/ui/b10.png");
+		dimg.setColor( 0xffff00ff);
+		favoimg.addChild( dimg);
+		dimg.setVisible( false);
+		mimg = SKImageView();
+		mimg.setParam( SKViewPropertyID.IMAGE, "/skstudio/img/ui/b8.png");
+		favoimg.addChild( mimg);
+		mimg.setVisible( false);
+		//
+		cols = ::workspace["favocols"] || inicols;
+		
+		updateFavoImage();
+	}
+
+	function updateFavoImage(){
+		img = RGBAImage( 16, 8);
+		for( local l = 0;l < 128;l ++){
+			local c = cols[l]||0;
+			img[l] = (c<<24)|(c>>>24)|((c&0xff00)<<8)|((c&0xff0000)>>>8);	//	RGBA=>ABGR
+		}
+		tex = Texture();
+		tex.load( img);
+		tex.setSamplerState( #SamplerState( SK_CLAMP, SK_CLAMP, SK_POINT, SK_POINT));
+		local sp = Sprite( tex);
+		favoimg.setSprite( sp);
+		favoimg.updateLayout();
+	}
+	
+	function ptoi( x, y){
+		return Math.clamp( int(x/16)|0, 0, 15) + Math.clamp( int(y/16)|0, 0, 7)*16;
+	}
+
+	function itor( i){
+		return Rect2D( (i&15)*16, (i/16)*16, 16, 16);
+	}
+
+	function imgevent( e){
+		e.computeLocal( favoimg.getInvMatrix());
+		local i = ptoi( e.lx, e.ly);
+		local m = e.getMouseState();
+		switch( e.id){
+		case MOUSE_EXITED:
+			if( m.dragview != favoimg) mimg.setVisible( false);
+			break;
+		case MOUSE_MOVED:
+			setcurs( i);
+			break;
+		case MOUSE_PRESSED:
+			if( e.isMouseDown( BUTTON2_MASK)){
+				showContextMenu( e);
+			}else
+			if( e.isMouseDown( BUTTON1_MASK)){
+				dcurs = i;
+			}
+			break;
+		case MOUSE_DRAGGED:
+			if( e.isMouseDown( BUTTON1_MASK) && dcurs>=0){
+				if( i != dcurs){
+					local r = itor( i).expand( 1);
+					dimg.setRect( r.x,r.y,r.w,r.h);
+					dimg.setVisible( true);
+				}else{
+					dimg.setVisible( false);
+				}
+			}
+			break;
+		case MOUSE_RELEASED:
+			dimg.setVisible( false);
+			if( e.isClicked() && e.isMouseDown( BUTTON1_MASK)){
+				local c = cols[i];
+				if( c){
+					cp.setColor( c);
+					cp.view.postActionEvent( "close");
+				}
+			}else{
+				if( dcurs>=0 && i!=dcurs){
+					if( !(i in cols)) cols.resize( i+1, 0);
+					local c = cols[i];
+					cols[i] = cols[dcurs];
+					cols[dcurs] = c;
+					::workspace.favocols <- cols;
+					updateFavoImage();
+				}
+				if( m.entered != favoimg){
+					mimg.setVisible( false);
+					cp.setColor( cp.color0);
+				}else{
+					setcurs( i);
+				}
+			}
+			dcurs = 0;
+			break;
+		}
+	}
+
+	function setcurs( i){
+		mimg.setVisible( true);
+		local r = itor( i).expand( 1);
+		mimg.setRect( r.x,r.y,r.w,r.h);
+		if( cols[i]){
+			cp.setColor( cols[i]);
+		}else{
+			cp.setColor( cp.color0);
+		}
+	}
+
+	function showContextMenu( e){
+		local i = ptoi( e.lx, e.ly);
+		local menudata = [
+			{ id="set", lbl="$T.lbl_replacecolor", icon=("\ueb36", cp.color0) },
+			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", disable=!cols[i]},
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "set":
+		{
+			if( !(i in cols)) cols.resize( i+1, 0);
+			cols[i] = cp.color0;
+			::workspace.favocols <- cols;
+			updateFavoImage();
+			break;
+		}
+		case "delete":
+		{
+			cols[i] = 0;
+			::workspace.favocols <- cols;
+			updateFavoImage();
+		}
+		}
 	}
 }
