@@ -268,7 +268,7 @@ BACK_TO_ITEMSEL:
 			default:
 				local i = e.item["item"];	//	RPGItem
 				if( i){	//	使用可能かチェック。アイテム、キーアイテムのみ使用可。
-					if( (i.data["occasion"]||0)>=2 && !e.item["disable"]){
+					if( (i.data["occasion"]&2) && !e.item["disable"]){
 						return e;
 					}else{
 						::playSound( "SE002");
@@ -301,43 +301,53 @@ BACK_TO_ITEMSEL:
 		// view.waitAction();
 		return true;
 	}
-	//	stオブジェクトに、menufunc、forecast関数があり
-	local item = selitem.item.item, st = RPGSystem.skilltype[item.data["skilltype"]];
-	//	ターゲットが無い場合はそのまま実行。脱出アイテムなど、マクロ実行をするもののみ。「脱出しますか？」みたいな確認ポップアップを表示。マクロ内でいいか
-	if( !item.data["cmdtgt"]){
-		local used = st.menufunc( item.data, null, null);
-		if( !view.isShown()){	//	メニュー実行時にメニューを閉じてたらそのままメインメニューも閉じる。ワープ魔法、テントなど
-			return false;
+	try{
+		//	stオブジェクトに、menufunc、forecast関数があり
+		local item = selitem.item.item, st = RPGSystem.skilltype[item.data["skilltype"]];
+		if( !st["menufunc"]){	//	ここには来ないはずだけど。。。
+			::playSound( "SE002");
+			goto BACK_TO_ITEMSEL;
 		}
-		goto BACK_TO_ITEMSEL;
-	}
-	::playSound( "SE001");
-	local selall = [TGT_PARTY_COLUMN,TGT_PARTY_ALL,TGT_PARTY_ALL_NOTME,TGT_ANY_ALL].contains( item.data["cmdtgt"]);
-	//	アイテムを使用する対象を選択。※キャラ選択で全選択も出来るように。
-	view.action( "darken");
-	RPGMain.showUI( {
-		key = "dialog_selchara"
-		members = ::rpgstat.members,	//	リスト指定可能
-		titlelbl = @() usetitle( item),
-		selall = selall,
-		//	対象を選択したら呼ばれる関数。ここでtrueを返すと画面は閉じない。falseだと決定して閉じる
-		uioverride = {
-			action = @( e){
-				if( !e.item["player"]){ ::playSound( "SE002"); return; }
-				local used = false;
-				//	効果があるなら、アイテムを使用して、最後に消費
-				local src = src || e.item.player, dsts = selall ? ::rpgstat.members : [e.item.player];	//	個人か全員
-				if( src.canConsumeForSkill( item.data)){
-					used = st.menufunc( item.data, src, dsts);	//	メニュー用の実行。回復系を行って、UIに回復アクションを実行。
-				}
-				if( used){
-					src.consumeForSkill( item.data);
-				}else{ // 使われなかった。
-					::playSound( "SE002");
+		//	ターゲットが無い場合はそのまま実行。脱出アイテムなど、マクロ実行をするもののみ。「脱出しますか？」みたいな確認ポップアップを表示。マクロ内でいいか
+		if( !item.data["cmdtgt"]){
+			local used = st.menufunc( item.data, null, null);
+			if( !view.isShown()){	//	メニュー実行時にメニューを閉じてたらそのままメインメニューも閉じる。ワープ魔法、テントなど
+				return false;
+			}
+			goto BACK_TO_ITEMSEL;
+		}
+		::playSound( "SE001");
+		local selall = [TGT_PARTY_COLUMN,TGT_PARTY_ALL,TGT_PARTY_ALL_NOTME,TGT_ANY_ALL].contains( item.data["cmdtgt"]);
+		//	アイテムを使用する対象を選択。※キャラ選択で全選択も出来るように。
+		view.action( "darken");
+		RPGMain.showUI( {
+			key = "dialog_selchara"
+			members = ::rpgstat.members,	//	リスト指定可能
+			titlelbl = @() usetitle( item),
+			selall = selall,
+			//	対象を選択したら呼ばれる関数。ここでtrueを返すと画面は閉じない。falseだと決定して閉じる
+			uioverride = {
+				action = @( e){
+					if( !e.item["player"]){ ::playSound( "SE002"); return; }
+					local used = false;
+					//	効果があるなら、アイテムを使用して、最後に消費
+					local src = src || e.item.player, dsts = selall ? ::rpgstat.members : [e.item.player];	//	個人か全員
+					if( src.canConsumeForSkill( item.data)){
+						used = st.menufunc( item.data, src, dsts);	//	メニュー用の実行。回復系を行って、UIに回復アクションを実行。
+					}
+					if( used){
+						src.consumeForSkill( item.data);
+					}else{ // 使われなかった。
+						::playSound( "SE002");
+					}
 				}
 			}
-		}
-	});
+		});
+	}catch( ex){
+		printf( "itemuifunc ERROR!!!\n");
+		printexception( ex);
+		::rootview.postErrorEvent( {type="Menu", error=ex, msg = "\uf800 itemuifunc ERROR!!! Check a log file."});
+	}
 	view.action( "lighten");
 	remakelist();
 	goto BACK_TO_ITEMSEL;
