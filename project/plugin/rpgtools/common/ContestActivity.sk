@@ -53,10 +53,8 @@ class ContestDialog extends UndoableDialog
 	comedit = null;
 	zipg = null;
 	
-	//	BuildingDialogに渡す
 	zipfile = null;
 	zipthread = null;
-	buildserv = null;				//	host
 	
 	constructor( v){
 		super( v);
@@ -145,18 +143,7 @@ class ContestDialog extends UndoableDialog
 		prgfunc( 1.0, sizestr( size));
 		view.findChild( "rung").anime( 1);
 	}
-
-	function getProjectVer(){
-		local f = FileRef( "rpgcobo.ver");
-		if( f.exists()){
-			try{
-				local t = decodeJSON( f.load());
-				return t.tag;
-			}catch( ex){}
-		}
-		return null;
-	}
-
+	
 	function actionevent( e){
 		switch( e.src["name"]){
 		case "btn_run":

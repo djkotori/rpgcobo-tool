@@ -42,6 +42,8 @@ class Account extends Serializable
 		home = urlenv.url_user.."/api/appjump?page=home&token=$token"		//	トップページに移動する。nextjs的にapiからのリダイレクト
 		license = urlenv.url_user.."/api/appjump?page=license&token=$token"	//	steamは購入ボタンでPOTALに購入UIが表示される。nextjs的にapiからのリダイレクト
 		ticket = urlenv.url_user.."/api/appjump?page=ticket&token=$token"	//	ビルドチケットをダイレクトで買う。nextjs的にapiからのリダイレクト
+		//
+		discord = urlenv.url_user.."/api/appjump?page=discord"	//	Discordの招待リンク。セキュリティ的に
 	};
 	
 	//	apiを呼ぶときはtokenがある際はAuthorization: Bearer <token>を指定して認証を行う
@@ -58,6 +60,7 @@ class Account extends Serializable
 		build_clean = "${buildserv}/close/$session"
 		contest_stat = urlenv.url_user.."/api/contest_stat?id=$id&token=$token"
 		contest_entry = urlenv.url_user.."/api/contest_entry"	//	POST
+		report_problem = urlenv.url_user.."/api/report_problem"	//	POST
 	};
 
 	<ser_o> uid = null;			//	email | steamid

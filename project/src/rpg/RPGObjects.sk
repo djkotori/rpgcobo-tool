@@ -81,7 +81,7 @@ class RPGItem extends RPGObject
 
 	function _get( key){
 		switch( key){
-		case "icon":  return ( LV >= 2) ? sprintf( "%S\b%c", data["icon"], 0xf7d0+LV-2) : data["icon"];
+		case "icon":  return (LV >= 2) ? sprintf( "%S\b%c", data["icon"], 0xf7d0+Math.min( LV-2, 2)) : data["icon"];
 		case "name": return LV<=1 ? data["name"] : sprintf( "%S+%d", data["name"], LV-1);
 		}
 		return undefined;

@@ -1267,6 +1267,10 @@
 	"pref_debugskills"					: {"ja":"全スキル解放", "en":"Unlock all Skills"}
 	"pref_debugitems"					: {"ja":"全アイテム所持", "en":"Own all Items"}
 	"pref_debuglv"						: {"ja":"レベル指定(0で無効)", "en":"Level Set(0=not set)"}
+	
+	//	ヘルプ
+	"menu_help_guide"					: {"ja":"RPG-Cobo ガイド", "en":"RPG-Cobo Guide"}
+	"menu_help_report"					: {"ja":"不具合を報告", "en":"Report a Problem"}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	ビルド
@@ -1355,6 +1359,14 @@
 	"menu_file_relaunch"				: {"ja":"RPG-Coboを再読み込み", "en":"Reload RPG-Cobo"}
 	"tmpl_popen_blender_addon"			: {"ja":"[#ddd]$name のアドオンをインストール中\n", "en":"[#ddd]Installing $name add-ons"}
 	"pop_relaunch"						: {"ja":"RPG-Coboがリロードされました", "en":"RPG-Cobo has been reloaded"}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	//	report problem
+
+	"lbl_report_problem"				: {"ja":"不具合を報告してプロジェクトをアップロード", "en":"Report a Problem and Upload Project"}
+	"lbl_report_comment"				: {"ja":"不具合の内容を詳しく記入してください", "en":"Please describe the problem in detail"}
+	"confirm_report_problem"			: {"ja":"不具合を報告してもよろしいですか？", "en":"Do you want to report a problem?"}
+	"lbl_uploading_report_done"			: {"ja":"不具合の報告が完了しました", "en":"Report submission completed."}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	contest

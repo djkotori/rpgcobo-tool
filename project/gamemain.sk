@@ -13,7 +13,7 @@ function preloaShaders( glob=null){
 	local apilv = skGetAPILevel();
 	local skfxload = decodeJSON( r.loadData()), tecbits = skfxload[apilv];
 	local t0 = skGetTime(), t1 = t0;
-	local tmpbb = TempBuffer( 256*1024);
+	local tmpbb = TempBuffer( 512*1024);
 	foreach( tecname, passes in tecbits){
 		if( glob && !globMatch( glob, tecname)) continue;
 		local tec = skFXFindTechnique( tecname);
@@ -95,7 +95,7 @@ function preloaShaders( glob=null){
 	//	ここでclient.confを読んでスクリーンサイズ、言語などを読む。
 	runsk( "/ClientConfig.sk");	//	$savedata/client.json
 	::clientconf = ClientConfig.load();
-	::isfullscreen = ::clientconf.screen.fullscreen;
+	::isfullscreen <- ::clientconf.screen.fullscreen;
 	if( !skGetScreenSize( [0,0])[0]){	//	skRestart時にはウィンドウは既にできている
 		if( osname=="Windows"){
 			if( !clientconf.screen.fullscreen){

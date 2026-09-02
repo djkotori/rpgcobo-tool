@@ -482,9 +482,12 @@ class VarGetter
 ::rpgres <- RPGResource();
 ::rpgvar <- RPGVarAccessor();
 
-function dataname( dataid){
-	local d = ::rpgdata[dataid];
-	return d ? ((d["icon"]||"")..d["name"]) : dataid;
+function dataname( dataid, lv=0){
+	lv = int( lv);
+	local v = RPGObject.create( dataid);
+	if( !v.data) return dataid;
+	if( lv > 0 && "setLV" in v) v.setLV( lv);
+	return v.iconname();
 }
 
 //	type.equpitype[i]を指定して武器かどうかを返す

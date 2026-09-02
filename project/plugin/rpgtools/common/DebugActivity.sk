@@ -352,6 +352,200 @@ class DebugSession
 }
 
 
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+//	不具合報告機能。ログ又はプロジェクト全体をzipにしてcloudflareにアップロードする。
+//	やり取りはDiscordに誘導する。
+//	- 不具合の内容を書くダイアログを表示。
+//	- フォーム送信 POST https://user.rpg-cobo.com/api/report_problem
+//		⇒ アップロード用のURLが来るのでそこにPUT。
+//	
+
+class ReportProblemDialog extends UndoableDialog
+{
+	comedit = null;
+	zipg = null;
+	
+	zipfile = null;
+	zipthread = null;
+	
+	constructor( v){
+		super( v);
+		zipg = view.findChild( "zipg");
+		zipg.setVisible( false);
+		view.setValue( "msg", "$T.lbl_build_zipping");
+		comedit = view.findChild( "edit");
+		view.setValue( "title", rtf( "不具合を報告してプロジェクトをアップロードする"));
+	}
+
+	function refresh(){
+	}
+
+	function shown(){
+		local g = zipg, rlbl = zipg.findChild( "rlbl");
+		local prgptr = ptr( 0.0);
+		local prgfunc( p, s){
+			if( p > ~prgptr+0.02 || (p>=1.0 && ~prgptr<1.0)){
+				g.anime( p>=2.0 ? 12 : p>=1.0 ? 11 : p*10.0);
+				rlbl.setText( s);
+				prgptr << p;
+				suspend();
+			}
+		}
+		zipg.setVisible( true);
+		zipthread = newthread();
+		zipthread.start( @(){
+			::skstudio.freezeEditorView( true);	//	editorの再描画を抑制して並列処理を高速化
+			startZip( prgfunc);
+			::skstudio.freezeEditorView( false);
+		}, this);
+	}
+
+	//	
+	function startZip( prgfunc){
+		prgfunc( 0.0, "");
+		local t0 = skGetTime();
+		local srcdir = FileRef( ".");
+		//	zipするファイルを集める
+		local ziplist = [];
+		local visitfile( f, chkfn){
+			if( chkfn( f)){
+				local fn = f.name;
+				if( f.isDirectory()){
+					foreach( cf in f.getList()) visitfile( cf, chkfn);
+				}else{
+					ziplist .. f;
+				}
+			}
+		}
+		//	完全な形でアップロードするために、backup, build等の排除可能なもの以外は全て入れる
+		local skipmap = { ".git"=1, "backup"=1, "build"=1, "private"=1, "tmp"=1, "docs"=1, "work"=1,};
+		foreach( f in srcdir.getList()) visitfile( f, @( f) !skipmap[f.name]);
+		//	
+		local num = length( ziplist), size = 0;
+		local bb = ziplist.reduce( @( f, bb){
+			bb.putt( f.path); bb.puti( f.size); bb.putl( f.lastmodified); return bb;
+		}, ByteBuffer());
+		bb.pos = 0;
+		zipfile = FileRef( "tmp/uploading.zip");
+		local hash = bb.hashcode();
+		if( zipfile.exists() && ::buildziphash == hash){
+			printf( "HASH ONAJI! %S\n", hash);
+			size = zipfile.size;
+			goto SKIP;
+		}
+		//
+		//	zip実行。6並列で高速化
+		local zip = ZipWriter( zipfile);
+		local fa = [];
+		for( local l = 0;l < num;l ++){
+			local f = ziplist[l];
+			fa .. (f, ::getRelativePath( srcdir.path, f.path));
+			if( length( fa)>=6 || l==num-1){
+				size += zip.writeLocalFilesAtOnce( fa);
+				fa.clear();
+				prgfunc( l * 1.0 / num, sizestr( size));
+			}
+		}
+		zip.writeCentral();
+		zip.close();
+		zipfile.refresh();
+		printf( "ZIPPED TIME=%S\n", skGetTime( t0));
+		::buildziphash = hash;
+	SKIP:
+		prgfunc( 1.0, sizestr( size));
+		view.findChild( "rung").anime( 1);
+	}
+
+	function actionevent( e){
+		switch( e.src["name"]){
+		case "btn_run":
+		{
+			if( !Dialogs.confirm( {msg=rtf( "$T.confirm_report_problem"), icon="\ue2c3"})) break;
+			doUpload();
+			break;
+		}
+		case "btn_discord":
+			::account.openWeb({ page="discord", });
+			break;
+		}
+		super.actionevent( e);
+	}
+
+	function getProjectVer(){
+		local f = FileRef( "rpgcobo.ver");
+		if( f.exists()){
+			try{
+				local t = decodeJSON( f.load());
+				return t.tag;
+			}catch( ex){}
+		}
+		return null;
+	}
+
+	function doUpload(){
+		local params = {
+			token = ::account.token,
+			zipsize = int( zipfile.size),
+			comment = comedit.getText(),
+			tag = getProjectVer(),
+		};
+		try{
+			local r = ::account.requestAPI( {api="report_problem", method="POST", params=params});
+			printf( "report_problem params=%S result=%S\n", encodeJSON( params, 5), encodeJSON( r, 5));
+			if( r.result != "OK"){
+				Popups.showError( "$T.lbl_uploading_project_error: "..r.error);
+				return;
+			}
+			//	http PUT
+			local self = this;
+			local putproj( prgfunc){
+				local http = HTTPClient();
+				http.listener = @( h, id, arg){
+					switch( id){
+					case "send":
+						local w = arg.w * 1.0 / arg.size;
+						prgfunc( w);
+						break;
+					}
+				}
+				http.verbose = true;
+				http.addHeader( "Content-Type", "application/zip");
+				http.put( r.puturl, HTTPFileSender( self.zipfile));
+				prgfunc( 1.0);
+				ContestPopup.statcache <- null;	//	キャッシュクリア
+				return true;
+			}
+			//	プログレス表示
+			local ret = Dialogs.progress( "$T.lbl_uploading_project", putproj, false);	//	キャンセル不可
+			if( ret instanceof Exception){
+				Popups.showError( "$T.lbl_uploading_project_error");
+			}else{
+				Popups.showInfo( "$T.lbl_uploading_report_done");
+				//	自分も消しちゃう
+				close();
+			}
+		}catch( ex){
+			printexception( ex);
+			Popups.showError( "$T.lbl_uploading_project_error");
+		}
+	}
+
+	function checkCancel( c){
+		if( c == VK_ENTER) return true;	//	enterで始まらんように
+		return super.checkCancel( c);
+	}
+
+	static function run(){
+		local dlg = this( "/plugin/rpgtools/common/ui/reportdialog.ui");
+		dlg.show();
+	}
+}
+
+
+
+/////////////////////////////////////////////
+
 with( ::skstudio){
 	registerActivity( activity);
 	registerMenu( { uid="menu_debug", lbl="$T.menu_debug", isdir=true, submenu=[]});
@@ -378,8 +572,12 @@ with( ::skstudio){
 
 	//	ここでヘルプ追加しちゃお
 	registerMenu( { uid="menu_help", lbl="$T.menu_help", isdir=true, submenu=[]});
-	registerMenu( { uid="menu_help_guide", parentid="menu_help", lbl="RPG-Cobo ガイド", icon="\ue051", func=@( m){
+	registerMenu( { uid="menu_help_guide", parentid="menu_help", lbl="$T.menu_help_guide", icon="\ue051", func=@( m){
 		skOpenURL( "https://rpg-cobo.com/guides/start");
+	}});
+	registerMenu( { parentid="menu_help", separator="*1"});
+	registerMenu( { uid="menu_help_report", parentid="menu_help", lbl="$T.menu_help_report", icon="\ue868", func=@( m){
+		ReportProblemDialog.run();
 	}});
 	// registerMenu( { parentid="menu_help", separator="*1"});
 	// registerMenu( { uid="menu_help_editor", parentid="menu_help", lbl="UIエディタ のマニュアル", icon="\uf1c0", defkey="F1" });

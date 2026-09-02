@@ -32,6 +32,67 @@ local loadworkdata( wd){
 	}
 }
 
+//	シェーダーの事前予約を行う関数
+function preReserveShaders( glob=null){
+	try{
+		local osname = skGetOSName();
+		local f = FileRef( "tmp/skfxload.json");
+		if( !f.exists()){
+			printf( "skfxload.json not found!!! Prereserving Shaders skipped.\n");
+			return;
+		}
+		printf( "preReserveShaders glob=%S start.\n", glob);
+		//
+		local cdir = FileRef( "tmp/shaderbin");
+		local apilv = skGetAPILevel();
+		local skfxload = decodeJSON( f.load()), tecbits = skfxload[apilv];
+		local t0 = skGetTime(), t1 = t0;
+		local tmpbb = TempBuffer( 256*1024);
+		foreach( tecname, passes in tecbits){
+			if( glob && !globMatch( glob, tecname)) continue;
+			local tec = skFXFindTechnique( tecname);
+			if( !tec) continue;
+			foreach( i, bitslist in passes){
+				local ss = tec.getShaderSource( i);
+				if( !ss) continue;
+				local sshash = ss.hash64();
+				foreach( bits in bitslist){
+					if( skGetTime( t1) >= 100){
+						printf( "preReserveShaders suspend...\n");
+						suspend(); suspend(); t1 = skGetTime();
+					}
+					if( ss.isProgramLoaded( bits)){	//	すでに読まれてるシェーダーはスキップ
+						continue;
+					}
+					//	キャッシュヒットチェック。1つずつ別ファイルなのは非効率か
+					local fn = sprintf( "%d-%S-%S-%S.bin", apilv, tecname, i, bits);
+					local cf = FileRef( cdir, fn);
+					if( cf.exists()){
+						local cbuf = cf.load( tmpbb);
+						local hash = long( cbuf.geti(), cbuf.geti());
+						if( !(sshash <> hash)){
+							if( ss.reserveProgramBinary( bits, cbuf)){
+								printf( "Shader Cache HIT! %S\n", fn);
+								continue;
+							}
+						}else{
+							printf( "ShaderSource hash incompatible %S!=%S  cf=%S\n", sshash, hash, fn);
+							cf.deleteFile();
+						}
+					}else{
+						printf( "Shader Cache not found.... %S\n", fn);
+					}
+				}
+			}
+		}
+		printf( "preReserveShaders done. total time=%d\n", skGetTime( t0));
+	}catch( e){
+		printf( "preReserveShaders error: %S\n", e);
+		printexception( e);
+	}
+}
+
+
 module.hookAction( "conf_postload", applytrans, -100);
 
 //	作業中のデータを復元。翻訳前に
@@ -86,6 +147,8 @@ RPGMain.setupUI();
 
 //	ロゴから起動しない。設定を直に読み込んで
 RPGMain.loadSetting();
+
+preReserveShaders();
 
 local recfx = arguments.contains( "-recfx");	//	使用したシェーダーを記録
 local prof = null;
@@ -403,6 +466,61 @@ if( prof){
 	prof.write( fs);
 	fs.close();
 }
+
+//	
+{
+	local tecmap = {};
+	local f = FileRef( "tmp/skfxload.json");
+	if( f.exists()) tecmap = decodeJSON( f.load());	//	前回の結果を上書き。消えたシェーダーが残り続ける問題あり。
+	local cdir = FileRef( "tmp/shaderbin");
+	cdir.mkdirs();
+	local apilv = skGetAPILevel();
+	local tecbits = tecmap[apilv] || (tecmap[apilv]<-{});	//	tecbitsはapilvごとに分ける。OpenGL ES 2.0と3.0でシェーダーのコンパイル結果が違うため。
+	local tmpbb = TempBuffer( 512*1024);
+	foreach( efx in skFXGetEffects()){
+		foreach( tec in efx){
+			local tecname = tec.name, tb = tecbits[tecname] || [], bitsnum = 0;
+			for( local l = 0; tec.getShaderSource( l); l ++){
+				local ss = tec.getShaderSource( l);
+				local sshash = ss.hash64();
+				local sb = tb[l]; if( !sb) tb .. (sb=[]);
+				foreach( bits in ss.getCompiledShaderBits()){
+					local ct = ss.getCompiledTime( bits);	// = compile time [vs,fs,link,total]
+					if( ct[3] <= 5) continue;	//	コンパイル時間が十分短い場合はキャッシュしない
+					if( sb.indexOf( bits) < 0) sb .. bits;
+					//	キャッシュのバージョンが古くて消されている場合もある
+					local fn = sprintf( "%d-%S-%S-%S.bin", apilv, tecname, l, bits);
+					local cf = FileRef( cdir, fn);
+					if( cf.exists()) continue;	//	ある場合は書かない
+					local bb = ss.getProgramBinary( bits, tmpbb);
+					if( bb){
+						local cmpbb = ByteBuffer();
+						cmpbb.puti( sshash[0]);
+						cmpbb.puti( sshash[1]);
+						cmpbb.putBuffer( bb);
+						cmpbb.pos = 0;
+						try{
+							cf.save( cmpbb);
+							printf( "Shader Cache saved %S. filesize=%S compile time=%S\n", fn, cmpbb.size, encodeJSON( ct));
+						}catch( ex){
+							printexception( ex);
+							cf.deleteFile();
+						}
+					}
+				}
+				sb.sort();
+				bitsnum += length( sb);
+			}
+			if( bitsnum){
+				tecbits[tecname] <- tb;
+			}
+		}
+	}
+	local bb = encodeJSON( tecmap, 5, ByteBuffer());
+	bb.pos = 0;
+	f.save( bb);
+}
+
 
 //	使用したシェーダーを記録。gamemainのpreloaShaders()で読み込む。
 if( recfx){
