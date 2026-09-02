@@ -43,7 +43,7 @@ class RPGObject extends Serializable
 	//	指定したdataidのオブジェクトを生成する。
 	//	
 	static function create( dataid){
-		local o = clsmap[dataid[0]] ();		//	'C', 'S', 'Q'等が取れる。clsmapは{ ['Q']: RPGQuest, ... }
+		local o = (clsmap[dataid[0]]||RPGObject) ();		//	'C', 'S', 'Q'等が取れる。clsmapは{ ['Q']: RPGQuest, ... } N000などはRPGObjectのまま
 		local i = dataid.indexOf( ','), num = 1;
 		if( i >= 0){
 			num = int( dataid.substring( i+1));
