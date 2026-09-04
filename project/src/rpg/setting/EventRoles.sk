@@ -459,7 +459,7 @@ RPGSystem.eventrole .. {
 		mdlprop,
 		moveactionprop, ...RPGSystem.moveaction[cmd["moveaction"]]["props"],
 		{ pid="msg", lbl="$T.lbl_text", type=MESSAGE, multiline=true, cnt="cnt6.ui" },
-		popprop,
+		// popprop,
 		reqs0prop,		//	スポーン条件。
 	]
 	
@@ -468,7 +468,7 @@ RPGSystem.eventrole .. {
 		moveaction = "stop", movespd = 4,
 		spawndist = 1,
 		msg = "MESSAGE",
-		pop = null,
+		// pop = null,
 		reqs0 = null,
 	}
 	
