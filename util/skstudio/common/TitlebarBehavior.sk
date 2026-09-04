@@ -31,7 +31,7 @@ class TitlebarBehavior
 		menug = v.findChild( "titlemenug");
 		menulistview = v.findChild( "titlemenulist");
 		debugbar = v.findChild( "debugbar");
-		showDebugBar( false);
+		if( debugbar) showDebugBar( false);
 		if( menulistview) menulistview.content.addEventListener( MOUSE_EVENT, menuevent);
 		if( ::sakana["appicon"]){
 			setAppIcon( sakana.appicon);

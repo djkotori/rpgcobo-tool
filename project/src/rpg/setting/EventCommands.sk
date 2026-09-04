@@ -992,7 +992,7 @@ eventcmd .. {
 			local a = [
 				{ lbl="$T.lbl_anyslot", val=-1 },
 				... ::conf.type.jobslot.map( @( v, i)({ lbl=v.name, val=i })),
-				{ lbl="$T.lbl_none", val=null }	//	ジョブは使用可能になるがセットはされない。ジョブ画面等でセット可能に
+				{ lbl="$T.lbl_learnonly", val=null }	//	ジョブは使用可能になるがセットはされない。ジョブ画面等でセット可能に
 			];
 			return a;
 		} },
@@ -1005,7 +1005,7 @@ eventcmd .. {
 		local cmddef = RPGSystem.eventcmd[cmd.cmd];
 		local pi = propstr( cmddef.props, cmd, "playerid");
 		local si = propstr( cmddef.props, cmd, "slot");
-		local ji = propstr( cmddef.props, cmd, "jobid") || "$lbl_clear";
+		local ji = propstr( cmddef.props, cmd, "jobid") || "$T.lbl_clear";
 		local info = sprintf( "%S %S ⇒ %S", pi, si,ji);
 		return {
 			info = info,

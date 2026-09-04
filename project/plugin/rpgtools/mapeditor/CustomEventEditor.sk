@@ -223,8 +223,8 @@ class CustomEventEditor
 	function keyevent( e){
 		if( e.id != KEY_PRESSED) return;
 		switch( e.keycode){
-		case VK_ENTER:
-			break;
+		// case VK_ENTER:
+		// 	break;
 		case VK_ESCAPE:
 			e.consume();
 			// view.removeFromParent();
@@ -234,6 +234,7 @@ class CustomEventEditor
 			local modkey = toModifierKeyString( e.keycode, e.modifiers);
 			local menu = ::skstudio.keymenumap[modkey];
 			if( menu){
+				if( fget( menu, "disable") || fget( menu, "hide")) break;
 				e.consume();
 				::skstudio.execMenu( menu);	//	コマンドショートカットは実行？
 			}

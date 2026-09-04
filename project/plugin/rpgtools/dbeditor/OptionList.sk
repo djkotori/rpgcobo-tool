@@ -292,7 +292,7 @@ class OptionAddPopup extends Popup
 			head.findChild( "c1").setVisible( false);
 			listview.addRow( head);
 			local optrow = null;
-			foreach( opt in ::RPGSystem.option._list.filter( @( o) o["category"]==ci)){
+			foreach( opt in ::RPGSystem.option._list.filter( @( o) o["category"]==ci && !o["hide"])){
 				local c;
 				if( !optrow){
 					optrow = vd.createSKView();

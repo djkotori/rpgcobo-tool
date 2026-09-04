@@ -1604,7 +1604,7 @@ class PropertyBehaviors.Message extends PropertyBehavior
 		case "style":
 		case "size":
 		case "color":
-		case "color":
+		case "textrun":
 			edit.textedit.insertText( mi.val);
 			break;
 		case "dataname":

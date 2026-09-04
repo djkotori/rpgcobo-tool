@@ -405,6 +405,7 @@ RPGSystem.option .. {
 	//	no hooks
 };
 
+//	削除予定！！！！！！！！！！！！！！！！！！！！！！！！！！
 //	ジョブ習得。〇
 //	※このオプションはフック関数は無い。RPGPlayer.updateScoreMapで集計される
 //	これで習得したジョブは、ジョブ画面や転職UI?などで装着可能になる。
@@ -414,6 +415,7 @@ RPGSystem.option .. {
 	name = "$T.opt_getjob",
 	icon = icon_learn,
 	ownable = true,
+	hide = true,
 	info = @(){	//	this==opd
 		local data = rpgdata[jobid];
 		return data["name"] || "???";

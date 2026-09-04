@@ -439,26 +439,21 @@ class RPGEventRunner
 		local p = cmd.playerid["player"] || ::rpgstat.playermap[cmd.playerid];	//	RPGObjectRefの場合は.playerでRPGPlayerが取れる
 		if( !p) return;
 		local jobid = cmd.jobid;
-		switch( cmd.op){
-		case 0:	//	セット。
-			if( jobid){
-				local job = p.ownjobs.find( @( v) v.dataid==jobid);
-				if( !job){ job = RPGObject.create( jobid); p.ownjobs .. job; }
-				local si = cmd.slot;
-				if( typeof( si) == SS_INTEGER && !p.jobs.contains( job)){	//	既についている場合は無視
-					if( si < 0){
-						// si = p.jobs.findi( @( v, i) !p.jobs[i] && (job.jobslotbits & (1<<i)));
-						si = p.jobs.findi( @( v, i) (job.jobslotbits & (1<<i)));	//	上書きしちゃおう
-					}
-					if( si in p.jobs) p.jobs[si] = job;
+		if( jobid){
+			if( jobid[0]!='J' || !::rpgdata[jobid]) return;	//	エラー出したほうが良いかも
+			local job = p.ownjobs.find( @( v) v.dataid==jobid);
+			if( !job){ job = RPGObject.create( jobid); p.ownjobs .. job; }
+			local si = cmd.slot;
+			if( typeof( si) == SS_INTEGER && !p.jobs.contains( job)){	//	既についている場合は無視
+				if( si < 0){
+					// si = p.jobs.findi( @( v, i) !p.jobs[i] && (job.jobslotbits & (1<<i)));
+					si = p.jobs.findi( @( v, i) (job.jobslotbits & (1<<i)));	//	上書きしちゃおう
 				}
-				break;
-			}else{	//	外す。でも使用可能ジョブからは消さない。
-				local si = cmd.slot;
-				if( si in p.jobs) p.jobs[si] = null;
-				break;
+				if( si in p.jobs) p.jobs[si] = job;
 			}
-			break;
+		}else{	//	外す。でも使用可能ジョブからは消さない。
+			local si = cmd.slot;
+			if( si in p.jobs) p.jobs[si] = null;
 		}
 		p.updateOptions();
 		p.updateScoreMap();

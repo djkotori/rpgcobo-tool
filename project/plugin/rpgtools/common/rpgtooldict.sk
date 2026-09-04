@@ -985,6 +985,7 @@
 	"lbl_encrate"						: {"ja":"遭遇率", "en":"Encounter rate"}
 	"lbl_restoreonend"					: {"ja":"終了時に元に戻す", "en":"Restore on Finish"}
 	"lbl_anyslot"						: {"ja":"何れかのスロット", "en":"Any slot"}
+	"lbl_learnonly"						: {"ja":"習得のみ", "en":"Learning only"}
 	"lbl_waitaction"					: {"ja":"アクションを待つ", "en":"Wait for Action"}
 	"lbl_standani"						: {"ja":"静止アニメ", "en":"Standing Anime"}
 	"lbl_waitfade"						: {"ja":"フェードを待つ", "en":"Wait for Fade"}
@@ -1401,7 +1402,9 @@
 	"ui_pop_damage"						: {"ja":"ダメージポップアップ", "en":"Popup Damage"}
 	"ui_pop_info"						: {"ja":"キャラ上に情報ポップアップ", "en":"Popup info on Chara"}
 	//	message
-	"ui_message_talk"					: {"ja":"会話ウィンドウ", "en":"Talk Window"}
+	"ui_message_talk"					: {"ja":"会話メッセージ", "en":"Talk Message"}
+	"ui_message_talk_pic"				: {"ja":"会話メッセージ(ピクチャ)", "en":"Talk Message(Pic)"}
+	"ui_message_big"					: {"ja":"大画面メッセージ", "en":"Big Message"}
 	"ui_message_log"					: {"ja":"ログメッセージ", "en":"Log Message"}
 	//	misc
 	"ui_misc_waitclick"					: {"ja":"クリック待ち", "en":"Wait for Click"}
