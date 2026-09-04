@@ -49,6 +49,7 @@ class CharaPreview extends SK3DView
 		rp3d = RPG3DObject.create3DObject( data);
 		rp3d.setDir( Math.PI);
 		scn.addObject( rp3d);
+		if( data["ani"]) rp3d.anime2( data.ani);
 		return rp3d;
 	}
 
@@ -68,6 +69,9 @@ class CharaPreview extends SK3DView
 		if( b==undefined){
 			if( a instanceof RPGPlayer){
 				return setRPGPlayer( a);
+			}
+			if( a["mdlid"] || a["mdl"]){
+				return setModelData( a);
 			}
 			if( a["data"]["mdlid"] || a["data"]["mdl"]){
 				return setModelData( a.data);
@@ -121,20 +125,30 @@ class EventPicView extends SKView
 	
 	constructor(){
 		sp = Sprite( null);
+		sp.uvmat0 = Matrix();
 		enabled = false;
 	}
 
 	function setValue( a, b=undefined){
 		if( b==undefined){
-			setPicID( a);
+			if( a["picid"]){
+				setPicID( a["picid"]);
+				if( a["aniid"]) setPicAnime( a["aniid"]);
+			}else{
+				setPicID( a);
+			}
 		}
 	}
 
 	static emptypic = { pic="/resource/icon/appicon.png", scale=1.0, cntpos=[0.5,0.5]};
 
+	static function _pic( pi){
+		return ::conf._resource.event_pic[pi] || ::conf._resource.enemy_pic[pi] || emptypic;
+	}
+
 	function setPicID( pi){
 		picid = pi;
-		local pc = picdata = ::conf._resource.event_pic[pi] || ::conf._resource.enemy_pic[pi] || emptypic;
+		local pc = picdata = _pic( pi);
 		local tex = ::getTexture( pc["pic"]||pc["pic3d"], 16);
 		if( pc["aniuv"]){
 			aniu = Math.max( 1, pc.aniuv[0]);
@@ -288,6 +302,102 @@ class EventPicView extends SKView
 			spcolor = Math.lerpcolor( p0, p1, w);
 			sp.color0 = (sp.blend==SK_PMAMIX) ? Math.lerpcolor( spcolor&0xff, spcolor, (spcolor&0xff)/255.0) : spcolor;
 			repaint();
+			break;
+		default:
+			super.setParam( pid, p0, p1, w);
+		}
+	}
+}
+
+//	ピクチャを矩形内にフィットする
+class EventPicFitView extends EventPicView
+{
+	imagealign = 9;
+
+	function setPicID( pi){
+		local _bnd = r2_0.set( bnd);
+		super.setPicID( pi);
+		bnd.set( _bnd);
+		updateLayout();
+	}
+
+	function updateLayout(){
+		local w = bnd.w, h = bnd.h;
+		local spbnd = sp.bnd;
+		local pc = picdata;
+		local sc = pc["scale"] ?? 1.0;
+		local pw = (sp.tex0["width"]||64) / aniu * sc, ph = (sp.tex0["height"]||64) / aniv * sc;
+		switch( imagealign){
+		case -1: break;
+		case 0:	case 1:	case 2:
+		case 3:	case 4:	case 5:
+		case 6:	case 7:	case 8:
+			//	X
+			switch( imagealign){
+			case 1: case 4: case 7: spbnd.x = ((w-pw)*0.5)|0; break;
+			case 2: case 5: case 8: spbnd.x = w-pw; break;
+			default: spbnd.x = 0; break;
+			}
+			//	Y
+			switch( imagealign){
+			case 3: case 4: case 5: spbnd.y = ((h-ph)*0.5)|0; break;
+			case 6: case 7: case 8: spbnd.y = h-ph; break;
+			default: spbnd.y = 0; break;
+			}
+			spbnd.w = pw;
+			spbnd.h = ph;
+			break;
+		case 10:	//	contains
+			local s = Math.min( w/pw, h/ph);
+			local sw = pw*s, sh = ph*s;
+			spbnd.set( (w-sw)>>1, (h-sh)>>1, sw, sh);
+			break;
+		case 11:	//	cover
+			local s = Math.max( w/pw, h/ph);
+			local sw = pw*s, sh = ph*s;
+			spbnd.set( (w-sw)>>1, (h-sh)>>1, sw, sh);
+			break;
+		case 12:	//	scale-down
+			local s = Math.min( 1.0, Math.min( w/pw, h/ph));
+			local sw = pw*s, sh = ph*s;
+			spbnd.set( (w-sw)>>1, (h-sh)>>1, sw, sh);
+			break;
+		default:	//	fit
+			spbnd.set( 0, 0, w, h);
+			break;
+		}
+		repaint();
+	}
+
+	function getProperties(){
+		return #[
+		( SKVP[VISIBLE]),
+		picidprop,
+		picframeprop,
+		( SKVP[SIZE_STATIC]),
+		( SKVP[PIVOT]),
+		( SKVP[POSITION]),
+		( SKVP[SCALE]),
+		( SKVP[ROTATION]),
+		( SKVP[STRETCHALIGN]),
+		( SKVP[IMAGECOLOR]),
+		( SKVP[IMAGEALIGN]),
+		( SKVP[ENABLED]),
+		]
+	}
+
+	function getParam( pid){
+		switch( pid){
+		case IMAGEALIGN: return imagealign;
+		}
+		return super.getParam( pid);
+	}
+
+	function setParam( pid, p0, p1=null, w=0.0){
+		switch( pid){
+		case IMAGEALIGN :
+			imagealign = p0;
+			updateLayout();
 			break;
 		default:
 			super.setParam( pid, p0, p1, w);

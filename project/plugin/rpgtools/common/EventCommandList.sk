@@ -316,8 +316,9 @@ class EventCommandList
 			showAddCommand( e);
 			break;
 		case VK_ENTER:
-			if( e.id!=KEY_PRESSED || !selection) break;
+			if( e.id!=KEY_PRESSED || !selection || e.isCommandDown()) break;
 			editCommand( selection[0].cmdviews[selection[1]]);
+			e.consume();
 			break;
 		case VK_SHIFT:
 			if( e.id==KEY_PRESSED){

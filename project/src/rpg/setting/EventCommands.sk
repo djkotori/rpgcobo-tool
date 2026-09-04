@@ -1311,6 +1311,23 @@ eventcmd .. {
 	}
 }
 
+//	mainmenu, submenu, choose, dialog, message, info, debug, misc
+local presetuimenu(){
+	local menu = [
+		{ lbl="$T.lbl_viewinfo", icon="\ue892", type="info", submenu=[], },
+		{ lbl="$T.lbl_message", icon="\ue625", type="message", submenu=[], },
+		{ lbl="$T.side_dbview_store", icon="\ue54c", type="store", submenu=[], },
+		{ lbl="$T.lbl_menu", icon="\ueae7", type="mainmenu submenu sysmenu", submenu=[], },
+		{ lbl="$T.lbl_dialog", icon="\ue8ef", type="choose dialog", submenu=[], },
+		{ lbl="$T.lbl_etc", icon="\ue5d3", type=null, submenu=[], },
+	];
+	foreach( i,v in RPGSystem.ui._list){
+		local m = menu.find( @( x) !x.type || x.type.contains( v.type));
+		if( m) m.submenu .. { lbl=v.lbl, val=v.key, icon=v["icon"]};
+	}
+	return menu;
+}
+
 //	cmd_showui : UI表示操作。色々なUIを汎用的に表示する
 //	
 eventcmd .. {
@@ -1324,9 +1341,10 @@ eventcmd .. {
 		local a = [];
 		a .. {
 			lbl="$T.lbl_ui", pid="key", refresh=1, type=LIST, cnt = "cnt8.ui"
-			list=@(){
-				return RPGSystem.ui._list.map( @( v, i) v["hide"]?undefined : { lbl=v.lbl, val=v.key, icon=v["icon"]});
-			},
+			// list=@(){
+			// 	return RPGSystem.ui._list.map( @( v, i) v["hide"]?undefined : { lbl=v.lbl, val=v.key, icon=v["icon"]});
+			// },
+			list = presetuimenu,
 			set = @( prop, data, val){
 				Table.clear( data);		//	全てのデータを一度さっぱりと消去
 				data.cmd <- "cmd_showui";	//	消えちゃいけないデータもある。。。

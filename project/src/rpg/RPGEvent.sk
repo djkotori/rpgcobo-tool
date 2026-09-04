@@ -447,7 +447,7 @@ class RPGEventRunner
 			if( typeof( si) == SS_INTEGER && !p.jobs.contains( job)){	//	既についている場合は無視
 				if( si < 0){
 					// si = p.jobs.findi( @( v, i) !p.jobs[i] && (job.jobslotbits & (1<<i)));
-					si = p.jobs.findi( @( v, i) (job.jobslotbits & (1<<i)));	//	上書きしちゃおう
+					si = p.jobs.findi( @( v, i) (job.data["jobslotbits"] & (1<<i)));	//	上書きしちゃおう
 				}
 				if( si in p.jobs) p.jobs[si] = job;
 			}

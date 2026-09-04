@@ -1419,7 +1419,7 @@
 	//	store
 	"ui_store_item"						: {"ja":"ストア表示「アイテムショップ」", "en":"Show 'Item Shop' Store"}
 	"ui_store_choices"					: {"ja":"ストア表示「選択肢」", "en":"Show 'Choices' Store"}
-	"ui_store_sellitem"					: {"ja":"アイテムの売却", "en":"Sell Items"}
+	"ui_store_sellitem"					: {"ja":"所持アイテムの売却", "en":"Sell owned Items"}
 	
 	"lbl_link_dataid"					: {"ja":"データIDを紐づけ", "en":"Link Data ID"}
 	

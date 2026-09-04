@@ -25,11 +25,12 @@ local showTalkUI( uidef, prms){
 		}
 		return null;
 	}
-	local msgtxt = MessageText( prms.text);		//	MessageText extends RichText
+	local msgtxt = (::[prms["msgcls"]]||MessageText) ( prms.text);	//	MessageText, StoryText, ...
 	local binds = {
 		nameg = ptr({ hide=!length( prms["name"])}),
 		name = prms["name"],
 		text = msgtxt,
+		pic = prms,
 	};
 	if( view){
 		view.actionAndDie( "hide");
@@ -47,7 +48,7 @@ local showTalkUI( uidef, prms){
 
 			...prms,
 
-			name = "message_talk",
+			name = prms["uiname"] || "message_talk",
 		};
 		view = RPGMain.showView( vprms);
 	// }
@@ -63,6 +64,10 @@ local oplist = [
 	{ lbl="$T.uiop_lighten", val="lighten" }
 ];
 
+
+///////////////////////////////////////////////////////////////////////////////////
+//	通常会話ウィンドウ。
+
 RPGSystem.ui ..
 {
 	key = "message_talk"
@@ -72,8 +77,8 @@ RPGSystem.ui ..
 	
 	props = [
 		{ pid="op", lbl="$T.lbl_operation", type=LIST, list=oplist, refresh=true }
-		{ pid="text", lbl="$T.lbl_text", type=MESSAGE, variable=true, hide=@( pl) !!pl.getParam( "op"), cnt="cnt6.ui" },
-		{ pid="name", lbl="$T.lbl_name", type=STRING, variable=true, hide=@( pl) !!pl.getParam( "op") },
+		{ pid="text", lbl="$T.lbl_text", type=MESSAGE, variable=1, hide=@( pl) !!pl.getParam( "op"), cnt="cnt6v.ui" },
+		{ pid="name", lbl="$T.lbl_name", type=STRING, variable=1, hide=@( pl) !!pl.getParam( "op") },
 		{ pid="uiclose", lbl="$T.uiclose", type=LIST, list=RPGProperties.uicloselist, hide=@( pl) !!pl.getParam( "op") },
 	],
 	
@@ -89,6 +94,86 @@ RPGSystem.ui ..
 };
 
 
+///////////////////////////////////////////////////////////////////////////////////
+//	ピクチャ付き会話ウィンドウ。
+
+local _pic( pl){
+	local picid = pl.getParam( "picid");
+	local pc = ::conf._resource.event_pic[picid] || ::conf._resource.enemy_pic[picid];
+	return pc;
+}
+
+RPGSystem.ui ..
+{
+	key = "message_talk_pic"
+	lbl = "$T.ui_message_talk_pic"
+	type = "message"			//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
+	icon = "\ue625"
+	
+	props = [
+		{ pid="op", lbl="$T.lbl_operation", type=LIST, list=oplist, refresh=true }
+		{ pid="text", lbl="$T.lbl_text", type=MESSAGE, variable=1, hide=@( pl) !!pl.getParam( "op"), cnt="cnt6v.ui" },
+		{ pid="name", lbl="$T.lbl_name", type=STRING, variable=1, hide=@( pl) !!pl.getParam( "op") },
+		{ pid="picid", lbl="$T.lbl_picture", type=RESID_PREVIEW, restype=["event_pic","enemy_pic"], defval="PC000", cnt="cnt6v.ui", variable=1, refresh=1 },
+		{ pid="aniid", lbl="$T.lbl_anime", type=LIST, variable=1,
+			list = @( pl) [ {lbl="$T.lbl_none", val=null, }, ..._pic( pl)["animap"]?.map( @( v) ({ lbl=v.id, val=v.id}))]
+			hide = @( pl) !length( _pic( pl)["animap"]),
+		},
+		{ pid="uiclose", lbl="$T.uiclose", type=LIST, list=RPGProperties.uicloselist, hide=@( pl) !!pl.getParam( "op") },
+	],
+	
+	defval = {
+		uipath = "message_talk_pic.ui",
+		text = "*message_talk*",
+		name = "",
+		aniid = null,
+		picid = "PC000",
+		pos = {bottom = 40,},	//	画面下部
+		uiclose = 1,
+	},
+
+	uifunc = @( t) showTalkUI( this, t),			//	
+};
+
+///////////////////////////////////////////////////////////////////////////////////
+//	全画面会話ウィンドウ。
+
+RPGSystem.ui ..
+{
+	key = "message_big"
+	lbl = "$T.ui_message_big"
+	type = "message"			//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
+	icon = "\ue625"
+	
+	props = [
+		{ pid="op", lbl="$T.lbl_operation", type=LIST, list=oplist, refresh=true }
+		{ pid="text", lbl="$T.lbl_text", type=MESSAGE, variable=true, hide=@( pl) !!pl.getParam( "op"), cnt="cnt6.ui" },
+		{ pid="height", lbl="$T.lbl_size", type=LIST, variable=true, list=[
+			{lbl="$T.size_s", val=0},
+			{lbl="$T.size_m", val=1},
+			{lbl="$T.size_l", val=2}
+		]},
+		{ pid="uiclose", lbl="$T.uiclose", type=LIST, list=RPGProperties.uicloselist, hide=@( pl) !!pl.getParam( "op") },
+	],
+	
+	defval = {
+		uipath = "message_big.ui",
+		text = "*message_big*",
+		pos = {},	//	中心
+		uiclose = 1,
+		height = 2,
+		msgcls = "StoryText",
+	},
+
+	uifunc = @( t){
+		local h = t["height"] ?? 2;
+		local tb = [200, 140, 60][h];
+		return showTalkUI( this, {
+			...t,
+			pos = { top=tb, bottom=tb,},
+		});
+	},
+};
 
 
 
@@ -180,7 +265,6 @@ class MessageText extends RichText
 	static sleepscales = { "<":200, ">":50, "=":100, }
 
 	sleepbase = 40;
-	fastskip = false;		//	
 	autobreak = false;		//	クリック無しでページを送る。村人などが並列イベントで勝手にしゃべるような場合
 	interrupt = false;		//	表示の強制終了。
 
@@ -201,10 +285,11 @@ class MessageText extends RichText
 		local tb = lbl.textbox, tblen = tb.length, a_1 = [0,0,0,0,0,0];
 		//	アニメーションいれても良い
 		local pagebreak( pos){
-			local i = tb.getLineIndex( pos), li = tb.getLineInfo( i-1, a_1);	//[st,en,maxdescent,maxlinespace,y,w] 一つ前の行を取得。
+			local i = tb.getLineIndex( pos), li = tb.getLineInfo( i, a_1);	//[st,en,maxdescent,maxlinespace,y,w]
 			if( !li) return;
 			local by = li[4]+li[3];	//	y+linespace
 			tb.y = -by;		//	TextBoxの表示上端をposの文字の上部に。
+			tb.drawstart = pos;
 			lbl.repaint();
 			sleep( 100);
 		}
@@ -246,6 +331,88 @@ class MessageText extends RichText
 				local slp = (charsleep*(cs&0xfff))/100;
 				if( ::RPGMain.waitClick( slp)) skipping = true; //	skip開始、、、
 			}
+		}
+		tb.drawlen = tblen;
+		lbl.repaint();
+		waitclk();	//	最後のwaitclick。テキストを消去したりスクロールを戻したりはしない。
+	}
+}
+
+
+//	行ごとにαフェードする
+class StoryText extends RichText
+{
+	sleepbase = 300;
+
+	function applyToLabel( lbl){
+		super.applyToLabel( lbl);
+		lbl.textbox.drawlen = 0;
+	}
+
+	function run( lbl){
+		local threads = [];
+		local tb = lbl.textbox, tblen = tb.length, a_1 = [0,0,0,0,0,0];
+		//	
+		//	アニメーションいれても良い
+		local pagebreak( pos){
+			local i = tb.getLineIndex( pos), li = tb.getLineInfo( i, a_1);	//[st,en,maxdescent,maxlinespace,y,w]
+			if( !li) return;
+			local by = li[4]+li[3];	//	y+linespace
+			tb.y = -by;		//	TextBoxの表示上端をposの文字の上部に。
+			tb.drawstart = pos;
+			lbl.repaint();
+			sleep( 100);
+		}
+		//textの周囲にあるクリック待ち表示を表示させる
+		local waitclk(){
+			local clk = ::rootview.findChild( "waitclk");	//	これで良いんかなーーーー
+			clk?.action( "show");
+			::RPGMain.waitClick( 0x7fffffff);
+			clk?.action( "hide");
+		}
+		//	
+		local showline( e){
+			local s = tb.drawlen, t = newthread();
+			tb.drawlen = e;
+			t.start( @(){
+				local t0 = skGetTime(), w = 0.0;
+				for( ; w < 1.0; suspend()){
+					local w = Math.saturate( skGetTime( t0) / (sleepbase+600.0));
+					tb.setCharaExtra( {a=w}, s, e);
+					lbl.repaint();
+				}
+			}, this);
+			threads .. t;
+		}
+		//	文字送りループスタート。
+		local ci = 0, li = 0, skipping = false;
+		for( local l = 0;l < tblen;l ++){
+			while( l == (code[ci][0]??-1)){	//	タグがあった
+				local tag = code[ci++][1];
+				switch( tag){
+				case ".": skipping = false; showline( l); waitclk(); break;
+				case "p": skipping = false; showline( l); waitclk(); pagebreak( l); break;	//	はみ出し直後にあるとスキップしたほうが良いかも
+				}
+			}
+			local _li = tb.getLineIndex( l);
+			if( _li == li && l != tblen-1) continue;	//	同じ行ならスキップ
+			li = _li;
+			if( skipping){
+				tb.drawlen = l;
+				lbl.repaint();
+			}else{
+				//	ラインごとフェードイン
+				local e = (l==tblen-1) ? l+1 : l;
+				showline( e);
+				//	3.文字単位のスリープ。この間にクリック操作があった場合、次のwaitclkまで文字送りはスキップされる。
+				if( ::RPGMain.waitClick( sleepbase)){
+					skipping = true; //	skip開始、、、
+					foreach( t in threads) t.wakeupThrow( "skip");
+					tb.setCharaExtra( {a=1.0}, 0, e);
+				}
+			}
+			//	はみ出しチェック
+			if( tb.getCharPos( l, a_1)[1] > lbl.bnd.h){ skipping = false; waitclk(); pagebreak( l); }
 		}
 		tb.drawlen = tblen;
 		lbl.repaint();

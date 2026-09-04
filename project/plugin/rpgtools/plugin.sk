@@ -91,6 +91,16 @@ function loadPlugin( args, opt){
 				icon = FileIcons.evpic,
 				func = @(){
 					local v = EventPicView();
+					v.bnd.set( 0, 0, 64, 64);
+					return v;
+				}
+			},
+			{
+				name = "EventPicture(Fit)",
+				icon = FileIcons.evpic,
+				func = @(){
+					local v = EventPicFitView();
+					v.bnd.set( 0, 0, 128, 128);
 					return v;
 				}
 			},
