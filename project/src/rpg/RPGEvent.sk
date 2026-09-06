@@ -404,10 +404,10 @@ class RPGEventRunner
 	function memberOp( cmd){
 		::rpgvar.ERROR = 0;
 		local p = cmd.playerid["player"] || ::rpgstat.playermap[cmd.playerid];	//	RPGObjectRefの場合は.playerでRPGPlayerが取れる
-		local slot = int( cmd.slot);
+		local slot = cmd.slot && int( cmd.slot);	//	int?
+		local idx = ::rpgstat.members.indexOf( p);
 		switch( slot){
 		case null:		//	leave
-			local idx = ::rpgstat.members.indexOf( p);
 			if( idx < 0){	//	指定したプレイヤーはメンバーにいない
 				::rpgvar.ERROR = 13124;
 				return;
@@ -415,6 +415,7 @@ class RPGEventRunner
 			rpgstat.members[idx] = null;
 			break;
 		case -1:		//	any
+			if( idx >= 0) return ::rpgvar.ERROR = 13125;
 			local i = ::rpgstat.members.findi( @( v) !v);
 			if( i < 0){	//	メンバーが満杯
 				::rpgvar.ERROR = 13126;
@@ -424,14 +425,15 @@ class RPGEventRunner
 			break;
 		default:
 			if( slot in ::rpgstat.members){
-				::rpgstat.members[slot] = p;	//	むりやり交代
+				if( idx >= 0) ::rpgstat.members[idx] = ::rpgstat.members[slot];	//	別の場所にいる場合はswap
+				::rpgstat.members[slot] = p;
 			}else{
 				::rpgvar.ERROR = 13127;
 			}
 			break;
 		}
 		//	表示キャラを変更？
-		
+		::rpgstage.changePlayer3D( ::rpgstage.stat.statmap.playermodel);	//	mmm??
 	}
 
 	function jobOp( cmd){
@@ -1097,7 +1099,9 @@ class RPGStageEventRunner extends RPGEventRunner
 		if( pageidx >= 0) es.pageidx <- pageidx
 		// if( spawnandran) es.spawnandran <- true;
 		if( rp3d){
-			es.spawnpos <- (rp3d.pos.x, rp3d.pos.y, rp3d.pos.z, rp3d.dir);	//	spawnposは現在スポーンしてたらその位置を入れる。
+			// es.spawnpos <- (rp3d.pos.x, rp3d.pos.y, rp3d.pos.z, rp3d.dir);	//	spawnposは現在スポーンしてたらその位置を入れる。
+			local p = v_0( rp3d.pos).add( rp3d.pivot);
+			es.spawnpos <- (p.x,p.y,p.z,rp3d.dir);
 			if( rp3d.mainaction["getSnapshot"]){
 				local act = rp3d.mainaction.getSnapshot(); if( act) es.act <- act;
 			}
@@ -1108,7 +1112,7 @@ class RPGStageEventRunner extends RPGEventRunner
 	//	イベントをステージ等に配置してから呼び出す
 	function start(){
 		thread = newthread( "RPGEvent thread[%S]" % evid);
-		thread.call( mode? run_scout : run, this);	//	ロード時に登場してたら
+		thread.call( run, this);	//	ロード時に登場してたら
 	}
 	
 	function run(){

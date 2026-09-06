@@ -64,6 +64,18 @@ local oplist = [
 	{ lbl="$T.uiop_lighten", val="lighten" }
 ];
 
+local previewprop = {
+	pid="preview", lbl="", type=CUSTOMBUTTON, ui="1", cnt="cnt5.ui", get=@( prop, data) 1, set=@( prop, data, act) 0, 
+	tostring = @() "$T.lbl_preview", icon = "\ue1c4",
+	edit = @( val){
+		local pp = {};
+		foreach( prop in proplist.getProperties()){
+			pp[prop.pid] <- proplist.getParam( prop.pid);
+		}
+		local cmd = { key="message_talk", ...pp, layer="dlglayer.dlgbody"};
+		PropertyBehaviors.Message.MessagePreviewDialog.run( cmd);
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 //	通常会話ウィンドウ。
@@ -80,6 +92,7 @@ RPGSystem.ui ..
 		{ pid="text", lbl="$T.lbl_text", type=MESSAGE, variable=1, hide=@( pl) !!pl.getParam( "op"), cnt="cnt6v.ui" },
 		{ pid="name", lbl="$T.lbl_name", type=STRING, variable=1, hide=@( pl) !!pl.getParam( "op") },
 		{ pid="uiclose", lbl="$T.uiclose", type=LIST, list=RPGProperties.uicloselist, hide=@( pl) !!pl.getParam( "op") },
+		previewprop,
 	],
 	
 	defval = {
@@ -120,6 +133,7 @@ RPGSystem.ui ..
 			hide = @( pl) !length( _pic( pl)["animap"]),
 		},
 		{ pid="uiclose", lbl="$T.uiclose", type=LIST, list=RPGProperties.uicloselist, hide=@( pl) !!pl.getParam( "op") },
+		previewprop,
 	],
 	
 	defval = {
@@ -154,6 +168,7 @@ RPGSystem.ui ..
 			{lbl="$T.size_l", val=2}
 		]},
 		{ pid="uiclose", lbl="$T.uiclose", type=LIST, list=RPGProperties.uicloselist, hide=@( pl) !!pl.getParam( "op") },
+		previewprop,
 	],
 	
 	defval = {

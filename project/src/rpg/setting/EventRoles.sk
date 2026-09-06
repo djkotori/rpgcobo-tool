@@ -766,6 +766,7 @@ RPGSystem.eventrole .. {
 					delete data.mdl;
 				}
 			}
+			hide=@( pl) !pl.getParam( "mdlid")	//	ドアから変換された場合はmdlidが設定されない
 		}
 	]
 	

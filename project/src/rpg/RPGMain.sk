@@ -355,10 +355,11 @@ import GamepadStateID;
 	function enterBattle( cmd){
 		local doneptr = ptr( false);
 		local thisstage = ::rpgstage;		//	このステージに戻ってくれば良い
+		local mapprm = cmd;
 		if( !cmd["enemies"] && "gid" in cmd){		//	エンカウントグループ指定のコマンドならcmdを置き換える
 			local mapid = cmd["mapid"] || ::rpgstage.mapid;		//	cmdにmapidが指定されていない場合は現在マップから
-			cmd = ::conf.map[mapid].encount?.find( @( v) v.gid==cmd.gid);
-			if( !cmd){	//	エンカウントデータ無し。しょうがないから勝利扱い
+			mapprm = ::conf.map[mapid].encount?.find( @( v) v.gid==cmd.gid);
+			if( !mapprm){	//	エンカウントデータ無し。しょうがないから勝利扱い
 				rpgvar.RESULT = 1;
 				doneptr<<true;
 				return doneptr;
@@ -366,12 +367,13 @@ import GamepadStateID;
 		}
 		local bgmsnap = ::soundmanager.currentbgm;	//	再生中のBGMを保存
 		//	コマンドを拡張してマップ移動をバトルにする
-		local cmd_ = {
+		local mapprm_ = {
 			wipe = 1,
 			noportal = true,	//	バトルマップに移動するのでポータルは無効
-			...cmd,	//	enemies, escape, bgm など必要な情報のために展開しておく
+			...mapprm,	//	enemies, escape, bgm など必要な情報のために展開しておく
+			...( cmd["bgmid"] && { bgmid=cmd["bgmid"] }),
 			//	マップ移動先指定
-			dest = { mapid=cmd.mapid, pos=(8,null,8), },
+			dest = { mapid=mapprm.mapid, pos=(8,null,8), },
 			//	以下バトル起動用の関数類。
 			startfunc = @( st, opt){	//	opt==cmd_自身
 				st.battle = RPGMain.createBattleRunner( ::conf.setting.battletype, st, opt);
@@ -380,11 +382,19 @@ import GamepadStateID;
 			//	バトル終了時のコールバック
 			endfunc = @( bt){
 				rpgvar.RESULT = bt.result;
+				local heal = false;
 				if( bt.result < 0){
-					//	バトル敗北マクロ。バトル中のマップで実行される
-					::rpgstage.startMacro( "X002", true);
-					doneptr << true;	//	元のRPGStageには戻ってこないので不要だけど一応
-					return;
+					switch( cmd["losefunc"]){	//	敗北時の挙動チェック
+					case 1:	//	回復して続行
+						heal = true;
+						break;
+					case 2: //	そのまま続行
+						break;
+					default: //	バトル敗北マクロ。バトル中のマップで実行される
+						::rpgstage.startMacro( "X002", true);
+						doneptr << true;	//	元のRPGStageには戻ってこないので不要だけど一応
+						return;
+					}
 				}
 				//	バトルステージからこのステージに戻る。ワイプ指定は無くていいかな？
 				::RPGMain.returnMap({
@@ -392,12 +402,17 @@ import GamepadStateID;
 					loadfunc = @(){
 						foreach( pc in bt.charas){
 							pc.endBattle();
+							if( heal){
+								pc.clearConditions();
+								pc.HP = pc.MAXHP;
+								pc.MP = pc.MAXMP;
+							}
 						}
 					}
 				});
 			},
 		};
-		::RPGMain.moveMap( cmd_);
+		::RPGMain.moveMap( mapprm_);
 		return doneptr;
 	}
 
@@ -605,7 +620,7 @@ import GamepadStateID;
 	}
 	
 	//	
-	function waitClick( time=0x7fffffff){
+	function waitClick( time=0x7fffffff, idlefunc=null){
 		local t0 = skGetTime(), mo = ::rootview.mouses[0], skiptime = 400;
 		return uiLoop( {
 			click = @() true
@@ -614,6 +629,7 @@ import GamepadStateID;
 			idle = @(){
 				if( skGetTime( t0)>=time) return false;
 				if( mo.isPressing( skiptime)) return true;	//	マウス押しっぱなしでスキップ
+				if( idlefunc) idlefunc();
 			}
 		});
 	}

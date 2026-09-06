@@ -372,8 +372,8 @@ RPGSystem.ui ..
 	
 	uifunc = @( prms){
 		local tablist = ["$T.item","$T.weapon","$T.armor","$T.keyitem"].filter( @(v,i) (1<<i)&prms.tabbits);
+		local tabkey = ["items","weapons","armors","keyitems"].filter( @(v,i) (1<<i)&prms.tabbits);
 		local makelist = @( tab){
-			local tabkey = #["items","weapons","armors","keyitems"];
 			local a = ::rpgstat[tabkey[tab]];
 			return a.map( @( v, i) v ? {
 				lbl=(v.data.icon..v.data.name), _name="i"..i, item=v, id=v.dataid, rlbl=v.num>1 ? v.num : "",

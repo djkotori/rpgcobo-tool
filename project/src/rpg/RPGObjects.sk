@@ -1139,12 +1139,16 @@ class RPGStageState extends Serializable
 	static function getPortalPos( po){
 		local map = ::conf.map[po.mapid];
 		if( po["evid"]){
-			local ev = map.event[po.evid];
+			local ev = map.event[po.evid] || map.marker[po.evid];
 			if( ev){	//	ポータルの向きに進んだ位置
 				local h = (ev.pos[3]+2)*Math.PI*0.5;
 				local pos = Vector3D( ev.pos).scale( 0.5);
-				local vec = Vector3D( 0, 0, (ev["mdl"]["r"][1]||1.0)*0.5+0.5).rotate( Quaternion.fromHPB( h, 0, 0));
-				pos.add( vec);
+				if( ev["type"]=="route"){
+					h = ev.dir * Math.DTOR;
+				}else{
+					local vec = Vector3D( 0, 0, (ev["mdl"]["r"][1]||1.0)*0.5+0.5).rotate( Quaternion.fromHPB( h, 0, 0));
+					pos.add( vec);
+				}
 				return (pos.x,pos.y,pos.z,h);
 			}
 		}else

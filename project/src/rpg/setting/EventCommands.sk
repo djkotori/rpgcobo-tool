@@ -499,6 +499,20 @@ eventcmd .. {
 	}
 }
 
+
+local chkarray( o, k){
+	local v = o[k];
+	if( typeof( v) != SS_ARRAY) return o[k] = [];
+	return v;
+}
+
+local chktable( o, k){
+	local v = o[k], t = typeof( v);
+	if( t != SS_TABLE && t != SS_INSTANCE) return o[k] = {};	//	インスタンスもそのままにしとく
+	return v;
+}
+
+
 //	cmd_arrayop : 配列の操作〇
 //	
 eventcmd .. {
@@ -558,11 +572,11 @@ eventcmd .. {
 			switch( cmd.op){
 			case "new": runner[cmd.avar] = []; break;
 			case "get": runner[cmd.tvar] = cmd.avar[cmd.idx]; break;
-			case "add": runner[cmd.avar] .. ::getvar( cmd.rvar, runner); break;
-			case "ins": runner[cmd.avar].insert( cmd.idx, ::getvar( cmd.rvar, runner)); break;
-			case "set": runner[cmd.avar].replace( cmd.idx, ::getvar( cmd.rvar, runner)); break;
-			case "rem": runner[cmd.avar].remove( cmd.idx); break;
-			case "len": runner[cmd.tvar] = length( cmd.avar); break;
+			case "add": chkarray( runner, cmd.avar) .. ::getvar( cmd.rvar, runner); break;
+			case "ins": chkarray( runner, cmd.avar)[cmd.idx] <- ::getvar( cmd.rvar, runner); break;
+			case "set": chkarray( runner, cmd.avar)[cmd.idx] = ::getvar( cmd.rvar, runner); break;
+			case "rem": delete chkarray( runner, cmd.avar)[cmd.idx]; break;
+			case "len": runner[cmd.tvar] = length( runner[cmd.avar]); break;
 			}
 		}catch( ex){
 			throw ex;
@@ -619,8 +633,8 @@ eventcmd .. {
 			switch( cmd.op){
 			case "new": runner[cmd.avar] = {}; break;
 			case "get": runner[cmd.tvar] = runner[cmd.avar][cmd.key]; break;
-			case "ins": runner[cmd.avar][cmd.key] <- ::getvar( cmd.rvar, this); break;
-			case "rem": delete runner[cmd.avar][cmd.key]; break;
+			case "ins": chktable( runner, cmd.avar)[cmd.key] <- ::getvar( cmd.rvar, this); break;
+			case "rem": delete chktable( runner, cmd.avar)[cmd.key]; break;
 			}
 		}catch( ex){
 			throw ex;
@@ -1621,7 +1635,7 @@ eventcmd .. {
 	
 	props = [
 		{ pid="idx", lbl="$T.lbl_place $T.lbl_index", type=SCALAR, range=[0,99], variable=1 },
-		{ pid="asset", lbl="$T.lbl_placeasset", type=PLACEASSET, variable=1, cnt="cnt6.ui"}
+		{ pid="asset", lbl="$T.lbl_placeasset", type=PLACEASSET, variable=1, cnt="cnt6v.ui"}
 		{ pid="parma", lbl="$T.lbl_placeparma", type=BOOL, variable=1 },
 	]
 	

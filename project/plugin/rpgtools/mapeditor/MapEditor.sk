@@ -239,10 +239,10 @@ class MapEditor extends EditorViewBase
 			local bw1 = MapGenDialog.run( this, data);
 			if( bw1){
 				//	イベントの初期化はいらないかな？
-				local self = this;
+				local self = this, data = self.data;
 				local bw0 = bw;
-				local redo = [@(){ self.setBlockWorld( bw1); }];
-				local undo = [@(){ self.setBlockWorld( bw0); }];
+				local redo = [@(){ data.size.set( bw1.w, bw1.h, bw1.d); self.setBlockWorld( bw1); }];
+				local undo = [@(){ data.size.set( bw0.w, bw0.h, bw0.d); self.setBlockWorld( bw0); }];
 				submitOp( redo, undo, null);
 			}
 			return true;

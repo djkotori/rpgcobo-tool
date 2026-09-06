@@ -497,6 +497,33 @@ class TweenListPopup extends Popup
 //	
 /////////////////////////////////////////////////////////////////////////////////////////
 
+class TextEditChangeFunc
+{
+	edit = null;
+	changed = null;
+	val0 = null;
+
+	constructor( v){
+		edit = v;
+		changed = edit.findChild( "changed");
+		val0 = edit.getText();
+		edit.addEventListener( TEXT_EVENT, textevent);
+	}
+
+	function update(){
+		changed?.setVisible( val0 != edit.getText());
+	}
+
+	function textevent( e){
+		update();
+	}
+
+	function textUpdated( v){
+		val0 = v;
+		update();
+	}
+}
+
 class PropertyBehaviors.String extends PropertyBehavior
 {
 	static proptype = STRING;

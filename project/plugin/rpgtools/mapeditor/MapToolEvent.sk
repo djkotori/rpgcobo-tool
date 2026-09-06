@@ -779,6 +779,10 @@ class MapTools.tool_event extends MapTool
 			local val = ::getProperty( prop, d0);
 			::setProperty( prop, d, val);
 		}
+		if( d0["mdl"]){	//	ドアはmdlが設定されている。
+			d["mdl"] <- deepclone( d0["mdl"]);
+			delete d["mdlid"];
+		}
 		return d;
 	}
 

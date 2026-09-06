@@ -374,9 +374,9 @@
 
 	//	バトル敗北時、フィールドで死亡時
 	"losefunc"							: {"ja":"敗北時の処理", "en":"Operation at Defeated"}
-	"losefunc0"							: {"ja":"敗北マクロ(X002)", "en":" Defeat Macro(X002)"}
-	"losefunc1"							: {"ja":"回復して続行", "en":" Recover and Continue"}
-	"losefunc2"							: {"ja":"そのまま続行", "en":" Continue"}
+	"losefunc0"							: {"ja":"敗北マクロ(X002)", "en":"Defeat Macro(X002)"}
+	"losefunc1"							: {"ja":"回復して続行", "en":"Recover and Continue"}
+	"losefunc2"							: {"ja":"そのまま続行", "en":"Continue"}
 	
 	//	イベントコマンド
 	"cmd_category0"						: {"ja":"一般処理", "en":"General commands"}

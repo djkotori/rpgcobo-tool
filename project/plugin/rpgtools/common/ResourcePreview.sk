@@ -1159,7 +1159,7 @@ class AnimeEdit
 	}
 
 	function startAnime(){
-		local id = animelist.getSelectedItems()[0].val;
+		local id = animelist.getSelectedItems()[0]["val"];
 		if( id){
 			local part = partmenu.selitem.val;
 			local spd = spdval.getValue();

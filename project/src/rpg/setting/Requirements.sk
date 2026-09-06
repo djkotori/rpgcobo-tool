@@ -49,7 +49,7 @@ reqchk .. {
 	
 	func = @( req, self){
 		local pid = ::getvar( req.rvar, self);
-		return !!::rpgstat.members.find( ( v) v.dataid == pid);
+		return !!::rpgstat.members.find( @( v) v["dataid"] == pid);
 	}
 }
 

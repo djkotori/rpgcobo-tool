@@ -27,6 +27,7 @@ class DBEditorDict extends DBEditor
 		op = OperationStack();
 		dictlistview = findChild( "dictlist");
 		dictlistview.addEventListener( ACTION_EVENT, dictevent);
+		dictlistview.addEventListener( TEXT_EVENT, dictevent);
 		
 		res = ::getResource( path);
 		data = deepclone( res.getContent());
@@ -117,14 +118,16 @@ class DBEditorDict extends DBEditor
 	function dictevent( e){
 		if( e.src["name"] == "edit"){
 			local src = e.src, key = e.src.ref, self = this;
-			local val = src.getText(), oldval = data[key];
+			local val = src.getText(), oldval = data[key], ci = src.textedit.idx;
+			if( val == oldval) return;
+			local trk = key;
 			local redo = [@(){
-				self.data[key] <- val; src.setText( val);
+				self.data[key] <- val; src.setText( val); src.textedit.setCursorIndex( ci); src.textedit.requestFocus();
 			}];
 			local undo = [@(){
-				self.data[key] <- oldval; src.setText( oldval);
+				self.data[key] <- oldval; src.setText( oldval); src.textedit.requestFocus();
 			}];
-			submitOp( redo, undo, null);
+			submitOp( redo, undo, trk);
 		}
 	}
 }

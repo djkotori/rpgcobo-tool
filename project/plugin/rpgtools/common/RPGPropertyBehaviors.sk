@@ -1507,11 +1507,11 @@ class PropertyBehaviors.Message extends PropertyBehavior
 	static proptype = MESSAGE;
 	static uipath = srcdir .. "/ui/prop_message.ui"
 
-	static menuitems = [
-		{ lbl="$T.lbl_preview", val="preview", icon="\uf1c5" },
-		// "---",
-		// { lbl="$T.lbl_help", val="help", icon="\ue887" },
-	]
+	// static menuitems = [
+	// 	{ lbl="$T.lbl_preview", val="preview", icon="\uf1c5" },
+	// 	// "---",
+	// 	// { lbl="$T.lbl_help", val="help", icon="\ue887" },
+	// ]
 
 	edit = null;	//	GPUITextEdit
 
@@ -1631,11 +1631,11 @@ class PropertyBehaviors.Message extends PropertyBehavior
 		switch( v){
 		case "preview":
 		{
-			//	UIを表示しちゃおう
-			//	{"cmd":"cmd_showmsg","key":"message_talk","name":"","text":"message...","uiclose":2,"who":0},
-			local key = proplist.getParam( "key") || "message_talk";
-			local name = proplist.getParam( "name");
-			local cmd = { key=key, name=name, text=edit.getText(), layer="dlglayer.dlgbody"};
+			local pp = {};
+			foreach( prop in proplist.getProperties()){
+				pp[prop.pid] <- proplist.getParam( prop.pid);
+			}
+			local cmd = { key="message_talk", ...pp, layer="dlglayer.dlgbody"};
 			MessagePreviewDialog.run( cmd);
 			break;
 		}
@@ -1664,8 +1664,13 @@ class PropertyBehaviors.Message.MessagePreviewDialog extends Dialog
 
 	function shown(){
 		newthread().start( @(){
-			local v = RPGMain.showUI( cmd);
-			v.actionAndDie( "hide").waitAction();
+			try{
+				local v = RPGMain.showUI( cmd);
+				v.actionAndDie( "hide").waitAction();
+			}catch( ex){
+				printexception( ex);
+				::rootview.postErrorEvent( {type="MessagePreview", error=ex, msg = "\uf800 MessagePreview ERROR!!! Check a log file."});
+			}
 			close();
 		}, this);
 	}
@@ -1729,6 +1734,7 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 		enemylist.listview.addEventListener( ACTION_EVENT, listevent);
 		enemypics = [];
 		canvas.addEventListener( ITEM_EVENT, picitemevent);
+		canvas.addEventListener( MOUSE_EVENT, mouseevent);
 	}
 
 	function getParam(){
@@ -1766,6 +1772,20 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 		}
 	}
 
+	function mouseevent( e){
+		switch( e.id){
+		case MOUSE_PRESSED:
+			//	右クリックでコンテキストメニュー
+			if( e.isMouseDown( BUTTON2_MASK)){
+				e.computeLocal( canvas.getInvMatrix());
+				local cw = canvas.bnd.w, ch = canvas.bnd.h;
+				local t0 = { x=(e.lx/cw-0.5)*8.0, z=(e.ly/ch-0.5)*-8.0 };
+				showEnemyContextMenu( null, e, t0);
+			}
+			break;
+		}
+	}
+
 	//	enemylist ... 消去、ソート
 	function listevent( e){
 		e.consume();
@@ -1778,11 +1798,11 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 			break;
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
-				showEnemyContextMenu( e.actioncmd.val, e);
+				showEnemyContextMenu( enemy, e);
 			}else{
 				local idx = enemylist.items.indexOf( cmd);
 				local prop = { datatype=["enemy"] };
-				local ret = DataSelectPopup.run( e, prop);
+				local ret = DataSelectPopup.run( null, prop);
 				if( ret){
 					local v = getParam();
 					v[idx].id = ret;
@@ -1791,6 +1811,15 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 				}
 			}
 			break;
+		case ITEM_REMOVE:
+		{
+			local idx = enemypics.findi( @( v) v.enemy==cmd[0]["val"]);
+			if( idx >= 0 && length( enemypics) > 1){
+				(delete enemypics[idx]).removeFromParent();
+				postActionEvent( true);
+			}
+			break;
+		}
 		}
 	}
 
@@ -1807,19 +1836,24 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 		}
 	}
 
-	function showEnemyContextMenu( enemy, e){
-		local ctxmenu = #[
-			{ id="replace", lbl="$T.lbl_replace", icon="\ue2e7"},
-			{ id="dup", lbl:"$T.lbl_duplicate", icon="\ue2bd" }
+	function showEnemyContextMenu( enemy, e, t0=null){
+		local ctxmenu = [
+			{ id="add", lbl="$T.lbl_add", icon="\ue146" },
+			{ id="replace", lbl="$T.lbl_replace", icon="\ue2e7", disable=!enemy},
+			{ id="dup", lbl:"$T.lbl_duplicate", icon="\ue2bd", disable=!enemy}
 			"-",
-			{ id="delete", lbl="$T.lbl_delete", icon="\ue872"},
+			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", disable=!enemy},
 		];
 		local idx = enemypics.findi( @( v) v.enemy==enemy);
 		switch( MenuPopup.run( ctxmenu)["id"]){
+		case "add":{
+			showAddEnemy( t0);
+			break;
+		}
 		case "replace":
 		{
 			local prop = { datatype=["enemy"] };
-			local ret = DataSelectPopup.run( e, prop);
+			local ret = DataSelectPopup.run( null, prop);
 			if( ret){
 				local v = getParam();
 				v[idx].id = ret;
@@ -1837,9 +1871,22 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 			break;
 		}
 		case "delete":
-			(delete enemypics[idx]).removeFromParent();
-			postActionEvent( true);
+			if( length( enemypics) > 1){
+				(delete enemypics[idx]).removeFromParent();
+				postActionEvent( true);
+			}
 			break;
+		}
+	}
+
+	function showAddEnemy( t0=null){
+		local prop = { datatype=["enemy"] };
+		local ret = DataSelectPopup.run( null, prop);
+		if( ret){
+			local v = getParam();
+			v .. { id=ret, x=0.0, z=0.0, ...t0};
+			setParam( v);
+			postActionEvent( true);
 		}
 	}
 	
@@ -1847,17 +1894,8 @@ class PropertyBehaviors.EnemyGroup extends PropertyBehavior
 	function menuSelected( e, mi){
 		switch( mi.val){
 		case "add":
-		{
-			local prop = { datatype=["enemy"] };
-			local ret = DataSelectPopup.run( e, prop);
-			if( ret){
-				local v = getParam();
-				v .. { id=ret, x=0.0, z=0.0, };
-				setParam( v);
-				postActionEvent( true);
-			}
+			showAddEnemy();
 			break;
-		}
 		case "copy":
 			break;
 		case "paste":
@@ -1970,13 +2008,13 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 			setHovered( false);
 			break;
 		case MOUSE_PRESSED:
+			e.consume();
 			pressmode = 0;
 			if( e.isMouseDown( BUTTON2_MASK)){
 				postActionEvent( enemy, 0, e.modifiers);
 				return 1;
 			}
 			mx = e.lx; my = e.ly;
-			e.consume();
 			pressmode = 1;
 			break;
 		case MOUSE_DRAGGED:
@@ -2097,6 +2135,13 @@ class PropertyBehaviors.Portal extends PropertyBehavior
 				portals .. { lbl=v.name, evid=i, icon=role.icon, };
 			}
 		}
+		foreach( i, v in map.marker){
+			if( v.type=="route"){
+				local role = ::RPGSystem.markerdef[v.type];
+				portals .. { lbl=v.name, evid=i, icon=role.icon, };
+			}
+		}
+		portals.sort( @( v) v.evid);
 		portalmenu.setMenu( portals);
 		portalmap.setPortals( map, portals);
 		if( length( portals)){
@@ -2195,7 +2240,7 @@ class PropertyBehaviors.Portal.PortalMap extends SKView
 		mapw = map.size[0];
 		mapd = map.size[2];
 		foreach( v in a){
-			local ev = map.event[v.evid];
+			local ev = map.event[v.evid] || map.marker[v.evid];
 			local p = Vector3D( ev.pos[0], mapd-ev.pos[2]-1, 0.0).scale( sp.bnd.w / mapw, sp.bnd.h / mapd, 1.0).add( sp.bnd.x, sp.bnd.y, 0.0);
 			local vsp = ::getSprite( POPATH);
 			vsp.color = 0xff0000ff;
@@ -2208,8 +2253,7 @@ class PropertyBehaviors.Portal.PortalMap extends SKView
 	function selectPortal( v){
 		local sp = pic.sp, pos;
 		if( v["evid"]){
-			local ev = map.event[v.evid];
-			// pos = ev.pos;
+			local ev = map.event[v.evid] || map.marker[v.evid];
 			pos = (ev.pos[0]*0.5,ev.pos[1]*0.5,ev.pos[2]*0.5);
 		}else
 		if( v["pos"]){

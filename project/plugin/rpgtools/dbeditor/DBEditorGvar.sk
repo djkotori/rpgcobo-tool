@@ -75,8 +75,10 @@ class DBEditorGvar extends DBEditor
 		for( local l = 0;l < 100;l ++){
 			local r = gvarlist.rows[l];
 			local varfield = r.findChild( "varfield");
+			local nameedit = r.findChild( "nameedit");
 			if( !varfield.ref){
-				local vf = varfield.ref = VariableBehavior( varfield, #{ constbits=15, nullable=1, anytype=1});
+				varfield.ref = VariableBehavior( varfield, #{ constbits=15, nullable=1, anytype=1});
+				nameedit.ref = TextEditChangeFunc( nameedit);
 			}
 			local id = "G%03d" % (p*100+l);
 			setVarItem( r, id, data[id]);
@@ -85,7 +87,9 @@ class DBEditorGvar extends DBEditor
 
 	function setVarItem( r, id, v){
 		r.ref = id;
-		r.setValue( "nameedit", v["name"]||"");
+		local nameedit = r.findChild( "nameedit");
+		nameedit.setText( v["name"]||"");
+		nameedit.ref.textUpdated( v["name"]||"");
 		local type = v["type"]||0;
 		local varfield = r.findChild( "varfield").ref;
 		varfield.setVar( v["defval"] ?? null);
