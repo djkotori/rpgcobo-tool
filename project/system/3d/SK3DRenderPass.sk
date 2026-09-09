@@ -1886,6 +1886,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	//	※パラメータは予めコンストラクタかsetPassSettingで設定済み。サブパスも生成済み。
 	//	全てのテクスチャなどはここで生成される。
 	function setupPass( r){
+		local h = ::renderhint;
 		needsetup = false;
 		//	バックバッファ設定
 		g0tex = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_RGBA8});
@@ -1899,6 +1900,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		transfb = r.createRenderTarget( {color0=hdcolortex, depth=ztex});
 		decalfb = r.createRenderTarget( {color0=sdcolortex, depth=ztex});
 		//	screen space
+		gblurpass.enabled = h.pbr_qua >= 2;		//	標準以上
 		if( gblurpass["enabled"]){
 			g1tex2 = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_R32UI});
 		}else{

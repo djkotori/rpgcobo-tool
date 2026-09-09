@@ -203,6 +203,9 @@ class EventCommandList
 		case "menu_edit_selall":
 			selectAll();
 			return true;
+		case "editor_map_menu_edit_disable":
+			disableSelection( selection);
+			return true;
 		}
 		return false;
 	}
@@ -347,6 +350,7 @@ class EventCommandList
 		local ctxmenu = [
 			{ uid="addcmd", lbl="$T.lbl_addcmd", icon="\ue150", modkey="Space"},
 			{ uid="editcmd", lbl="$T.lbl_editcmd", icon="\ue745", modkey="Enter", disable=empty},
+			{ uid="disable", lbl="$T.editor_map_menu_edit_disable", icon="\ue9c0", modkey="^/", disable=empty},
 			"-",
 			{ ...st.getMenu( "menu_edit_cut"), disable=empty},
 			{ ...st.getMenu( "menu_edit_copy"), disable=empty},
@@ -378,6 +382,9 @@ class EventCommandList
 			break;
 		case "selall":
 			selectAll();
+			break;
+		case "disable":
+			disableSelection( selection);
 			break;
 		}
 	}
@@ -439,6 +446,29 @@ class EventCommandList
 			self.rootblkview.updateMatrixAll( true);
 			self.setSelection( [pblk, si, ei]);
 			self.keypos = null;
+		}];
+		listview.postActionEvent({ cmd="list", op = (redo,undo,null), });
+	}
+
+	//	
+	function disableSelection( sels){
+		if( isSelectionEmpty()) return;
+		local self = this;
+		local pblk = sels[0], si = sels[1], ei = sels[2];
+		local oldlist = getSelectedCommands();
+		local newlist;
+		if( oldlist.find( @( v) !v.cmd["disable"])){
+			newlist = oldlist.map( @( v) ::EventCommandItemView.fromCommand( { ...v.cmd, disable=1}));
+		}else{
+			newlist = oldlist.map( @( v){ local cmd = clone v.cmd; delete cmd["disable"]; return ::EventCommandItemView.fromCommand( cmd); });
+		}
+		local redo = [@(){
+			pblk.changeCommands( si, ei, newlist);
+			self.rootblkview.updateMatrixAll( true);
+		}];
+		local undo = [@(){
+			pblk.changeCommands( si, ei, oldlist);
+			self.rootblkview.updateMatrixAll( true);
 		}];
 		listview.postActionEvent({ cmd="list", op = (redo,undo,null), });
 	}

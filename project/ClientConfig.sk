@@ -32,7 +32,7 @@ class ClientConfig
 			fullscreen = 0,				//	ゲーム起動時のフルスクリーン設定。F10で切り替え可能。
 		},
 		render = {
-			quality = 3,				//	大雑把な描画品質
+			quality = 2,				//	大雑把な描画品質
 			//	以下RenderHint
 			maxreso = 1080;				//	最大解像度。これ以上はアップスケールで対応。
 			antialias = 1;				//	none, fxaa, smaa。
@@ -87,14 +87,12 @@ class ClientConfig
 	};
 
 	//	デバイスのGPU性能を取得し、LVにして返す。
-	//	GPU辞書を読み込んで、現在の環境からGPUの性能を割り出す。
-	//	LV.0 : 完全フル解像度。よっぽどのゲーミングPC用かSS撮影用。
-	//	LV.1 : 高性能ゲーミングPC。1080pまでフル解像度。
-	//	LV.2 : 一般ゲーミングPC、高性能ゲーミングスマホ。900pまでオリジナル解像度。
-	//	LV.3 : 廉価ゲーミングPC、ゲーミングスマホ。
-	//	LV.4 : オンボードPC、一般スマホ。720pまで。
-	//	LV.5 : 廉価スマホ。720pまで。Switchとかと同等を想定。
 	static function detectGPULV(){
+		switch( skGetOSName()){
+		case "Android": return 1;
+		case "iOS": return 2;
+		case "Windows": return 2;
+		}
 		return 2;
 	}
 
@@ -134,10 +132,11 @@ class ClientConfig
 		t.screen.reso_window = getAvailableWindowSizes()[0];
 		//	フルスクリーンサイズ。Windowsならディスプレイ解像度。
 		//	スマホなら最大で1080p。GPUレベルによってここも変える。
-		local d = skGetDisplaySize( []);	//	w, h, xdpi, ydpi, fps
-		t.screen.reso_screen = d[0].."x"..d[1];
-		
-		//	レンダラーの設定をGPUレベルに応じて設定する。
+		local d = getAvailableDisplaySizes();	//	w, h, xdpi, ydpi, fps
+		t.screen.reso_screen = d[0] || "1280x720";
+		//	レンダリング品質。PCなら2, スマホなら1程度を想定。
+		t.render.quality <- gpulv;
+		t.render ... ClientConfig.renderhints[gpulv];
 		return t;
 	}
 	

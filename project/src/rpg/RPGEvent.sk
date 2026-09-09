@@ -58,7 +58,7 @@ class RPGEventCompiler
 	function parseblock( cmdblock, bracket=true){
 		if( bracket) push( "{").indent( 1).lf();
 		foreach( cmd in cmdblock){
-			parsecmd( cmd);
+			if( !cmd["disable"]) parsecmd( cmd);
 		}
 		if( bracket) indent( -1).push( "}");	//	※一回bsを入れないと
 	}

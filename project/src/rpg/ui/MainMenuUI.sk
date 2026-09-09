@@ -690,11 +690,11 @@ RPGSystem.ui ..
 
 local lvoptionlist( job){//	RPGJob
 	local jlv = job.JOBLV;
-	local nextjlv = job.data.lvoption.filter( @( v) v.LV>jlv).sort( @( v) v.LV)[0]["LV"]||jlv;
+	local nextjlv = job.data.lvoption.filter( @( v) v["LV"]>jlv).sort( @( v) v["LV"])[0]["LV"]||jlv;
 	return RichText( job.data.lvoption.map( @( v){
-		local tag = v.LV<=jlv? "" : "[G]";
-		local lbl = v.LV<=nextjlv ? RPGSystem.getOptionDescription( [v]) : "？？？？？？？？";
-		return sprintf( "%S[b][f3]Lv.%2d  [f1][n]%S", tag, v.LV, lbl);
+		local tag = int(v["LV"])<=jlv? "" : "[G]";
+		local lbl = int(v["LV"])<=nextjlv ? RPGSystem.getOptionDescription( [v]) : "？？？？？？？？";
+		return sprintf( "%S[b][f3]Lv.%2d  [f1][n]%S", tag, int(v["LV"]), lbl);
 	}).join( "\n"));
 }
 
@@ -862,9 +862,9 @@ local lvoptionlist( job){//	RPGJob
 	local jlv = job.JOBLV;
 	local nextjlv = job.data.lvoption.filter( @( v) v.LV>jlv).sort( @( v) v.LV)[0]["LV"]||jlv;
 	return RichText( job.data.lvoption.map( @( v){
-		local tag = v.LV<=jlv? "" : "[G]";
-		local lbl = v.LV<=nextjlv ? RPGSystem.getOptionDescription( [v]) : "？？？？？？？？";
-		return sprintf( "%S[b][f3]Lv.%2d  [f1][n]%S", tag, v.LV, lbl);
+		local tag = v["LV"]<=jlv? "" : "[G]";
+		local lbl = v["LV"]<=nextjlv ? RPGSystem.getOptionDescription( [v]) : "？？？？？？？？";
+		return sprintf( "%S[b][f3]Lv.%2d  [f1][n]%S", tag, int(v["LV"]), lbl);
 	}).join( "\n"));
 }
 

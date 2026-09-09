@@ -753,7 +753,7 @@ fs ssshadow
 		highp vec4 a = texelFetch( litprmtex, ivec2( 0, i), 0);
 		highp vec4 b = texelFetch( litprmtex, ivec2( 1, i), 0);
 		highp vec4 c = texelFetch( litprmtex, ivec2( 2, i), 0);
-		highp vec3 lwvp = b.xyz;
+		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.2);	//	z offset
 		highp vec3 ldir = c.xyz;
 		highp vec3 d = lwvp - wvp;
 		highp vec3 l = normalize( d);

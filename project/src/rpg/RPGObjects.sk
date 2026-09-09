@@ -99,7 +99,7 @@ class RPGItem extends RPGObject
 		local opd = VarGetter( [data, this]);
 		local opts = [RPGOption( opd)]; //	supplyを追加するオプション。。。。。。。。。。。
 		foreach( opd in data.option){
-			if( !opd["LV"] || LV >= opd.LV) opts .. RPGOption( opd);
+			if( !opd["LV"] || LV >= int(opd["LV"])) opts .. RPGOption( opd);
 		}
 		foreach( opd in ownoptions) opts .. RPGOption( opd);
 		return opts;
@@ -769,16 +769,16 @@ class RPGPlayer extends RPGCharaBase
 		local opts = [];
 		//	キャラのオプション
 		foreach( opd in data.lvoption){
-			if( LV >= opd.LV) opts .. RPGOption( opd);
+			if( LV >= int(opd["LV"])) opts .. RPGOption( opd);
 		}
 		//	ジョブのオプション
 		foreach( job in ownjobs){
 			if( !job["enabled"]) continue;
 			if( jobs.contains( job)){
 				foreach( opd in job.data.option) opts .. RPGOption( opd);
-				foreach( opd in job.data.lvoption) if( job.JOBLV >= opd.LV) opts .. RPGOption( opd);
+				foreach( opd in job.data.lvoption) if( job.JOBLV >= int(opd["LV"])) opts .. RPGOption( opd);
 			}else{	//	装着していないジョブでも永久取得のオプションは追加
-				foreach( opd in job.data.lvoption) if( job.data["perma"] && job.LV >= opd.LV) opts .. RPGOption( opd);
+				foreach( opd in job.data.lvoption) if( job.data["perma"] && job.LV >= int(opd["LV"])) opts .. RPGOption( opd);
 			}
 		}
 		//	装備のオプション

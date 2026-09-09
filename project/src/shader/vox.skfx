@@ -136,7 +136,9 @@ fs vox
 		}
 		$(COLORMAT) pix = colormat * pix;
 		G g;
-		g.n = v_n;
+		vec3 wv = v_wvpp.xyz / v_wvpp.w;
+		vec3 vv = -normalize( v_wvp.xyz);
+		g.n = normalize( v_n + vv*dot(wv, wv)*0.08);
 		$(COLORTEX1){
 			mediump mat4 m = mat4(
 				texelFetch( mtltex, ivec2( 0, mi), 0), 

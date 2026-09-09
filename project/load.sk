@@ -18,13 +18,9 @@ module.dispatchAction( "plugin_postload");
 module.dispatchAction( "conf_preload");
 override( conf._map, loadconf( "/conf/load.conf"));
 module.dispatchAction( "conf_postload");
-//	3-1. 翻訳適用
-// if( conf.setting.projlang != lang.code){
-// 	//
-// }
-//	3-2. dict適用
+//	4. dict適用
 ::T.merge( conf["_sysdict"]);
 ::T.merge( conf["dict"]);
 
-//	4. ポストロードフック
+//	5. ポストロードフック
 module.dispatchAction( "post_load");

@@ -32,6 +32,7 @@ class EventCommandItemView extends SKLibView
 			return v;
 		}else{
 			local cmdinfo = fget( cmddef, "cmdinfo", cmddef, c);	//	cmdinfoの中身からviewpathを判断。
+			if( c["disable"]) if( cmdinfo) cmdinfo["disable"] <- 1 else cmdinfo = {"disable"=1};
 			if( cmdinfo["extra"]){
 				viewpath = cmdinfo["info"] ? "/ui/evcmd_ex.ui" : "/ui/evcmd_info.ui";
 			}else
@@ -50,6 +51,9 @@ class EventCommandItemView extends SKLibView
 		local col = cmdinfo["color"] || cmddef.color;
 		local ic = cmdinfo["icon"] || cmddef.icon;
 		local nm = cmdinfo["name"] || cmddef.name;
+		if( cmdinfo["disable"]){
+			col = #[0x707070cc, 0x707070cc];
+		}
 		//
 		stretchg = findChild( "stretchg");
 		local cmdicon = findChild( "icon");
@@ -88,6 +92,7 @@ class EventCommandItemView extends SKLibView
 		}
 		local y = h0 = h1 = bnd.h;
 		foreach( i, cmdlist in cmd["cmdblocks"]){
+			if( cmdinfo["disable"]) cmdlist = cmdlist.map( @( v)+{...v, disable=1});
 			local v = ::EventCommandBlockView.create( cmd, cmdlist, 40);	//	indent
 			local blkicon = v.findChild( "blkicon");
 			local blkname = v.findChild( "blkname");
@@ -265,6 +270,18 @@ class EventCommandBlockView extends SKLibView
 		cmdblock[i] = cv.cmd;
 		addChild( cv);
 		cv.setWidth( bnd.w-indent);
+		revalidate();
+	}
+
+	function changeCommands( si, ei, list){
+		foreach( i, cv in list){
+			local l = i+si;
+			cmdviews[l].removeFromParent();
+			cmdviews[l] = cv;
+			cmdblock[l] = cv.cmd;
+			addChild( cv);
+			cv.setWidth( bnd.w-indent);
+		}
 		revalidate();
 	}
 

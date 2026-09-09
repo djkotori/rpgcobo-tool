@@ -1,0 +1,39 @@
+////////////////////////////////////////////////////////
+//   ParticleData
+////////////////////////////////////////////////////////
+parentcoord <- false
+currentgroup <- 0
+prof <- {"showbnd":[-0.185082,1.061625,0.589175,4.329721,4.490193,3.847546],"maxbnd":[0.012305,0.968002,-0.098693,4.891675,4.93597,4.560573],"showtime":1768,"wholebnd":[0.012305,0.968002,-0.098693,4.891675,4.93597,4.560573]}
+groups <- [
+	with ParticleGroupData(){
+		name = "GROUP1"
+		enabled = true
+		aimtype = 1
+		localcoord = false
+		emitter = with ParticleEmitter(){
+			num = 30
+			start = 0, start_spr = 0
+			life = 2000, life_spr = 0
+			posx = 0.0, posy = 0.0, posz = 0.0
+			pos_sprx = 0.0, pos_spry = 0.0, pos_sprz = 0.0
+			dirx = 0.0, diry = 0.0, dirz = 0.0
+			dir_sprx = 3.141592, dir_spry = 3.141592, dir_sprz = 0.0
+			linearbits = 0
+		},
+		shapetype = 0
+		shapedata = {"axis":0,"w":0.1,"h":0.1}
+		texture = ""
+		color = 0xffd800ff
+		blendmode = 2
+		blend = 1
+		tec = "pbr.basic"
+		Ka = 0x808080ff
+		Ks = 0x00000000
+		mod = [
+		{"vel":2.0,"classid":"ptcmod_vel","vel_spr":0.0},
+		]
+	},
+]
+actions <- [
+	{"acttype":"emitall","time":0}
+]

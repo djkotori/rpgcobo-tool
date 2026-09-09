@@ -95,7 +95,6 @@ module.dispatchAction( "editor_postload");
 
 ::rootview.updateMatrixAll( true);	//	umm??? 最初のバッファ描画で位置ずれ。最初の描画時にmatが正しくないため
 std.loadWorkspace( ::workspace);
-//std.callInEventThread( std.loadWorkspace, std, ::workspace);	//	こっちのほうが起動は早いがエディタのロードがごちゃっと表示される
 
 if( ::arguments.contains( "-reload")) newthread().start( @() Popups.showInfo( "$T.pop_relaunch"));
 if( ::workspace["iniwindow"]==0 && ::workspace["winsize"][2]) std.titlebar.view.findChild( "btn_winmax").setSelected( true);

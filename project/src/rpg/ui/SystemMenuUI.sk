@@ -25,6 +25,7 @@ local slotlistfn(){
 				php = sprintf( "%d/%d", p.HP, p.MAXHP)
 				memberlist = v.members.map( @( v)({ pc=v}))
 				time = "\uf25e%02d:%02d" % (sec/60,sec%60),
+				map = ::conf.map[v.mapid]["name"] || v.mapid;
 				data = v
 			};
 		}else{

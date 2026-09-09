@@ -753,7 +753,8 @@ class MapTools.tool_sel extends MapTool
 			{
 				if( e.count >= 2) return close();
 				local b = self.rayTestUp( e);
-				local hb = self.rayTest( e, BLK_SOLID);
+				local hb = self.rayTest( e, BLK_SOLID|BLK_LIQUID);
+				if( !hb) break;
 				if( b){
 					hb1.set( hb); p1.y = ~dyptr;
 					return dragy;

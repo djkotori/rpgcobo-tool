@@ -569,11 +569,15 @@ class MapEditor.MapClearDialog extends Dialog
 
 FileIcons["bw"] <- ("\uf11e",0x77ddddff)
 
+local hidedisable() !(::skstudio.editor instanceof DBEditorMacro) && !::skstudio.editor["modaledit"]
+
 with( skstudio){
 	registerMenu( { parentid="menu_edit", separator="*ui_map0", where=["editor_map"]});
-	registerMenu( { uid="editor_map_menu_edit_mapsize", parentid="menu_edit", lbl="$T.editor_map_menu_edit_mapsize", where=["editor_map"]});
-	registerMenu( { uid="editor_map_menu_edit_mapclear", parentid="menu_edit", lbl="$T.editor_map_menu_edit_mapclear", where=["editor_map"]});
-	registerMenu( { uid="editor_map_menu_edit_encount", parentid="menu_edit", lbl="$T.editor_map_menu_edit_encount", where=["editor_map"]});
+	registerMenu( { uid="editor_map_menu_edit_mapsize", parentid="menu_edit", lbl="$T.editor_map_menu_edit_mapsize", where=["editor_map"], hide=@() !!::skstudio.editor["modaledit"]});
+	registerMenu( { uid="editor_map_menu_edit_mapclear", parentid="menu_edit", lbl="$T.editor_map_menu_edit_mapclear", where=["editor_map"], hide=@() !!::skstudio.editor["modaledit"]});
+	registerMenu( { uid="editor_map_menu_edit_encount", parentid="menu_edit", lbl="$T.editor_map_menu_edit_encount", where=["editor_map"], hide=@() !!::skstudio.editor["modaledit"]});
+	//	↓マクロエディタでも使われる
+	registerMenu( { uid="editor_map_menu_edit_disable", parentid="menu_edit", lbl="$T.editor_map_menu_edit_disable", icon="\ue9c0", where=["editor_map","editor_db"], hide=hidedisable, defkey="^/"});
 	registerMenu( { parentid="menu_edit", separator="*ui_map1", where=["editor_map"]});
 	registerMenu( { uid="editor_map_menu_edit_mapgen", parentid="menu_edit", lbl="$T.lbl_mapgen", where=["editor_map"], disable=@() !::skstudio.editor["data"]});	//	アセットでは使用不能
 	

@@ -209,7 +209,7 @@ class SystemVarAccessor
 		{
 			key = "AVELV", name = "$T.lbl_level_avg", type = VAR_INT, readonly = true,
 			func = @( key, val=undefined){
-				local a = ::rpgstat.members.filter( @( v) !!v);
+				local a = ::rpgstat.members.filter( @( v) v);
 				return (a.reduce( @( v, x) v.LV+x, 0.0) / length( a) + 0.5) | 0;
 			}
 		},

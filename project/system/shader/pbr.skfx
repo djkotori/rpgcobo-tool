@@ -321,11 +321,13 @@ fs gblur
 		return float( texelFetch( uztex, iuv, 0).x) * v.z + v.w;	//	vz = positive
 	}
 
-	highp vec4 blurfunc( mediump ivec2 iuv, highp float z0, highp vec3 n0, inout highp float sumdot){
-		highp vec3 n = unpackn( texelFetch( gtex1, iuv, 0).x);
+	highp vec4 blurfunc( mediump ivec2 iuv, highp float r0, highp float z0, highp vec3 n0, inout highp float sumdot){
+		highp uint u1 = texelFetch( gtex1, iuv, 0).x;
+		highp float dr = float( (u1>>23u) & 63u) / 63.0 - r0; dr = dr*dr*20.0;
+		highp vec3 n = unpackn( u1);
 		highp float ddiff = (wvz( iuv) - z0) * SHARPEN;
-		highp float w = exp2( -0.0 - ddiff*ddiff);
-		sumdot += clamp( dot( n, n0), 0.0, 1.0);
+		highp float w = exp2( -0.0 - ddiff*ddiff - dr);
+		sumdot += clamp( dot( n, n0)+dr, 0.0, 1.0);
 		return vec4( n*w, w);
 	}
 	
@@ -333,18 +335,18 @@ fs gblur
 		const highp ivec2 d = ivec2( 1, 0);
 		highp ivec2 iuv = ivec2( gl_FragCoord.xy);
 		highp uint u1 = texelFetch( gtex1, iuv, 0).x;
+		highp float r0 = float( (u1>>23u) & 63u) / 63.0;
 		highp float z0 = wvz( iuv);
 		highp vec3 n0 = unpackn( u1);
 		highp vec4 nw = vec4( n0, 1.0);
 		highp float sumdot = 0.0;
-		nw += blurfunc( iuv-d.xy, z0, n0, sumdot);
-		nw += blurfunc( iuv+d.xx, z0, n0, sumdot);
-		nw += blurfunc( iuv+d.xy*2, z0, n0, sumdot);
-		nw += blurfunc( iuv-d.yx, z0, n0, sumdot);
-		nw += blurfunc( iuv+d.yx*2, z0, n0, sumdot);
+		nw += blurfunc( iuv-d.xy, r0, z0, n0, sumdot);
+		nw += blurfunc( iuv+d.xx, r0, z0, n0, sumdot);
+		nw += blurfunc( iuv+d.xy*2, r0, z0, n0, sumdot);
+		nw += blurfunc( iuv-d.yx, r0, z0, n0, sumdot);
+		nw += blurfunc( iuv+d.yx*2, r0, z0, n0, sumdot);
 		highp float variance = 1.0 - sumdot / 5.0;
-		highp float r0 = float( (u1>>23u) & 63u) / 63.0;
-		highp float r1 = sqrt( r0*r0 + variance*0.8);	//	roughToksvig
+		highp float r1 = sqrt( r0*r0 + variance*0.3);	//	roughToksvig
 		r1 = clamp( r1, 0.0, 1.0);
 		fragcolor = packn( normalize( nw.xyz/nw.w)) | (uint( r1*63.5)<<23u) | (u1&0xe0000000u);
 	}

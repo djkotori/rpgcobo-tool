@@ -1170,6 +1170,7 @@
 	"editor_map_menu_edit_fit_sels"		: {"ja":"選択をフィット", "en":"Fit Selection"}
 	"editor_map_menu_edit_to_asset"		: {"ja":"アセット化", "en":"To Asset"}
 	"editor_map_menu_edit_encount"		: {"ja":"エンカウントの設定", "en":"Encounting Setting"}
+	"editor_map_menu_edit_disable"		: {"ja":"コマンドの無効化・解除", "en":"Disable/Enable Commands"}
 	
 	//	ツール
 	"editor_map_tool"					: {"ja":"ツール選択", "en":"Tools"}
