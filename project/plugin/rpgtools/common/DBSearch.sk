@@ -70,6 +70,9 @@ class GotoDBSearch
 			if( sc >= 10000.0){
 				hlfunc( namelbl, val.name, k);
 			}else
+			if( sc >= 5000.0){
+				hlfunc( namelbl, val.id, k.toUpperCase());
+			}else
 			if( sc >= 0.0){
 				hlfunc( dirlbl, desc, k);
 			}

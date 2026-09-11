@@ -239,7 +239,7 @@ fs deferlighting
 
 technique deferlighting
 {
-	apilevel = 30;
+	apilevel = 30, 31;
 	tag = "2d pbr";
 	
 	//	deferred pass
@@ -256,7 +256,7 @@ technique deferlighting
 
 technique deferlighting_gi
 {
-	apilevel = 30;
+	apilevel = 30, 31;
 	tag = "2d pbr";
 	
 	//	deferred pass

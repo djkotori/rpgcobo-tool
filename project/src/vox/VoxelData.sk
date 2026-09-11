@@ -492,11 +492,15 @@ class VoxLoader
 	}
 	
 	function palette( bb){
+		local mtl = 0x01000000;
+		if( meta["mtl"]){	//	メタデータに"mtl"がセットされていた場合。LAYRはRGBAより手前ってのが前提。。。
+			mtl = Math.clamp( int( meta["mtl"]), 1, 127) << 24;
+		}
 		local p0 = bb.pos;
 		// local d = MD5.toDigest( bb, 256*4);
 		// if( palmap[d]) return palmap[d];
 		local p = VoxelPalette();
-		for( local l = 1;l <= 255;l ++){ p[l] = (bb.geti()&0xffffff)|0x01000000; }	//	マテリアルはこの時点では1固定
+		for( local l = 1;l <= 255;l ++){ p[l] = (bb.geti()&0xffffff)|mtl; }	//	マテリアルはこの時点では1固定
 		// palmap[d] <- p;
 		bb.pos = p0;	//	一戻し
 		return p;

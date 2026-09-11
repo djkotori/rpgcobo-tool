@@ -17,6 +17,7 @@ param pbrlighting
 	uniform highp vec3 iblsh[9] <id=IBLSH>;
 
 	uniform highp usampler2D shadowtex <id=SHADOWTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform highp vec4 shadowtexscale <id=SHADOWTEX_PIX>;
 	uniform highp vec4 shadow[12] <id=SHADOWPARAM>;	// [3+3*3]	(1-depth,1.0/zfar,1.0/raylen,coeffecient/zfar), (pa,pb,pc,pd), (near0, near1, near2, near3), uvz[0], uvz[1], uvz[2]
 
 	uniform highp vec4 fogp[6]<ID=FOGPARAMVEC>; 
@@ -99,34 +100,40 @@ fs pbrlighting
 	/////////////////////////////////////////////////////////////////////////////////
 	//	shadow common
 	
+	mediump float _bayer4( highp vec2 fp){
+		mediump ivec2 ip = ivec2( fp) & 3;
+		const mediump float f[16] = float[16]( 
+			0.031250, 0.531250, 0.156250, 0.656250,  0.781250, 0.281250, 0.906250, 0.406250, 
+			0.218750, 0.718750, 0.093750, 0.593750,  0.968750, 0.468750, 0.843750, 0.343750
+		);
+		return f[ip.y*4+ip.x];
+	}
+	
 	float calcshadow( in highp vec3 wvp, in highp float blk, in highp vec3 n){
 		$( SHADOWMAP){
-			const highp float ZOFFS = 0.2;
+			const highp float ZOFFS = 0.1;
 			highp float nl = dot( n, shadow[1].xyz)*0.5 + 0.5;
-			blk = pow( nl, 1.2) + blk;
+			blk = nl*nl + blk;
 			//
 			highp vec4 pos = vec4( wvp, 1.0);
 			highp float viewz = -wvp.z, coff = shadow[0].w, lightz = -dot( pos, shadow[1]);
-			highp vec2 uv;
-			// #define SHADOWUV( I) uv = vec2( dot( pos, shadow[3+I]), dot( pos, shadow[4+I])); highp vec4 zv = shadow[5+I]; highp float texz = float( texture( shadowtex, uv).x) * (1.0/65535.0) * zv.x + zv.y - ZOFFS;
-			//	XXXXXXX TOO slow with Angle compiler
-			// $( SHADOWMAP == 1){
-			// 	const mediump int i = 0;
-			// } : {
-			// 	$( SHADOWMAP == 2){
-			// 		mediump int i = 3*int( step( shadow[2].x, viewz));
-			// 	} : {
-			//		mediump int i = 3*int( step( shadow[2].x, viewz) + step( shadow[2].y, viewz));
-			// 	}
-			// }
-			// SHADOWUV( i)
 			mediump int i = 3*int( step( shadow[2].x, viewz) + step( shadow[2].y, viewz));
-			uv = vec2( dot( pos, shadow[3+i]), dot( pos, shadow[4+i])); highp vec4 zv = shadow[5+i]; highp float texz = float( texture( shadowtex, uv).x) * (1.0/65535.0) * zv.x + zv.y - ZOFFS;
-			//	
+			highp vec2 uv = vec2( dot( pos, shadow[3+i]), dot( pos, shadow[4+i])); highp vec4 zv = shadow[5+i];
+#if( APILV >= 31)
+			highp vec2 p = uv * shadowtexscale.zw, f = fract( p);
+			highp vec4 z = vec4( textureGather( shadowtex, floor( p)*shadowtexscale.xy, 0));
+			highp float texz = mix( mix( z.w, z.z, f.x), mix( z.x, z.y, f.x), f.y) * (1.0/65535.0) * zv.x + zv.y - ZOFFS;
+#else
+			// highp vec4 z = vec4(texture( shadowtex, uv + vec2(0.0, shadowtexscale.y)).x,
+			// 					texture( shadowtex, uv + shadowtexscale).x,
+			// 					texture( shadowtex, uv + vec2(shadowtexscale.x, 0.0)).x,
+			// 					texture( shadowtex, uv).x);
+			uv += _bayer4( gl_FragCoord.xy) * shadowtexscale.xy;
+			highp float texz = float( texture( shadowtex, uv).x) * (1.0/65535.0) * zv.x + zv.y - ZOFFS;
+#endif
 			highp vec2 uvc = floor( uv);	//	uv clamp check
 			highp float rate = clamp( exp( -coff * -(lightz - texz)) + dot( uvc, uvc), 0.0, 1.0);
 			highp float dark = clamp( mix( shadow[0].x+blk, 1.0, pow( viewz*shadow[0].y, 4.0)), 0.0, 1.0);
-			// if( uv.y <= 0.0) return 0.0;	//	?? assset preview
 			return mix( dark, 1.0, rate);
 		} : {
 			return 1.0;

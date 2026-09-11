@@ -404,6 +404,9 @@ class SKStudio extends SKView
 		case "btn_goforward":
 			moveEditor( e.src["name"] == "btn_goback" ? -1 : 1);
 			break;
+		case "btn_dbsearch":
+			ProjectSearchPopup.run( GotoDBSearch);	//	これRPG-Cobo専用じゃん
+			break;
 		}
 	}
 

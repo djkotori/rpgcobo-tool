@@ -138,7 +138,7 @@ fs vox
 		G g;
 		vec3 wv = v_wvpp.xyz / v_wvpp.w;
 		vec3 vv = -normalize( v_wvp.xyz);
-		g.n = normalize( v_n + vv*dot(wv, wv)*0.08);
+		g.n = normalize( v_n + vv*dot(wv, wv)*0.12);
 		$(COLORTEX1){
 			mediump mat4 m = mat4(
 				texelFetch( mtltex, ivec2( 0, mi), 0), 

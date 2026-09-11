@@ -325,7 +325,7 @@ class MessageText extends RichText
 				local tag = code[ci++][1];
 				switch( tag){
 				case ".": skipping = false; waitclk(); break;
-				case "p": skipping = false; waitclk(); pagebreak( l); break;	//	はみ出し直後にあるとスキップしたほうが良いかも
+				case "p": skipping = false; waitclk(); pagebreak( l-1); break;	//	はみ出し直後にあるとスキップしたほうが良いかも
 				case "<": case "=": case ">": charsleep = sleepbase*(sleepscales[tag]||100)/100; break;
 				}
 			}

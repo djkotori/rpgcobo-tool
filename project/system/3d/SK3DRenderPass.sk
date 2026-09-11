@@ -1325,6 +1325,27 @@ class reg.GBlurPass extends reg.ImagePassBase
 	}
 }
 
+//	Repair micro polygon holes pass
+//	
+class reg.RepairHolePass extends reg.ImagePassBase
+{
+	m = null;
+
+	function setupPass( r){
+		m = createMaterial( "pbrsprite.repairhole");
+		m.tex0 = r.findRenderTarget( "sdcolortex");
+		target = r.findRenderTarget( "hdcolortex");
+		m.blend = SK_PMAMIX;
+	}
+	
+	function performPass( r){
+		r.setRenderTarget( target, viewport);
+		skBindVertexBuffer( vtx);
+		local idx = r.currenttarget?ridx:fidx;
+		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);
+	}
+}
+
 //	Deferred PBRパスのライティングパス。
 //	必要な設定は予め全部やってるから単なるイメージパス？
 //	
@@ -1850,6 +1871,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	ssgipass = null;
 	ssspass = null;	
 	//	post process
+	repairholepass = null;	//	RepairHolePass : 
 	autoexppass = null;		//	AutoExposurePass : 最終のhdcolortexからLavgを取得。1フレーム遅延で露光パラメータを調整。自動露光オフでも一応作られる。
 	pbrpostpass = null;		//	PBRPostPass : ブルーム、DOF、ToneMapping。結果はsdcolortexに。
 	drawpass = null;		//	DrawImagePass : sdcolortexをアップスケールとかしつつ描画。
@@ -1865,6 +1887,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		basepass = reg.SceneRenderPass( {visiblemask:SK_VISIBLE_OPAQUE, target:"basefb", clearparam=[0,0,0,0,1]});
 		transpass = reg.SceneRenderPass( {visiblemask:SK_VISIBLE_TRANSPARENT, target:"transfb"});
 		decalpass = reg.SceneRenderPass( {visiblemask:SK_VISIBLE_DECAL|SK_VISIBLE_OVERLAY, target:"decalfb"});
+		repairholepass = reg.RepairHolePass( {});
 		autoexppass = reg.AutoExposurePass( exp);	//	exp共有。
 		pbrpostpass = reg.PBRPostPass( { postfx:p["postfx"], src:"hdcolortex", target:"sdcolortex" });
 		drawpass = reg.DrawToViewportPass( null);
@@ -1993,6 +2016,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 
 		////////////////////////////
 		//	ここからはforwardパスと同じ。。。。。
+		repairholepass?.performPass( r);
 		
 		//	auto exposure pass
 		autoexppass.performPass( r);

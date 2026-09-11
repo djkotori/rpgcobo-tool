@@ -349,6 +349,53 @@ technique buildhiz
 	}
 }
 
+///////////////////////////////////////////////////////////////////////
+//	repair hole noize
+
+param repairhole
+{
+	attribute highp vec4 in_pos <ID=POSITION>;
+	attribute highp vec2 in_uv <id=UV1>;
+	uniform highp usampler2D uztex <id=DEPTHTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform lowp sampler2D sdtex <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+
+	varying highp vec2 v_uv;
+	fragout mediump vec4 fragcolor;
+}
+
+fs repairhole
+{
+	void main(){
+		mediump vec4 pix = vec4( 0.0);
+		highp ivec2 uv = ivec2( gl_FragCoord.xy);
+		highp uint z = texelFetch( uztex, uv, 0).x;
+		const highp uint eps = 65221u;	//	z hole repairing
+		if( z >= 65521u){
+			highp int z0 = int( texelFetch( uztex, uv+ivec2(1,0), 0).x < eps);
+			highp int z1 = int( texelFetch( uztex, uv+ivec2(-1,0), 0).x < eps);
+			highp int z2 = int( texelFetch( uztex, uv+ivec2(0,1), 0).x < eps);
+			highp int z3 = int( texelFetch( uztex, uv+ivec2(0,-1), 0).x < eps);
+			if( z0+z1+z2+z3 >= 2){
+				vec3 c = texelFetch( sdtex, uv+ivec2(2,2), 0).xyz;
+				pix = vec4( tonemap_inv( toLinear( c)), 1.0); // pix = vec4( 1.0, 0.0, 0.0, 1.0);
+			}
+		}
+		fragcolor = pix;
+	}
+}
+
+technique repairhole
+{
+	apilevel = 30;
+
+	pass {
+		using colorspace, tonemapping;
+
+		param = repairhole;
+		vs = def;
+		fs = repairhole;
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 //	

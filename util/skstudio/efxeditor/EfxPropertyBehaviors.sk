@@ -419,6 +419,7 @@ class EfxCurveEditView extends SKView
 	div = 2;			//	2-8
 	val = null;			//	0.0-1.0
 	changed = false;
+	tipscale = 1.0;
 
 	//	sprite, textbox
 	backsp = null;		//	Sprite
@@ -531,7 +532,7 @@ class EfxCurveEditView extends SKView
 		switch( e.id){
 		case MOUSE_MOVED:
 			local i = xtoi( e.lx), v = ytov( e.ly);
-			tips = "%.2f" % v;
+			tips = "%.2f" % (v*tipscale);
 			break;
 		case MOUSE_PRESSED:
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -696,6 +697,7 @@ class PropertyBehaviors.EfxModTexAnime extends PropertyBehavior
 	
 	function setParam( v){
 		curv.setCurves( v.frame, 0.0, 10.0);
+		curv.tipscale = 10.0;
 	}
 
 	function paramevent( e){

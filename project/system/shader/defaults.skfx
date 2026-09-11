@@ -102,17 +102,17 @@ fs zblur
 			int i = int( v_uvmin.y * v_casnum);
 			highp vec4 dotzw = dotzwmat[i];
 			highp vec4 normz = normzmat[i];
-#if( APILV >= 31)
-			highp vec4 z0 = textureGather( ztex, v_uv+duv*vec2( -1.0, -1.0), 0);
-			highp vec4 z1 = textureGather( ztex, v_uv+duv*vec2(  1.0, -1.0), 0);
-			highp vec4 z2 = textureGather( ztex, v_uv+duv*vec2( -1.0,  1.0), 0);
-			highp vec4 z3 = textureGather( ztex, v_uv+duv*vec2(  1.0,  1.0), 0);
-			highp float zw = dot( z0, vec4( 1.0)) + dot( z1, vec4( 1.0)) + dot( z2, vec4( 1.0)) + dot( z3, vec4( 1.0));
-			zw = zw*(1.0/16.0) * 2.0 - 1.0;
-			highp float z = dot( vec2( zw, 1.0), dotzw.xy);
-			highp float w = dot( vec2( zw, 1.0), dotzw.zw);
-			pix = uint( ((z / w - normz.y) * normz.x) * 65535.0);
-#else
+// #if( APILV >= 31)
+// 			highp vec4 z0 = textureGather( ztex, v_uv+duv*vec2( -1.0, -1.0), 0);
+// 			highp vec4 z1 = textureGather( ztex, v_uv+duv*vec2(  1.0, -1.0), 0);
+// 			highp vec4 z2 = textureGather( ztex, v_uv+duv*vec2( -1.0,  1.0), 0);
+// 			highp vec4 z3 = textureGather( ztex, v_uv+duv*vec2(  1.0,  1.0), 0);
+// 			highp float zw = dot( z0, vec4( 1.0)) + dot( z1, vec4( 1.0)) + dot( z2, vec4( 1.0)) + dot( z3, vec4( 1.0));
+// 			zw = zw*(1.0/16.0) * 2.0 - 1.0;
+// 			highp float z = dot( vec2( zw, 1.0), dotzw.xy);
+// 			highp float w = dot( vec2( zw, 1.0), dotzw.zw);
+// 			pix = uint( ((z / w - normz.y) * normz.x) * 65535.0);
+// #else
 			//	OES3.0, WebGL2.0 quality>=1
 			highp float zw = 0.0;
 			for( int y = -1; y <= 1; y ++){
@@ -124,7 +124,7 @@ fs zblur
 			highp float z = dot( vec2( zw, 1.0), dotzw.xy);
 			highp float w = dot( vec2( zw, 1.0), dotzw.zw);
 			pix = uint( ((z / w - normz.y) * normz.x) * 65535.0);
-#endif	//	quality=0 no blur
+// #endif	//	quality=0 no blur
 			// highp float zw = texture( ztex, v_uv).x * 2.0 - 1.0;
 			// highp float z = dot( vec2( zw, 1.0), dotzw.xy);
 			// highp float w = dot( vec2( zw, 1.0), dotzw.zw);

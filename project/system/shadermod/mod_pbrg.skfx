@@ -122,7 +122,7 @@ fs unpackg
 
 	void unpackg_common( out G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1){
 		highp vec2 uv = wvpp.xy*0.5 + 0.5;
-		g.wvp = reconstructWVPtex( uztex, uv+0.0002, p1[0]);	//	0.0002 : nearest offset
+		g.wvp = reconstructWVPtex( uztex, uv+0.00002, p1[0]);	//	0.0002 : nearest offset
 		g.col = vec4( f0.xyz, 1.0);
 		g.gsel = f0.w;	//	irankedo...
 		g.n = normalize( unpackn( u1));
