@@ -967,13 +967,17 @@ class reg.SSGIPass extends reg.ImagePassBase
 //	
 class reg.SSShadowPass extends reg.ImagePassBase
 {
+	static tecnames = ["pbrsprite.ssshadow_normal","pbrsprite.ssshadow_normal","pbrsprite.ssshadow_quality"];
+
+
 	m0 = null;	//	compute
 	m1 = null;	//	blur x/y
 	midtex = null;			//	途中テクスチャ
 	
 	function setPassSetting( p){
 		super.setPassSetting( p);
-		m0 = createMaterial( "pbrsprite.ssshadow_normal");
+		local h = ::renderhint, q = Math.clamp( h["shadow_qua"], 0, 2);
+		m0 = createMaterial( tecnames[q]);
 		m0.miscmat0 = Matrix();
 		m0.miscmat1 = Matrix();
 		m1 = createMaterial( "pbrsprite.sssupsample");
@@ -984,6 +988,12 @@ class reg.SSShadowPass extends reg.ImagePassBase
 		local p = {w:VP_HALF,h:VP_HALF,fmt:SK_RGBA8};
 		midtex = r.findTempTarget( 100+p.fmt+p.w, p);
 		target = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_RGBA8});
+	}
+	
+	//	RenderHint設定が変わったら呼ばれる。
+	function updateRenderHint( h, r){
+		local q = Math.clamp( h["shadow_qua"], 0, 2);
+		m0.tec = skFXFindTechnique( tecnames[q]);
 	}
 
 	function performPass( r){
@@ -1955,6 +1965,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		}else{
 			g1tex2 = null;
 		}
+		ssspass?.updateRenderHint( h, r);
 		ssaopass?.updateRenderHint( h, r);
 		pbrpostpass.updateRenderHint( h, r);
 	}

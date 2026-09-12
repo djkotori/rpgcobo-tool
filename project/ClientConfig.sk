@@ -70,7 +70,7 @@ class ClientConfig
 	static renderhints = [
 		{ maxreso= 640, antialias=1, upscale=1, ssao_reso=0, ssao_qua=0, ssgi_reso=0, ssgi_qua=0, shadow_qua=0, blur_qua=0, pbr_qua=0 },
 		{ maxreso= 720, antialias=1, upscale=1, ssao_reso=0, ssao_qua=1, ssgi_reso=0, ssgi_qua=1, shadow_qua=1, blur_qua=1, pbr_qua=1 },
-		{ maxreso= 900, antialias=2, upscale=1, ssao_reso=0, ssao_qua=2, ssgi_reso=0, ssgi_qua=2, shadow_qua=2, blur_qua=2, pbr_qua=2 },
+		{ maxreso= 900, antialias=2, upscale=1, ssao_reso=0, ssao_qua=2, ssgi_reso=0, ssgi_qua=2, shadow_qua=1, blur_qua=2, pbr_qua=2 },
 		{ maxreso=1080, antialias=2, upscale=1, ssao_reso=1, ssao_qua=1, ssgi_reso=1, ssgi_qua=1, shadow_qua=2, blur_qua=2, pbr_qua=2 },
 		{ maxreso=2160, antialias=2, upscale=1, ssao_reso=1, ssao_qua=2, ssgi_reso=1, ssgi_qua=2, shadow_qua=2, blur_qua=2, pbr_qua=2 },
 	];

@@ -1934,14 +1934,28 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 		mdlid = data["mdlid"] || "EP000";
 		local restype = RPGResource.getResourceType( mdlid);
 		local res = ::conf._resource[restype][mdlid];
+		local id = res["pic3d"] || res["vox"];
 		local tex = null;
 		//	キャラの場合はどうしましょ
-		if( teximgcache[res.pic3d]){
-			local t = teximgcache[res.pic3d];
+		if( teximgcache[id]){
+			local t = teximgcache[id];
 			img = t.img;
 			tex = t.tex;
+		}else
+		if( res["vox"]){
+			local imgpreview = #BlockImagePreview( 128, 128);
+			local rp3d = RPG3DObject.create3DObject( {mdlid=mdlid});
+			rp3d.setDir( Math.PI);
+			tex = imgpreview.createImage( rp3d, SK_SRGBA8);
+			//	
+			img = RGBAImage( tex.width, tex.height);
+			local old = skGetRenderTarget();
+			skSetRenderTarget( tex);
+			skReadPixels( 0, 0, img.width, img.height, img);
+			skSetRenderTarget( old);
+			teximgcache[id] <- { img=img, tex=tex};
 		}else{
-			img = ::getResourceContent( res.pic3d);
+			img = ::getResourceContent( id);
 			local udiv = 1, vdiv = 1;
 			if( res["aniuv"]){
 				udiv = Math.max( 1, res.aniuv[0]);
@@ -1953,11 +1967,11 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 				img = pimg;
 			}
 			tex = Texture(); tex.load( img);
-			teximgcache[res.pic3d] <- { img=img, tex=tex};
+			teximgcache[id] <- { img=img, tex=tex};
 		}
-		local h = (1.0/4.0) * tex.height / RPG3DPicture.BASERESO * res.scale;	//	1m=200/8=25px : parentの幅が200pxなの前提。。。
+		local h = (1.0/4.0) * tex.height / RPG3DPicture.BASERESO * (res["scale"]||0.5);	//	1m=200/8=25px : parentの幅が200pxなの前提。。。
 		scale( h);
-		local gp = res.gndpos; //	"gndpos":[0.5,0.0]
+		local gp = res["gndpos"] || #(0.5,0.3); //	"gndpos":[0.5,0.0]
 		sp = Sprite( tex);
 		sp.shadersrc = skFXFindTechnique( "sprite.srgb").getShaderSource( 0);
 		sp.blend = SK_MIX;
@@ -1968,6 +1982,12 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 		bnd.set( -tex.width*gp[0], -tex.height*(1.0-gp[1]), tex.width, tex.height);
 		matdirty = true;
 		repaint();
+		//
+		local self = this;
+		tips = @(){
+			local d = self.getData();
+			return "%S (%.1f, %.1f)" % (data["name"], d.x, d.z);
+		}
 	}
 
 	function updateLayout(){
@@ -1976,6 +1996,11 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 	function setEnemyPos( x, z, cw){
 		pos( x, -z, 0.0).scale( cw/8.0).add( cw*0.5);
 		matdirty = true;
+	}
+
+	function getData(){
+		local cw = parent.bnd.w, ch = parent.bnd.h;
+		return  { id=enemyid, x=(pos.x/cw-0.5)*8.0, z=(pos.y/ch-0.5)*-8.0, };
 	}
 
 	//	pはローカル座標。

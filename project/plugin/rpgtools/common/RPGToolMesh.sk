@@ -520,14 +520,14 @@ class BlockImagePreview
 		return createImage( bw3d);
 	}
 	
-	function createImage( sk){
+	function createImage( sk, fmt=SK_RGBA8){
 		scn.addObject( sk);
 		sk.runMatrix( true);
 		scn.updateScene( 16);
 		//	 カメラ位置調整
 		fitCamera( sk.gbnd);
 		//	レンダリング実行
-		local dst = Texture(); dst.create( w, h, SK_RGBA8, 0);
+		local dst = Texture(); dst.create( w, h, fmt, 0);
 		local old = skSetRenderTarget( dst);
 		local a = (0, 0, w, h);
 		renderer.render( a);

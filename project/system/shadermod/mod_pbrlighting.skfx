@@ -131,8 +131,7 @@ fs pbrlighting
 			uv += _bayer4( gl_FragCoord.xy) * shadowtexscale.xy;
 			highp float texz = float( texture( shadowtex, uv).x) * (1.0/65535.0) * zv.x + zv.y - ZOFFS;
 #endif
-			highp vec2 uvc = floor( uv);	//	uv clamp check
-			highp float rate = clamp( exp( -coff * -(lightz - texz)) + dot( uvc, uvc), 0.0, 1.0);
+			highp float rate = clamp( exp( -coff * -(lightz - texz)), 0.0, 1.0);
 			highp float dark = clamp( mix( shadow[0].x+blk, 1.0, pow( viewz*shadow[0].y, 4.0)), 0.0, 1.0);
 			return mix( dark, 1.0, rate);
 		} : {

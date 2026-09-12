@@ -135,7 +135,10 @@ class TurnBattleRunner extends BattleRunnerBase
 		local autocharas = members.filter( @( v) !v.isCommandable()) ... enemies;	//	コマンドを選択出来ないパーティメンバー＋敵全員
 		foreach( pc in autocharas){
 			local cmds = chooseAutoCommands( pc);
-			if( cmds) cmdqueue ... cmds;
+			if( cmds){
+				pc.setSkill( cmds[0]["skill"]);
+				cmdqueue ... cmds;
+			}
 		}
 		//	素早さ等でコマンドをソート
 		cmdqueue.sort( @( v) v.order);

@@ -173,13 +173,14 @@ class RealtimeBattleRunner extends BattleRunnerBase
 	function turnReached( chr){
 		if( !chr.isCommandable() || enemies.contains( chr)){
 			local cmds = chooseAutoCommands( chr);
-			local d = rnd( 3, 8);
+			local d = rnd( 14, 22);		//	構え、発動まで多少時間
 			foreach( cmd in cmds){
 				cmd.order += (++d);		//	ちょっと後に実行。ただ、何もしない系だとすぐに発動しちゃう
 				cmd.flags |= 1;			//	ターン消費コマンドフラグ
 				insertCommand( cmd);
 				chr.cmdgauge = -1.0;	//	コマンド選択後は-1状態
 			}
+			chr.setSkill( cmds[0]["skill"]);
 		}
 	}
 	

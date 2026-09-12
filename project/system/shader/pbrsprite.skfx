@@ -93,12 +93,6 @@ vs extractbloom
 
 fs extractbloom
 {
-	mediump vec4 tex( highp vec2 uv){
-		mediump vec4 pix = texture2D( coltex, v_uv);
-		mediump float lumi = max( dot( pix.xyz, vec3(0.2125, 0.7154, 0.0721)), 0.001);
-		return pix * (sqrt( max( lumi+p1[0].x, 0.0)) / lumi * p1[0].y);
-	}
-
 	void main(){
 		highp vec4 pix = texture2D( coltex, v_uv);
 		highp float lumi = max( dot( pix.xyz, vec3(0.2125, 0.7154, 0.0721)), 0.001);
@@ -182,7 +176,7 @@ param dofblur
 fs dofblur
 {
 	void main(){
-		vec2 uv = v_uv.xy, d = p0[0].xy;
+		highp vec2 uv = v_uv.xy, d = p0[0].xy;
 		float coc = texture( coctex, v_uv.xy).x;
 		float R = coc * p0[0].z + 0.1, dx = R*2.0 / ceil( R*2.0);
 		float SIGMA = R * 0.7;
@@ -253,7 +247,7 @@ fs pbrmix
 		$(COLORTEX3 && COLORTEX4) {
 			float coc = texelFetch( coctex, uv, 0).x;
 			vec4 blur = texture( blurtex, v_uv);
-			float fgw = smoothstep( 0.05, 0.25, coc);	//	0.02 ~ 0.15
+			float fgw = smoothstep( 0.05, 0.28, coc);	//	0.02 ~ 0.15
 			pix = mix( pix, blur, fgw);
 		}
 		$(COLORTEX2) {
@@ -371,11 +365,11 @@ fs repairhole
 		highp uint z = texelFetch( uztex, uv, 0).x;
 		const highp uint eps = 65221u;	//	z hole repairing
 		if( z >= 65521u){
-			highp int z0 = int( texelFetch( uztex, uv+ivec2(1,0), 0).x < eps);
-			highp int z1 = int( texelFetch( uztex, uv+ivec2(-1,0), 0).x < eps);
-			highp int z2 = int( texelFetch( uztex, uv+ivec2(0,1), 0).x < eps);
-			highp int z3 = int( texelFetch( uztex, uv+ivec2(0,-1), 0).x < eps);
-			if( z0+z1+z2+z3 >= 2){
+			ivec4 d = ivec4( lessThan( ivec4( texelFetch( uztex, uv+ivec2(1,0), 0).x,
+											texelFetch( uztex, uv+ivec2(-1,0), 0).x,
+											texelFetch( uztex, uv+ivec2(0,1), 0).x,
+											texelFetch( uztex, uv+ivec2(0,-1), 0).x), ivec4( eps)));
+			if( d.x+d.y+d.z+d.w >= 2){
 				vec3 c = texelFetch( sdtex, uv+ivec2(2,2), 0).xyz;
 				pix = vec4( tonemap_inv( toLinear( c)), 1.0); // pix = vec4( 1.0, 0.0, 0.0, 1.0);
 			}
@@ -724,10 +718,10 @@ fs ssaoupsample
 		for( int y=-R; y<=R; y ++){
 			for( int x=-R; x<=R; x ++){
 				highp vec2 xy = vec2( x, y);
-				float ao = texture( aotex, uv+xy*texsc).r;
 				highp float z = wvz( uv+xy*texsc);
-				float ddiff = (z - z0) * SHARPEN;
+				highp float ddiff = (z - z0) * SHARPEN;
 				float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
+				float ao = texture( aotex, uv+xy*texsc).r;
 				sumao += ao * w;
 				sumw += w;
 			}
@@ -800,40 +794,36 @@ fs ssshadow
 		highp vec4 a = texelFetch( litprmtex, ivec2( 0, i), 0);
 		highp vec4 b = texelFetch( litprmtex, ivec2( 1, i), 0);
 		highp vec4 c = texelFetch( litprmtex, ivec2( 2, i), 0);
-		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.2);	//	z offset
+		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.25);	//	z offset
 		highp vec3 ldir = c.xyz;
 		highp vec3 d = lwvp - wvp;
 		highp vec3 l = normalize( d);
 		highp float dist = length( d);
 		if( dist >= a.w) return vec4( 1.0);
 		highp float atten = distatten( dist, a.w) * spotatten( ldir, l, b.w, c.w);
-		if( atten < 0.015) return vec4( 1.0);
-		float t = DT * (0.5+bayer4( gl_FragCoord.xy));     // 開始オフセット
-		float shadow = 1.0;
+		if( atten < THRS) return vec4( 1.0);
+		float t = DT * (0.2+bayer4( gl_FragCoord.xy));     // 開始オフセット
 		for( int i = 0; i < STEPCNT; i++) {
 			if( t > dist) break;
 			highp vec3 samplePos = wvp + l * t;
 			highp vec4 clip = pmat * vec4( samplePos, 1.0);
+			if( any( greaterThan( abs( clip.xy), clip.ww)) ) break;
 			highp vec2 suv = clip.xy / clip.w * vec2(0.5,-0.5) + 0.5;
-			if( any( bvec4( lessThan( suv, vec2( 0.0)), greaterThan( suv, vec2( 1.0))) )) break;
+			// highp vec2 fuv = floor( suv); if( dot( fuv, fuv) > 0.0) break;
 			highp vec3 scenePos = reconstructWVPtex( uztex, suv, p0[0]);
 			// 遮蔽判定（少しバイアスを入れて誤判定を減らす）
-			// float distScene = length( scenePos - wvp); if( distScene < t - 0.03) {	//	damekore
 			if( scenePos.z > samplePos.z+0.04 && scenePos.z < samplePos.z+2.0){
 				highp uint u1 = texture( gtex1, suv).x, u2 = texture( gtex2, suv).x;	//	自己発光チェック 2sample...
-				shadow = float( (u1>>29u)==0u && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
-				// shadow = 0.0;
-				break;
+				float shadow = float( (u1>>29u)==0u && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
+				float w = 1.0-atten, w3 = w*w;
+				int ch = int( fract( c.w) * 255.0) & 3;
+				vec4 p = vec4( 1.0); p[ch] = mix( shadow, 1.0, w3);
+				return p;
 			}
 			t += DT + t * DTT;	// 可変ステップ：距離に応じてステップ幅を増やす
 		}
-		float w = 1.0-atten, w3 = w*w;
-		int ch = int( fract( c.w) * 255.0) & 3;
-		vec4 p = vec4( 1.0); p[ch] = mix( shadow, 1.0, w3);
-		return p;
+		return vec4( 1.0);
 	}
-	
-	// #define PNTLIT1( I) { mediump uint i = I; if( i==0u){ break; } else { shadow *= computeSSS( i, wvp); } }
 
 	void main(){
 		highp vec3 wvp = reconstructWVPtex( uztex, v_uv.xy, p0[0]);
@@ -841,33 +831,28 @@ fs ssshadow
 		float foff = clamp(( max( fuv.x, fuv.y) - 0.45) * 20.0, 0.0, 1.0);
 		vec4 shadow = vec4( 1.0 - foff);
 		highp uvec2 u2 = texture( litidxtex, vec3( v_uv.xy, wvp.z*dirlit[2].w+dirlit[3].w)).xy;
-		//	XXXXXXX TOO slow with Angle compiler
-		// for(;;){
-		// 	PNTLIT1( u2[0]&1023u); PNTLIT1((u2[0]>>10u)&1023u); PNTLIT1( u2[0]>>20u); 
-		// 	PNTLIT1( u2[1]&1023u); PNTLIT1((u2[1]>>10u)&1023u); PNTLIT1( u2[1]>>20u); 
-		// 	break;
-		// }
 		uint ids[6] = uint[6]( u2[0] & 1023u, (u2[0] >> 10u) & 1023u, u2[0] >> 20u, u2[1] & 1023u, (u2[1] >> 10u) & 1023u, u2[1] >> 20u );
 		for( int k = 0; k < 6; k++) {
 			mediump uint i = ids[k]; if( i==0u){ break; } else { shadow *= computeSSS( i, wvp); }
 		}
-		// shadow = smoothstep( 0.0, 1.0, shadow);
 		fragcolor = vec4( shadow);
 	}
 }
 
 param ssshadow_normal
 {
-	const int STEPCNT = 9;
-	const float DT = 0.046;
-	const float DTT = 0.16;
+	const int STEPCNT = 10;
+	const float DT = 0.06;
+	const float DTT = 0.3;
+	const float THRS = 0.03;
 }
 
 param ssshadow_quality
 {
-	const int STEPCNT = 12;
+	const int STEPCNT = 15;
 	const float DT = 0.04;
-	const float DTT = 0.12;
+	const float DTT = 0.2;
+	const float THRS = 0.015;
 }
 
 technique ssshadow_normal
@@ -876,6 +861,19 @@ technique ssshadow_normal
 	
 	pass {
 		using ssshadow_normal, bayer, reconstwvp;
+
+		param = ssshadow;
+		vs = def;
+		fs = ssshadow;
+	}
+}
+
+technique ssshadow_quality
+{
+	apilevel = 30;
+	
+	pass {
+		using ssshadow_quality, bayer, reconstwvp;
 
 		param = ssshadow;
 		vs = def;
@@ -907,9 +905,9 @@ fs sssupsample
 	const int R = 2;
 	const float SIGMA = float( R) * 0.7;
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
-	const float SHARPEN = 5.0;
+	const float SHARPEN = 2.0;
 	
-	float wvz( highp vec2 uv){
+	highp float wvz( highp vec2 uv){
 		highp vec4 v = p0[1];
 		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
 	}
@@ -923,10 +921,10 @@ fs sssupsample
 		for( int y=-R; y<=R; y ++){
 			for( int x=-R; x<=R; x ++){
 				highp vec2 xy = vec2( x, y);
-				vec4 s = texture( ssstex, uv+xy*texsc);
 				highp float z = wvz( uv+xy*texsc);
-				float ddiff = (z - z0) * SHARPEN;
-				float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
+				highp float ddiff = (z - z0) * SHARPEN;
+				mediump float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
+				vec4 s = texture( ssstex, uv+xy*texsc);
 				sums += s * w;
 				sumw += w;
 			}

@@ -307,7 +307,10 @@ class RPGStage
 		local th = newthread();
 		local a = [th.call, th, func, ...varguments()];
 		~a;
-		subthreads .. th;
+		if( th.getState() == 2){	//	2=suspended
+			subthreads .. th;
+			return th;
+		}
 	}
 
 	//	保存用にこのステージの状態のスナップショットのRPGStageStateを取得する。
