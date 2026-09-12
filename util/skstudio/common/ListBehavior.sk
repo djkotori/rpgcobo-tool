@@ -883,10 +883,12 @@ class TreeBehavior extends ListBehavior
 
 function applyItemSort( list, e){
 	local a = e.actioncmd.from, to = e.actioncmd.to, way = e.actioncmd.way;
-	local ins = list[ list.indexOf( to) + Math.max( way, 0)];
+	local ins = list[ list.indexOf( to) + Math.max( way, 0)], len = length( list);
 	foreach( v in a){
+		if( v == ins) continue;
 		list.removeValue( v);
-		list[ ins?list.indexOf( ins) : length(list)] <- v;
+		local ii = ins?list.indexOf( ins) : len;
+		list[ii] <- v;
 	}
 	return list;
 }

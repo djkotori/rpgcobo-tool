@@ -27,7 +27,11 @@ local loadworkdata( wd){
 	foreach( path, v in wd["res"]){
 		local r = getResource( path);
 		if( r){
-			r.file = { load = @() v};	//	すごい
+			local f = r["file"];
+			r.file = {
+				load = @() v
+				refresh = @(){ if( f){ r.file = f; f.refresh(); }}
+			};
 		}
 	}
 }

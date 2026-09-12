@@ -166,7 +166,7 @@ class SettingMap
 		}
 		//	ここから組み立て。説明文、基本効果、オプションの3段階。
 		local sb = (#StringBuffer()).clear();
-		// if( prefix) sb .. prefix .. "\n"
+		if( prefix) sb .. prefix .. "\n"
 		switch( type){
 		case "item": case "skill":
 			sb .. "[U][-]";

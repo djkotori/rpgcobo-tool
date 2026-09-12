@@ -778,11 +778,11 @@ class ManualActionDialog extends UndoableDialog
 	function showCanvasContextMenu( e, hb){
 		local bits = ((sel3d instanceof RPG3DMapAsset) || (sel3d instanceof RPG3DGhost))?2:1, movpid = bits==2?"objmove":"move";
 		local ctxmenu = [
-			{ ...actiondefs.find( @( v) v.act==movpid), id="moveto", lbl="$T.lbl_movehere", icon="\uef3a", },
+			{ ...actiondefs.find( @( v) v.act==movpid), id="moveto", lbl="$T.lbl_movehere", icon="\uef3a", disable=!hb},
 			"-",
 			...actiondefs.map( @( v) (v.act=="move"||v.act=="objmove"||!(bits&v.bits))?undefined : {...v, lbl=v.name, id="cmd"}),
 			"-",
-			{ id="basepos", lbl="$T.lbl_setbasepos", icon="\ue88a", },
+			{ id="basepos", lbl="$T.lbl_setbasepos", icon="\ue88a", disable=!hb},
 		];
 		local m = MenuPopup.run( ctxmenu);
 		switch( m["id"]){

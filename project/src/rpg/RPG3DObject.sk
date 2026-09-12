@@ -830,11 +830,11 @@ class RPG3DObject extends SK3DObject
 	function objMoveTo( t){
 		local self = this, time = (0.0,);
 		local ease = RPGProperties.easinglist[t["easing"]]["func"] || ::Easing.presets[1];
-		local p1 = t.target;
+		local p1 = t.target, spd = t["spd"]||4.0;	//	0はまずいので4.0に強制
 		local r1 = t["rot"], dir1 = r1[0]*Math.DTOR, pitch1 = r1[1]*Math.DTOR, bank1 = r1[2]*Math.DTOR;
 		return @( dt){
 			self.matdirty = true;
-			local p0 = #Vector3D( self.pos), dur = #float( t["fade"] || p0.hypot( p1)/t.spd*1000);
+			local p0 = #Vector3D( self.pos), dur = #float( t["fade"] || p0.hypot( p1)/spd*1000);
 			local dr = #( deltadir( dir1, self.dir), deltadir( pitch1, self.pitch), deltadir( bank1, self.bank));
 			local w = (time[0]+=dt) / dur;
 			if( w >= 1.0){

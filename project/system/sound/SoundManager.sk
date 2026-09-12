@@ -529,7 +529,7 @@ class BGMThread
 		fadespeed = 1.0 / fadetime;
 		fadetype = 1;
 		if( thread){
-			if( snd) snd[SK_SND_GAIN] = 0;
+			snd[SK_SND_GAIN] = 0;
 		}else{
 			snd = mixer.ctx.createStreamSoundSource( ov.freq, ov.ch, SK_WAVE_SHORTLE, 44100 * 2 * ov.ch * 6);	//	freq, ch, bits
 			snd[SK_SND_GAIN] = vol * ::soundmanager.bgmvol;
@@ -576,21 +576,26 @@ class BGMThread
 		vol = v;
 		if ( snd) snd[SK_SND_GAIN] = vol * fadew * ::soundmanager.bgmvol;
 	}
+
+	//	デコード中の結果を破棄する
+	function flushDecoding(){
+		while( ov.isDecoding()){
+			suspend();
+			ov.getResult( wavbuf);
+		}
+	}
 	
 	function run(){
 		RESTART:
-		{
-			while( ov.isDecoding()){	//	RESTART時にデコード中だったら結果を破棄する
-				suspend();
-				ov.getResult( wavbuf);
-			}
-			local s  = param["startpoint"] ||  0;
-			local e  = param["endpoint"]   || -1;			//
-			local lp = param["looppoint"]  ||  0;			//	基本的にループは最初に戻る
-			ov.setRegion( s, e, lp);
-			loopend = 0x7fffffff;							//	一時的にループ判定を無視
-		}
 		try{
+			{
+				flushDecoding();
+				local s  = param["startpoint"] ||  0;
+				local e  = param["endpoint"]   || -1;			//
+				local lp = param["looppoint"]  ||  0;			//	基本的にループは最初に戻る
+				ov.setRegion( s, e, lp);
+				loopend = 0x7fffffff;							//	一時的にループ判定を無視
+			}
 			charge( 44100);									//	最初1秒分デコード
 			snd.play( mixer);								//	1秒分のバッファで再生開始。play指示からなる早で再生開始したい
 			loopend = snd[SK_SND_PCMTIME] + ov.pcmlength;	//	restart対応。ループの終わりの時間をここで指定
@@ -612,16 +617,16 @@ class BGMThread
 		}
 		playing = false;
 		thread = null;
-		if( snd) {	//	fadeoutで既に消えるかも
-			snd.stop();
-			snd = null;
-		}
+		snd.stop();
+		snd = null;
 	}
 
 	function runresume(){
 		try{
+			flushDecoding();
 			charge( 44100);									//	最初1秒分デコード
 			snd.play( mixer);								//	1秒分のバッファで再生開始。play指示からなる早で再生開始したい
+			pause( paused);
 			local t0 = skGetTime();
 			for( ;;){
 				local t1 = skGetTime(); updateFade( t1-t0); t0 = t1;
@@ -639,10 +644,8 @@ class BGMThread
 		}
 		playing = false;
 		thread = null;
-		if( snd) {	//	fadeoutで既に消えるかも
-			snd.stop();
-			snd = null;
-		}
+		snd.stop();
+		snd = null;
 	}
 }
 

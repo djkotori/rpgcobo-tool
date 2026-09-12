@@ -83,7 +83,7 @@ RPGSystem.ui ..
 	
 	props = [				//	
 		{ pid="storeid", lbl="$T.lbl_group", type=DATAID, datatype=["store"], filter=@( v) v.type==0, variable=1 },
-		{ pid="showmoney", lbl="$T.lbl_showmoney", type=BOOL, variable=1 },
+		{ pid="showmoney", lbl="$T.ui_info_money", type=BOOL, variable=1 },
 	],
 
 	defval = {
@@ -106,7 +106,7 @@ RPGSystem.ui ..
 				equipinfo = ""
 			}
 		};
-		RPGMain.showUI( { key="info_money"});
+		if( prms["showmoney"]) RPGMain.showUI( { key="info_money"});
 		local view = RPGMain.showView( vprms);
 		
 	SELECT:
@@ -141,7 +141,7 @@ RPGSystem.ui ..
 			goto SELECT;
 		}
 		view.actionAndDie( "hide");
-		RPGMain.showUI( { key="info_money", op="hide"});
+		if( prms["showmoney"]) RPGMain.showUI( { key="info_money", op="hide"});
 		view.waitAction();
 	}
 };
@@ -170,8 +170,8 @@ RPGSystem.ui ..
 			local typekey = ["items","weapons","armors",];	//	"keyitems"は無し
 			local a = ::rpgstat[typekey[type]];
 			return a.map( @( v, i) v ? {
-				lbl=v.iconname(), _name="i"..i, item=v, rlbl=@() v.num>1 ? v.num : "",
-			} : { lbl="", _name="i"..i, rlbl="", item=null});
+				lbl=v.iconname(), _name="i"..i, item=v, rlbl=@() v.num>1 ? v.num : "", sellprice=v.data.price/2,	//	売却価格
+			} : { lbl="", _name="i"..i, rlbl="", item=null, sellprice=0});
 		}
 		local view = RPGMain.showView({
 			uipath = "menu_item.ui"
@@ -192,7 +192,7 @@ RPGSystem.ui ..
 			focus = "i0"
 		});
 		local setdesc( v){
-			view.setValue( "desclbl", v["item"]? RPGSystem.getDescription( v.item, "$T.sellprice  \uf25f"..commanum( v.item.data.price/2)) : "");
+			view.setValue( "desclbl", v["item"]? RPGSystem.getDescription( v.item, "$T.sellprice  \uf25f"..commanum( v.sellprice)) : "");
 		}
 		local remakelist(){
 			local a = makelist( ~tabptr);
@@ -244,7 +244,7 @@ RPGSystem.ui ..
 				key = "dialog_buyitem"
 				itemid = selitem.item.dataid
 				sell = true
-				price = selitem.item.data.price / 2
+				price = selitem.sellprice
 			});
 		} else {
 			if( RPGMain.showUI({
@@ -257,6 +257,7 @@ RPGSystem.ui ..
 				backop = 2
 			}) == 0){
 				b = true;
+				::rpgstat.money += selitem.sellprice;
 				rpgstat.reduceItem( selitem.item);
 				::playSound( "SE003");
 			}
@@ -318,7 +319,7 @@ RPGSystem.ui ..
 			list = _list;
 			uipath = null
 			backop = 2
-			focus = "i0"
+			focus = _list[0]["_name"] || "i0"
 		}
 		return RPGMain.showUI( prms);
 	}

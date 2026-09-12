@@ -965,7 +965,7 @@ class RPGEventRunner
 			local ev = this;
 			_setstopfunc( "restorebgm", @(){
 				bgm.fadeout( 400);
-				(::soundmanager.currentbgm = oldbgm).fadein( 400);	//	頭から再生してるなー
+				(::soundmanager.currentbgm = oldbgm)?.fadein( 400);	//	頭から再生してるなー
 			});
 		}else{
 			_removestopfunc( "restorebgm");

@@ -84,7 +84,7 @@ class RPGStage
 	paused = false;		//	bool : true時にはイベントも3Dオブジェクトも時間が進まなく止まった状態になる。描画も止まる。
 	ctrlock = false;	//	bool : mainevent実行時には必ず立つ？
 	stepw = 0.0;		//	float : 歩数カウントの端数を入れておく。1mで1歩にするため。
-	encinc = 10.0;		//	float : encntrateの50%~200%。1歩(1m)毎にENCOUNTERに加算されていき、100.0になったらエンカウント。1.0の場合は100mでエンカウント。
+	encinc = 10.0;		//	float : encntrateに乗算される60%~200%。1歩(1m)毎にENCOUNTERに加算されていき、100.0になったらエンカウント。1.0の場合は100mでエンカウント。
 
 	timescale = 1.0;	//	float : ステージ内の3Dモデルのタイムスケール。イベント、UI、ScreenEffectなどには適用されない。
 	envcoltime = 0;
@@ -267,7 +267,7 @@ class RPGStage
 
 	//	エンカウント増加値を計算。
 	function calcEnc(){
-		return ::rnd( 0.25, 1.0) * (map["encntrate"]||0.0) * 0.5;
+		return ::rnd( 0.3, 1.0) * 0.5;
 	}
 
 	//	※dt短いとフレーム数がかさんで時間が無駄に伸びる。
@@ -601,7 +601,7 @@ class RPGStage
 				foreach( m in ::rpgstat.members){
 					m?.spendSteps( c);
 				}
-				if( (::rpgvar.ENCOUNTER += c*encinc) >= 100.0){
+				if( (::rpgvar.ENCOUNTER += c*encinc*(map["encntrate"]||0.0)) >= 100.0){
 					encinc = calcEnc();		//	次のエンカウントまでの増加値を再計算
 					::rpgvar.ENCOUNTER = 0.0;
 					raiseEncounter();

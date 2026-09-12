@@ -144,7 +144,7 @@ dictprops .. { category = 3, key = "nomoney", lbl = "お金が足りない", def
 
 dictprops .. { category = 3, key = "noitems", lbl = { ja = "何も持っていない！", en = "I don't have anything!" } };
 dictprops .. { category = 3, key = "stealfail", lbl = { ja = "盗めなかった…", en = "Failed to steal..." } };
-dictprops .. { category = 3, key = "stealok", lbl = { ja = "$v を盗んだ！", en = "Stealed $v!" } };
+dictprops .. { category = 3, key = "stealok", lbl = { ja = "ITEM を盗んだ！", en = "Stealed ITEM!" }, defval = { ja = "$v を盗んだ！", en = "Stealed $v!" } };
 
 //	dictpropsのdefval又はlblを、dictの初期値として設定する。この辞書はdict.jsonによって上書きされる。
 local registerDict(){
