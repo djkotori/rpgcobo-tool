@@ -29,6 +29,14 @@ local mdlprop = {
 		}
 		return true;
 	}
+	set= @( prop, data, val){
+		data.mdlid <- val;
+		if( val=="CE000"){
+			data.mdl <- { r=[0.0,0.5,0.0,0.5,0.5,0.5] };
+		}else{
+			delete data.mdl;
+		}
+	}
 }
 
 //	移動アクション

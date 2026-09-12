@@ -669,22 +669,26 @@ class SK3DEventGizmo extends SK3DObject
 		data = ev;
 		canvas = c;
 		mask = 255;
-		if( ev["mdl"]["r"]){	//	ポータルは大きさを変化させられる
-			local r = Rect3D( ev.mdl.r) * Vector3D( 2.0); r.expand( -0.01);	//	IRect3D化するときにデカくなる。。。。。
-			setRect( IRect3D( r));
-		}else
-		if( ev["mdl"]["fbuid"]){	//	ドアはFreeBlockの大きさに
-			fbrot = true;
-			local fb = FreeBlock.create({fbtype:ev.mdl.fbtype, fbparam:ev.mdl.fbparam});
-			local r = fb.br;
-			setRect( fb.br);
-		}else{
-			setRect( IRect3D( -1, 0, -1, 2, 2, 2));
-		}
+		fbrot = !!ev["mdl"]["fbuid"];	//	ドアはFreeBlockの大きさに
+		setRect( getModelBR( ev["mdl"]));
 		updateModel();
 		setState( 0);
 		setBlockPosition( ev.pos);
 		updateMatrix();
+	}
+
+	function getModelBR( m){
+		if( m["r"]){	//	ポータルは大きさを変化させられる
+			local r = Rect3D( m.r) * Vector3D( 2.0); r.expand( -0.01);	//	IRect3D化するときにデカくなる。。。。。
+			return IRect3D( r);
+		}else
+		if( m["fbuid"]){	//	ドアはFreeBlockの大きさに
+			local fb = FreeBlock.create({fbtype:m.fbtype, fbparam:m.fbparam});
+			local r = fb.br;
+			return fb.br;
+		}else{
+			return IRect3D( -1, 0, -1, 2, 2, 2);
+		}
 	}
 
 	function addedToScene( scn){
@@ -826,6 +830,11 @@ class SK3DEventGizmo extends SK3DObject
 			updateMatrix();
 			light.setMatrix( gmat.mult34( light.ref.mat, m_1));
 		}
+	}
+
+	function updateBlockRect(){
+		local ir = getModelBR( data["mdl"]);
+		if( ir <> br) setRect( ir);
 	}
 
 	function setBlockRect( evr){

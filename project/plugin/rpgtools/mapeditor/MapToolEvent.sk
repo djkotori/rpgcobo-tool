@@ -600,7 +600,7 @@ class MapTools.tool_event extends MapTool
 			return { id="color", val=i, lbl="Color"..i, icon=v.icon};
 		});
 		local rot = gz.data.pos[3]|0;
-		local dirlist = #[
+		local dirlist = [
 			{ id="rot", lbl="↑", val=0, checked=rot==0 },
 			{ id="rot", lbl="→", val=1, checked=rot==1 },
 			{ id="rot", lbl="↓", val=2, checked=rot==2 },
@@ -615,8 +615,9 @@ class MapTools.tool_event extends MapTool
 			//
 			ctxmenu = [
 				{ id="edit", lbl="$T.lbl_edit", icon="\ue745", modkey="Enter"},
+				{ id="size", lbl="$T.lbl_sizing", icon="\ue3c2", disable=!data["mdl"]["r"]},
+				{ id="rot", lbl="$T.lbl_direction", icon="\ue55d", submenu=dirlist, disable=data["mdl"]["fbuid"]},
 				{ id="color", lbl="$T.lbl_color", icon=evcolorlist[data.col].icon, submenu=colmenu},
-				{ id="rot", lbl="$T.lbl_direction", submenu=dirlist, disable=data["mdl"]["fbuid"]},
 				...( rolemenu && ["-",...rolemenu] ),
 				"-"
 				{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d" },
@@ -653,6 +654,29 @@ class MapTools.tool_event extends MapTool
 		case "tocustom":
 			toCustomEvent( gz);
 			break;
+		case "size":
+			showResizeEvent( e, gz);
+			break;
+		}
+	}
+
+	function showResizeEvent( e, gz){
+		local propdef = {
+			name="$T.lbl_sizing", icon="\ue3c2",
+			props = [ { pid="size", lbl="$T.lbl_sizing", type=VEC2, range=(1,16), ui="x" } ]
+		};
+		local data = gz.data, r = data.mdl.r;
+		local r0 = [int(r[3]*2), int(r[5]*2)]; 
+		local ret = PropertyEditPopup.run( null, propdef, { size=r0 });
+		if( ret && ret.size <> r0){
+			local r1 = clone r;
+			r1[3] = ret.size[0] * 0.5;
+			r1[5] = ret.size[1] * 0.5;
+			local self = this, olddata = gz.data;
+			local redo = [@(){ data.mdl.r = r1; gz.updateBlockRect(); }];
+			local undo = [@(){ data.mdl.r = r;  gz.updateBlockRect();  }];
+			editor.submitOp( redo, undo, null);
+			refresh();
 		}
 	}
 
@@ -685,8 +709,8 @@ class MapTools.tool_event extends MapTool
 		}
 		if( newdata && newdata <> gz.data){
 			local self = this, olddata = gz.data;
-			local redo = [@(){ gz.data = tb[gz.id] = newdata; gz.updateModel(); }];
-			local undo = [@(){ gz.data = tb[gz.id] = olddata; gz.updateModel(); }];
+			local redo = [@(){ gz.data = tb[gz.id] = newdata; gz.updateBlockRect(); gz.updateModel(); }];
+			local undo = [@(){ gz.data = tb[gz.id] = olddata; gz.updateBlockRect(); gz.updateModel(); }];
 			if( isnew){
 				editor.mergeOp( redo, undo, null);
 			}else{
@@ -711,8 +735,8 @@ class MapTools.tool_event extends MapTool
 			if( newdata && newdata <> gz.data){
 				local tb = editor.data.event;
 				local self = this, olddata = gz.data, gz = gz;
-				local redo = [@(){ gz.data = tb[gz.id] = newdata; gz.updateModel(); }];
-				local undo = [@(){ gz.data = tb[gz.id] = olddata; gz.updateModel(); }];
+				local redo = [@(){ gz.data = tb[gz.id] = newdata; gz.updateBlockRect(); gz.updateModel(); }];
+				local undo = [@(){ gz.data = tb[gz.id] = olddata; gz.updateBlockRect(); gz.updateModel(); }];
 				editor.submitOp( redo, undo, null);
 				refresh();
 			}
