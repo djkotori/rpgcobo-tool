@@ -1404,7 +1404,7 @@ class RPGStageEventRunner extends RPGEventRunner
 			}
 			return false;
 		case 5:	//	中に入る。イベントの判定内にプレイヤーの中心位置が完全に含まれているか。ポータルや透明イベント
-			r_0.set( p.pos.x, p.pos.y+0.25, p.pos.z, 0.4, 0.01, 0.4);	//	プレイヤーの幅が0.4と決め打ちして、十分中に入ったといえる幅
+			r_0.set( p.pos.x, p.pos.y+0.25, p.pos.z, 0.38, 0.01, 0.38);	//	プレイヤーの幅が0.4と決め打ちして、十分中に入ったといえる幅。0.38にして少しマージン
 			return r_0.insideof( e["evinbnd"] || er);	//	ドアの場合は判定が内側にずれてる
 		case 6:	//	スポーン時実行。
 			return !spawnandran;

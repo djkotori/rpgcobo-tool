@@ -1127,8 +1127,8 @@ class RPGStageState extends Serializable
 				if( v != undefined) statmap[prop.pid] <- v;
 			}
 			estatmap = null;	//	イベント状態をリセット
-			foreach( v in dynassets){	//	動的アセットをリセット。parmaなものは残す
-				if( !v["parma"]) removei;
+			foreach( i, v in dynassets){	//	動的アセットをリセット。parmaなものは残す
+				if( !v["parma"]) dynassets[i] = null;
 			}
 			env = {};
 		}

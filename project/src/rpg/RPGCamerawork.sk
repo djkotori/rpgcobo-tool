@@ -2,7 +2,7 @@ import VirtualKeyCode;
 import ModifiersMask;
 import MoveScreenFlags;
 
-local v_1 = Vector3D(), v_2 = Vector3D(), v_3 = Vector3D();
+local v_1 = Vector3D(), v_2 = Vector3D(), v_3 = Vector3D(), v_4 = Vector3D(), m_0 = Matrix(), p_0 = Plane();
 
 //	移動時やイベント時のカメラワークを定義。平行プロジェクションは無し。
 //	カメラワーク間でトランジションが可能。
@@ -48,6 +48,7 @@ class RPGCameraworkStandard extends RPGCamerawork
 	target = null;			//	フォーカス対象ID。プレイヤー、特定のイベント、
 	roffs = null;			//	回転オフセット。dataから与えられる。※マップのカメラ回転からの相対回転。
 	poffs = null;			//	位置オフセット。dataから与えられる。カメラ方向の相対位置。
+	mapplanes = null;		//	マップ範囲の4面
 
 	toloc = null;			//	現在のカメラ焦点位置。poffs加味済み。
 
@@ -57,7 +58,7 @@ class RPGCameraworkStandard extends RPGCamerawork
 	cammot = null;			//	CameraMotion : 
 
 	gy = 0.0;				//	
-	gytime = 0;			//	
+	gytime = 0;				//	
 
 	constructor( d){
 		data = d;
@@ -102,17 +103,54 @@ class RPGCameraworkStandard extends RPGCamerawork
 			gytime = 0;
 			gy = tgtloc.pos.y;
 		}
-		to( toloc);
+		local ref = adjustMapBounds( stage);
+		to( toloc).add( ref);
+	}
+
+	function adjustMapBounds( stage){
+		local d = focaldist();
+		local m = m_0.identity().translate( toloc).rotate( hpb).translate( 0.0, 0.0, -d);
+		//	4面に押し出されたベクトルをtoに反映
+		local ref = v_2( 0.0), loc0 = v_3( toloc);
+		local sy = zoom*0.5, sx = sy * stage.cam.aspect, s = sx*0.6+sy*0.4;	//	s:球の半径
+		ref.add( _pushplane( loc0, v_1( -s, 0, 0).rotate( hpb).scale(1,0,1)));
+		ref.add( _pushplane( loc0, v_1(  s, 0, 0).rotate( hpb).scale(1,0,1)));
+		ref.add( _pushplane( loc0, v_1( 0, 0, -s).rotate( hpb).scale(1,0,1)));
+		ref.add( _pushplane( loc0, v_1( 0, 0,  s).rotate( hpb).scale(1,0,1)));
+		return ref;
+	}
+	
+	function _pushplane( loc0, v){
+		local n = v_4( v).normalize();
+		foreach( p in mapplanes){
+			if( p.dot( n) > -0.7071) continue;
+			local t = p.getIntersectTime( loc0, v);
+			if( t > 0.0 && t < 1.0){	//	引っかかるのは1面のみ
+				t = Math.sqrt( t);
+				v.scale( -1+t);
+				return v;
+			}
+		}
 	}
 	
 	//	ワープや場面切り替えでカメラを最新の位置に回復させるときに呼び出す。
 	function recover( stage){
+		//	mapplanes計算
+		local bw = stage.bw, r = bw.w*0.25, s = bw.h*0.25, t = bw.d*0.25;
+		local b = Rect3D( r, s, t, r, s, t);
+		mapplanes = [
+			Plane().setParam( 1,0, 0, b.x-b.r, 0, b.z),
+			Plane().setParam(-1,0, 0, b.x+b.r, 0, b.z),
+			Plane().setParam( 0,0, 1, b.x, 0, b.z-b.t),
+			Plane().setParam( 0,0,-1, b.x, 0, b.z+b.t),
+		];
 		local tgtloc = stage.getLocation( target);
 		toloc( poffs).rotate( -hpb[0], 0, 0).add( tgtloc.pos);	//	カメラの中心にリセット
 		to( toloc);
 		gy = tgtloc.pos.y;
 		gytime = 1000;
 		update( stage, 1);
+		toloc( to);		//	tolocを現在カメラ焦点に設定。adjustMapBoundsも反映される
 	}
 }
 

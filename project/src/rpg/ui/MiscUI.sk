@@ -73,7 +73,7 @@ RPGSystem.ui ..
 			}
 		}
 		//	習得能力
-		local skillslbl = ::RPGSystem.getOptionDescription( newopts);
+		local skillslbl = ::RPGSystem.getOptionDescription( newopts, true);
 		if( skillslbl=="") skillslbl = "$T.none"
 		//
 		local vprms = {

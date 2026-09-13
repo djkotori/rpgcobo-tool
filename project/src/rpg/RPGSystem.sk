@@ -254,13 +254,17 @@ class SettingMap
 	}
 
 	//	オプション配列の説明を返す。
-	function getOptionDescription( opds){
+	function getOptionDescription( opds, nl=false){
 		local sb = (#StringBuffer()).clear();
 		foreach( i, opd in opds){
 			local opt = ::RPGSystem.option[opd.opttype];
 			if( !opd["hide"] && opt["info"]){
-				// if( !i) sb .. "　";
-				sb .. "\u0002\uf7c0" .. ~(opt.info, opd) .. "\u0003";	//	制御コードで改行を禁止
+				if( nl){
+					if( i) sb .. "\n";
+					sb .. ~(opt.info, opd);
+				}else{
+					sb .. "\u0002\uf7c0" .. ~(opt.info, opd) .. "\u0003";	//	制御コードで改行を禁止
+				}
 			}
 		}
 		return string( sb);
@@ -286,7 +290,7 @@ class SettingMap
 		local sb = (#StringBuffer()).clear();
 		foreach( i, e in ::conf.type.elem){
 			local v = edr[i];
-			sb .. e.icon .. (v ? sprintf( "[%S]%+2d", v<0?"D":"U", Math.clamp( v, -99, 99)):"[N]  0");
+			sb .. e.icon .. (v ? sprintf( "[%S]%S%2d",v<0?"D":"U", !v?" ":v<0?"-":"+" ,Math.min( Math.abs( v), 99)):"[N]  0");
 			sb .. (i%colnum==colnum-1 ? "\n" : " ");
 		}
 		return string( sb);
@@ -297,7 +301,7 @@ class SettingMap
 		local sb = (#StringBuffer()).clear();
 		foreach( i, c in ::conf.type.resistg){
 			local v = cdr[i];
-			sb .. c.icon .. (v ? sprintf( "[%S]%+2d", v<0?"D":"U", Math.clamp( v, -99, 99)):"[N]  0");
+			sb .. c.icon .. (v ? sprintf( "[%S]%S%2d",v<0?"D":"U", !v?" ":v<0?"-":"+" ,Math.min( Math.abs( v), 99)):"[N]  0");
 			sb .. (i%colnum==colnum-1 ? "\n" : " ");
 		}
 		return string( sb);

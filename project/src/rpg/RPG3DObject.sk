@@ -1184,16 +1184,8 @@ class RPG3DDoor extends RPG3DObject
 		bw.placeFreeBlock( fbtype, fbparam, #(4,4,4,0), 111);	//	4,4,4のオフセット, fbuid=111で配置。前のやつは消える
 		bci.setFlagMask( BLK_SOLIDFB);	//	ドア開閉部分のみの形状を取得
 		//	BlockColiderInterfaceから直接頂点配列を取れる。頂点はダブってるのでconvexcloudを作る際に最適化が必要
-		local pts = bci.collectPoints( cr, #[], Matrix.fromTranslate( -2, -2+fb.br.h/2*0.5, -2));
+		local pts = bci.collectPoints( cr, #[], Matrix.fromTranslate( -2, -2, -2));
 		return doorshpcache[k] <- b3Shape.createConvexCloud( pts, true);
-	}
-
-
-	//	※ドア部分のコリジョンバウンディングをboxにする
-	//	シェイプIDがx0,x1。
-	static function getDoorShape2( fbtype, fbparam){
-		local r = bci.collectPointsBounds( cr, #[], Matrix.fromTranslate( -2, -2+fb.br.h/2*0.5, -2));
-		return b3Shape.createBox( r.r, r.s, r.t);	//	r.x,r.y,r.zのオフセットも必要。。。
 	}
 	
 	function anime2( t){

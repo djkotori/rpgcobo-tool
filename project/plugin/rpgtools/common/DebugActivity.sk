@@ -279,9 +279,15 @@ class DebugSession
 
 	//	
 	function printLines(){
+		local sb = #StringBuffer();
+		sb.clear();
+		local c = 0;
 		for( local li; li = popen.readLine();){
-			printf( "::: %S\n", li.trim());
+			sb .. ":::" .. li.trim() .. "\n";
+			c++;
+			if( c >= 100) break;
 		}
+		printf( "%S", string( sb));
 	}
 
 	///////////////////////////////////////////////////////////////////
