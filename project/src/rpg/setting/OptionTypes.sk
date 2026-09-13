@@ -432,6 +432,19 @@ RPGSystem.option .. {
 	//	no hooks
 };
 
+//	プレイ時だとMenuBehaviorは無い。。。
+local _finditem( ma, fn){
+	foreach( m in ma){
+		if( m["submenu"]){
+			local ma = fget( m, "submenu");
+			m = _finditem( ma, fn);
+			if( m) return m;
+		}else{
+			if( fn( m)) return m;
+		}
+	}
+}
+
 //	バトルコマンド設定。〇
 //	※このオプションはフック関数は無い。RPGPlayer.updateScoreMapで集計される
 //	指定したバトルコマンドを、指定したスロットに設定する。
@@ -446,10 +459,10 @@ RPGSystem.option .. {
 	info = @(){	//	this==opd
 		local k = battlecmd;
 		local ma = RPGProperties.battlecmdlist();
-		local bc = MenuBehavior._finditem( ma, @( v) k==v["val"]);
+		local bc = _finditem( ma, @( v) k==v["val"]);
 		if( slot == 100){
 			local k = replace;
-			local pc = MenuBehavior._finditem( ma, @( v) k==v["val"]);
+			local pc = _finditem( ma, @( v) k==v["val"]);
 			return  iconlblstr( pc) .. " ⇒ " .. iconlblstr( bc);
 		}else{
 			return iconlblstr( bc);
@@ -1386,7 +1399,7 @@ RPGSystem.option .. {
 			local as = rp3d.manuaction.act( @(){
 				wait( EFX);
 				if( opd["efx"]){ efx( opd.efx); wait( EFX); }
-				popdamage( v);
+				popdamage( Math.abs( v), v>0 ? 0x77ff77ff : 0xffffffff);
 				self.addPoint( DamageTypePID[opd.dmgtype], v*(opd.dmgtype&1?-1:1));	//	dieCheckを後でしないといけない
 			});
 			// countrem( self, cmd, opd["countrem"]);	//	cmdないな
