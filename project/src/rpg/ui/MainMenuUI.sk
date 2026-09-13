@@ -582,7 +582,7 @@ RPGSystem.ui ..
 					::playSound( "SE003");
 				}else
 				if( e["name"] == "besteq"){
-					besteq( p0); besteq( p1); swapequips( orgeqs, p0.equips); orgeqs.clear()...p0.equips;
+					besteq( p0); swapequips( orgeqs, p0.equips); orgeqs.clear()...p0.equips; besteq( p1);
 					::playSound( "SE003");
 				}else{
 					::playSound( "SE001");
