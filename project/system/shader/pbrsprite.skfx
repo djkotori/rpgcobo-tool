@@ -794,30 +794,29 @@ fs ssshadow
 		highp vec4 a = texelFetch( litprmtex, ivec2( 0, i), 0);
 		highp vec4 b = texelFetch( litprmtex, ivec2( 1, i), 0);
 		highp vec4 c = texelFetch( litprmtex, ivec2( 2, i), 0);
-		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.25);	//	z offset
-		highp vec3 ldir = c.xyz;
+		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.2+a.w*0.02);	//	z offset
 		highp vec3 d = lwvp - wvp;
-		highp vec3 l = normalize( d);
 		highp float dist = length( d);
 		if( dist >= a.w) return vec4( 1.0);
-		highp float atten = distatten( dist, a.w) * spotatten( ldir, l, b.w, c.w);
+		highp vec3 l = normalize( d);
+		highp float atten = distatten( dist, a.w) * spotatten( c.xyz, l, b.w, c.w);
 		if( atten < THRS) return vec4( 1.0);
 		float t = DT * (0.2+bayer4( gl_FragCoord.xy));     // 開始オフセット
 		for( int i = 0; i < STEPCNT; i++) {
 			if( t > dist) break;
 			highp vec3 samplePos = wvp + l * t;
 			highp vec4 clip = pmat * vec4( samplePos, 1.0);
-			if( any( greaterThan( abs( clip.xy), clip.ww)) ) break;
+			if( any( greaterThan( abs( clip.xy), clip.ww)) ) break;		//	viewport check1
 			highp vec2 suv = clip.xy / clip.w * vec2(0.5,-0.5) + 0.5;
-			// highp vec2 fuv = floor( suv); if( dot( fuv, fuv) > 0.0) break;
-			highp vec3 scenePos = reconstructWVPtex( uztex, suv, p0[0]);
+			// highp vec2 fuv = floor( suv); if( dot( fuv, fuv) > 0.0) break;	//	viewport check2
+			highp float scz = -(float( texture( uztex, suv+0.0002).x) * p0[0].z + p0[0].w);	//	reconstruct only z	//	highp vec3 scenePos = reconstructWVPtex( uztex, suv, p0[0]);
 			// 遮蔽判定（少しバイアスを入れて誤判定を減らす）
-			if( scenePos.z > samplePos.z+0.04 && scenePos.z < samplePos.z+2.0){
+			if( scz > samplePos.z+0.04 && scz < samplePos.z+2.0){
 				highp uint u1 = texture( gtex1, suv).x, u2 = texture( gtex2, suv).x;	//	自己発光チェック 2sample...
 				float shadow = float( (u1>>29u)==0u && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
-				float w = 1.0-atten, w3 = w*w;
+				float w = 1.0-atten; w *= w; w *= w;
 				int ch = int( fract( c.w) * 255.0) & 3;
-				vec4 p = vec4( 1.0); p[ch] = mix( shadow, 1.0, w3);
+				vec4 p = vec4( 1.0); p[ch] = mix( shadow, 1.0, w);
 				return p;
 			}
 			t += DT + t * DTT;	// 可変ステップ：距離に応じてステップ幅を増やす
