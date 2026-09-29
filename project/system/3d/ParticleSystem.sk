@@ -182,6 +182,7 @@ class ParticleGroupData
 	blend = SK_MIX;			//	int : 
 	blendmode = 5;			//	5:TRANS DECAL
 	tec = null;				//	string|null
+	hsv = null;				//	HSV adjustment
 	overlay = 0.0;			//	bool
 	cullface = SK_CCW;
 	
@@ -288,6 +289,12 @@ class ParticleGroupData
 		if( setmaterial && tec){
 			local t = skFXFindTechnique( tec);
 			if( t) m.tec = t;
+		}
+		if( hsv[0] || hsv[1] || hsv[2]){
+			local hv = Math.lerp( -Math.PI, Math.PI, hsv[0]/360.0+0.5);
+			local sv = Math.lerp( 0.0, 2.0, hsv[1]/200.0 + 0.5);
+			local vv = Math.lerp( 0.0, 2.0, hsv[2]/200.0 + 0.5);
+			m.colormat = Matrix.fromHSV( hv, sv, vv);
 		}
 		if( overlay){
 			// m.depthtest = SK_ALWAYS;

@@ -205,7 +205,7 @@ class SettingMap
 				if( c[0]/3) sb .. "％";
 			}
 		}else{	//	アイテム
-			sb .. "必ず消費";
+			sb .. "$T.consume_always";
 		}
 		return string( sb);
 	}

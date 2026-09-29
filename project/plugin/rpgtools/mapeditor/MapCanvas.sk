@@ -984,6 +984,9 @@ class SK3DMarkerGizmo extends SK3DObject
 		case 3: m.Kmul = 0xffffffff; break;
 		}
 	}
+
+	function updateBlockRect(){
+	}
 }
 
 class SK3DInimapGizmo extends SK3DMarkerGizmo

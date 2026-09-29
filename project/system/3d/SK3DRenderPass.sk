@@ -365,6 +365,10 @@ class reg.DrawImagePass extends reg.ImagePassBase
 		local idx = r.currenttarget?ridx:fidx;
 		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);
 	}
+	
+	function setSource( t){
+		m.tex0 = t;
+	}
 }
 
 //	
@@ -570,6 +574,10 @@ class reg.BlurImageDrawPass extends reg.DrawImagePass
 		skBindVertexBuffer( vtx);
 		local idx = r.currenttarget?ridx:fidx;
 		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);
+	}
+
+	function setSource( t){
+		blurpass.m[0].tex0 = t;
 	}
 }
 
@@ -1137,6 +1145,11 @@ class reg.DrawToViewportPass extends reg.ImagePassBase
 
 	function setColorMatrix( m){
 		cmat = m;
+	}
+
+	function setSource( t){
+		if( aapass) aapass.m.tex0 = t;
+		drawpass.m.tex0 = t;
 	}
 }
 
@@ -2035,6 +2048,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		pbrpostpass.performPass( r);
 		decalpass.performPass( r);		//	最後にやる
 		local dst = r.weatherPassBC( sdcolortex);
+		drawpass.setSource( dst);
 		drawpass.performPass( r);
 		//
 		r.env.passfilter = 255;

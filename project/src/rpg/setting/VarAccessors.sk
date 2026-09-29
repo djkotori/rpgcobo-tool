@@ -44,31 +44,31 @@ local idxaccess( self){
 	}
 }
 
-local varaccsfunc( storage, vartype, defval){
+local varaccsfunc( tbfunc, vartype, defval){
 	switch( vartype){
 	case VAR_BOOL:
 		return @( key, val=undefined){
-			local a = ::rpgstat[storage]; return (val==undefined) ? !!( fget( a, key) ?? defval) : a[key]<-!!( val);
+			local a = tbfunc(); return (val==undefined) ? !!( fget( a, key) ?? defval) : a[key]<-!!( val);
 		}
 	case VAR_INT:
 		return @( key, val=undefined){
-			local a = ::rpgstat[storage]; return (val==undefined) ? int( fget( a, key) ?? defval) : a[key]<-int( val);
+			local a = tbfunc(); return (val==undefined) ? int( fget( a, key) ?? defval) : a[key]<-int( val);
 		}
 	case VAR_FLOAT:
 		return @( key, val=undefined){
-			local a = ::rpgstat[storage]; return (val==undefined) ? float( fget( a, key) ?? defval) : a[key]<-float( val);
+			local a = tbfunc(); return (val==undefined) ? float( fget( a, key) ?? defval) : a[key]<-float( val);
 		}
 	case VAR_STRING:	//	VARIABLE型なので'から始まっている
 		return @( key, val=undefined){
-			local a = ::rpgstat[storage]; return (val==undefined) ? string( fget( a, key) ?? defval).substring( 1) : a[key]<-"'"..string( val);
+			local a = tbfunc(); return (val==undefined) ? string( fget( a, key) ?? defval).substring( 1) : a[key]<-"'"..string( val);
 		}
 	case VAR_SCRIPT:
 		return @( key, val=undefined){
-			local a = ::rpgstat[storage]; return (val==undefined) ? ::compilestring_c( fget( a, key) ?? defval) () : 0;	//	スクリプトには代入不可？
+			local a = tbfunc(); return (val==undefined) ? ::compilestring_c( fget( a, key) ?? defval) () : 0;	//	スクリプトには代入不可？
 		}
 	default:	//	any
 		return @( key, val=undefined){
-			local a = ::rpgstat[storage]; return (val==undefined) ? (fget( a, key) ?? defval) : a[key]<-val;
+			local a = tbfunc(); return (val==undefined) ? (fget( a, key) ?? defval) : a[key]<-val;
 		}
 	}
 }
@@ -91,7 +91,16 @@ class GlobalVarAccessor
 		}
 		local v = ::conf.gvar[key];
 		if( !v) return null;
-		return varaccsfunc( "gvarmap", v.type, v.defval);
+		if( v["shared"]){
+			local fn = varaccsfunc( @() ::sharedstat.gvarmap, v.type, v.defval);
+			return @( key, val=undefined){
+				local ret = fn( key, val);
+				::sharedstat.dirty += (val!=undefined);	//	値セット時は共有状態が変更されたとみなす
+				return ret;
+			}
+		}else{
+			return varaccsfunc( @() ::rpgstat.gvarmap, v.type, v.defval);
+		}
 	}
 
 	//	ツール用。一覧表示するためのリストを表示。
@@ -180,7 +189,7 @@ class QueryVarAccessor
 }
 
 local makesvar( t){
-	t.func <- varaccsfunc( "svarmap", t.type, "defval" in t ? t.defval : false);
+	t.func <- varaccsfunc( @() ::rpgstat.svarmap, t.type, "defval" in t ? t.defval : false);
 	return t;
 }
 
@@ -336,7 +345,7 @@ class SystemVarAccessor
 //	
 class ButtonVarAccessor
 {
-	name = "ボタン状態";
+	name = "$T.var_button";
 	icon = "\uf80b"
 	varbits = 16
 
@@ -421,8 +430,9 @@ RPGSystem.varaccs .. QueryVarAccessor({
 	name: "$T.qvar_enemy",
 	dbname = "enemy",
 	getfunc = @( varname){
-		local v = ::rpgstat.globals.collection[dataid];
-		return v["num"] || 0;
+		local dataid = varname.substring( 4);
+		local v = ::rpgstat.discovermap[dataid];
+		return v["defeat"] || 0;	//	倒した数
 	},
 });
 RPGSystem.varaccs .. ButtonVarAccessor();

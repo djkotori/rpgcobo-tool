@@ -1411,6 +1411,7 @@ r << r2          // 代入
 ```javascript
 Transform()                                 // 初期状態
 Transform(x, y, z)                          // 位置のみ指定
+Transform(tx,ty,tz,sx,sy,sz,rx,ry,rz,rw)    // 位置・スケール・回転を指定
 Transform(transform)                        // コピー
 Transform([tx,ty,tz,sx,sy,sz,rx,ry,rz,rw])  // 配列から
 ```
@@ -1514,6 +1515,27 @@ TransformTimeline()
 - `result` (Transform, オプション): 結果の格納先
 
 **戻り値**: `Transform`オブジェクト
+
+#### 静的メソッド
+
+##### `TransformTimeline.create( tb)`
+TransformTimelineをtableを元に作成します。
+
+**引数**:
+- `tb` (table): `{time:Transform,...}` 時間と対応するTransformのマップ
+
+**戻り値**: 作成された`TransformTimeline`オブジェクト
+
+**例**:
+```javascript
+local tb = {
+   [0] = Transform(),
+   [5] = Transform(),
+   [10] = Transform()
+};
+
+local tfline = TransformTimeline.create( tb);
+```
 
 ---
 

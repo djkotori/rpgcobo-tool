@@ -25,6 +25,7 @@ class emojinode
 	size = 0;
 	w = 0;
 	h = 0;
+	f = 0;
 	
 	submap = null;
 	
@@ -45,7 +46,7 @@ class emojinode
 	function toJSON(){
 		local t = { cp = cp};
 		// if( emidx >= 0){ t.idx <- emidx}
-		if( size){ t.offs <- offs; t.size <- size; t.w <- w; t.h <- h; }
+		if( size){ t.offs <- offs; t.size <- size; t.w <- w; t.h <- h; if( f) t.f <- f; }
 		if( submap){
 			local sa = (t.nexts <- []);
 			foreach( n in submap){
@@ -86,7 +87,11 @@ class emojimake
 	//	1f1f8-1f1f9.png, 1f3ca-1f3fb-200d-2642-fe0f.png のようなファイルがくる
 	//	
 	function addEmoji( f){
-		local str = f.name.substring( 0, length( f.name)-4);	//	.pngを消す
+		local fn = f.name, flags = 0;
+		if( fn.startsWith( "w_")){
+			flags = 1; fn = fn.substring( 2);
+		}
+		local str = fn.substring( 0, length( fn)-4);	//	.pngを消す
 		local n = rootemoji, cp = 0;
 		for( ;;){
 			local i = str.indexOf( '-');
@@ -105,10 +110,11 @@ class emojimake
 		n.size = bb.size;
 		n.w = img.width;
 		n.h = img.height;
+		n.f = flags;
 		databuf.putBuffer( bb);
 		bb.dispose();
 		//
-		printf( "emoji %S   %S\n", f.name, n.emidx);
+		printf( "emoji %S   %S flags %S\n", f.name, n.emidx, flags);
 	}
 	
 	

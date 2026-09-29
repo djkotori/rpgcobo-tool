@@ -41,7 +41,7 @@ class RPGEventCompiler
 		parseblock( cmdblock, false);
 		//	hb,sbを結合してコンパイル
 		hb .. sb .. "}";
-		printf( "COMPILE EVENT COMMAND BLOCK\n%S\n", hb);
+		// printf( "COMPILE EVENT COMMAND BLOCK\n%S\n", hb);
 		local fn = hb.compile( srcname)();	//	※ここでエラーが起きる場合はどのコマンドでコンパイルエラーが起きたかわかるように。
 		if( fn["setOuters"]){	//	空メソッドはnclosureになっちゃう
 			fn.setOuters( [locals]);	//	outers[0]をlocalsに置換。まれに[0]が無い場合もあるが問題なし。
@@ -915,7 +915,7 @@ class RPGEventRunner
 	function showEffect( cmd){
 		local p = getWho3D( cmd["who"]);
 		if( !p) return;
-		local e = p.effect( { id=cmd.efxid, });
+		local e = p.effect( { id=cmd.efxid, pos=cmd["pos"] });
 		if( cmd["wait"] && e["efx"]["waittime"]){
 			sleep( e.efx.waittime);
 		}
@@ -1251,11 +1251,12 @@ class RPGStageEventRunner extends RPGEventRunner
 		local dt = 100;	//	100msごとにリポップ条件をチェック
 		for( ;;){
 			local v = evar["_depop"], b = false;
-			if( (v["ptime"] && (v["ptime"]<=rpgvar.PTIME) <= 0)){ b = true; }
+			if( v["ptime"] && v["ptime"]<=rpgvar.PTIME){ b = true; }
 			if( !b && v["remapid"] && v["remapid"]!=rpgvar.REMAPID) b = true;
 			if( !b && v["reqs"] && ::reqchk( v["reqs"], this)) b = true;
 			if( b){
-				if( !v["outcam"] || !stage.cam.isInside( v_0( spawnpos), 2.0)){	//	outcam=trueの時は画面内に入ってる場合はリポップしない
+				v_0( spawnpos);
+				if( !v["outcam"] || !stage.cam.isInside( v_0, 2.0)){	//	outcam=trueの時は画面内に入ってる場合はリポップしない
 					delete evar["_depop"];
 					//	αフェード実行のためにページをセット
 					if( !stage.ctrlock && spawnDistantCheck( v_0)){
@@ -1264,7 +1265,7 @@ class RPGStageEventRunner extends RPGEventRunner
 						if( rp3d){
 							switch( v["fadein"]){
 							case 1: rp3d.addModifier( OpacityFadeModifier( rp3d, {opacity=[0.0,1.0], fade=600})); break;
-							case 2: rp3d.addModifier( BlinkModifier( rp3d, 5, 600)); break;
+							case 2: rp3d.addModifier( BlinkModifier( rp3d, 8, 600)); break;
 							}
 							if( v["efxid"]) rp3d.effect( { id=v["efxid"], });
 							sleep( 500);	//	すぐ動き出さないためのsleepいるかな～～
@@ -1459,7 +1460,8 @@ class RPGStageEventRunner extends RPGEventRunner
 
 //	自動実行マクロイベント用のrunner。
 //	マップ移動時に毎回初期化され、条件が合えば実行。実行終了後は動作は停止し、再びマップ移動したときに条件チェックから実行を始める。
-//	※UIやオプション等でマクロ実行を直指定して実行した場合もこのrunnerが一時的に生成されて実行される。
+//	※UIやオプション等でマクロ実行を直指定して実行した場合(RPGStage.startMacro)もこのrunnerが一時的に生成されて実行される。
+//	　この時、同じmacroidのrunnerが同時に複数実行されることもある。
 //	
 class RPGMacroEventRunner extends RPGEventRunner
 {
@@ -1523,11 +1525,4 @@ class RPGMacroEventRunner extends RPGEventRunner
 			thread.wakeup( dt);
 		}
 	}
-}
-
-//	メインメニュー表示時にrpgstage.maineventに設定されるダミーのEventRunner。
-//	自動マクロのrunatmenuが有効なものは例外的にこのrunnerがmaineventに設定されているときに上書きして実行可能。
-//	
-class RPGMenuEventRunner extends RPGEventRunner
-{
 }

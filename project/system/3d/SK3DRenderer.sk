@@ -360,20 +360,16 @@ class SK3DRenderer
 		local w = foweather["w"] || 0.0;
 		if( foweather["weather"]["performPassB"]) foweather.weather.performPassB( this, w);
 		if( weather["performPassB"]) weather.performPassB( this, 1.0-w);
-		//
 		if( !weather["performPassC"] && !foweather["weather"]["performPassC"]) return src;
-		//	ピンポン的にバッファに描画。最後に出力したバッファを最終描画のソースにする
+		//	performPassCはピンポン的にバッファに描画。最後に出力したバッファを最終描画のソースにする
 		local dst = findTempTarget( src.params.w+123812, src.params);
 		if( foweather["weather"]["performPassC"]){
+			foweather.weather.performPassC( this, w, src, dst);
 			local tmp = src; src = dst; dst = tmp;
 		}
 		if( weather["performPassC"]){
-			foweather.weather.performPassC( this, w, src, dst);
-			src = dst;
-		}
-		weather?.performPassA( this, 1.0-w);
-		if( weather["performPassC"]){
-			foweather["weather"]?.performPassC( this, w, src, dst);
+			weather.performPassC( this, w, src, dst);
+			local tmp = src; src = dst; dst = tmp;
 		}
 		return src;
 	}

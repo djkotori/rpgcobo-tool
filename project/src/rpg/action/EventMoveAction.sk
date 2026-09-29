@@ -81,7 +81,10 @@ class RandomMoveAction extends EventMoveAction
 			stopped = true;
 		}
 		//	メインイベント中はランダム移動なし
-		if( rpgstage.mainevent) return;
+		if( rpgstage.mainevent){
+			if( stopped) rp3d.anime2( {id="stand"});	//	メインイベント実行時には立ち状態にする
+			return;
+		}
 		//
 		updateActionBody( dt);
 		if( stopped && !mvfunc) rp3d.anime2( {id="stand"});	//	止まったうえで追加のmvfuncが来なかったらstand
@@ -90,13 +93,15 @@ class RandomMoveAction extends EventMoveAction
 	function updateActionBody( dt){
 		if( (nexttime-=dt) > 0) return;
 		nexttime = 2000;
+		local spd = evpage["movespd"] ?? evdata["movespd"] ?? 1.0;
+		if( spd <= 0.01) return;	//	移動速度がほぼゼロなら移動しない。立ち状態
 		local tp = randomPoint();
 		if( tp){
 			rp3d.dir = aimdir( rp3d.pos, tp);
 			rp3d.anime2( {id="walk"});
 			mvfunc = rp3d.walkTo({
 				target = tp,
-				spd = evpage["movespd"] ?? evdata["movespd"] ?? 1.0,
+				spd = spd,
 			}) ( dt);	//	1回目の呼び出しも行う！
 		}
 	}
@@ -107,7 +112,7 @@ class RandomMoveAction extends EventMoveAction
 		local p0 = rp3d.pos;
 		for( local l = 0;l < 4;l ++){
 			local dir = rnd.nextf( 0.0, Math.PI2);
-			local len = rnd.nextf( 0.5, 1.5);
+			local len = rnd.nextf( 1.0, 2.0);
 			local p1 = v_0( 0, 0, len).rotate( dir, 0, 0).add( p0);
 			if( rp3d.walkTest( p0, p1)) return Vector3D( p1);
 		}
@@ -130,7 +135,6 @@ class RandomMoveAction extends EventMoveAction
 }
 
 //	うろうろしつつ索敵範囲に入ったら追いかけてくるアクション。
-//	対象に触れたら一定時間静止。
 //	
 class ChaseMoveAction1 extends RandomMoveAction
 {
@@ -189,6 +193,82 @@ class ChaseMoveAction1 extends RandomMoveAction
 		return Vector3D( p1);
 	}
 }
+
+//	うろうろしつつ索敵範囲に入ったら逃げるアクション。
+//	逃走範囲は索敵距離*1.1+1m
+//	
+class EscapeMoveAction1 extends RandomMoveAction
+{
+	movespd0 = 3;			//	ランダム移動時の速度
+	searchrad = 4;			//	索敵半径
+	movespd1 = 5;			//	逃げ時の速度
+
+	chasing = -100;			//	>0の場合は追跡中。<0の場合は索敵中。
+	t0 = 0;
+	
+	constructor( p){
+		super( p);
+		t0 = skGetTime();
+	}
+
+	function updateActionBody( dt){
+		local t = skGetTime(), rdt = Math.min( t-t0, 1500); t0 = t;	//	実際のdtを取得
+		local tgt = rpgstage.player3d;			//	ターゲットは常にplayer
+		local r = tgt.pos.hypot( rp3d.pos);
+		if( chasing > 0){	//	chasing時は索敵距離外に行ったら-dtする
+			if( r >= searchrad*1.1+1){	//	範囲外に逃げたら逃走終了
+				chasing = -1000;
+				local dir = aimdir( rp3d.pos, tgt.pos);
+				rp3d.anime2( #{id="stand"});
+				mvfunc = rp3d.standBy({ time=100, dir=dir}) ( dt);	//	1回目の呼び出しも行う！
+			}else{
+				local tp = escapePoint( tgt);
+				if( tp){
+					rp3d.dir = aimdir( rp3d.pos, tp);
+					rp3d.anime2( #{id="dash"});
+					mvfunc = rp3d.walkTo({
+						target = tp,
+						spd = rp3d["event"]["page"]["movespd1"] || evdata["movespd1"] || 1,
+					}) ( dt);	//	1回目の呼び出しも行う！
+				}else{
+					chasing = -1000;
+					local dir = aimdir( rp3d.pos, tgt.pos);
+					rp3d.anime2( #{id="stand"});
+					mvfunc = rp3d.standBy({ time=100, dir=dir}) ( dt);	//	1回目の呼び出しも行う！
+				}
+			}
+		}else{
+			local dd = ::deltadir( ::aimdir( rp3d.pos, tgt.pos), rp3d.dir);	//	ターゲットを視野に捉えている(+-90°)
+			if( r <= 5.0 && Math.abs( dd) <= Math.PI*0.6){
+				chasing += rdt;
+				if( chasing >= 0){
+					chasing = 5000;	//	この値調整できるように
+				}
+			}else{
+				chasing = Math.max( chasing, -100);
+				//	索敵外の場合のみランダム移動判定。
+				super.updateActionBody( dt);
+			}
+		}
+	}
+	
+	//	tgtから遠ざかるように位置取得。1m程度の距離で区切る。
+	//	移動経路上に障害物があれば位置を調整する。
+	function escapePoint( tgt){
+		local p0 = rp3d.pos;
+		local dir = aimdir( tgt.pos, p0);	//	逆方向に向ける
+		local len = 1.0;
+		local p1 = v_0( 0, 0, len).rotate( dir, 0, 0);	//	この時点ではベクトル
+		local ref = rp3d.moveTest( p0, p1);	//	ちょい重いこれ
+		if( ref && ref.length() > 0.1){
+			//	障害物がある場合は逃げる方向を調整
+			return null;	//	移動先が無かったらnullを返す
+		}
+		p1.add( p0);
+		return Vector3D( p1);
+	}
+}
+
 
 class HideMoveAction extends EventMoveAction
 {
@@ -308,6 +388,19 @@ RPGSystem.moveaction .. {
 		{ ...movespdprop, lbl="$T.lbl_movespd($T.lbl_normal)", defval=2},
 		{ pid="searchrad", lbl="$T.lbl_searchrad", type=SCALAR, ui="bar", range = (0,20), defval=5, },
 		{ ...movespdprop, pid="movespd1", lbl="$T.lbl_movespd($T.lbl_chase)", defval=3},
+	]
+}
+
+RPGSystem.moveaction .. {
+	key = "escape"
+	name = "$T.move_escape"
+	icon = "\ueb9b"
+	desc = ""
+	cls = EscapeMoveAction1
+	props = [
+		{ ...movespdprop, lbl="$T.lbl_movespd($T.lbl_normal)", defval=2},
+		{ pid="searchrad", lbl="$T.lbl_searchrad", type=SCALAR, ui="bar", range = (0,20), defval=5, },
+		{ ...movespdprop, pid="movespd1", lbl="$T.lbl_movespd($T.move_escape)", defval=3},
 	]
 }
 

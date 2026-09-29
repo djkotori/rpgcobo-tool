@@ -1,0 +1,132 @@
+import VirtualKeyCode;
+import GamepadButtonCode;
+import PropertyType;
+import RPGPropertyType;
+
+////////////////////////////////////////////////////////////////////////////////////
+//	MiscUI.sk いろいろ
+//	
+
+//	クリック待ちをするUI。右下にクリック待ちの表示を入れる
+//	
+RPGSystem.ui ..
+{
+	key = "misc_waitclick"
+	lbl = "$T.ui_misc_waitclick"
+	type = "misc"			//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
+	icon = "\ue5d3"
+	
+	props = [],
+	defval = {},
+
+	uifunc = @( prms){
+		local vprms = {
+			layer = "message",
+			uipath = "misc_waitclick.ui",
+			name = "misc_waitclick",
+			action = "show",
+			pos = { bottom=40, right=80}
+			...prms,
+		};
+		local view = RPGMain.showView( vprms);
+		RPGMain.waitClick();
+		view.actionAndDie( "hide");
+	}
+};
+
+::levelup_showpids <- ["MAXHP","MAXMP","PATK","MATK","PDEF","MDEF","AGI"];
+
+//	レベルアップを表示。イベントコマンドから直接呼ぶことはできない。
+//	明示的に閉じる必要あり。クリック待ちあり。
+//	レベルアップ前後のRPGPlayerを指定する。
+//	
+RPGSystem.ui ..
+{
+	key = "misc_levelup"
+	lbl = "$T.ui_misc_levelup"
+	type = "misc"			//	mainmanu, submenu, choose, dialog, message, info, debug, misc,
+	icon = "\ue5d3"
+	hide = true				//	プリセットUIコマンドに表示しない
+	
+	props = [],
+	defval = {},
+
+	uifunc = @( prms){
+		local p0 = prms.p0, p1 = prms.p1;
+		local scoreprops = ::levelup_showpids.map( @( pid) ::RPGSystem.playerprops.find( @( v) v.pid==pid));
+		//	レベルアップ要素
+		local lvlist = [], newopts = [];
+		if( p0.LV < p1.LV){
+			lvlist .. { lbl=rtf( "[c4][b]$T.LV[M][c0] %2d  [c4]⇒ %2d" % ( p0.LV, p1.LV))};
+			foreach( opd in p1.data.lvoption){
+				if( opd["LV"] && opd.LV>p0.LV && opd.LV<=p1.LV) newopts .. opd;
+			}
+		}
+		foreach( i, job in p1.jobs){
+			if( !job) continue;
+			local lv0 = p0.jobs[i].JOBLV, lv1 = job.JOBLV;
+			if( lv1 > lv0){
+				lvlist .. { lbl=rtf( "[c4][b]%S[M][c0] %2d  [c4]⇒ %2d" % ( job.data.name, lv0, lv1))};
+				foreach( opd in job.data.lvoption){
+					if( opd["LV"] && opd.LV>lv0 && opd.LV<=lv1) newopts .. opd;
+				}
+			}
+		}
+		//	習得能力
+		local skillslbl = ::RPGSystem.getOptionDescription( newopts, true);
+		if( skillslbl=="") skillslbl = "$T.none"
+		//
+		local vprms = {
+			layer = "message",
+			uipath = "misc_levelup.ui",
+			name = "misc_waitclick",
+			action = "show",
+			binds = {
+				titlelbl = tmpl( T.levelup, {v=p1.name}),
+				lvlist = lvlist,
+				scorelist = scoreprops.map( @( prop, i){
+					if( prop.proptype != "score") return undefined;
+					//	※装備で変化する主なスコアのみ表示する。
+					local pid = prop.pid;
+					return {
+						slotname = prop.lbl,
+						val0 = p0[pid],
+						val1 = p1[pid],
+						valg = (p1[pid]==p0[pid])?"eq2":(p1[pid]>p0[pid])?"gt":"lt";
+					}
+				}),
+				skillslbl = skillslbl
+			},
+			...prms,
+		};
+		local view = RPGMain.showView( vprms);
+		sleep( 600);	//	すぐに消せないように
+		RPGMain.waitClick();
+		view.actionAndDie( "hide").waitAction();
+	}
+};
+
+local btnhelplist = [
+	{ lbl="$T.lbl_none", val=null, },
+	{ lbl="$T.lbl_stage", val="stage", },
+	{ lbl="$T.lbl_battle", val="battle", },
+	{ lbl="$T.lbl_menu", val="menu", },
+]
+
+
+RPGSystem.ui ..
+{
+	key = "misc_btnhelp"
+	lbl = "$T.ui_misc_btnhelp"
+	type = "misc"			//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
+	icon = "\ue5d3"
+
+	props = [
+		{ pid="btnmap", lbl="$T.lbl_btnhelp", type=LIST, list=btnhelplist, variable=1 }
+	],
+	defval = {},
+
+	uifunc = @( prms){
+		::RPGMain.buttonhelp( prms["btnmap"]);
+	}
+};

@@ -87,9 +87,9 @@ local deffb = ("def","box8");
 	"shape": 	{ cls="shape",	 def={ hide=1, vp0=("def","box8")} },
 	"wall0": 	{ cls="terrain", def={ hide=1, vp0=("def","terrain"), floortype=2} },
 	"floor0": 	{ cls="floor",	 def={ hide=1, vp1=("def","floor")} },
+	"wallfloor0": 	{ cls="terrain", def={ hide=1, vp0=("def","terrain"), vp1=("def","floor"), floortype=2} },
 	"struct0": 	{ cls="build",	 def={ hide=1, vp0=("def","wall"), floortype=1} },
 	"struct1": 	{ cls="build",	 def={ hide=1, vp0=("def","wall"), floortype=1} },
-	"struct2": 	{ cls="build",	 def={ hide=1, vp0=("def","wall"), floortype=1} },
 	"carpet": 	{ cls="carpet",	 def={ hide=1, vp0=("def","carpet")} },
 	"water": 	{ cls="water",	 def={ hide=1, vp0=("def","water")} },
 	"fence": 	{ cls="fence",	 def={ hide=1, vp0=("def","fence")} },
@@ -203,8 +203,8 @@ function setupVoxelConfig(){
 	::blks[2] <- _floorwall( map_vox.wall0, map_vox.floor0, "$T.blk_nature");
 	::blks[3] <- _block( map_vox.struct0, "$T.blk_structa");
 	::blks[4] <- _block( map_vox.struct1, "$T.blk_structb");
-	::blks[5] <- _block( map_vox.struct2, "$T.blk_structc");
-
+	::blks[5] <- _block( map_vox["wallfloor0"], "$T.blk_nature");
+	
 	//	4-3. ウォーターブロック
 	::blks[8] <- _block( map_vox.water, "$T.blk_water");
 	//	4-4. カーペットブロック

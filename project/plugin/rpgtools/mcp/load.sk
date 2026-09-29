@@ -1,3 +1,4 @@
 
 runsk( "MCPServer.sk");
 runsk( "MCPServerTools.sk");
+runsk( "MCPServerRenderTools.sk");

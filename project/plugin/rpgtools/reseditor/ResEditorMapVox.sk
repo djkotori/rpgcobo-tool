@@ -199,9 +199,9 @@ class ResEditorMapVox extends EditorViewBase
 		{ lbl="$T.blk_basic", props=[typefn("shape"),vp0prop,pal0prop,shapeprop,], dir0="/resource/vox/map/shape", caps=128, id="shape" }
 		{ lbl="$T.blk_naturefloor", props=[typefn("floor0"),vp1prop,pal1prop,floortypeprop,layerprop,], dir1="/resource/vox/map/floor", caps=16, id="floor0" }
 		{ lbl="$T.blk_naturewall", props=[typefn("wall0"),vp0prop,pal0prop,], dir0="/resource/vox/map/terrain", caps=16, id="wall0" }
+		{ lbl="$T.blk_natureunion", props=[typefn("wallfloor0"),vp0wprop,vp1fprop,pal0prop,floortypeprop,layerprop,], dir0="/resource/vox/map/terrain", dir1="/resource/vox/map/floor", caps=128, id="wallfloor0" }
 		{ lbl="$T.blk_structa", props=[typefn("struct0"),vp0wprop,vp1fprop,pal0prop,edgeshpprop,floortypeprop,layerprop,], dir0="/resource/vox/map/wall", dir1="/resource/vox/map/floor", caps=128, id="struct0" }
 		// { lbl="$T.blk_structb", props=[typefn("struct1"),vp0wprop,vp1fprop,pal0prop,edgeshpprop,floortypeprop], dir0="/resource/vox/map/wall", dir1="/resource/vox/map/floor", caps=128, id="struct1" }
-		// { lbl="$T.blk_structc", props=[typefn("struct2"),vp0wprop,vp1fprop,pal0prop,edgeshpprop,floortypeprop], dir0="/resource/vox/map/wall", dir1="/resource/vox/map/floor", caps=128, id="struct2" }
 		{ lbl="$T.blk_carpet", props=[typefn("carpet"),vp0prop,pal0prop,], dir0="/resource/vox/map/carpet", caps=64, id="carpet" }
 		{ lbl="$T.blk_water", props=[typefn("water"),vp0prop,pal0prop,], dir0="/resource/vox/map/water", caps=64, id="water" }
 		{ lbl="$T.blk_fence", props=[typefn("fence"),vp0prop,pal0prop,], dir0="/resource/vox/map/fence", caps=64, id="fence" }
@@ -211,10 +211,10 @@ class ResEditorMapVox extends EditorViewBase
 		{ lbl="$T.blk_lamp", props=[typefn("lamp"),vp0prop,pal0prop,inexprop( FB_INLAMP, FB_EXLAMP),colsprop,plcprop,pushprop,lightprops,], dir0="/resource/vox/map/lamp", caps=64, id="lamp" }
 		{ lbl="$T.blk_exterior", props=[typefn("exterior"),vp0prop,pal0prop,colsprop,plcprop,pushprop,], dir0="/resource/vox/map/exterior", caps=128, id="exterior" }
 		{ lbl="$T.blk_interior", props=[typefn("interior"),vp0prop,pal0prop,colsprop,plcprop,pushprop,], dir0="/resource/vox/map/interior", caps=128, id="interior" }
-		{ lbl="$T.blk_column", props=[typefn("column"),vp0prop,pal0prop,ctypeprop,pushprop,], dir0="/resource/vox/map/column", caps=64, id="column" }
-		{ lbl="$T.blk_slopestair", props=[typefn("slope"),vp0prop,pal0prop,pokeprop,], dir0="/resource/vox/map/slope", caps=64, id="slope" }
-		{ lbl="$T.blk_roof", props=[typefn("roof"),vp0prop,pal0prop,rooftypeprop,], dir0="/resource/vox/map/roof", caps=64, id="roof" }
-		{ lbl="$T.blk_treerock", props=[typefn("treerock"),vp0prop,pal0prop,colsprop,plcprop,pushprop,], dir0="/resource/vox/map/treerock", caps=128, id="treerock" }
+		{ lbl="$T.blk_column", props=[typefn("column"),vp0prop,pal0prop,ctypeprop,pushprop,], dir0="/resource/vox/map/column", caps=128, id="column" }
+		{ lbl="$T.blk_slopestair", props=[typefn("slope"),vp0prop,pal0prop,pokeprop,], dir0="/resource/vox/map/slope", caps=128, id="slope" }
+		{ lbl="$T.blk_roof", props=[typefn("roof"),vp0prop,pal0prop,rooftypeprop,], dir0="/resource/vox/map/roof", caps=128, id="roof" }
+		{ lbl="$T.blk_treerock", props=[typefn("treerock"),vp0prop,pal0prop,colsprop,plcprop,pushprop,], dir0="/resource/vox/map/treerock", caps=256, id="treerock" }
 		{ lbl="$T.blk_crack", props=[typefn("crack"),vp0prop,pal0prop,fitfloorprop,blendprop,], dir0="/resource/vox/map/crack", caps=128, id="crack" }
 	];
 	

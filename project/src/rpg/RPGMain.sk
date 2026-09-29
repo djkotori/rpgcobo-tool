@@ -26,6 +26,7 @@ import GamepadStateID;
 //	
 ::rpgstat <- null;		//	RPGState : そのままserialize可能。RPG.newGame等で初期化
 ::rpgstage <- null;		//	RPGStage : 現在のステージ
+::sharedstat <- null;	//	RPGSharedState : セーブ共有データ。
 
 //	ゲームのメインの処理を
 //	
@@ -57,6 +58,16 @@ import GamepadStateID;
 		// preloadEffects();
 		::soundmanager.loadConf();
 		foreach( i, v in ::SystemSoundMap) ::soundmanager.addAlias( i, v);
+		//	sharedstatのロード／初期化
+		::sharedstat = RPGSharedState();
+		local f = FileRef( ::savedir, "shared.bin");
+		if( f.exists()){
+			try{
+				sharedstat = ObjectInput.decode( f.load());
+			}catch( e){
+				printf( "Failed to load sharedstat: %S\n", e);
+			}
+		}
 	}
 
 	function setupUI(){
@@ -164,6 +175,7 @@ import GamepadStateID;
 		::rpgstat.savetime = Date.currentTime();
 		local bb = ObjectOutput.encode( ::rpgstat);
 		_savefile( slot).save( bb);
+		saveSharedState();	//	必要なら共有セーブも保存
 	}
 
 	//	
@@ -222,6 +234,15 @@ import GamepadStateID;
 		sstat.enter( m0, { mapid=m0 }, rpgvar.REMAPID);
 		local stg = RPGStage( m0);
 		stg.launch( { wipe=1});
+	}
+
+	//	共有セーブデータを保存する。forceがtrueなら強制的に保存する。
+	function saveSharedState( force=false){
+		if( !force && !::sharedstat.dirty) return false;	//	変更が無ければ保存しない
+		local f = FileRef( ::savedir, "shared.bin");
+		local bb = ObjectOutput.encode( ::sharedstat);
+		f.save( bb);
+		return true;
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////
@@ -446,7 +467,7 @@ import GamepadStateID;
 	//	メッセージ、メニュー等の操作が必要なレイヤーのみ消去。
 	//	また、uiLoopのスタックもクリアする。マップ移動で残さないといけないことは無いはず、、、
 	function cleanupLayers(){
-		foreach( ln in ["message","menu",]){
+		foreach( ln in ["message","menu","info"]){
 			local layer = ::rootview.findChild( ln);
 			layer.clearChildren();
 		}
@@ -455,6 +476,7 @@ import GamepadStateID;
 
 	//	RPGSystem.uiに登録されたUIを表示する。入力処理があるUIの場合はそのまま入力処理に移り、終わるまで
 	//	このスレッドはブロックされる。
+	//	※showUIのuifunc内でマップ切り替えが発生した場合はスレッドが途中で途切れる。topinfo,btnhelpはクリアされる
 	function showUI( t){
 		local ui = ::RPGSystem.ui[t.key], ti, oldti, bh, oldbh;
 		try{
@@ -470,6 +492,7 @@ import GamepadStateID;
 			return ret;
 		}catch( ex){
 			if( ti) popTopInfo( oldti);
+			if( bh) buttonhelp( oldbh);
 			throw ex;
 		}
 	}
@@ -697,7 +720,7 @@ import GamepadStateID;
 		[BTN_LB] = { id="page", keycode=BTN_LB, count=-1 },
 		[BTN_RB] = { id="page", keycode=BTN_RB, count=1 },
 		[BTN_B] = { id="back", keycode=BTN_B },
-		[BTN_X] = { id="option", keycode=BTN_X },
+		[BTN_X] = { id="click", keycode=BTN_X },
 		[BTN_START] = { id="start", keycode=BTN_START },
 		[BTN_A] = { id="click", keycode=BTN_A },
 		[BTN_LEFT] = { id="curs", keycode=BTN_LEFT },
@@ -834,7 +857,7 @@ import GamepadStateID;
 	btnhelpmap = {
 		title = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_BACK, "$T.btn_pause"] ],
 		stage = [ [BTN_CURSOR,"$T.btn_move"], [BTN_A,"$T.btn_search"], [BTN_B,"$T.btn_jump"], [BTN_X,"$T.btn_menu"], [BTN_BACK, "$T.btn_pause"] ],
-		battle = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_Y,"$T.btn_auto"], [BTN_BACK, "$T.btn_pause"] ],
+		battle = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_X,"$T.btn_skillinfo"], [BTN_Y,"$T.btn_auto"], [BTN_BACK, "$T.btn_pause"] ],
 		menu = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_BACK, "$T.btn_pause"] ],
 		menu_s = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_Y,"$T.btn_sort"], [BTN_BACK, "$T.btn_pause"] ],
 		menu_p = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_LR,"$T.btn_page"], [BTN_BACK, "$T.btn_pause"] ],

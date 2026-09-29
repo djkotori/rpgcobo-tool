@@ -6,7 +6,7 @@ function decodeASN1( bb){
 		local n = len&127; len = 0;
 		for( local l = 0;l < n;l ++) len = (len<<8) | (bb.getb()&255);
 	}
-	//printf( "%02x   %d\n", tag, len);
+	// printf( "%02x   %d\n", tag, len);
 	switch( tag){
 	// 0x30 : SEQUENCE
 	case 0x30:
@@ -53,9 +53,11 @@ function loadPrivateKey( pkstr){
 	local e = pkstr.lastIndexOf( estr);
 	local vstr = pkstr.substring( s+length( sstr), e).trim();
 	vstr = vstr.replace( "\n", "");
+	vstr = vstr.replace( "\r", "");
 	
 	local bb = decodeBASE64( vstr, ByteBuffer());
 	local asn = decodeASN1( bb);
+	// printf( "ASN1 structure: %S\n", asn);
 	//	中に更にASNが入ってる。
 	local asn2 = decodeASN1( asn[2]);
 	return {

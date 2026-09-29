@@ -236,7 +236,9 @@ class MCPServer
 			"tools": Table.map( mcptoolmap, @( v, k){
 				local argdef = fget( v, "argdef"), argprops = {};
 				foreach( k, p in argdef){
-					argprops[k] <- { "type": p["type"], "description": p["desc"], "default": p["default"], };
+					local prop = { "type": p["type"], "description": p["desc"], "default": p["default"], };
+					if( p["type"] == "array") prop["items"] <- p["items"] || { "type": "string" };	//	JSON Schemaはarrayにitemsを必須とする
+					argprops[k] <- prop;
 				}
 				return {
 					"name": v.name,

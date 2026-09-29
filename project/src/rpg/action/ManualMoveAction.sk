@@ -280,14 +280,13 @@ class ManualMoveAction
 		}
 	}
 
-	//	死亡アニメーションを表示。敵はシェーダーでの演出になる
+	//	死亡アニメーションを表示。2Dはシェーダーでの演出になる
 	function deathAnime(){
-		if( rp3d instanceof RPG3DPicture){
-			rp3d.picfx( "die");
-			// wait( 800);	//	kore...
-		}else{
-			anime( #{id="die"});
-			// wait( 0x80000001);
+		if( ::conf.macro["X005"]){
+			local ref = RPGObjectRef().set( rp3d.rpgobj);
+			::rpgstage.startMacro( "X005", false, {W=ref, X=false, Y=false, Z=false});
+		}else{	//	古いリソースではX005が無い
+			rp3d.deathAnime();
 		}
 	}
 

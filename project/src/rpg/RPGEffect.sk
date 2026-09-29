@@ -102,6 +102,54 @@ class OverlayEffect
 }
 
 
+//	キャラ揺れ。エフェクトに付随する。※キャラ自体じゃなくてボーンを揺らせばエフェクト自体は揺れない
+//	揺れ軸 : 全方向、上下、前後
+class RPGVibeModifier extends SK3DModifier
+{
+	order = 100;
+
+	mag = 1.0;				//	float : magnitude
+	curv = null;			//	mag * curv[i]が揺れの強さ
+	totaltime = 300;		//	
+	axis = 0;				//	揺れ軸 : 全方向(0), 上下(1), 前後(2)
+	time = 0.0;				//	経過時間
+
+	constructor( m, t){
+		mag = t.mag;
+		totaltime = t.time;
+		curv = t.curv;
+		axis = t["axis"]||0;
+		time = -(t["delay"]|0);
+	}
+
+	function modify( o, dt){
+		o.matdirty = true;
+		if( (totaltime-=dt) > 0){
+			o.getModTransform().translate( Vector3D.fromRandom( -mag, mag));
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	function modify( o, dt){
+		time += dt;
+		if( time >= totaltime) return false;
+		if( time < 0.0) return true;
+		local w = (time / totaltime)%1.0, i = w * (length( curv)-1);
+		local m = Math.lerp( curv[i|0], curv[(i|0)+1], i%1.0) * mag;
+		local v = v_1( m), rnd = ::rnd;
+		switch( axis){
+		case 0: v.scale( rnd(-1.0, 1.0), rnd(-1.0, 1.0), rnd(-1.0, 1.0)); break;
+		case 1: v.scale( 0.0, rnd(-1.0, 1.0), 0.0); break;
+		case 2: v.scale( 0.0, 0.0, rnd(-1.0, 1.0)); break;
+		}
+		o.getModTransform().translate( v);
+		return true;
+	}
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 //	
 //	ScreenEffect

@@ -232,6 +232,7 @@
 	"blk_nature"						: {"ja":"地形", "en":"Terrain"}
 	"blk_naturewall"					: {"ja":"地形・壁", "en":"Terrain Wall"}
 	"blk_naturefloor"					: {"ja":"地形・床", "en":"Terrain Floor"}
+	"blk_natureunion"					: {"ja":"地形(合成)", "en":"Terrain (Union)"}
 	"blk_structa"						: {"ja":"建築A", "en":"StructA"}
 	"blk_structb"						: {"ja":"建築B", "en":"StructB"}
 	"blk_structc"						: {"ja":"建築C", "en":"StructC"}
@@ -357,6 +358,9 @@
 	"weather_mist2"						: {"ja":"砂嵐", "en":"Sandstorm"}
 	"weather_cloud1"					: {"ja":"雲の影", "en":"Cloud shadow"}
 	"weather_snow1"						: {"ja":"雪", "en":"Snow fall"}
+	"weather_sunshine"					: {"ja":"朝日", "en":"Sunshine"}
+	"weather_heat_haze"					: {"ja":"陽炎", "en":"Heat haze"}
+	"weather_particle"					: {"ja":"パーティクル", "en":"Particle"}
 
 	//	ベース位置
 	"basepos"							: {"ja":"ベース位置", "en":"Base Position"}
@@ -560,6 +564,7 @@
 	"var_event"							: {"ja":"イベント変数", "en":"Event Var"}
 	"var_global"						: {"ja":"グローバル変数", "en":"Global Var"}
 	"var_system"						: {"ja":"システム変数", "en":"System Var"}
+	"var_button"						: {"ja":"ボタン状態", "en":"Button State"}
 	"qvar_item"							: {"ja":"アイテム所持数", "en":"Num of Items"}
 	"qvar_enemy"						: {"ja":"エネミー討伐数", "en":"Num of Enemy kill"}
 	"qvar_party"						: {"ja":"パーティ加入", "en":"Party member"}
@@ -658,6 +663,7 @@
 	"lbl_rvar"							: {"ja":"右辺値", "en":"R-value"}
 	"lbl_arithop"						: {"ja":"操作", "en":"Operation"}
 	"lbl_ovfx"							: {"ja":"オーバーレイFX", "en":"Overlay FX"}
+	"lbl_chrvibe"						: {"ja":"キャラ揺れ", "en":"Chara Vibration"}
 	"lbl_backop"						: {"ja":"戻る操作", "en":"Back Operation"}
 	"lbl_targetvar"						: {"ja":"対象の変数", "en":"Target Var"}
 	"lbl_getlength"						: {"ja":"長さの取得", "en":"Get Length"}
@@ -727,6 +733,7 @@
 	"lbl_subtitle"						: {"ja":"サブタイトル", "en":"Sub-Title"}
 	"lbl_gamedesc"						: {"ja":"ゲームの説明", "en":"Game Description"}
 	"lbl_macro"							: {"ja":"マクロ", "en":"Macro"}
+	"lbl_sharedgvar"					: {"ja":"セーブを共有", "en":"Save with shared"}
 	
 	"lbl_price"							: {"ja":"価格", "en":"Price"}
 	"lbl_learnlv"						: {"ja":"習得LV", "en":"Learning LV"}
@@ -738,6 +745,8 @@
 	"lbl_pastetsv"						: {"ja":"TSVをペースト", "en":"Paste TSV"}
 	"lbl_skill"							: {"ja":"スキル", "en":"Skill"}
 	"lbl_defskill"						: {"ja":"デフォルトスキル", "en":"Default Skill"}
+	"lbl_dietype"						: {"ja":"死亡演出", "en":"Death Animation"}
+	"lbl_boss"							: {"ja":"ボス", "en":"Boss"}
 	"lbl_actionid"						: {"ja":"アクションID", "en":"Action ID"}
 
 	"lbl_map"							: {"ja":"マップ", "en":"Map"}
@@ -1001,9 +1010,10 @@
 	"lbl_placeparma"					: {"ja":"永久配置", "en":"Permanent Place"}
 	"lbl_stage"							: {"ja":"ステージ", "en":"Stage"}
 	"lbl_noenemyg"						: {"ja":"エネミー設定なし", "en":"No Enemy Settings"}
+	"lbl_repop_reqs"					: {"ja":"リポップ条件", "en":"Repop Conditions"}
 	"lbl_repop_remap"					: {"ja":"再入場でリポップ", "en":"Repop on Reentry"}
 	"lbl_repop_time"					: {"ja":"秒数でリポップ", "en":"Repop by Time"}
-	"lbl_repop_reqs"					: {"ja":"その他のリポップ条件", "en":"Other Repop Conditions"}
+	"lbl_repop_etcreqs"					: {"ja":"その他のリポップ条件", "en":"Other Repop Conditions"}
 	"lbl_repop_outcam"					: {"ja":"カメラ外のみリポップ", "en":"Only Out of Camera"}
 
 	//	イベントロール
@@ -1282,7 +1292,7 @@
 	
 	"lbl_owntickets"					: {"ja":"所有チケット", "en":"Owned tickets"}
 	"lbl_buyticket"						: {"ja":"チケットを購入", "en":"Buy Tickets"}
-
+		"weather_snow1"					: {"ja":"雪", "en":"Snow fall"}
 	"build_step1"						: {"ja":"1. ビルドサーバーへアップロード", "en":"1. Upload to BuildServer"}
 	"build_step2"						: {"ja":"2. ビルドの実行", "en":"2. Running a Build"}
 	"build_step3"						: {"ja":"3. 結果をダウンロード", "en":"3. Download the Result"}

@@ -647,6 +647,10 @@ RPGSystem.ui ..
 		local ret = RPGMain.uiLoop( {
 			"action" : @( e){	//	装備するアイテム
 				::playSound( e.src.name=="cureq" ? "SE001" : "SE003");
+				if( "item" in e.item){	//	select経由せずに"action"が来る場合あり。。。
+					reseteq( p1, orgeqs);
+					p1.setEquip( slotidx, e.item["item"]);
+				}
 				return e.item;
 			}
 			"select" : @( e){	//	選択時に説明表示＋ステータスに差分表示

@@ -46,7 +46,7 @@ class MapTools.tool_pen extends MapTool
 		optionview = ::loadSKView( "/plugin/rpgtools/mapeditor/ui/tool_pen.ui");
 		optionview.addEventListener( ACTION_EVENT, optionevent);
 		selblk = SelectBlock( optionview.findChild( "selblock"));
-		selblk.setBlockPages( [2,3,1]);		//	,4,5は今は非表示で。。。
+		selblk.setBlockPages( [2,5,3,1]);
 		blk = 2;
 		selblk.selectBlock( blk);	//	todo どれか
 		selblk.view.addEventListener( ACTION_EVENT, selblkevent);
@@ -1269,7 +1269,7 @@ class MapTools.tool_level extends MapTool
 		optionview = ::loadSKView( "/plugin/rpgtools/mapeditor/ui/tool_level.ui");
 		optionview.addEventListener( ACTION_EVENT, optionevent);
 		selblk = SelectBlock( optionview.findChild( "selblock"));
-		selblk.setBlockPages( [8,2,3,1]);
+		selblk.setBlockPages( [8,2,5,3,1]);
 		blk = 2;
 		selblk.selectBlock( blk);	//	todo どれか
 		selblk.view.addEventListener( ACTION_EVENT, selblkevent);

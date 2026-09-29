@@ -72,7 +72,7 @@ class ResourcePreviewList
 					c.ref = (v, l, pc);
 					pc.setResourceData( v.id, v.data);
 					pc.view3d.renderer.setCamera( cam);
-					if( pc.sk3d) suspend();
+					if( pc.sk3d || pc.sp) suspend();
 				}else{
 					c.ref = null;
 				}
@@ -210,6 +210,7 @@ class ResourcePreviewCanvas
 	view = null;			//	SKView
 	view3d = null;
 	sk3d = null;			//	SK3DView
+	sp = null;
 	
 	rot0 = Quaternion.fromHPB( 90*Math.DTOR, 0, 0);
 	rot1 = Quaternion.fromHPB( 0, 90*Math.DTOR, 0);
@@ -248,7 +249,7 @@ class ResourcePreviewCanvas
 		try{
 			v3.layerflags &= ~1;
 			if( vp) vp.layerflags &= ~1;
-			sk3d = null;
+			sk3d = sp = null;
 			if( val["vox"]||val["vp0"]||val["vp1"]){
 				sk3d = _makevox3d( val);
 			}else
@@ -258,7 +259,7 @@ class ResourcePreviewCanvas
 			}else
 			if( vp && val["pic"]){
 				vp.layerflags |= 1;
-				local sp = _makepicsp( val);
+				local sp = this.sp = _makepicsp( val);
 				vp.setSprite( sp);
 				vp.updateLayout();
 			}else

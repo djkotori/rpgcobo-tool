@@ -7,6 +7,7 @@ function getPtcTecs(){
 	local a = [];
 	local efxs = skFXGetEffects();
 	local icons = #( ("\ue430", 0xffff00ff), ("\ue2bd", 0x999999ff));
+	a .. { lbl="$T.lbl_notset", val=null, tec=null, icon=""};
 	foreach( efx in efxs){
 		local efxname = efx.name;
 		foreach( i,tec in efx){
@@ -39,8 +40,8 @@ local tecprop = { pid="tec",	lbl="Shader",	type=LIST, list=getPtcTecs };
 local legacyprops = [
 	{ pid="color",	lbl="Color",	type=RGBA },
 ];
-local overlayprop = { pid="overlay",	lbl="Overlay", type=SCALAR, range=(-1.0,1.0,), q=100, ui="bar" }
-
+local hsvprop = { pid="hsv", lbl="$T.lbl_hsv", type=VEC3, ui="bar", range=((-180,180),(-100,100),(-100,100)), };
+local overlayprop = { pid="overlay",	lbl="Overlay", type=SCALAR, range=(-1.0,1.0,), q=100, ui="bar" };
 
 local pbrprops = [
 	{ pid="color",	lbl="Color",	type=RGBA },
@@ -523,6 +524,7 @@ class EfxRightPanel
 		local ispbr = tec["tag"]?.contains( "pbr");
 		a .. (ispbr ? pbrprops : legacyprops);
 		a .. masktexprop;
+		a .. hsvprop;
 		a .. overlayprop;
 		
 		//	shape
@@ -564,9 +566,10 @@ class EfxRightPanel
 		case "masktex": return gd.masktex;
 		case "blendmode": return gd.blendmode;
 		case "blend": return gd.blend;
-		case "tec": return gd.tec || "decal.def";
+		case "tec": return gd["tec"] || null;
 		case "color": return gd.color;
 		case "emission": return gd.emission;
+		case "hsv": return gd.hsv || #[0,0,0];
 		case "overlay": return gd.overlay;
 		//	shape
 		case "aimtype": return gd.aimtype;
@@ -608,6 +611,7 @@ class EfxRightPanel
 		case "tec": return gd.tec = val;
 		case "color": return gd.color = val;
 		case "emission": return gd.emission = val;
+		case "hsv": return gd.hsv = val;
 		case "overlay": return gd.overlay = val;
 		//	shape
 		case "aimtype": return gd.aimtype = val;

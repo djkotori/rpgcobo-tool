@@ -493,6 +493,7 @@ RPGSystem.eventrole .. {
 
 //	エネミーロール
 //	動き回り、キャラが近くに来たら追いかけてくる。
+//	リポップタイプ: 0=なし、1=マップ移動、2=時間経過（秒）、3=フラグ（G000~G999）、4=バトル回数
 //	
 RPGSystem.eventrole .. {
 	menutype = "event"
@@ -510,6 +511,23 @@ RPGSystem.eventrole .. {
 			return ga.map( @( v, i) ({ lbl=::enemyGroupString( v.enemies), val=v.gid}) );
 		}},
 		moveactionprop, ...RPGSystem.moveaction[cmd["moveaction"]]["props"],
+		{ pid="repop", lbl="$T.lbl_repop_reqs", type=PROPERTYLIST, propdef={
+			name = "$T.lbl_repop_reqs"
+			props = [
+				{ pid="remap", lbl="$T.lbl_repop_remap", type=BOOL},
+				{ pid="sec", lbl="$T.lbl_repop_time", type=SCALAR, range=(0,100000)},
+				{ pid="outcam", lbl="$T.lbl_repop_outcam", type=BOOL},
+			],
+			tostring = @( v){
+				local s = "";
+				if( v){
+					if( v["remap"]) s += "\uf25d ";
+					if( v["sec"]) s += "\uf81e:" + v["sec"] + " ";
+					// if( v["outcam"]) s += "$T.lbl_repop_outcam ";
+				}
+				return s;
+			}
+		}},
 		reqs0prop,		//	スポーン条件。
 	]
 	
@@ -519,33 +537,30 @@ RPGSystem.eventrole .. {
 		gid = 1,
 		reqs0 = null,
 		moveaction = "chase1",
+		repop = { remap=true , sec=0, outcam=false},
 	}
 	
 	//	バトルして勝利なら消し(=>ページ1)、引分けならそのまましばらく硬直。
-	//	ページ1は消えた状態。
+	//	※cmd_depopを使用して消えるように仕様変更。
 	defpage = [
 		{
 			standani = {id="stand"}
 			trigger = 3
-			wvarmap = { X="gid", }	//	変数をdataにマップ
+			wvarmap = { X="gid", Y="repop" }	//	変数をdataにマップ
 			cmdblock = [
 				{ cmd="cmd_timescale", timescale=10}
-				{ cmd="cmd_macro", macroid="X003", retvar="W" },
-				{	//	バトルして勝ったらA=REMAPID、それ以外ではしばらくフリーズ？
+				{ cmd="cmd_macro", macroid="X003", retvar=null },
+				{	//	バトルして勝ったらcmd_depopで一時消去
 					cmd="cmd_if",
 					reqs=[ { lvar="RESULT",op="==",rvar=1} ],
 					cmdblocks=[
-						[ { cmd="cmd_compute", lvar="A", op="=", rvar="REMAPID" } ]
+						[ { cmd="cmd_depop", who=2, reqs=null, remap=true, sec=0, outcam=false, fadein=2, efxid=null, _var={remap="\tY[\"remap\"]??true",sec="\tY[\"sec\"]",outcam="\tY[\"outcam\"]"} } ]
 					],
 				}
-				{ cmd="cmd_timescale", timescale=100}
+				{ cmd="cmd_timescale", timescale=100 }
 				{ cmd="cmd_freeze", who=2, time=800 },
 			]
 		},
-		{
-			trigger = 0, moveaction = "hide",
-			reqs = [{ lvar="A", op="==", rvar="REMAPID"}],
-		}
 	]
 }
 
@@ -724,7 +739,7 @@ RPGSystem.eventrole .. {
 		{ pid="lcol", lbl="$T.lbl_color", type=RGBA, defval=0xffffcc66 }
 		{ pid="lr", lbl="$T.lbl_size", type=SCALAR, range=(0.1,99.9), q=10, defval=10.0 }
 		{ pid="lhpb", lbl="$T.lbl_direction", type=VEC2, range=(-180,180), defval=(0,-60) }
-		{ pid="lspot", lbl="$T.lbl_litspot", type=VEC2, range=((0,180),(0,100)), defval=(180,10), ui="r", rlbl0="#" }
+		{ pid="lspot", lbl="$T.lbl_litspot", type=VEC2, range=((0,180),(0,100)), defval=(70,6), ui="r", rlbl0="#" }
 		{ pid="flicker", lbl="$T.lbl_filcker", type=LIST, list=::lightflickerlist, defval=0 }
 	];
 	
@@ -732,7 +747,7 @@ RPGSystem.eventrole .. {
 		mdlid = "CE000",
 		spawndist = 1,
 		reqs0 = null,
-		lcol = 0xffffcc66, lr = 10.0, lhpb = [0,60], lspot = [180,10], flicker = 0,
+		lcol = 0xffffcc66, lr = 10.0, lhpb = [0,60], lspot = [70,6], flicker = 0,
 	}
 	
 	defpage = [

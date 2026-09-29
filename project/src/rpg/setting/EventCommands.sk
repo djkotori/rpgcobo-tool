@@ -2481,7 +2481,7 @@ eventcmd .. {
 		{ pid="who", lbl="$T.lbl_who", type=LIST, list=who1list, variable=1, }
 		{ pid="remap", lbl="$T.lbl_repop_remap", type=BOOL, variable=1},
 		{ pid="sec", lbl="$T.lbl_repop_time", type=SCALAR, range=(0,100000), variable=1},
-		{ pid="reqs", lbl="$T.lbl_repop_reqs", type=REQUIREMENTS, cnt="cnt6v.ui", variable=1 },
+		{ pid="reqs", lbl="$T.lbl_repop_etcreqs", type=REQUIREMENTS, cnt="cnt6v.ui", variable=1 },
 		{ pid="outcam", lbl="$T.lbl_repop_outcam", type=BOOL, variable=1},
 		{ pid="fadein", lbl="$T.lbl_fadein", type=LIST, list=repopfadelist, variable=1},
 		{ pid="efxid", lbl="$T.lbl_effect", type=RESID, restype="efx", variable=1, nullable=1 }
@@ -2490,8 +2490,10 @@ eventcmd .. {
 	cmdinfo = @( cmd){
 		local cmddef = RPGSystem.eventcmd[cmd.cmd];
 		local w = propstr( cmddef.props, cmd, "who");
+		local remap = "\uf25d " .. propstr( cmddef.props, cmd, "remap");
+		local sec = "\uf81e:" + propstr( cmddef.props, cmd, "sec");
 		return {
-			info = sprintf( "%S", w);
+			info = sprintf( "%S %S %S", w, remap, sec);
 		}
 	}
 	

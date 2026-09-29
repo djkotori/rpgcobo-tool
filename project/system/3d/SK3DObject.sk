@@ -951,7 +951,7 @@ class SK3DObject extends SK3DRenderNode
 		}
 		foreach( m in getMaterials()){
 			if( m.colormat){
-				cm.mult44( m.colormat, m.colormat);		//	どんどん掛けられていっちゃう。。。
+				if( cm) m.colormat = cm.mult44( m.colormat);		//	どんどん掛けられていっちゃう。。。
 			}else{
 				m.colormat = cm;
 			}

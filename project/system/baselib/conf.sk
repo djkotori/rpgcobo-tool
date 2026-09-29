@@ -343,9 +343,9 @@ class Module
 	}
 
 	//	指定した名前のアクションをディスパッチする。フックされた関数が順に呼ばれる。
-	function dispatchAction( name){
+	function dispatchAction( name, arg=null){
 		foreach( v in actionhooks[name]){	//	exceptionハンドリング、moduleから外すとかとか。基本的に1回きり呼ぶだけなので基本外す
-			local fn = v[0]; fn();
+			local fn = v[0]; fn( arg);
 		}
 	}
 }

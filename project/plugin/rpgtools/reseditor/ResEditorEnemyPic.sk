@@ -74,8 +74,8 @@ class ResEditorPic extends ResEditor
 			break;
 		case TARGET_DROP:
 			skMoveScreen( { flags=MoveScreenFlags.MOVESCREEN_FRONT });	//	ドロップ時にはウィンドウは奥にあるので手前に移動
-			local f = e.dragsrc.filelist[0];
-			showImportImage( f);
+			local f = e.dragsrc["filelist"][0];
+			if( f) showImportImage( f);
 			break;
 		}
 	}

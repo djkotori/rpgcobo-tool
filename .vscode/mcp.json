@@ -1,7 +1,7 @@
 {
 	"servers": {
 		"rpg-cobo": {
-			"command": "rpgcobo.exe",
+			"command": "${workspaceFolder}\\rpgcobo.exe",
 			"args": ["-mcp-stdio"],
 			"env": {
 			}

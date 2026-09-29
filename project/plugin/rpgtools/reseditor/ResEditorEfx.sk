@@ -42,7 +42,32 @@ class ResEditorEfx extends ResEditor
 					return newval;
 				}
 			}, defval={}
-		}
+		},
+		{ pid="vibe", lbl="$T.lbl_chrvibe", type=PROPERTYLIST, 
+			propdef={
+				name = "$T.lbl_chrvibe"
+				props = [
+					{ pid="enabled", lbl="$T.lbl_enabled", type=BOOL, defval=false }
+					{ pid="time", lbl="$T.lbl_time", type=SCALAR, range=(1,10000), ui="bar", barrange=(0,2000,20), defval=1000 }
+					{ pid="delay", lbl="$T.lbl_delaytime", type=SCALAR, ui="bar", barrange=(0,2000,20), range=(0,10000), defval=0 }
+					{ pid="mag", lbl="$T.lbl_power", type=SCALAR, range=(0.01,10.0), ui="bar", barrange=(0.01,1.0,0.01), q=100, defval=0.1 },
+					{ pid="axis", lbl="$T.lbl_axis", type=LIST, list=["XYZ","Y","Z"] defval=0 },
+					{ pid="curv", lbl="$T.lbl_scale", type=3321, defval=[1.0,0.5,0.0]},
+				],
+				tostring = @( v){
+					return v["enabled"] ? "$T.lbl_enabled" : "$T.lbl_disabled";
+				}
+				copykey = "chrvibe"
+				
+				mdlid = @() (::skstudio.editor.preview.resid=="CE000" ? "CV000" : ::skstudio.editor.preview.resid),
+				
+				edit = @( val, pl){
+					local newval = VibePropertyEditPopupV.run( null, pl.prop.propdef, val);
+					return newval;
+				}
+			}, defval={}
+		},
+
 		{ pid="eventuse", lbl="$T.lbl_eventuse", type=BOOL, defval=false },
 		{ pid="waittime", lbl="$T.lbl_waittime", type=SCALAR, range=(0,4000), defval=500, ui="bar", barrange=(0,1000,10) }
 	];

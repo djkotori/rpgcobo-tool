@@ -186,6 +186,7 @@ class RPGStage
 			opt.startfunc( this, opt);		//	ワイプ処理もrunnerからやればいいかなー？
 		}
 		startEvents();					//	イベント初回実行。ここで自動実行マクロの実行と画面内のイベントのスポーンを行う。
+		while( loadInCameraMesh( 150)) suspend();	//	再度のメッシュ生成。カメラが切り替わってた時の予備。タイトルやバトルでも。
 		//	BGMを再生。statに保存されたもの。。。※startEventsの初回で設定されたBGMは反映される
 		if( stat.statmap["bgmid"] != ::getBGMID()){
 			::playBGMID( stat.statmap["bgmid"]);

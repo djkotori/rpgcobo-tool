@@ -21,10 +21,10 @@ param vox
 	uniform lowp float alpharef<ID=ALPHAREF>;
 	uniform lowp vec4 p1<id=UNICOLOR1>;
 	
-	varying highp vec3 v_lp;
+	varying mediump vec3 v_lp;
 	flat varying mediump vec3 v_n;
 	varying highp vec3 v_wvp;
-	varying highp vec4 v_wvpp;
+	varying mediump vec4 v_wvpp;
 	flat varying lowp vec4 v_rgbm;
 
 	flat varying lowp int v_f;
@@ -51,14 +51,15 @@ param vox
 vs vox
 {
 	void main(){
-		mediump vec3 n = fnlist[int(in_pos.w)&7];
+		v_rgbm = in_rgbm;
+		v_f = int(in_pos.w)&7;
+		mediump vec3 n = fnlist[v_f];
 		highp mat4 transmat = getTransformedVectorsPN( in_pos.xyz*VOX_SCALE, n);
-		gl_Position = v_wvpp = pmat * transmat[0];
+		gl_Position = pmat * transmat[0];
+		v_wvpp = gl_Position;
 		v_lp = in_pos.xyz - n*0.01;
 		v_wvp = transmat[0].xyz;
 		v_n = transmat[1].xyz;
-		v_rgbm = in_rgbm;
-		v_f = int(in_pos.w);
 	}
 }
 
@@ -147,12 +148,12 @@ fs vox
 				texelFetch( mtltex, ivec2( 3, mi), 0)
 			);
 			$(COLORTEX2){
-				highp vec3 uvr = mod( v_lp.zxy*2.0, m[3].xyz*255.0) + m[2].xyz*255.0;
+				mediump vec3 uvr = mod( v_lp.zxy*2.0, m[3].xyz*255.0) + m[2].xyz*255.0;
 				mediump float pc = texture( ptntex, uvr*ptntexscale).x*8.0+0.21569;
 				mediump float sc = mix( 1.0, pc, m[2].w*2.0);	// m[2].w*	color scale. m[3].w => contrast
 				pix.xyz = clamp( pix.xyz*sc, 0.0, 1.0);
-				// m[0].x = mix( m[0].x, 1.0, abs( 1.0-pc));
-				// m[1].z = 1.0-sc;
+				m[1].y *= sc*sc;	//	standard only...
+				// m[0].x = mix( m[0].x, 1.0, abs( 1.0-pc)); m[1].z = 1.0-sc;
 			}
 			g.rough = m[0].x;
 			g.metal = m[0].y;

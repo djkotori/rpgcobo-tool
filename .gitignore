@@ -16,6 +16,7 @@ desktop.ini
 *.pem
 *.code-workspace
 *.pyc
+steam_appid.txt
 
 #native
 *.pdb

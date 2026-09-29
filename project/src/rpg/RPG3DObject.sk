@@ -468,6 +468,9 @@ class RPG3DObject extends SK3DObject
 		if( efx["ovfx"]["enabled"] && !noov){
 			overlay( efx.ovfx);
 		}
+		if( efx["vibe"]["enabled"] && !noov){
+			vibe( efx.vibe);
+		}
 		return {sk=sk,efx=efx};
 	}
 
@@ -498,6 +501,13 @@ class RPG3DObject extends SK3DObject
 			}
 			ovfx = null;
 			visiblemask &= ~8196;
+		}
+	}
+
+	function vibe( data){
+		if( data){
+			local mod = RPGVibeModifier( this, data);
+			addModifier( mod);
 		}
 	}
 
@@ -707,7 +717,7 @@ class RPG3DObject extends SK3DObject
 		local self = this, time = (0.0,);
 		return @( dt){
 			self.dir ??= t["dir"];
-			return (time[0]+=dt)<t.time;
+			return (time[0]+=dt)<t.time && callee();
 		};
 	}
 
@@ -1344,6 +1354,7 @@ class RPG3DPicture extends RPG3DObject
 	
 	//	死亡アニメーションを表示。敵はシェーダーでの演出になる
 	function deathAnime(){
+		anime2( #{id="die"});
 		picfx( "die");
 	}
 }
@@ -1626,6 +1637,12 @@ class RPG3DVoxChara extends RPG3DObject
 			break;
 		}
 		return (0, 0, 0, null);
+	}
+
+	//	死亡アニメーションを表示。
+	//	※エネミーの場合はアニメ＋エフェクトを再生する。
+	function deathAnime(){
+		anime2( #{id="die"});
 	}
 }
 

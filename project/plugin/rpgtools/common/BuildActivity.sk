@@ -467,7 +467,7 @@ class BuildingDialog extends Dialog
 		resdir.mkdirs();
 		unzipFile2( dlfile, resdir);
 		dlfile.deleteFile();
-		if( !rpgid){
+		if( rpgid != session.rpgid){
 			printf( "New rpgid set!!!!!!!!! %S\n", session.rpgid);
 			::skstudio.flushEditor( "/.x/game/setting");
 			local r = ::getResource( "/.x/game/setting");

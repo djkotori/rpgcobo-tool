@@ -67,6 +67,7 @@ class BattleRunnerBase
 
 	isauto = false;					//	オートバトル ON
 	ybtn = false;					//	オートバトルのボタン状態
+	showskillinfo = false;			//	スキル説明のボタン状態
 
 
 	//	

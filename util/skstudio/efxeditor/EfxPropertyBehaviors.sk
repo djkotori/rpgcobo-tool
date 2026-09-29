@@ -884,9 +884,6 @@ class PropertyBehaviors.EfxModScalar extends PropertyBehavior
 	static uipath = "/skstudio/ui/efxeditor/mod_scalar.ui"
 	
 	curv = null;		//	EfxCurveEditView
-	xchk = null;
-	ychk = null;
-	zchk = null;
 
 	function init(){
 		curv = EfxCurveEditView();

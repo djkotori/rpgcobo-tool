@@ -1226,6 +1226,33 @@ class RPGObjectRef
 	}
 }
 
+//	発見テーブル。アイテムやエネミー、プレイヤーなどの発見状況を管理する。
+//	セーブスロットごとのdiscovermap, セーブ共有のdiscovermapが存在する。後者は図鑑などで使う。
+class DiscoverMap extends Serializable
+{
+	static SerialUID = 46;
+	static defval = { num=0, };
+
+	<ser_o> map = false;
+
+	function _get( key){
+		return map[key];
+	}
+
+	//	指定したIDの発見数を加算
+	function discover( id, num=1){
+		local v = map[id] || (map[id] <- clone defval);
+		v.num += num;
+		return v;
+	}
+	
+	//	特定のフィールドをカウントアップする。存在しなければ初期化してから加算。
+	function countup( id, fid, num=1){
+		local v = discover( id, 0);
+		if( !v[fid]){ v[fid] <- num; }else{ v[fid] += num; }
+		return v;
+	}
+}
 
 //	
 //	
@@ -1242,8 +1269,8 @@ class RPGState extends Serializable
 	<ser_o> settingmap = null;		//	変更可能なシステム設定。
 	<ser_o> questmap = null;		//	{dataid,RPGQuest} : 
 	<ser_o> stagemap = null;		//	{dataid,RPGStageState} : ステージごとの保存。イベント変数なども。
-	<ser_o> etc = null;				//	{} : 色々なデータを保存できる。
-	<ser_o> reserved1 = null;
+	<ser_o> etc = null;				//	{} : プラグインなど何でも使って良し
+	<ser_o> discovermap = null;		//	DiscoverMap : 図鑑系の開放状況。
 	<ser_o> reserved2 = null;
 	<ser_o> reserved3 = null;
 	<ser_o> reserved4 = null;
@@ -1278,6 +1305,7 @@ class RPGState extends Serializable
 		questmap = {};
 		stagemap = {};
 		etc = {};
+		discovermap = DiscoverMap();
 		//	プレイヤー追加。これロード時にもしたらアップデートにも対応できる
 		foreach( dataid, _ in ::conf.player){
 			if( !dataid.startsWith( "_")){
@@ -1339,6 +1367,7 @@ class RPGState extends Serializable
 		resizeItemList( weapons);
 		resizeItemList( armors);
 		resizeItemList( keyitems);
+		if( !discovermap) discovermap = DiscoverMap();	//	古いセーブデータ対応
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////
@@ -1469,5 +1498,80 @@ class RPGState extends Serializable
 		if( i1 >= 0) list[i1] = olditem;
 		resizeItemList( list);
 		return true;
+	}
+
+
+	///////////////////////////////////////////////////////////////////////////////////////
+	//	discover系
+
+	//	指定したIDの発見数を加算。セーブデータ、共有ステートの両方に反映される。
+	function discover( id, num=1){
+		discovermap.discover( id, num);
+		::sharedstat.discovermap.discover( id, num);
+		::sharedstat.dirty = true;
+	}
+	
+	//	特定のフィールドをカウントアップする。存在しなければ初期化してから加算。セーブデータ、共有ステートの両方に反映される。
+	function countup( id, fid, num=1){
+		discovermap.countup( id, fid, num);
+		::sharedstat.discovermap.countup( id, fid, num);
+		::sharedstat.dirty = true;
+	}
+}
+
+
+//	セーブデータをまたいだゲーム全体の状態を管理するクラス。::sharedstatに格納される。
+//	図鑑系の開放、実績の達成状況、全体の進行状況などを管理する。
+//	savedata/shared.bin に保存される。ゲーム開始時に読み込まれ、変化した際には自動的に保存される。
+//	※実績は、プラットフォーム管理が優先され、共有ステートではフォールバック的な扱いとなる。Steamの場合はSteamの実績が優先される。
+//	
+class RPGSharedState extends Serializable
+{
+	static SerialUID = 47;
+
+	<ser_i> version = 0;				//	int : グローバルデータのゲームバージョン。
+	<ser_o> achievementmap = null;		//	{achieveid:1} : 達成済み実績のフラグリスト。
+	<ser_o> discovermap = null;			//	DiscoverMap : 図鑑系の開放状況。
+	<ser_o> gvarmap = null;				//	{gvarid:val} : クリアフラグなどのセーブデータを跨ぐgvar(shared)。
+	<ser_o> etc = null;					//	{} : プラグインなど何でも使って良し
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+	<ser_o> reserved3 = null;
+	<ser_o> reserved4 = null;
+
+	dirty = false;						//	trueの場合は要保存。
+
+	constructor(){
+		achievementmap = {};
+		discovermap = DiscoverMap();
+		gvarmap = {};
+		etc = {};
+	}
+
+	//	achievement - achieve.jsonで定義された実績の達成状況を管理する。
+	//	自動で達成状況が更新されるか、又はイベントコマンド等で手動で達成させることができる。
+
+	//	手動で実績を達成する。達成済みの場合は何もせずfalseを返す。
+	function achieve( id){
+		if( !achievementmap[id]){
+			achievementmap[id] <- 1;
+			dirty = true;
+			::RPGMain.onAchievementUnlocked( id);	//	ゲームのUIで表示するか、Steam等のプラットフォームに通知する。
+			return true;
+		}
+		return false;
+	}
+
+	//	未達成の実績をチェックし、自動で達成状況を更新する。
+	function checkAchievements(){
+		foreach( i, v in ::conf.achieve){
+			if( i[0]=='_' || achievementmap[i] || !length( v["reqs"])) continue;	//	reqsない場合は手動のみ
+			local b = ::reqchk( v["reqs"]);		//	条件を満たしているかチェック
+			if( b){
+				achievementmap[i] <- 1;
+				dirty = true;
+				::RPGMain.onAchievementUnlocked( i);	//	ゲームのUIで表示するか、Steam等のプラットフォームに通知する。
+			}
+		}
 	}
 }

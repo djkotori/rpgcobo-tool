@@ -94,6 +94,8 @@ class DBEditorGvar extends DBEditor
 		local varfield = r.findChild( "varfield").ref;
 		varfield.setVar( v["defval"] ?? null);
 		r.setValue( "idlbl", ( id, type?0xffffffcc:0xffffff44));
+		local sharedchk = r.findChild( "sharedchk");
+		sharedchk.setSelected( !!v["shared"]);
 	}
 
 	function refresh(){
@@ -147,8 +149,9 @@ class DBEditorGvar extends DBEditor
 		if( gvarid){
 			local self = this;
 			local vold = data[gvarid];
-			local vnew = vold? clone vold : { name="", type=0, defval=0, };
+			local vnew = vold? clone vold : { name="", type=0, defval=0, shared=false};
 			vnew.name = pv.findChild( "nameedit").getText();
+			vnew.shared <- pv.findChild( "sharedchk").isSelected();
 			local varfield = pv.findChild( "varfield").ref;
 			local var = varfield.var;
 			local type = VAR_NONE;	//	VAR_NONE, VAR_BOOL, VAR_INT, VAR_FLOAT, VAR_STRING, VAR_ANY

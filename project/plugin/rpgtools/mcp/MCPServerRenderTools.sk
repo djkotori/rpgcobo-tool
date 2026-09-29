@@ -1,0 +1,268 @@
+/////////////////////////////////////////////////////////////////////////////////
+//
+// MCPRender : Deterministic resource previews for MCP clients.
+//
+
+local mcptools = ::MCPServer.MCPServerTools;
+
+class MCPPreview
+{
+	static adapters = [];
+
+	static function registerAdapter( adapter){
+		adapters .. adapter;
+	}
+
+	static function openSession( args){
+		foreach( adapter in adapters){
+			if( adapter.supports( args)) return adapter.open( args);
+		}
+		throw Exception( "Unsupported preview target: %S" % (args["path"]||args["resourceId"]||""), -32602);
+	}
+
+	static function checkProjectPath( path){
+		if( !path || !path.startsWith( "/") || path.startsWith( "/project/") || path.contains( "..")){
+			throw Exception( "Invalid project-root path: %S" % path, -32602);
+		}
+		return path;
+	}
+
+	static function imageContent( img){
+		local bb = img.encodePNG(); bb.pos = 0;
+		return { type="image", mimeType="image/png", data=encodeBASE64( bb) };
+	}
+}
+
+class MCPPTDPreviewAdapter
+{
+	function supports( args){
+		local path = args["path"];
+		return path && path.endsWith( ".ptd");
+	}
+
+	function open( args){
+		return MCPPTDPreviewSession( MCPPreview.checkProjectPath( args.path), args);
+	}
+}
+
+class MCPPTDPreviewSession
+{
+	path = null;
+	resource = null;
+	seed = 132;
+	stepms = 20;
+	maxduration = 5000;
+	info = null;
+
+	constructor( _path, args){
+		path = _path;
+		if( !path.startsWith( "/resource/efx/") && path != "/system/asset/def.ptd"){
+			throw Exception( "PTD path is outside the allowed directories: %S" % path, -32602);
+		}
+		local file = FileRef( "project"..path);
+		if( !file.exists()) throw Exception( "PTD file not found: %S" % path, -32602);
+		local source = file.load(); source.pos = 0;
+		if( !source.compile( path)) throw Exception( "PTD syntax validation failed: %S" % path, -32602);
+		resource = ::getResource( path);
+		if( !resource) throw Exception( "PTD resource could not be loaded: %S" % path, -32602);
+		seed = Math.clamp( int( args["seed"]??132), 0, 0x7fffffff);
+		stepms = Math.clamp( int( args["stepMs"]??20), 1, 100);
+		maxduration = Math.clamp( int( args["maxDurationMs"]??5000), 100, 10000);
+		info = inspectParticle();
+	}
+
+	function createObject(){
+		local obj = SK3DObject( resource), actions = [];
+		foreach( group in obj.ptc.groups) group.defseed = seed;
+		foreach( action in obj.ptc.actions){
+			if( action.acttype=="emitall" || action.acttype=="emit" || action.acttype=="loop" || action.acttype=="anchor"){
+				actions .. action;
+			}
+		}
+		obj.ptc.actions = actions;
+		obj.ptc.start();
+		return obj;
+	}
+
+	function inspectParticle(){
+		local obj = createObject(), ptdata = obj.ptc.ptdata;
+		local bounds = Rect3D(), hasbounds = false, elapsed = 0, peak = 0, peakscore = -1;
+		local element = ParticleElement();
+		local actiontypes = {}, warnings = [], loops = [];
+		foreach( action in ptdata.actions){
+			actiontypes[action.acttype] <- (actiontypes[action.acttype]||0)+1;
+			if( action.acttype == "loop") loops .. { time=action.time, target=action.lt, count=action.cnt };
+			if( action.acttype == "scp") warnings .. "scp action is disabled during preview";
+			if( action.acttype == "snd" || action.acttype == "quake") warnings .. (action.acttype.." action is omitted during preview");
+		}
+		foreach( group in ptdata.groups){
+			if( group.aimtype==1 || group.aimtype==2){
+				foreach( modifier in group.mod||[]){
+					if( modifier.classid=="ptcmod_rnd" && ((modifier["h"]||0) != 0 || (modifier["p"]||0) != 0 || (modifier["b"]||0) != 0)){
+						warnings .. "Billboard group '%S' uses Randomize rotation; verify directional texture orientation" % group.name;
+						break;
+					}
+				}
+			}
+		}
+		while( elapsed < maxduration){
+			local dt = Math.min( stepms, maxduration-elapsed);
+			obj.ptc.update( dt); elapsed += dt;
+			local visible = 0;
+			foreach( group in obj.ptc.groups){
+				group.beginElement( element);
+				for( ;;){
+					if( element.time >= 0.0) ++visible;
+					if( !group.nextElement( element)) break;
+				}
+			}
+			if( visible > peakscore){ peakscore = visible; peak = elapsed; }
+			if( obj.ptc.gbnd.r >= 0){ bounds.expand( obj.ptc.gbnd); hasbounds = true; }
+			if( !obj.ptc.alive && !obj.ptc.isActionRunning()) break;
+		}
+		if( elapsed >= maxduration && (obj.ptc.alive || obj.ptc.isActionRunning())) warnings .. "preview duration was capped";
+		local profile = ptdata["prof"];
+		local b = profile && profile["wholebnd"] ? clone profile.wholebnd :
+			(hasbounds ? [bounds.x,bounds.y,bounds.z,bounds.r,bounds.s,bounds.t] : [0,0,0,1,1,1]);
+		local duration = elapsed, times = [];
+		foreach( ratio in [0.0,0.1,0.25,0.5,0.75,1.0]) times .. int( duration*ratio);
+		return {
+			type="ptd", path=path, durationMs=duration, peakTimeMs=peak,
+			loop=length( loops)>0, loops=loops, groupCount=length( ptdata.groups),
+			actions=actiontypes, bounds=b, suggestedTimesMs=times,
+			suggestedCameras=["front","threequarter"], seed=seed, stepMs=stepms,
+			warnings=warnings,
+		};
+	}
+
+	function inspect(){
+		return info;
+	}
+
+	function cameraPosition( name, center, distance){
+		switch( name){
+		case "back": return Vector3D( center.x, center.y, center.z+distance);
+		case "left": return Vector3D( center.x-distance, center.y, center.z);
+		case "right": return Vector3D( center.x+distance, center.y, center.z);
+		case "top": return Vector3D( center.x, center.y+distance, center.z);
+		case "threequarter": return Vector3D( center.x+distance*0.65, center.y+distance*0.35, center.z-distance*0.65);
+		default: return Vector3D( center.x, center.y, center.z-distance);
+		}
+	}
+
+	function configureCamera( renderer, name, width, height){
+		local b = info.bounds, center = Vector3D( b[0], b[1], b[2]);
+		local radius = Math.max( b[3], b[4], b[5], 0.1), fovy = 35.0;
+		local distance = radius*1.25/Math.tan( fovy*0.5*Math.DTOR)+radius;
+		local cam = renderer.camera;
+		cam.perspective( fovy, float( width)/height, Math.max( 0.01, distance-radius*2.0), distance+radius*4.0);
+		local eye = cameraPosition( name, center, distance);
+		if( name == "top") cam.lookat( eye, center, Vector3D( 0,0,1));
+		else cam.lookat( eye, center, Vector3D( 0,1,0));
+		cam.updatePlanes();
+	}
+
+	function renderFrame( time, camera, width, height, background){
+		local scene = SK3DScene(), renderer = SK3DRenderer( scene), obj = createObject();
+		renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
+		renderer.bgpass.setColor( background);
+		configureCamera( renderer, camera, width, height);
+		scene.addObject( obj);
+		local elapsed = 0, target = Math.clamp( int( time), 0, maxduration);
+		if( target == 0) target = 1;
+		while( elapsed < target){
+			local dt = Math.min( stepms, target-elapsed);
+			scene.updateScene( dt); elapsed += dt;
+		}
+		local tex = Texture(); tex.create( width, height, SK_RGBA8, 1);
+		local old = skSetRenderTarget( tex);
+		renderer.render( (0,0,width,height));
+		local img = RGBAImage( width, height);
+		skReadPixels( 0, 0, width, height, img);
+		skSetRenderTarget( old);
+		obj.kill();
+		return img;
+	}
+
+	function render( args){
+		local mode = args["mode"]||"storyboard";
+		local modes = { frame=true, storyboard=true, turntable=true, matrix=true };
+		if( !modes[mode]) throw Exception( "Unsupported preview mode: %S" % mode, -32602);
+		local width = Math.clamp( int( args["width"]??256), 64, 512);
+		local height = Math.clamp( int( args["height"]??256), 64, 512);
+		local background = int( args["background"]??0x202020ff);
+		local times = args["times"];
+		local cameras = args["cameras"];
+		if( !times || !length( times)) times = mode=="frame" ? [info.peakTimeMs] : info.suggestedTimesMs;
+		if( !cameras || !length( cameras)) cameras = mode=="turntable" ? ["front","right","back","left"] : info.suggestedCameras;
+		if( mode == "frame"){ times = [times[0]]; cameras = [cameras[0]]; }
+		if( mode == "storyboard") cameras = [cameras[0]];
+		if( mode == "turntable") times = [times[0]];
+		if( length( times)*length( cameras) > 24) throw Exception( "Preview is limited to 24 cells.", -32602);
+		local cameraNames = { front=true, back=true, left=true, right=true, top=true, threequarter=true };
+		foreach( camera in cameras){
+			if( !cameraNames[camera]) throw Exception( "Unsupported preview camera: %S" % camera, -32602);
+		}
+		local defaultColumns = mode=="turntable" ? length( cameras) : length( times);
+		local columns = Math.clamp( int( args["columns"]??defaultColumns), 1, 8);
+		local cells = [], images = [];
+		foreach( camera in cameras){
+			foreach( time in times){
+				cells .. { index=length( cells), timeMs=int( time), camera=camera };
+				images .. renderFrame( time, camera, width, height, background);
+			}
+		}
+		columns = Math.min( columns, length( cells));
+		local rows = Math.iceil( float( length( cells))/columns);
+		if( width*columns > 8192 || height*rows > 8192) throw Exception( "Preview sheet dimensions exceed 8192 pixels.", -32602);
+		local sheet = RGBAImage( width*columns, height*rows, background);
+		foreach( i, img in images) sheet.draw( img, (i%columns)*width, (i/columns)*height);
+		return {
+			manifest={ type=info.type, path=path, mode=mode, cellWidth=width, cellHeight=height,
+				columns=columns, rows=rows, cells=cells, seed=seed, stepMs=stepms, bounds=info.bounds },
+			image=sheet,
+		};
+	}
+}
+
+MCPPreview.registerAdapter( MCPPTDPreviewAdapter());
+
+mcptools .. {
+	name = "rpgcobo_preview_inspect",
+	desc = "Inspects a previewable project artifact and returns deterministic preview metadata. Currently supports PTD files.",
+	argdef = {
+		path = { type="string", desc="Project-root path such as /resource/efx/example.ptd", required=true },
+		seed = { type="number", desc="Deterministic random seed", "default"=132 },
+		stepMs = { type="number", desc="Simulation step in milliseconds", "default"=20 },
+		maxDurationMs = { type="number", desc="Maximum simulated duration", "default"=5000 },
+	},
+	func = @( args){
+		local session = MCPPreview.openSession( args);
+		return { content=[{ type="text", text=encodeJSON( session.inspect(), true) }] };
+	},
+}
+
+mcptools .. {
+	name = "rpgcobo_preview_render",
+	desc = "Renders a deterministic preview frame or contact sheet. Currently supports PTD files.",
+	argdef = {
+		path = { type="string", desc="Project-root path such as /resource/efx/example.ptd", required=true },
+		mode = { type="string", desc="frame, storyboard, turntable, or matrix", "default"="storyboard" },
+		times = { type="array", items={ type="number" }, desc="Sample times in milliseconds; automatic when omitted" },
+		cameras = { type="array", items={ type="string" }, desc="Camera presets: front, back, left, right, top, threequarter" },
+		width = { type="number", desc="Width of each cell (64-512)", "default"=256 },
+		height = { type="number", desc="Height of each cell (64-512)", "default"=256 },
+		columns = { type="number", desc="Contact sheet column count (1-8)" },
+		background = { type="number", desc="RGBA background color", "default"=0x202020ff },
+		seed = { type="number", desc="Deterministic random seed", "default"=132 },
+		stepMs = { type="number", desc="Simulation step in milliseconds", "default"=20 },
+		maxDurationMs = { type="number", desc="Maximum simulated duration", "default"=5000 },
+	},
+	func = @( args){
+		local result = MCPPreview.openSession( args).render( args);
+		return { content=[
+			{ type="text", text=encodeJSON( result.manifest, true) },
+			MCPPreview.imageContent( result.image),
+		]};
+	},
+}

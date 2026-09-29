@@ -302,6 +302,18 @@ class OVFXPropertyEditPopupV extends PropertyEditPopupV
 }
 
 
+//	キャラ揺れ用。
+//	
+//	
+class VibePropertyEditPopupV extends OVFXPropertyEditPopupV
+{
+	static POPUPUIPATH = srcdir .. "/ui/ovfxproppopup.ui";
+
+	function startOvfx(){
+		rp3d.vibe( data);
+	}
+}
+
 //	汎用3Dプレビュー用。
 //	
 //	
@@ -315,8 +327,8 @@ class SK3DPropertyEditPopupV extends PropertyEditPopupV
 	bw = null;			//	BlockWorld: nullの場合はマッププレビューなしでグリッド表示
 	bw3d = null;		//	SK3DBlockWorld
 	
-	constructor( v, p, d){
-		super( v, p, d);
+	constructor( v, p, d, ref){
+		super( v, p, d, ref);
 		preview = CanvasBehavior( v.findChild( "preview"), null);
 		preview.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
 		camwork = preview.camwork;

@@ -701,6 +701,10 @@ class MapTools.tool_event extends MapTool
 		if( gz.data["role"]){	//	イベントを編集
 			tb = editor.data.event;
 			local propdef = ::RPGSystem.eventrole[gz.data.role];
+			//	デフォルト値を再設定
+			foreach( i, v in fget( propdef, "defdata")){
+				if( !(i in gz.data)) gz.data[i] <- deepclone( v);
+			}
 			if( propdef["edit"]){
 				newdata = propdef.edit( gz.data);
 			}else{
@@ -762,6 +766,7 @@ class MapTools.tool_event extends MapTool
 		local def = RPGSystem.eventrole["custom"];
 		local defdata = fget( def, "defdata");
 		local d = { role="custom", pos=d0.pos, name=d0.name, col=d0.col, flags=1, ...deepclone( defdata)};
+		local defdata0 = fget( def0, "defdata");
 		//	baseprops
 		foreach( prop in def.baseprops){
 			local val = ::getProperty( prop, d0);
@@ -795,6 +800,7 @@ class MapTools.tool_event extends MapTool
 				local rvar = d0[pid];
 				if( prop0["type"] == DATAID) rvar = "."..rvar;
 				else if( typeof( rvar) == SS_STRING) rvar = "'"..rvar;	//	※これだと自動翻訳から外れちゃうな～～～
+				else if( rvar == undefined) rvar = defdata0[pid];	//	存在しない場合はデフォルト値を
 				p.cmdblock[0] <- {"cmd":"cmd_compute","lvar":i,"op":"=","rvar":rvar};
 			}
 			d.page .. p;

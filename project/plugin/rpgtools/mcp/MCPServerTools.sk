@@ -250,6 +250,38 @@ mcptools .. {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
+//	rpgcobo_project_validate_artifact
+
+mcptools .. {
+	name = "rpgcobo_project_validate_artifact",
+	desc = "Validates a project artifact without executing it. Currently supports PTD syntax validation.",
+	argdef = {
+		path = { type="string", desc="PTD path using /project as the root, such as /resource/efx/example.ptd", required=true },
+	},
+	func = @( args){
+		local path = args["path"];
+		if( !path.startsWith( "/") || path.startsWith( "/project/") || path.contains( "..")){
+			throw Exception( "Invalid project-root path: %S" % path, -32602);
+		}
+		if( !path.endsWith( ".ptd")){
+			throw Exception( "Unsupported artifact type: %S" % path, -32602);
+		}
+		if( !path.startsWith( "/resource/efx/") && path != "/system/asset/def.ptd"){
+			throw Exception( "PTD path is outside the allowed directories: %S" % path, -32602);
+		}
+		local file = FileRef( "project"..path);
+		if( !file.exists()) throw Exception( "PTD file not found: %S" % path, -32602);
+		local source = file.load();
+		source.pos = 0;
+		local compiled = source.compile( path);
+		if( !compiled) throw Exception( "PTD syntax validation failed: %S" % path, -32602);
+		return { content=[
+			{ type="text", text="PTD syntax validation passed: %S" % path },
+		]};
+	},
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 //	rpgcobo_editor_get_workspace_info
 
 mcptools .. {
@@ -278,6 +310,34 @@ mcptools .. {
 		local dataid = args["id"];
 		local dbtype = RPGData.getDataType( dataid);
 		local path = ".x/%S/%S" % (dbtype, dataid);
+		::skstudio.openEditor( path);
+		local ed = ::skstudio.editor;
+		if( ed["name"] == "editor_empty"){
+			return {
+				content=[{ type="text", text="Editor open error. path=%S" % path }, ],
+				isError = true,
+			};
+		}
+		return { content=[
+			{ type="text", text="Editor opened. path=%S" % path },
+		]};
+	},
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+//	rpgcobo_editor_open_editor
+
+mcptools .. {
+	name = "rpgcobo_editor_open_editor",
+	desc = "Opens a project item in its native editor. Tool paths use /project as the root.",
+	argdef = {
+		path = { type="string", desc="Project-root path such as /resource/efx/example.ptd or /system/asset/def.ptd", required=true },
+	},
+	func = @( args){
+		local path = args["path"];
+		if( !path.startsWith( "/") || path.startsWith( "/project/") || path.contains( "..")){
+			throw Exception( "Invalid project-root path: %S" % path, -32602);
+		}
 		::skstudio.openEditor( path);
 		local ed = ::skstudio.editor;
 		if( ed["name"] == "editor_empty"){
@@ -420,7 +480,14 @@ mcptools .. {
 	},
 	func = @( args){
 		//	別スレッドでデバッグ開始。プロセスが終了したらdebugpidをクリアする。
-		startDebugMenu( m);
+		local debugargs = {
+			uid="menu_debug_start",
+			slot=args["saveslot"]??-1,
+			debugitems=args["debugitems"]??false,
+			debugskills=args["debugskills"]??false,
+			debuglv=args["debuglv"]??0,
+		};
+		startDebugMenu( debugargs);
 		//
 		if( ::debugsession){
 			return { content=[ { type="text", text="RPG-Cobo debug session started." } ]};

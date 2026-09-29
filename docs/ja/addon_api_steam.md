@@ -183,6 +183,72 @@ if(lang == "japanese") {
 ```
 
 ---
+### `SteamAPI.getDLCData()`
+
+DLC（ダウンロードコンテンツ）の情報を取得します。
+
+**戻り値**: Array - `[appid (int), name (string), installed (bool)]` の配列
+
+**説明**: 現在のゲームに関連する DLC の情報を取得します。
+
+**例**:
+```javascript
+local dlcData = SteamAPI.getDLCData();
+foreach( dlc in dlcData) {
+	println("DLC AppID: " .. dlc[0] .. ", Name: " .. dlc[1] .. ", Installed: " .. dlc[2]);
+}
+```
+
+---
+### `SteamAPI.isAppInstalled(appid)`
+
+指定したアプリケーションがインストールされているかを確認します。
+
+**戻り値**: bool - インストールされていれば true、されていなければ false
+
+**説明**: 指定したアプリケーションがインストールされているかを確認します。
+
+**例**:
+```javascript
+local appid = 123456; // 確認したいアプリケーションID
+local installed = SteamAPI.isAppInstalled(appid);
+println("AppID " .. appid .. " installed: " .. installed);
+```
+
+---
+### `SteamAPI.isDLCInstalled(appid)`
+
+指定したダウンロードコンテンツ（DLC）がインストールされているかを確認します。
+
+**戻り値**: bool - インストールされていれば true、されていなければ false
+
+**説明**: 指定したDLCがインストールされているかを確認します。
+
+**例**:
+```javascript
+local dlcid = 123456; // 確認したいDLCのID
+local installed = SteamAPI.isDLCInstalled(dlcid);
+println("DLCID " .. dlcid .. " installed: " .. installed);
+```
+
+---
+### `SteamAPI.isSubscribed([appid])`
+
+指定したアプリケーションにユーザーがサブスクライブしているかを確認します。
+未指定の場合、現在のアプリケーションを対象とします。
+
+**戻り値**: bool - サブスクライブしていれば true、していなければ false
+
+**説明**: 指定したアプリケーションにユーザーがサブスクライブしているかを確認します。
+
+**例**:
+```javascript
+local appid = 123456; // 確認したいアプリケーションID
+local subscribed = SteamAPI.isSubscribed(appid);
+println("AppID " .. appid .. " subscribed: " .. subscribed);
+```
+
+---
 
 ## 認証・チケット
 
@@ -285,9 +351,19 @@ SteamAPI.cancelSteamAuthSessionTicket(ticketHandle);
 
 ---
 
+### `SteamAPI.getAchievements()`
+
+ユーザーのすべての実績の状態を取得します。
+
+**戻り値**: table - { id=achievedtime}
+
+**説明**: ユーザーのすべての実績の達成状況を取得します。キーが実績のSteam上でのID、値が達成時刻（タイムスタンプ）となります。未達成の場合は値が `0` となります。
+
+---
+
 ### `SteamAPI.setAchievement(name)`
 
-実績を解除します。
+実績を解除(アンロック)します。
 
 **引数**:
 - `name` (string): 実績の API 名（Steamworks App Admin で設定）
@@ -476,6 +552,46 @@ function checkTextInput() {
 		playerName = result;
 	}
 }
+```
+
+---
+
+## 画面表示
+
+### `SteamAPI.activateGameOverlay( dialog, [friendid])`
+
+Steam オーバーレイをアクティブにします。
+
+**引数**:
+- `dialog` (string): 表示するダイアログの種類（例: `"friends"`, `"achievements"`）
+- `friendid` (long|string, オプション): フレンドのプロフィールを表示する場合に指定する Steam ID。
+
+**戻り値**: bool - オーバーレイの表示に成功した場合 true
+
+**説明**: 指定したダイアログを Steam オーバーレイで表示します。`friendid` はオプションで、フレンドのプロフィールを表示する場合に使用します。
+
+**例**:
+```javascript
+SteamAPI.activateGameOverlay("friends");
+```
+
+---
+
+### `SteamAPI.activateGameOverlayToStore( appid, [flag])`
+
+ゲーム内でDLCを閲覧、購入するための Steam オーバーレイをアクティブにします。
+
+**引数**:
+- `appid` (int): ストアページを表示するアプリの App ID。
+- `flag` (int, オプション): 表示オプション（例: `0` = デフォルト）。
+
+**戻り値**: bool - オーバーレイの表示に成功した場合 true
+
+**説明**: 指定したアプリのストアページを Steam オーバーレイで表示します。`flag` はオプションで、表示オプションを指定します。
+
+**例**:
+```javascript
+SteamAPI.activateGameOverlayToStore(YOUR_APP_ID, 0);
 ```
 
 ---

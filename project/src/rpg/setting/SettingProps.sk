@@ -401,23 +401,6 @@ stageprops .. {
 	}
 };
 
-/*
-		{ pid="spd", lbl="$T.lbl_speed", type=VEC2, range=(0.0,1.0), q=100, defval=[0.05,0.05], ui="bar"},
-		{ pid="cloudcol", lbl="$T.lbl_color", type=RGB, defval=0x999999ff},
-		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(1,1000), q=1, defval=150, ui="bar"},
-		{ pid="dens", lbl="$T.lbl_density", type=SCALAR, range=(0.01,0.99), q=100, defval=0.36, ui="bar"},
-		{ pid="smooth", lbl="$T.lbl_smooth", type=SCALAR, range=(0.00,0.99), q=100, defval=0.09, ui="bar"},
-*/
-::weatherlist <- [
-	{ id="none", type=null, },
-	{ id="rain1", type="rain", spd=2.0, raincol=0xcce7ffff, dropw=0.02, droph=0.04, dropangle=0.0, dropdens=10, darken=40 },
-	{ id="rain2", type="rain", spd=3.0, raincol=0xcce7ffff, dropw=0.02, droph=0.08, dropangle=0.25, dropdens=25, darken=70 },
-	{ id="mist1", type="mist", spd=[0.22,0.1], dens=40, scale=50, xscale=3.0, modspd=0.1, mistcol=0xcce7ffff },
-	{ id="mist2", type="mist", spd=[1.2,-0.6], dens=48, scale=60, xscale=4.5, modspd=0.9, mistcol=0xCBC78Fff },
-	{ id="cloud1", type="cloud", spd=[0.05,0.05], cloudcol=0x999999ff, scale=150, dens=0.36, smooth=0.09 },
-	{ id="snow1", type="snow", spd=2.0, snowcol=0xffffffff, scale=150, dens=0.36, },
-];
-
 local weatherpropdef(){
 	local idmap = {}, idlist = [];
 	foreach( i, v in ::weatherlist){

@@ -21,22 +21,30 @@ function showSkillList( pc, items){
 	list.gpui.scrollNameToVisible( "i0", 0);
 	list.focusTo( "i0");	//	保存されたカーソルに合わせる。
 	//	
+	if( battle.showskillinfo) battleui.action( "showdesc");
+	//	
 	local selitem = RPGMain.uiLoop( {
 		"back" : @( e){ return "back"; },
 		"action" : @( e){
 			if( e.item && !fget( e.item, "disable")) return e.item;	//	MP足りなかったりしたらdisableになる
 		},
-		"alt" : @( e){	//	説明ウィンドウを表示切り替え
-			battleui.action( "showdesc");
-		},
 		"select" : @( e){	//	項目を選択したら説明等更新
-			local v = e.item["val"];
-			battleui.bindValue( "skilldesc", ::rtf( v["desc"]));
-			battleui.bindValue( "inforlbl", ::RPGSystem.getConsumeInfo( v["consume"]));
+			local v = e.item["val"], ok = !fget( e.item, "disable");
+			local descstr = v["desc"] ? ::rtf( "[P]%S: [O]%S" % ( e.item.val["name"] ,v["desc"]) ) : ""; 
+			local consstr = v ? rtf( ok ? ::RPGSystem.getConsumeInfo( v["consume"]) : "[G]$T.cantuse") : "";
+			battleui.bindValue( "descllbl", descstr);
+			battleui.bindValue( "inforlbl", consstr);
+			battleui.bindValue( "descrlbl", consstr);
 		},
 		"idle" : @( e){ if( !pc.isCommandable() || battle.isauto) return "back"; },	//	コマンド入力不能な場合は"back"を選択とする
+		"option" : @( e){
+			playSound( "SE013");
+			battle.showskillinfo = !battle.showskillinfo;
+			battleui.action( battle.showskillinfo ? "showdesc" : "hidedesc");
+		}
 	});
 	battleui.action( "hidelist");
+	battleui.action( "hidedesc");
 	return selitem["val"] || null;	//	
 }
 

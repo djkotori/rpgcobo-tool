@@ -387,6 +387,7 @@ class EfxEditor extends EditorViewBase
 		sb .. "\t\tblendmode = " .. g.blendmode .. "\n"
 		sb .. "\t\tblend = " .. g.blend .. "\n"
 		if( g.tec) sb .. "\t\ttec = " .. _str( g.tec) .. "\n"
+		if( g.hsv[0] || g.hsv[1] || g.hsv[2]) sb .. "\t\thsv = " .. encodeJSON( g.hsv) .. "\n"
 		if( g.overlay) sb .. "\t\toverlay = " .. g.overlay .. "\n"
 		sb .. "\t\tKa = " .. sprintf( "0x%08x", g.Ka) .. "\n"
 		sb .. "\t\tKs = " .. sprintf( "0x%08x", g.Ks) .. "\n"
