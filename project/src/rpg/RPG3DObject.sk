@@ -209,7 +209,6 @@ class RPG3DObject extends SK3DObject
 	floorobj = null;			//	RPG3DMapAsset | null : 動くアセットに乗ってる場合そのオブジェクト。
 
 	//	状態
-	ovfx = null;				//	自分に発生しているオーバーレイエフェクト。
 	selbits = 0;				//	選択状態ビット。1が主選択、2が副選択。どっちかが立ってれば選択状態。
 	light = null;				//	設定されたライト。1つのみ
 	
@@ -326,9 +325,6 @@ class RPG3DObject extends SK3DObject
 			}else{
 				if( mainaction) mainaction.updateAction( dt);
 				matdirty = true;
-			}
-			if( ovfx){
-				if( !ovfx.update( dt)) overlay( null);
 			}
 			updatepos( dt);
 		}
@@ -471,6 +467,9 @@ class RPG3DObject extends SK3DObject
 		if( efx["vibe"]["enabled"] && !noov){
 			vibe( efx.vibe);
 		}
+		if( efx["efxani"]["enabled"] && !noov){
+			efxani( efx.efxani, efx["waittime"]||500);
+		}
 		return {sk=sk,efx=efx};
 	}
 
@@ -490,23 +489,24 @@ class RPG3DObject extends SK3DObject
 	//	※コラプスだけが特殊で、RPG3DPictureで個別実装の必要がある。ベースパスでアルファテストのピクセル破棄が必要なため。
 	//	
 	function overlay( data){
-		local ma = getMaterials();
 		if( data){
-			ovfx = OverlayEffect( this, data);
-			foreach( m in ma) ovfx.setToMaterial( m);
-			visiblemask |= 8196;
+			local mod = RPG3DOverlayModifier( this, data);
+			addModifier( mod);
 		}else{
-			if( ovfx){
-				foreach( m in ma) ovfx.resetToMaterial( m);
-			}
-			ovfx = null;
-			visiblemask &= ~8196;
+			removeModifierOrder( 310);
 		}
 	}
 
 	function vibe( data){
 		if( data){
 			local mod = RPGVibeModifier( this, data);
+			addModifier( mod);
+		}
+	}
+
+	function efxani( data, time){
+		if( data){
+			local mod = RPGEfxAnimeModifier( this, data, time);
 			addModifier( mod);
 		}
 	}
@@ -1067,7 +1067,8 @@ class SK3DEffect extends SK3DObject
 	}
 }
 
-//	RPG-Cobo
+//	Modifiers
+
 class RPG3DRotateModifier extends SK3DModifier
 {
 	order = 101;

@@ -43,9 +43,9 @@ class ResEditorEfx extends ResEditor
 				mdlid = @() (::skstudio.editor.preview.resid=="CE000" ? "CV000" : ::skstudio.editor.preview.resid),
 				edit = @( val, pl){
 					local newval = OVFXPropertyEditPopupV.run( null, pl.prop.propdef, val);
-					return isdefval( newval, pl.prop.propdef) ? null : newval;
+					return isdefval( newval, pl.prop.propdef) ? {} : newval;
 				}
-			}, defval=null
+			}, defval={}
 		},
 		{ pid="vibe", lbl="$T.lbl_chrvibe", type=PROPERTYLIST, 
 			propdef={
@@ -67,11 +67,30 @@ class ResEditorEfx extends ResEditor
 				
 				edit = @( val, pl){
 					local newval = VibePropertyEditPopupV.run( null, pl.prop.propdef, val);
-					return isdefval( newval, pl.prop.propdef) ? null : newval;
+					return isdefval( newval, pl.prop.propdef) ? {} : newval;
 				}
-			}, defval=null
+			}, defval={}
 		},
-
+		{ pid="efxani", lbl="$T.lbl_anime", type=PROPERTYLIST, 
+			propdef={
+				name = "$T.lbl_chrvibe"
+				props = [
+					{ pid="enabled", lbl="$T.lbl_enabled", type=BOOL, defval=false }
+					{ pid="delay", lbl="$T.lbl_delaytime", type=SCALAR, ui="bar", barrange=(0,2000,20), range=(0,10000), defval=0 }
+					{ pid="reset", lbl="$T.lbl_resetonend", type=BOOL, defval=true }
+					{ pid="ani", lbl="$T.lbl_anime", type=ANIME_INLINE, defval="stand", cnt="cnt5.ui" }
+				],
+				tostring = @( v){
+					return v["enabled"] ? "$T.lbl_enabled" : "$T.lbl_disabled";
+				}
+				copykey = "efxani"
+				
+				edit = @( val, pl){
+					local newval = PropertyEditPopup.run( null, pl.prop.propdef, val);
+					return isdefval( newval, pl.prop.propdef) ? {} : newval;
+				}
+			}, defval={}
+		}
 		{ pid="eventuse", lbl="$T.lbl_eventuse", type=BOOL, defval=false },
 		{ pid="waittime", lbl="$T.lbl_waittime", type=SCALAR, range=(0,4000), defval=500, ui="bar", barrange=(0,1000,10) }
 	];

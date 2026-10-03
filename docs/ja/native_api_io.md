@@ -89,7 +89,7 @@ BASE64エンコードを行います。
 
 **戻り値**: BASE64エンコードされた文字列またはバイトバッファ
 
-#### `decodeBASE64(data, dest)`
+#### `decodeBASE64(data[, dest])`
 ```
 ByteBuffer decodeBASE64(string|ByteBuffer data, ByteBuffer dest)
 ```
@@ -97,7 +97,7 @@ BASE64デコードを行います。
 
 **引数**:
 - `data` (string/ByteBuffer): デコードするデータ
-- `dest` (ByteBuffer): 出力先バイトバッファ
+- `dest` (ByteBuffer): 出力先バイトバッファ。未指定の場合は新しいTempBufferが作成されます
 
 **戻り値**: デコードされたバイトバッファ
 

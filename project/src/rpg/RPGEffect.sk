@@ -101,6 +101,38 @@ class OverlayEffect
 	}
 }
 
+//	オーバーレイを3Dオブジェクトに適用するためのSK3DModifier
+//	
+class RPG3DOverlayModifier extends SK3DModifier
+{
+	order = 310;
+	
+	sk3d = null;
+	ovfx = null;
+	
+	constructor( o, data){
+		sk3d = o;
+		local ma = o.getMaterials();
+		ovfx = OverlayEffect( o, data);
+		foreach( m in ma) ovfx.setToMaterial( m);
+		o.visiblemask |= 8196;
+	}
+
+	function modify( o, dt){
+		if( ovfx){
+			if( !ovfx.update( dt)){ interrupt( o); return false; }
+		}
+		return true;
+	}
+
+	function interrupt( o){
+		if( ovfx){
+			local ma = o.getMaterials();
+			foreach( m in ma) ovfx.resetToMaterial( m);
+		}
+		o.visiblemask &= ~8196;
+	}
+}
 
 //	キャラ揺れ。エフェクトに付随する。※キャラ自体じゃなくてボーンを揺らせばエフェクト自体は揺れない
 //	揺れ軸 : 全方向、上下、前後
@@ -123,16 +155,6 @@ class RPGVibeModifier extends SK3DModifier
 	}
 
 	function modify( o, dt){
-		o.matdirty = true;
-		if( (totaltime-=dt) > 0){
-			o.getModTransform().translate( Vector3D.fromRandom( -mag, mag));
-			return true;
-		}else{
-			return false;
-		}
-	}
-
-	function modify( o, dt){
 		time += dt;
 		if( time >= totaltime) return false;
 		if( time < 0.0) return true;
@@ -146,6 +168,38 @@ class RPGVibeModifier extends SK3DModifier
 		}
 		o.getModTransform().translate( v);
 		return true;
+	}
+}
+
+//	エフェクトに付随するアニメーション再生。
+//	
+class RPGEfxAnimeModifier extends SK3DModifier
+{
+	order = 100;
+
+	delay = 100;			//	再生開始までのディレイ
+	ani = null;				//	アニメーションデータ
+	reset = true;			//	終了時にアニメをリセット
+	totaltime = 1000;		//	終了までの時間
+
+	time = 0.0;				//	経過時間
+
+	constructor( o, data, time){
+		delay = Math.max( data["delay"], 1);	//	delay>0であってほしい
+		ani = data["ani"];
+		reset = data["reset"]??true;
+		totaltime = time;
+	}
+
+	function modify( o, dt){
+		if( delay > 0 && (delay-=dt) <= 0) o.anime2( ani);	//	ディレイ官僚の瞬間にアニメ再生
+		time += dt;
+		if( time >= totaltime){ interrupt( o); return false; }
+		return true;
+	}
+
+	function interrupt( o){
+		if( reset) o.anime2( #{id="stand"});
 	}
 }
 

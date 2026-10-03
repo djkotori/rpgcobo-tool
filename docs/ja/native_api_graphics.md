@@ -413,11 +413,11 @@ skPopMatrix(SK_WORLD);
 
 #### `skDrawSprites(...sprites)`
 #### `skDrawSprites(spriteArray)`
-複数のスプライトを描画します。
+複数のスプライト又はテキストボックスを描画します。
 
 **引数**:
-- `sprites` (Sprite, 可変長): スプライト
-- `spriteArray` (array): スプライトの配列
+- `sprites` (Sprite|TextBox, 可変長): スプライト又はテキストボックス
+- `spriteArray` (array): スプライト又はテキストボックスの含まれる配列
 
 **説明**: 可視かつ`bnd`が設定されているスプライトのみ描画されます。
 

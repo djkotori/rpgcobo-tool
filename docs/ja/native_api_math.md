@@ -1439,6 +1439,14 @@ Transform([tx,ty,tz,sx,sy,sz,rx,ry,rz,rw])  // 配列から
 
 **戻り値**: 自身
 
+##### `setMatrix(matrix)`
+行列から位置・スケール・回転の成分を取り出し設定します。
+
+**引数**:
+- `matrix` (Matrix): 変換行列
+
+**戻り値**: 自身
+
 ##### `translate(x, y, z)` / `translate(vector)`
 平行移動を適用します。
 
