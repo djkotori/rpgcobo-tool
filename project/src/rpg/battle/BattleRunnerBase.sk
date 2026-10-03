@@ -182,6 +182,7 @@ class BattleRunnerBase
 		stage.view3d.addChild( tgtview);
 		rp3d.tgtview = tgtview;
 		rp3d.anime2( #{id="stand"});
+		::rpgstat.discover( ec.dataid, 1);		//	エネミー発見＋遭遇数追加。撃破数はvictoryUIで
 		return rp3d;
 	}
 
@@ -546,6 +547,7 @@ class BattleRunnerBase
 					break;
 				}
 			}
+			::rpgstat.countup( e.dataid, "win", 1);		//	エネミー撃破数カウント
 		}
 		//	取得UIを表示、キャラにも経験値ゲージ追加。
 		local view = RPGMain.showView( {
@@ -609,6 +611,7 @@ class BattleRunnerBase
 		::rpgstat.money += money;
 		foreach( item in items){
 			::rpgstat.addItemID( item.dataid, item.num, item["LV"]);
+			::rpgstat.discover( itemid, num);		//	アイテム発見＋取得数追加
 		}
 		//	最後にクリック待ち
 		RPGMain.showUI( { key="misc_waitclick"});	// RPGMain.waitClick();

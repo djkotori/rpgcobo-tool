@@ -432,8 +432,8 @@ class MapSideView extends SKView
 			if( ::conf.map[r.mid] && !Dialogs.confirm( {msg=rtf( tmpl( T.tmpl_override_noundo, {v0=`$r.mid`, v1=`$cbdata.data.name`})), icon="\ue002"} )) return;
 			//	
 			local dir = ::getResource( "/data/mapdata").file;
-			local srcbwbb = uncompressZSTD( decodeBASE64( cbdata.bw64, ByteBuffer()));
-			local srcwebpbb = decodeBASE64( cbdata.ms64, ByteBuffer());
+			local srcbwbb = uncompressZSTD( decodeBASE64( cbdata.bw64));
+			local srcwebpbb = decodeBASE64( cbdata.ms64);
 			local dstbwf = FileRef( dir, r.mid .. ".bw");
 			local dstwebpf = FileRef( dir, r.mid .. ".webp");
 			local data = cbdata.data;	//	cbdataは取得時にコピーされるのでこれで良し

@@ -243,7 +243,9 @@ class PMMaterialPanel
 	}
 	
 	function propevent( e){
-		local cmd = e.actioncmd, pid = cmd.prop.pid;
+		local cmd = e.actioncmd;
+		if( cmd["cmd"] != "prop") return;
+		local pid = cmd.prop.pid;
 		if( setMaterialParam( selmtl, pid, cmd.val)){
 			editor.submitOp( editor.encodePM( editor.pm));	//	
 			if( pid == "tec" || pid == "mtype"){

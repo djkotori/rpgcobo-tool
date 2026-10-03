@@ -861,6 +861,7 @@ class PropertyBehaviors.List extends PropertyBehavior
 
 	function init(){
 		menu = MenuBehavior( view.findChild( "listmenu"), null);
+		menu.view.addEventListener( ITEM_EVENT, hoverevent);
 		if( typeof( prop["list"]) != SS_CLOSURE ) updateMenu( null);
 	}
 
@@ -890,14 +891,25 @@ class PropertyBehaviors.List extends PropertyBehavior
 	
 	function paramevent( e){
 		if( e.src==menu.view){
-			if( menu.selitem["select"]){
-				local ret = menu.selitem.select( this, menu.selitem.val);
-				if( ret == undefined) return setParam( val);
-				setParam( ret);
-			}else{
-				val = menu.selitem.val;
+			if( e.id == ACTION_PERFORMED){
+				if( menu.selitem["select"]){
+					local ret = menu.selitem.select( this, menu.selitem.val);
+					if( ret == undefined) return setParam( val);
+					setParam( ret);
+				}else{
+					val = menu.selitem.val;
+				}
+				postActionEvent( true);
 			}
-			postActionEvent( true);
+		}
+	}
+
+	function hoverevent( e){
+		if( prop["hover"]){
+			if( e.id == ITEM_HOVER){
+				local hovered = e.actioncmd;
+				prop.hover( hovered, this);
+			}
 		}
 	}
 }

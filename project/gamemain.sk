@@ -100,15 +100,15 @@ function preloaShaders( glob=null){
 		if( osname=="Windows"){
 			if( !clientconf.screen.fullscreen){
 				local wh = clientconf.screen.reso_window.split( "x");	//	"1920x1080"のような文字列
-				skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 5|16);
+				skCreateScreen( "RPG-Cobo Game", int( wh[0]), int( wh[1]), 5|16);
 			}else{
 				local wh = clientconf.screen.reso_screen.split( "x");
 				if( !skSupportsDisplaySize( int( wh[0]), int( wh[1]))) wh = ["1280","720"];
-				skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 0);
+				skCreateScreen( "RPG-Cobo Game", int( wh[0]), int( wh[1]), 0);
 			}
 		}else{	//	Windows以外は画面いっぱい
 			local wh = skGetDisplaySize( []);
-			skCreateScreen( "GAME TITLE", int( wh[0]), int( wh[1]), 1);
+			skCreateScreen( "RPG-Cobo Game", int( wh[0]), int( wh[1]), 1);
 		}
 	}
 
@@ -125,7 +125,8 @@ function preloaShaders( glob=null){
 				override( conf._map, trans.transdict, false);
 			}
 		}
-	}, -9999);
+		skMoveScreen( {name=conf.setting["title"]});
+	}, -100);
 
 	skBeginRender();
 	skClearParam( #ClearParam( 0.0, 0.0, 0.0, 1.0));

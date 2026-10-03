@@ -18,6 +18,11 @@ local efxplacelist = [
 	"center", "top", "bottom", "attack", "screen",
 ];
 
+local isdefval( v, props){
+	local defval = {}; setDefaultProperties( props, defval);
+	return !(defval<>v);
+}
+
 //	
 class ResEditorEfx extends ResEditor
 {
@@ -36,12 +41,11 @@ class ResEditorEfx extends ResEditor
 		{ pid="ovfx", lbl="$T.lbl_ovfx", type=PROPERTYLIST, 
 			propdef={ ...OverlayEffect.ovfxpropdef,
 				mdlid = @() (::skstudio.editor.preview.resid=="CE000" ? "CV000" : ::skstudio.editor.preview.resid),
-				
 				edit = @( val, pl){
 					local newval = OVFXPropertyEditPopupV.run( null, pl.prop.propdef, val);
-					return newval;
+					return isdefval( newval, pl.prop.propdef) ? null : newval;
 				}
-			}, defval={}
+			}, defval=null
 		},
 		{ pid="vibe", lbl="$T.lbl_chrvibe", type=PROPERTYLIST, 
 			propdef={
@@ -63,9 +67,9 @@ class ResEditorEfx extends ResEditor
 				
 				edit = @( val, pl){
 					local newval = VibePropertyEditPopupV.run( null, pl.prop.propdef, val);
-					return newval;
+					return isdefval( newval, pl.prop.propdef) ? null : newval;
 				}
-			}, defval={}
+			}, defval=null
 		},
 
 		{ pid="eventuse", lbl="$T.lbl_eventuse", type=BOOL, defval=false },

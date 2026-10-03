@@ -794,10 +794,10 @@ fs ssshadow
 		highp vec4 a = texelFetch( litprmtex, ivec2( 0, i), 0);
 		highp vec4 b = texelFetch( litprmtex, ivec2( 1, i), 0);
 		highp vec4 c = texelFetch( litprmtex, ivec2( 2, i), 0);
-		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.2+a.w*0.02);	//	z offset
+		highp vec3 lwvp = b.xyz + vec3( 0.0, 0.0, 0.1);	//	z offset
 		highp vec3 d = lwvp - wvp;
 		highp float dist = length( d);
-		if( dist >= a.w) return vec4( 1.0);
+		if( max( dist, 2.4) >= a.w) return vec4( 1.0);
 		highp vec3 l = normalize( d);
 		highp float atten = distatten( dist, a.w) * spotatten( c.xyz, l, b.w, c.w);
 		if( atten < THRS) return vec4( 1.0);
@@ -814,6 +814,9 @@ fs ssshadow
 			if( scz > samplePos.z+0.04 && scz < samplePos.z+2.0){
 				highp uint u1 = texture( gtex1, suv).x, u2 = texture( gtex2, suv).x;	//	自己発光チェック 2sample...
 				float shadow = float( (u1>>29u)==0u && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
+				float sldist = length( samplePos - lwvp);
+				shadow = clamp( shadow + (2.0-sldist*3.0), 0.0, 1.0);
+				//
 				float w = 1.0-atten; w *= w; w *= w;
 				int ch = int( fract( c.w) * 255.0) & 3;
 				vec4 p = vec4( 1.0); p[ch] = mix( shadow, 1.0, w);
@@ -902,7 +905,7 @@ param sssupsample
 fs sssupsample
 {
 	const int R = 2;
-	const float SIGMA = float( R) * 0.7;
+	const float SIGMA = float( R) * 0.73;
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
 	const float SHARPEN = 2.0;
 	

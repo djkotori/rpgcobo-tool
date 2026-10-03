@@ -262,6 +262,7 @@ function putField( o, key, val){
 class Module
 {
 	plugs = null;
+	plugmap = null;
 	actionhooks = null;
 
 	constructor(){
@@ -282,6 +283,7 @@ class Module
 	}
 	
 	function loadPlugins( plugmap){
+		this.plugmap = plugmap;
 		local plugdir = ::getResource( "/plugin");
 		local plugs = this.plugs = [];
 		foreach( i, v in plugmap){

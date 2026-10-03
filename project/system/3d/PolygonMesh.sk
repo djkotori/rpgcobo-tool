@@ -330,8 +330,13 @@ class PolygonMeshLoader
 			t = data = func();	//	テーブルにデータが入る
 		}
 		//	modeldata cloneして中身をいじくれるように
+		if( t["model64"]){
+			local bb = decodeBASE64( t["model64"]);
+			mesh = PolygonMesh();
+			mesh.loadModelData( bb);
+			bb.dispose();
+		}else
 		if( !t["modeldata"]){
-		//	throw Exception( sprintf("no 'modeldata' in %S",res.path));
 			mesh = PolygonMesh();
 			mesh.face = [];
 		}else{

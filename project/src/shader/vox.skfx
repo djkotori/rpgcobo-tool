@@ -152,7 +152,7 @@ fs vox
 				mediump float pc = texture( ptntex, uvr*ptntexscale).x*8.0+0.21569;
 				mediump float sc = mix( 1.0, pc, m[2].w*2.0);	// m[2].w*	color scale. m[3].w => contrast
 				pix.xyz = clamp( pix.xyz*sc, 0.0, 1.0);
-				m[1].y *= sc*sc;	//	standard only...
+				m[1].y *= sc;	//	standard only...
 				// m[0].x = mix( m[0].x, 1.0, abs( 1.0-pc)); m[1].z = 1.0-sc;
 			}
 			g.rough = m[0].x;

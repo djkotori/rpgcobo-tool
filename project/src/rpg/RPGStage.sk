@@ -323,6 +323,7 @@ class RPGStage
 		ss.player = {
 			pos=(p.pos.x,p.pos.y,p.pos.z, p.dir),
 		};
+		ss.mapmask = clone stat.mapmask;
 		ss.camwork = deepclone( camwork.data);
 		ss.statmap = deepclone( stat.statmap);	//	これは現在のstatmapを入れればいいかな
 		ss.evarmap = {};
@@ -344,7 +345,7 @@ class RPGStage
 		ss.env = {
 			bgmid = getBGMID(),
 		};
-		printf( "STAGE SNAPSHOT!!!!!!!! %S\n", encodeJSON( {evarmap=ss.evarmap, estatmap=ss.estatmap, statmap=ss.statmap, player=ss.player, dynassets=ss.dynassets, env=ss.env}, 5));
+		// printf( "STAGE SNAPSHOT!!!!!!!! %S\n", encodeJSON( {evarmap=ss.evarmap, estatmap=ss.estatmap, statmap=ss.statmap, player=ss.player, dynassets=ss.dynassets, env=ss.env}, 5));
 		return ss;
 	}
 

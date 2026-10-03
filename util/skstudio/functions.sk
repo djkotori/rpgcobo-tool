@@ -364,7 +364,7 @@ class TransDict
 		_meta = deepclone( dictconf._meta);
 		checktb = {};
 		if( length( dictconf["check"])){
-			local cbb = decodeBASE64( dictconf.check, ByteBuffer());
+			local cbb = decodeBASE64( dictconf.check);
 			local ctb = decodeJSON( uncompressZSTD( cbb));
 			local keys = Table.keys( flattb).sort();
 			foreach( i, v in ctb){

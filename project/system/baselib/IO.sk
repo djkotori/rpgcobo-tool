@@ -12,6 +12,14 @@ function future::suspendget(){
 	}
 }
 
+function future::then( callback){
+	local self = this;
+	setInterval( @(){
+		local o = self.tryget();
+		if( o != undefined){ callback( o); return undefined; }
+	}, 10);
+}
+
 local ipmap = {};
 
 //	global func

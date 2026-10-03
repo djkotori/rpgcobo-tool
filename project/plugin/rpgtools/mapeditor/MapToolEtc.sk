@@ -270,7 +270,7 @@ class MapTools.tool_asset extends MapTool
 		e.consume();
 		if( e.actioncmd["aid"]){
 			aid = e.actioncmd["aid"];
-			local bb = uncompressZSTD( decodeBASE64( e.actioncmd.bw64, ByteBuffer()));
+			local bb = uncompressZSTD( decodeBASE64( e.actioncmd.bw64));
 			abw = ObjectInput.decode( bb);
 		}
 	}
@@ -426,7 +426,7 @@ class SelectAsset
 					suspend();
 					local q = delete queue[0];
 					local ret;
-					local bb = uncompressZSTD( decodeBASE64( q.bw64, ByteBuffer()));
+					local bb = uncompressZSTD( decodeBASE64( q.bw64));
 					local bw = ObjectInput.decode( bb);
 					ret = cache[q.bw64] <- imgpreview.getBlockWorldImage( bw);
 					foreach( fn in q.list) fn( ret);

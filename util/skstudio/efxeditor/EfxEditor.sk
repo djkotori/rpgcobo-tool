@@ -158,7 +158,7 @@ class EfxEditor extends EditorViewBase
 		local ret = MenuPopup.run( menudata);
 		switch( ret["id"]){
 		case "scalesize":
-			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale"});
+			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale", icon="\ue56b", ok=1});
 			if( s != 100){
 				s *= 0.01;
 				foreach( pg in ptdata.groups) sizeScaleParticleGroup( pg, s);
@@ -168,7 +168,7 @@ class EfxEditor extends EditorViewBase
 			}
 			break;
 		case "scaletime":
-			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale"});
+			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale", icon="\ue9e4", ok=1});
 			if( s != 100){
 				s *= 0.01;
 				foreach( pg in ptdata.groups) timeScaleParticleGroup( pg, s);

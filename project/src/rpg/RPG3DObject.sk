@@ -901,17 +901,9 @@ class RPG3DObject extends SK3DObject
 		str = string( str);
 		local r = ::RPGMain.getUIResource( type==1 ? "parts/popstr2.ui": "parts/popstr.ui");
 		local v = ::loadSKView( r);
-		local list = v.findChild( "chrlist");
-		list.setRowCount( length( str));
-		foreach( i, c in str){	//	1文字ずつ時間差でポップ
-			local r = list.rows[i];
-			r.setValue( "c0", "");
-			setTimeout( @(){
-				r.setValue( "c0", char( c));
-				r.action( "pop");
-			}, i*60);
-		}
-		v.findChild( "g").buf.color0 = col;
+		local lbl = v.findChild( "dmglbl");
+		lbl.setValue( str);
+		lbl.setColor( col);
 		return v;
 	}
 
@@ -930,7 +922,7 @@ class RPG3DObject extends SK3DObject
 		v.addUpdateFunc( fn);	//	毎フレーム位置更新
 		local parent = scn.ref;		//	SK3DView
 		parent.addChild( v);
-		setTimeout( @() v.removeFromParent(), 900);
+		v.actionAndDie( "show");
 	}
 
 	//	コンディションポップアップ。put, rem
@@ -1745,7 +1737,7 @@ class RPG3DMapAsset extends RPG3DObject
 	bci = null;
 
 	function setMapAsset( x){
-		local bb = uncompressZSTD( decodeBASE64( x.bw64, ByteBuffer()));
+		local bb = uncompressZSTD( decodeBASE64( x.bw64));
 		local bw = ObjectInput.decode( bb);
 		bw3d = SK3DBlockWorld( bw);
 		bw3d.rembottom = false;

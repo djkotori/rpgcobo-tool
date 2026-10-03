@@ -1431,6 +1431,18 @@ class MotionTimeline extends Serializable
 	}
 }
 
+//////////////////////////////////////////////////////////////////
+
+//	任意のレンダリング関数を指定できるSKView
+
+class SKRenderableView extends SKView
+{
+	renderfunc = null;
+
+	function render(){
+		if( renderfunc) renderfunc();
+	}
+}
 
 //////////////////////////////////////////////////////////////////
 

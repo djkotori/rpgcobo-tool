@@ -1,0 +1,57 @@
+
+//	入力は.pmファイル。modeldataの外部データを読み込みBASE64にしてmodel64に置き換える。
+//	
+
+class pmembed
+{
+	srcfile = null;
+	ouffile = null;
+	
+	constructor( sf, of){
+		srcfile = sf;
+		ouffile = of;
+	}
+	
+	function build(){
+		local s = srcfile.load().asText();
+		//	modeldata = "xxx.mdl" のラインを取得
+		local i0 = s.indexOf( "modeldata");
+		if( i0 < 0) throw Exception( "no 'modeldata' in " .. srcfile.path);
+		local i1 = s.indexOf( "\n", i0);
+		local ls = s.substring( i0, i1);
+		//	
+		i0 = ls.indexOf( "\"") + 1; i1 = ls.lastIndexOf( "\"");
+		local mdlfn = ls.substring( i0, i1);
+		local mdlf = FileRef( srcfile, "../" .. mdlfn);
+		local bb = mdlf.load(), bb64 = encodeBASE64( bb);
+		//	ここで modeldata = "xxx.mdl" を model64 = "BASE64..." に置き換える
+		s = s.replace( "modeldata", "model64");
+		s = s.replace( mdlfn, bb64);
+		//	出力用のByteBufferに変換して保存する
+		local outbb = ByteBuffer();
+		outbb.putText( s); outbb.pos = 0;
+		(ouffile||srcfile).save( outbb);
+	}
+}
+
+//	parse args
+{
+	local srcfile, outfile;
+	
+	local a = ::arguments;
+	local curdir = FileRef( skGetCurrentDir());
+	for( local l = 0;l < length( a);l ++){
+		local arg = a[l];
+		if( arg == "-src"){
+			srcfile = FileRef( curdir, a[++l]);
+		}else
+		if( arg == "-out"){
+			outfile = FileRef( curdir, a[++l]);
+		}
+	}
+	if( !(srcfile?.exists())){
+		throw Exception( "no srcdir : " .. srcfile.path);
+	}
+	local p = pmembed( srcfile, outfile);
+	p.build();
+}

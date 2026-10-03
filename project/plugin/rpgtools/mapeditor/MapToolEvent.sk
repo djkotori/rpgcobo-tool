@@ -955,6 +955,9 @@ class MapTools.tool_event extends MapTool
 		local col = colsellist.getSelectedItems()[0].val;
 		local pos = (hb.bx+hb.nx,hb.by+hb.ny,hb.bz+hb.nz, (getCameraRot()+2)&3);	//	こちらに向く向き
 		local mk = { type=key, pos=pos, name=name, col=col, flags=1};
+		if( key=="landmark"){
+			mk.dest <- { mapid=editor.mapid, pos=(0,null,0,0), };
+		}
 		if( "dir" in mk) pos[3] = 0;	//	dirプロパティがある場合はposでの向き指定はリセット
 		setDefaultProperties( fget( def, "props", def, mk), mk);
 		local self = this;

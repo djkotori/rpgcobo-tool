@@ -382,21 +382,24 @@ class RPGEventRunner
 
 	function itemOp( cmd){
 		::rpgvar.ERROR = 0;
+		local itemid = cmd.itemid, num = int( cmd.num);
 		switch( cmd.op){
 		case 1:	//	-
-			if( !::rpgstat.reduceItemID( cmd.itemid, cmd.num)) ::rpgvar.ERROR = 1234;
+			if( !::rpgstat.reduceItemID( itemid, num)) ::rpgvar.ERROR = 1234;
 			break;
 		case 2:	//	=
-			local d = cmd.num - ::rpgstat.countItems( cmd.itemid);
+			local d = num - ::rpgstat.countItems( itemid);
 			if( d > 0){
-				::rpgstat.addItemID( cmd.itemid, d);
+				::rpgstat.addItemID( itemid, d);
+				::rpgstat.discover( itemid, d);		//	アイテム発見＋取得数追加
 			}else
 			if( d < 0){
-				::rpgstat.reduceItemID( cmd.itemid, -d);
+				::rpgstat.reduceItemID( itemid, -d);
 			}
 			break;
 		default:	//	+
-			::rpgstat.addItemID( cmd.itemid, cmd.num, cmd["LV"]);	//	追加時にはエラーは出ない？
+			::rpgstat.addItemID( itemid, num, cmd["LV"]);	//	追加時にはエラーは出ない？
+			::rpgstat.discover( itemid, num);		//	アイテム発見＋取得数追加
 			break;
 		}
 	}
@@ -421,12 +424,14 @@ class RPGEventRunner
 				::rpgvar.ERROR = 13126;
 			}else{
 				::rpgstat.members[i] = p;
+				::rpgstat.discoverPlayer( p.dataid);	//	プレイヤー発見
 			}
 			break;
 		default:
 			if( slot in ::rpgstat.members){
 				if( idx >= 0) ::rpgstat.members[idx] = ::rpgstat.members[slot];	//	別の場所にいる場合はswap
 				::rpgstat.members[slot] = p;
+				::rpgstat.discoverPlayer( p.dataid);	//	プレイヤー発見
 			}else{
 				::rpgvar.ERROR = 13127;
 			}
@@ -444,7 +449,10 @@ class RPGEventRunner
 		if( jobid){
 			if( jobid[0]!='J' || !::rpgdata[jobid]) return;	//	エラー出したほうが良いかも
 			local job = p.ownjobs.find( @( v) v.dataid==jobid);
-			if( !job){ job = RPGObject.create( jobid); p.ownjobs .. job; }
+			if( !job){
+				job = RPGObject.create( jobid); p.ownjobs .. job;
+				::rpgstat.discover( jobid, 1);	//	ジョブ発見
+			}
 			local si = cmd.slot;
 			if( typeof( si) == SS_INTEGER && !p.jobs.contains( job)){	//	既についている場合は無視
 				if( si < 0){
@@ -484,6 +492,7 @@ class RPGEventRunner
 					local rems = p.setEquip( i, RPGObject.create( eqid));
 					foreach( eq in rems) ::rpgstat.addItem( eq);
 					::rpgvar.ERROR = 0;
+					::rpgstat.discover( eqid, 1);	//	装備発見
 				}
 			}
 		}else{
@@ -703,7 +712,7 @@ class RPGEventRunner
 
 	static function _getastbw( id){
 		local bw64 = ::conf._resource.map_asset[id]["bw64"];
-		local bb = uncompressZSTD( decodeBASE64( bw64, ByteBuffer()));
+		local bb = uncompressZSTD( decodeBASE64( bw64));
 		return ObjectInput.decode( bb);
 	}
 	

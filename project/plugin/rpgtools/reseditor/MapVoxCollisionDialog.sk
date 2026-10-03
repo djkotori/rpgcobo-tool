@@ -79,7 +79,7 @@ class MapVoxCollisionDialog extends UndoableDialog
 	//	
 	function setCollisonData( cols){
 		local _bw = BlockWorld( cols.w, cols.h, cols.d);
-		local bb = uncompressZSTD( decodeBASE64( cols.vox64, ByteBuffer()));
+		local bb = uncompressZSTD( decodeBASE64( cols.vox64));
 		local n = cols.w * cols.h * cols.d;
 		// printf( "nnnnnnnnnnn %S %S %S\n", cols.w,cols.h,cols.d);
 		local p = (0,0,0);

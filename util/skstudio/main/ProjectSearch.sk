@@ -133,7 +133,7 @@ class GotoFileSearch
 			local name = res.name, dir = res.pres.path;
 			local dirlbl = v.findChild( "dir");
 			local namelbl = v.findChild( "name");
-			dirlbl.resetAttribute(); dirlbl.setText( dir.." "..sc);
+			dirlbl.resetAttribute(); dirlbl.setText( dir);	//	.." "..sc
 			namelbl.resetAttribute(); namelbl.setText( name);
 			v.setValue( "icon", ::skstudio.getResourceIcon( res));
 			v.findChild( "hist").setVisible( i[2] >= 100000.0);

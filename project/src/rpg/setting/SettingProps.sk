@@ -332,6 +332,17 @@ stageprops .. {
 	func = @( stage, val){
 		stage.changeRenderSetting( val);
 	}
+	
+	hover = @( val){
+		local ed = ::skstudio.editor;
+		if( val){
+			local rsetid = val.id;
+			ed.canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( rsetid));
+		}else{
+			local rsetid = ed.canvas.envmenu.selitem.id;
+			ed.canvas.setRenderSettingID( rsetid);
+		}
+	}
 };
 
 local bgtypelist = [
@@ -426,6 +437,18 @@ local weatherpropdef(){
 			if( (ed instanceof MapEditor) && !ed.modaledit){	//	u-m
 				ed.canvas.refreshLinkedWeather( data);
 			}
+		}
+		edit = @( data){
+			local ed = ::skstudio.editor;
+			local skychk = ed.canvas.skychk.isSelected();
+			ed.canvas.skychk.setSelected( true);
+			ed.canvas.refreshLinkedWeather( data);
+			local ret = PropertyEditPopup.run( null, this, data);
+			if( !skychk){
+				ed.canvas.refreshLinkedWeather( null);
+				ed.canvas.skychk.setSelected( skychk);
+			}
+			return ret;
 		}
 		tostring = @( v) v["id"] ? sprintf( "$T.weather_%S", v["id"]) : "$T.lbl_none"
 	};

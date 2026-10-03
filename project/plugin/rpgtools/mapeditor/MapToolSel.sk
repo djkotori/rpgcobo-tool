@@ -353,7 +353,7 @@ class MapTools.tool_sel extends MapTool
 		local v = cbdata;
 		hb = hb || guides["pen"]["ref"][3];
 		if( hb){
-			local bw = ObjectInput.decode( decodeBASE64( v.bw64, ByteBuffer()));
+			local bw = ObjectInput.decode( decodeBASE64( v.bw64));
 			removeGuide( "pen");
 			if( v.selmode == 0){
 				return paste2DStart( hb, bw);	//	toolfunc設定！！！！

@@ -304,13 +304,13 @@ class Popups
 
 	static function showNumInput( t){
 		local propdef = {
-			name = t["title"] || "num",
+			name = t["title"] || "num", icon = t["icon"],
 			props = [
 				{ pid="num", lbl="$T.lbl_hsv", type=PropertyType.SCALAR, ui="bar", range=t.range, q=t.q, cnt="cnt5.ui" },
 			],
 		};
 		local d = {num=t.val};
-		local ret = PropertyEditPopup_OK.run( null, propdef, d);
+		local ret = (t["ok"] ? PropertyEditPopup_OK : PropertyEditPopup).run( null, propdef, d);
 		return ret ? ret.num : d.num;
 	}
 }

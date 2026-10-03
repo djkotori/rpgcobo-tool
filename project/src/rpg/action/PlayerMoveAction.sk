@@ -75,52 +75,51 @@ class PlayerMoveAction
 			ctr.updateControl( dt);
 			local st;
 			while( st = ctr.nextChange()){
-				local cid = st.cid, v = st.val;
-				switch( cid){
-				case CTRL_MOVE:
-					cdir = v;
-					break;
-				case CTRL_JUMP:
-					if( v && landed && !crimbing){
-						local vy = getJumpHeight();
-						if( vy){	// vy==0の時はジャンプ禁止
-							landed = false;
-							vec.y = vy;
-						}
-					}
-					break;
-				case CTRL_SEARCH:
-					// if( v) printf( "CTRL_SEARCH %S   %S\n", landed, rpgstage.searchdst);
-					if( v && landed && rpgstage.searchdst){
-						rpgstage.searchpush = 80;	//	80ms調べる操作を有効化
-					}
-					break;
-				case CTRL_MENU:
-					if( v && landed){
-						if( !::rpgstage.stat.statmap["menuopenable"]){	//	メニュー開閉不能
-							::playSound( "SE002"); break;
-						}
-						rpgstage.mainevent = #{evid="menu"};	
-						rpgstage.setTimeScale( 0.0);
-						ctr.setActive( false);
-						newthread().start( @(){	//	このスレッドはブロック不能なので新しいスレッドでメニューを開く。
-							::playSound( "SE005");
-							RPGMain.showUI( { key="menu_main"});		//	このメソッドはメニューを閉じるまでブロックする。
-							rpgstage.mainevent = null;
-							rpgstage.setTimeScale( 1.0);
-						}, this);
-					}
-					break;
-				case CTRL_AUTO:
-					if( v){
-						rpgstage.toggleAuto();		//	ここでやるものじゃないなーーー
-					}
-					break;
-				}
+				processControl( st, dt);
 			}
 		}
 		//	実際の移動処理
 		updateActionBody( dt);
+	}
+
+	function processControl( st, dt){
+		local cid = st.cid, v = st.val;
+		switch( cid){
+		case CTRL_MOVE:
+			cdir = v;
+			break;
+		case CTRL_JUMP:
+			if( v && landed && !crimbing){
+				local vy = getJumpHeight();
+				if( vy){	// vy==0の時はジャンプ禁止
+					landed = false;
+					vec.y = vy;
+				}
+			}
+			break;
+		case CTRL_SEARCH:
+			// if( v) printf( "CTRL_SEARCH %S   %S\n", landed, rpgstage.searchdst);
+			if( v && landed && rpgstage.searchdst){
+				rpgstage.searchpush = 80;	//	80ms調べる操作を有効化
+			}
+			break;
+		case CTRL_MENU:
+			if( v && landed){
+				if( !::rpgstage.stat.statmap["menuopenable"]){	//	メニュー開閉不能
+					::playSound( "SE002"); break;
+				}
+				rpgstage.mainevent = #{evid="menu"};	
+				rpgstage.setTimeScale( 0.0);
+				ctr.setActive( false);
+				newthread().start( @(){	//	このスレッドはブロック不能なので新しいスレッドでメニューを開く。
+					::playSound( "SE005");
+					RPGMain.showUI( { key="menu_main"});		//	このメソッドはメニューを閉じるまでブロックする。
+					rpgstage.mainevent = null;
+					rpgstage.setTimeScale( 1.0);
+				}, this);
+			}
+			break;
+		}
 	}
 
 	function standbyAction( dt){
@@ -416,6 +415,7 @@ class PlayerMoveController
 		stats .. buttonstate( CTRL_SEARCH, any( gpbutton( BTN_A), kbbuttons( bkmap[BTN_A])) );
 		stats .. buttonstate( CTRL_JUMP, any( gpbutton( BTN_B), kbbuttons( bkmap[BTN_B])) );
 		stats .. buttonstate( CTRL_MENU, any( gpbutton( BTN_X), kbbuttons( bkmap[BTN_X])) );
+		stats .. buttonstate( CTRL_ETC, any( gpbutton( BTN_X), kbbuttons( bkmap[BTN_Y])) );
 		stats .. axisstate( CTRL_MOVE, any(
 			gpaxis( "axis0", "axis1", BTN_UP, BTN_LEFT, BTN_DOWN, BTN_RIGHT), kbaxis( VK_UP, VK_LEFT, VK_DOWN, VK_RIGHT)
 		));

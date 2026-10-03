@@ -35,7 +35,8 @@ class TipsRunner
 	function run(){
 		local t0 = skGetTime();
 		for( ;;){
-			sleep( 100);
+			local slp = monview["tiptime"] ?? 100;
+			if( slp < 16) suspend(); else sleep( slp);
 			local t1 = skGetTime(), dt = t1-t0; t0 = t1;
 			update( dt);
 		}
@@ -58,7 +59,7 @@ class TipsRunner
 			}
 		}else{
 			if( monview != tv){
-				showcnt = 400;
+				showcnt = (tv["tiptime"] ?? 100) * 4;
 			}else{
 				if( tv && (showcnt-=dt) <= 0) showTips( ms, tv);
 			}

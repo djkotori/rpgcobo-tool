@@ -10,7 +10,7 @@ param pbrlighting
 	uniform highp samplerCube ibltex <id=ENVTEX, MIN_FILTER=LINEAR_MIP, MAG_FILTER=LINEAR, WRAP_S=CLAMP, WRAP_T=CLAMP, WRAP_R=CLAMP>;
 	uniform mediump sampler2D dfgtex <id=DFGTEX, WRAP_S=CLAMP, WRAP_T=CLAMP>;
 	uniform lowp sampler2D aotex <id=AOTEX, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
-	uniform lowp sampler2D ssstex <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform lowp sampler2D ssstex <id=COLORTEX4, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
 	
 	uniform highp mat4 dirlit <id=ENV1MAT>;
 	uniform highp mat3 invvmat3 <id=ENV4MAT>;
@@ -283,7 +283,7 @@ fs pbrlighting
 	// }
 
 	vec4 ssshadow( highp vec2 uv){
-		return $(COLORTEX1){ texture( ssstex, uv)} : {vec4( 1.0)};
+		return $(COLORTEX4){ texture( ssstex, uv)} : {vec4( 1.0)};
 	}
 
 	#define PNTLIT( SHAD, mul) \

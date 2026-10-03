@@ -705,13 +705,233 @@ class SKCircleHitGroupView extends SKGroupView
 	}
 }
 
-//	stage.uiに配置されたミニマップ
-//	
-class RPGMinimapBehavior
-{
-	
-	
 
+//	文字ごとのアニメーションが可能なラベル。その分レイアウト関係の機能は削る
+//	アニメーション可能なパラメータは ディレイ, x, y, scale, rot, color, stroke 
+//	
+class SKPopLabelView extends SKView
+{
+	static animrangeprop = { pid=6513, lbl="$T.lbl_anime $T.lbl_range", type=VEC2, range=(-10,100), q=1, ui="~" };
+	static animdelayprop = { pid=6514, lbl="$T.lbl_anime $T.lbl_delay", type=SCALAR, range=(-10.0,10.0), q=10, ui="bar" };
+	static animcolorprop = { pid=6515, lbl="$T.lbl_color", type=3312, };
+	static animstrokeprop = { pid=6516, lbl="$T.lbl_stroke $T.lbl_color", type=3312, };
+	static animrotprop = { pid=6517, lbl="$T.lbl_rotation", type=3321, range=(-360,360)};
+	static animscaleprop = { pid=6518, lbl="$T.lbl_scale", type=3321, range=(0.0,2.0)};
+	static animxprop = { pid=6519, lbl="X", type=3321, range=(-40,40)};
+	static animyprop = { pid=6520, lbl="Y", type=3321, range=(-40,40)};
+	
+	static icontype = "ttf";
+	
+	fontattr = null;				//	FontAttribute
+	textbox = null;					//	TextBox 描画用
+	wtext = null;
+	resetanim = false;
+
+	animrange = [0.0, 10.0];		//	range
+	animdelay = 1.0;				//	delay
+	//	アニメパラメータ
+	animcolor = [-1,0xffffff00];		//	color 
+	animstroke = [0xff,0xff];			//	stroke
+	animx = [0.0,0.0];					//	x 3321
+	animy = [0.0,0.0];					//	y 3321
+	animscale = [1.0,1.0];				//	scale 3321
+	animrot = [0.0,0.0];				//	rot 3321
+
+	constructor( s="", a=null){
+		fontattr = a || #FontAttribute( Fonts.get( "ui"), 20, 0xffffffff, SK_FONT_BOLD);
+		textbox = TextBox( fontattr);
+		if( s != "") setText( s);
+		pickable = false;
+	}
+
+	function getText(){
+		return text;
+	}
+
+	//	テキストを設定する。↓のコード変換も行う。ただしgetText()で得られる文字列は渡したsそのもの。
+	//	・エスケープ文字のデコード
+	//	・テンプレート形式の解釈と実行
+	function setText( s){
+		if( s==null || s==undefined) s = "";
+		if( typeof( s) == SS_TABLE) s = ::lang( s);
+		s = string( s);
+		s = decodeESC( s);
+		textbox.setText( s, fontattr);
+		wtext = textbox.getTextW();
+		resetanim = true;
+		repaint();
+	}
+
+	function setValue( a, b=undefined){
+		if( b==undefined){
+			if( typeof( a) == SS_CLOSURE){
+				a = a();
+			}
+			if( a instanceof ::ptr){
+				setSKViewValue( a);
+			}else
+			if( typeof( a) == SS_ARRAY){
+				setText( a[0]);
+				textbox.colormask = a[1]|(textbox.colormask&0xff);			//	setColor( a[1]);
+			}else{
+				setText( a);
+				textbox.colormask = 0xffffff00|(textbox.colormask&0xff);
+			}
+		}else{
+			return super.setValue( a, b);
+		}
+	}
+
+	function updateLayout(){
+		textbox.width = bnd.w | 0;
+		textbox.height = bnd.h | 0;
+		repaint();
+	}
+
+	function moveFrameSelf( t0, t){
+		super.moveFrameSelf( t0, t);
+		resetanim = true;
+		repaint();
+	}
+
+	function render(){
+		if( resetanim) applyAnimation( framepos);
+		skDrawTextBox( textbox);
+	}
+	
+	function setFontAttribute( a){
+		fontattr = a;
+		resetanim = true;
+		repaint();
+	}
+
+	//	f = frm - delay*ci
+	function _getv( f, a, fn=Math.lerp){
+		local len1 = length( a)-1;
+		if( !len1) return a[0];
+		local w = Math.clamp( (f-animrange[0])/(animrange[1]-animrange[0]), 0.0, 1.0);
+		if( w <= 0.0) return a[0];
+		if( w >= 1.0) return a[len1];
+		local i = w * len1;
+		return fn( a[i|0], a[(i|0)+1], i%1.0);
+	}
+	
+	function applyAnimation( frm){
+		textbox.setAttribute( fontattr);
+		resetanim = false;
+		//	文字ごとにFontAttribute
+		local ft = #{ x=0, y=0, s=1.0, r=0.0};
+		foreach( i, v in wtext){
+			local fa = clone fontattr;
+			local f = frm - animdelay*i;
+			fa.color = _getv( f, animcolor, Math.lerpcolor);
+			fa.strokecolor = _getv( f, animstroke, Math.lerpcolor);
+			ft.x = _getv( f, animx);
+			ft.y = -_getv( f, animy);
+			ft.s = _getv( f, animscale);
+			ft.r = _getv( f, animrot);
+			textbox.setAttribute( fa, i);
+			textbox.setCharaExtra( ft, i);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	//	Parameter get/set
+
+	function setColor( c){
+		textbox.colormask = c;
+		resetanim = true;
+		repaint();
+	}
+
+	function getProperties(){
+		return #[
+		( SKVP[VISIBLE]),
+		( SKVP[SIZE_STATIC]),
+		( SKVP[PIVOT]),
+		( SKVP[POSITION]),
+		( SKVP[SCALE]),
+		( SKVP[ROTATION]),
+		( SKVP[STRETCHALIGN]),
+		( SKVP[LABEL]),
+		( SKVP[FONT]),
+		animrangeprop,
+		animdelayprop,
+		animcolorprop,
+		animstrokeprop,
+		animrotprop,
+		animscaleprop,
+		animxprop,
+		animyprop,
+		( SKVP[TEXTALIGN]),
+		( SKVP[WRAPTEXT]),
+		( SKVP[AUTOFITWEIGHT]),
+		];
+	}
+
+	function getParam( pid){
+		switch( pid){
+		case LABEL : return string( wtext);
+		case FONT : return {
+			fontname=fontattr.font.name, fontsize=fontattr.size, fontcolor=fontattr.color, fontflags=fontattr.flags,
+			strokecolor = fontattr.strokecolor, strokesize = fontattr.strokesize, strokex = fontattr.strokex, strokey = fontattr.strokey,
+		};	//	fontattr.advance, fontattr.linespace
+		case WRAPTEXT : return textbox.wrapmode;
+		case TEXTALIGN : return textbox.align;
+		case AUTOFITWEIGHT : return textbox.autofitw;
+		//	anim
+		case 6513: return animrange;
+		case 6514: return animdelay;
+		case 6515: return { color=animcolor };	//	テーブルで渡さんと
+		case 6516: return { color=animstroke };	//	テーブルで渡さんと
+		case 6517: return animrot;
+		case 6518: return animscale;
+		case 6519: return animx;
+		case 6520: return animy;
+		default : return super.getParam( pid);
+		}
+	}
+
+	function setParam( pid, p0, p1=null, w=0.0){
+		switch( pid){
+		case LABEL :
+			{
+				setText( p0);
+			}
+			break;
+		case FONT :
+			{
+				local c0 = fontattr.color;
+				local fa = FontAttribute( ::Fonts.get( p0.fontname), p0.fontsize, c0, p0.fontflags);
+				fa.strokecolor = p0["strokecolor"] || 0xff;
+				fa.strokesize = p0["strokesize"] || 0;
+				fa.strokex = p0["strokex"] || 0;
+				fa.strokey = p0["strokey"] || 0;
+				setFontAttribute( fa);
+			}
+			break;
+		case WRAPTEXT :
+			textbox.wrapmode = p0; repaint();
+			break;
+		case TEXTALIGN :
+			textbox.align = p0; repaint();
+			break;
+		case AUTOFITWEIGHT :
+			textbox.autofitw = p0; textbox.wrapmode = textbox.wrapmode; repaint();
+			break;
+		case 6513: animrange = p0; resetanim = true; break;
+		case 6514: animdelay = p0; resetanim = true; break;
+		case 6515: animcolor = p0["color"] || #[-1, 0xffffff00]; resetanim = true; break;
+		case 6516: animstroke = p0["color"] || #[0xff, 0xff]; resetanim = true; break;
+		case 6517: animrot = p0; resetanim = true; break;
+		case 6518: animscale = p0; resetanim = true; break;
+		case 6519: animx = p0; resetanim = true; break;
+		case 6520: animy = p0; resetanim = true; break;
+		default:
+			super.setParam( pid, p0, p1, w);
+			break;
+		}
+	}
 }
 
 

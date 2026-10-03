@@ -69,7 +69,15 @@ class RandomMoveAction extends EventMoveAction
 		evpage = p.event.page;
 		evpos = Vector3D( rp3d.event.data.pos);
 		//	
-		nexttime = 2000;
+		nexttime = calcnexttime();
+	}
+
+	//	次の移動までの時間を計算
+	function calcnexttime(){
+		local f = evpage["movefreq"] ?? evdata["movefreq"] ?? 3;	//	f=0~10 0の時は移動しない、10の時は常に移動
+		if( f <= 0.01) return 0x7fffffff;
+		local base = (10.0-f)/10.0 * 6000;
+		return int( base * rnd.nextf( 0.8, 1.2));
 	}
 
 	function updateAction( dt){
@@ -92,7 +100,7 @@ class RandomMoveAction extends EventMoveAction
 
 	function updateActionBody( dt){
 		if( (nexttime-=dt) > 0) return;
-		nexttime = 2000;
+		nexttime = calcnexttime();
 		local spd = evpage["movespd"] ?? evdata["movespd"] ?? 1.0;
 		if( spd <= 0.01) return;	//	移動速度がほぼゼロなら移動しない。立ち状態
 		local tp = randomPoint();
@@ -123,7 +131,7 @@ class RandomMoveAction extends EventMoveAction
 	//	メインイベントが終了して通常のアクションに戻るときに最初に呼ぶ。
 	//	移動は実行中のものも中断。
 	function resetAction(){
-		nexttime = 2000;	//	すぐに動き出さない方がよい
+		nexttime = calcnexttime();	//	すぐに動き出さない方がよい
 		mvfunc = null;
 	}
 	
@@ -358,6 +366,17 @@ local movespdprop = {
 	defval = 3
 }
 
+//	移動頻度
+local movefreqprop = {
+	pid = "movefreq"
+	lbl = "$T.lbl_movefreq"
+	type = SCALAR
+	range = (0,10)
+	q = 10
+	ui = "bar"
+	defval = 3
+}
+
 /////////////////// 登録
 
 RPGSystem.moveaction .. {
@@ -375,7 +394,7 @@ RPGSystem.moveaction .. {
 	icon = "\ue572"
 	desc = ""
 	cls = RandomMoveAction
-	props = [standaniprop, movespdprop]
+	props = [movefreqprop, movespdprop]
 }
 
 RPGSystem.moveaction .. {
@@ -385,6 +404,7 @@ RPGSystem.moveaction .. {
 	desc = ""
 	cls = ChaseMoveAction1
 	props = [
+		movefreqprop,
 		{ ...movespdprop, lbl="$T.lbl_movespd($T.lbl_normal)", defval=2},
 		{ pid="searchrad", lbl="$T.lbl_searchrad", type=SCALAR, ui="bar", range = (0,20), defval=5, },
 		{ ...movespdprop, pid="movespd1", lbl="$T.lbl_movespd($T.lbl_chase)", defval=3},
@@ -398,6 +418,7 @@ RPGSystem.moveaction .. {
 	desc = ""
 	cls = EscapeMoveAction1
 	props = [
+		movefreqprop,
 		{ ...movespdprop, lbl="$T.lbl_movespd($T.lbl_normal)", defval=2},
 		{ pid="searchrad", lbl="$T.lbl_searchrad", type=SCALAR, ui="bar", range = (0,20), defval=5, },
 		{ ...movespdprop, pid="movespd1", lbl="$T.lbl_movespd($T.move_escape)", defval=3},

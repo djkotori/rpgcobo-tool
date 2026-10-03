@@ -97,6 +97,8 @@ class MenuPopup extends Popup
 	parentmenu = null;
 	submenu = null;			//	MenuPopup : 開かれたサブメニュー。サブメニューはモーダルではなくparentと同階層の後ろにaddされる
 
+	opener = null;			//	このメニューを開いた親のView
+
 	//	ポップアップを表示してメニューの選択を実行する。
 	//	操作がすべて完了するまでブロックする。
 	//	※setMenuを行った後に幅が足りない場合はストレッチする。
@@ -112,8 +114,10 @@ class MenuPopup extends Popup
 		mp.rootmenu = mp;		//	rootmenuは自身
 		mp.setMenu( menus);
 		if( (posview["layerflags"]||0) & 256) mp.poplayout = 3;	//	左右上に表示
+		if( posview instanceof SKView) mp.opener = posview;
 		local menuroot = null;
 		mp.show( menuroot, posview);
+		if( mp.opener) mp.opener.postIDEvent( ITEM_HOVER, null);
 		return mp.ret;	//	選択されたアイテムはrootmenu.retに入っている
 	}
 	
@@ -134,8 +138,10 @@ class MenuPopup extends Popup
 		mp.rootmenu = mp;		//	rootmenuは自身
 		mp.setMenu( menus);
 		if( (posview["layerflags"]||0) & 256) mp.poplayout = 3;	//	左右上に表示
+		if( posview instanceof SKView) mp.opener = posview;
 		local menuroot = null;
 		mp.show( menuroot, posview);
+		if( mp.opener) mp.opener.postIDEvent( ITEM_HOVER, null);
 		return mp.ret;	//	選択されたアイテムはrootmenu.retに入っている
 	}
 
@@ -224,11 +230,13 @@ class MenuPopup extends Popup
 			selitem?.anime( 0);
 		}else
 		if( selmode == mode){
-			return;				//	変化なし
+			return false;				//	変化なし
 		}
 		selitem = v;
 		selmode = mode;
 		v?.anime( mode+1);
+		if( selitem && opener) opener.postIDEvent( ITEM_HOVER, selitem["ref"]);
+		return true;
 	}
 
 	function closeAll(){

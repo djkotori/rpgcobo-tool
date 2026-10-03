@@ -1019,6 +1019,7 @@ class PropertyBehaviors.Requirements extends PropertyBehavior
 	}
 
 	function paramevent( e){
+		if( e.id != ACTION_PERFORMED) return;
 		local newvar;
 		local idx = e.src["parent"]["ref"];
 		local n = e.src["name"];
@@ -2411,7 +2412,7 @@ class PropertyBehaviors.PlaceAsset extends PropertyBehavior
 	function placeAsset( id){
 		if( ma3d) ma3d.kill();
 		local ma = ::conf._resource.map_asset[id];
-		local bb = uncompressZSTD( decodeBASE64( ma.bw64, ByteBuffer()));
+		local bb = uncompressZSTD( decodeBASE64( ma.bw64));
 		local abw = ObjectInput.decode( bb);
 		local bw3d = SK3DBlockWorld( abw);
 		bw3d.setPivot( Vector3D( -abw.w*0.25, 0, -abw.d*0.25));

@@ -32,6 +32,7 @@ enum ControlID
 	CTRL_JUMP			= 4;
 	CTRL_SEARCH			= 5;
 	CTRL_MENU			= 6;
+	CTRL_ETC			= 7;
 	
 	//	control camera
 	CAM_ROTATE			= 100;
@@ -167,6 +168,18 @@ enum AnimationPart
 	EN = 6,
 }
 
+::EventCommanedColor <- {
+	color0 = (0x00A3D9ff, 0x73DCFFff)
+	color1 = (0xFF9326ff, 0xFFB973ff)
+	color2 = (0x00D9D9ff, 0x99FFFFff)
+	color3 = (0xCCA4FFff, 0xDFBFFFff)
+	color4 = (0xD9D900ff, 0xFFFF99ff)
+	color5 = (0x00B285ff, 0x99FFE5ff)
+	color6 = (0x7dc14dff, 0x92e05aff)
+	color7 = (0xFF6D6Dff, 0xFFBFBFff)
+
+	colorex1 = (0xFF00FFFF, 0xdd00ddff)
+};
 
 import PropertyType;
 import RPGPropertyType;

@@ -635,10 +635,11 @@ class MapCanvas.InfoPanel
 ::evcolorlist <- [
 	{ val=0, icon=["\uf122",0xffffffff] },
 	{ val=1, icon=["\uf122",0x26FFFFff] },
-	{ val=2, icon=["\uf122",0xFFFF4Dff] },
-	{ val=3, icon=["\uf122",0xFF4D4Dff] },
-	{ val=4, icon=["\uf122",0xFF73FFff] },
-	{ val=5, icon=["\uf122",0xFF9326ff] },
+	{ val=2, icon=["\uf122",0x55FF33ff] },
+	{ val=3, icon=["\uf122",0xFFFF4Dff] },
+	{ val=4, icon=["\uf122",0xFF4D4Dff] },
+	{ val=5, icon=["\uf122",0xFF73FFff] },
+	{ val=6, icon=["\uf122",0xFF9326ff] },
 ];
 
 class SK3DEventGizmo extends SK3DObject

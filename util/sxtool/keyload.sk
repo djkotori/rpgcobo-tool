@@ -55,7 +55,7 @@ function loadPrivateKey( pkstr){
 	vstr = vstr.replace( "\n", "");
 	vstr = vstr.replace( "\r", "");
 	
-	local bb = decodeBASE64( vstr, ByteBuffer());
+	local bb = decodeBASE64( vstr);
 	local asn = decodeASN1( bb);
 	// printf( "ASN1 structure: %S\n", asn);
 	//	中に更にASNが入ってる。

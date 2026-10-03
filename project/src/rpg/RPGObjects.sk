@@ -1097,7 +1097,7 @@ class RPGStageState extends Serializable
 	<ser_o> camwork = null;			//	カメラワーク。
 	<ser_o> evarmap = null;			//	イベントとevarのマップ
 	<ser_o> estatmap = null;		//	イベント状態マップ。出現場所等。REMAPIDの更新で丸ごと破棄される
-	<ser_o> mapbmp = null;			//	Bitmap : オートマッピング時に埋まっていく。4ブロック1ピクセルぐらいかな
+	<ser_o> mapmask = null;			//	Bitmap : オートマッピング時に埋まっていく。2ブロック1ピクセル
 	<ser_o> statmap = null;			//	stagepropsの情報を保存
 	<ser_o> env = null;				//	{}色々なパラメータ
 	<ser_i> remapid = 0;			//	リストアID。enter時にこれが変化してたらマップリストアを行う。
@@ -1231,9 +1231,10 @@ class RPGObjectRef
 class DiscoverMap extends Serializable
 {
 	static SerialUID = 46;
-	static defval = { num=0, };
 
-	<ser_o> map = false;
+	<ser_o> map = null;
+
+	constructor(){ map = {}; }
 
 	function _get( key){
 		return map[key];
@@ -1241,14 +1242,14 @@ class DiscoverMap extends Serializable
 
 	//	指定したIDの発見数を加算
 	function discover( id, num=1){
-		local v = map[id] || (map[id] <- clone defval);
+		local v = map[id] || (map[id] <- { num=0, });
 		v.num += num;
 		return v;
 	}
 	
 	//	特定のフィールドをカウントアップする。存在しなければ初期化してから加算。
 	function countup( id, fid, num=1){
-		local v = discover( id, 0);
+		local v = map[id] || (map[id] <- { num=1, });	//	発見されてなかったらnum=1で発見扱いに。
 		if( !v[fid]){ v[fid] <- num; }else{ v[fid] += num; }
 		return v;
 	}
@@ -1324,7 +1325,10 @@ class RPGState extends Serializable
 		keyitems = array( 3);
 		storage = array( 3);
 		foreach( i, dataid in set.inimembers){
-			if( i in members) members[i] = dataid && playermap[dataid];
+			if( i in members){
+				members[i] = dataid && playermap[dataid];
+				discoverPlayer( dataid);
+			}
 		}
 		//	初期システム状態
 		foreach( p in ::RPGSystem.settingprops){
@@ -1517,6 +1521,26 @@ class RPGState extends Serializable
 		::sharedstat.discovermap.countup( id, fid, num);
 		::sharedstat.dirty = true;
 	}
+
+	//	未発見時に発見数1とする。
+	function discover1( id){
+		if( discovermap[id]["num"]) return;	//	すでに発見済みなら何もしない
+		discovermap.discover( id, 1);
+		::sharedstat.discovermap.discover( id, 1);	//	こっちは1以上増やしていい
+		::sharedstat.dirty = true;
+	}
+
+	//	プレイヤーが初めてパーティ加入時に発見扱いにする。装備、ジョブも一緒に発見。
+	function discoverPlayer( id){
+		discover1( id, 1);
+		local p = playermap[id];
+		foreach( job in p["ownjobs"]){
+			if( job) discover1( job.dataid);
+		}
+		foreach( eq in p["equips"]){
+			if( eq) discover1( eq.dataid);
+		}
+	}
 }
 
 
@@ -1530,7 +1554,6 @@ class RPGSharedState extends Serializable
 	static SerialUID = 47;
 
 	<ser_i> version = 0;				//	int : グローバルデータのゲームバージョン。
-	<ser_o> achievementmap = null;		//	{achieveid:1} : 達成済み実績のフラグリスト。
 	<ser_o> discovermap = null;			//	DiscoverMap : 図鑑系の開放状況。
 	<ser_o> gvarmap = null;				//	{gvarid:val} : クリアフラグなどのセーブデータを跨ぐgvar(shared)。
 	<ser_o> etc = null;					//	{} : プラグインなど何でも使って良し
@@ -1542,36 +1565,8 @@ class RPGSharedState extends Serializable
 	dirty = false;						//	trueの場合は要保存。
 
 	constructor(){
-		achievementmap = {};
 		discovermap = DiscoverMap();
 		gvarmap = {};
 		etc = {};
-	}
-
-	//	achievement - achieve.jsonで定義された実績の達成状況を管理する。
-	//	自動で達成状況が更新されるか、又はイベントコマンド等で手動で達成させることができる。
-
-	//	手動で実績を達成する。達成済みの場合は何もせずfalseを返す。
-	function achieve( id){
-		if( !achievementmap[id]){
-			achievementmap[id] <- 1;
-			dirty = true;
-			::RPGMain.onAchievementUnlocked( id);	//	ゲームのUIで表示するか、Steam等のプラットフォームに通知する。
-			return true;
-		}
-		return false;
-	}
-
-	//	未達成の実績をチェックし、自動で達成状況を更新する。
-	function checkAchievements(){
-		foreach( i, v in ::conf.achieve){
-			if( i[0]=='_' || achievementmap[i] || !length( v["reqs"])) continue;	//	reqsない場合は手動のみ
-			local b = ::reqchk( v["reqs"]);		//	条件を満たしているかチェック
-			if( b){
-				achievementmap[i] <- 1;
-				dirty = true;
-				::RPGMain.onAchievementUnlocked( i);	//	ゲームのUIで表示するか、Steam等のプラットフォームに通知する。
-			}
-		}
 	}
 }

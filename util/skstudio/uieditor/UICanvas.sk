@@ -376,6 +376,7 @@ class UICanvas
 			scproot.scale << root.scale;
 			scproot.sp.color = 0x222255ff;
 			scproot.name = "scproot";
+			scproot.enabled = true;
 			// insertChild( 0, scproot);
 			view.addChild( scproot);
 			root.visible = false;

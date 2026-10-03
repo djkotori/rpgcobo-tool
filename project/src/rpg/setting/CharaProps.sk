@@ -473,6 +473,16 @@ enemyprops .. {
 //
 enemyprops .. {
 	proptype = "static"
+	pid = "dietype"
+	lbl = "$T.lbl_dietype"
+	type = LIST
+	list = ["$T.lbl_normal", "$T.lbl_boss"]
+	defval = 0
+};
+
+//
+enemyprops .. {
+	proptype = "static"
 	pid = "exp"
 	lbl = "$T.EXP"
 	type = SCALAR

@@ -291,6 +291,13 @@ local choiceslist( sid){
 	});
 }
 
+
+local uilist = [
+	{ lbl="$T.lbl_normal", val=null, },		//	標準タイプ
+	{ lbl="$T.lbl_popup", val="dialog_choices2.ui", },	//	ポップアップタイプ。左右に短い、表示演出が短い
+	{ lbl="$T.lbl_row3", val="dialog_choices3.ui", },	//	常駐タイプ。
+]
+
 //	システムに登録。
 RPGSystem.ui ..
 {
@@ -305,6 +312,7 @@ RPGSystem.ui ..
 	
 	props = [				//	
 		{ pid="storeid", lbl="$T.lbl_group", type=DATAID, datatype=["store"], filter=@( v) v.type==3, variable=1 },
+		{ pid="uipath", lbl="$T.lbl_appearance", type=LIST, list=uilist, variable=1 }
 	],
 
 	defval = @() +{

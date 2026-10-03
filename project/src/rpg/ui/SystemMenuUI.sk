@@ -169,7 +169,7 @@ RPGSystem.ui ..
 		switch( ev.id){
 		case "start":
 		case "action":
-			if( slotoptionmenu( view, ev.item, false)){
+			if( ev.item && slotoptionmenu( view, ev.item, false)){
 				return true;
 			}
 			break;
@@ -325,6 +325,7 @@ local langconf = {
 	desc = "$T.game_lang_desc"
 	pid = "game.lang"
 	type = "choice"
+	uipath = "dialog_choices3.ui"
 	list = @() ::sakana.languagelist.map( @( v)({ lbl=v.name, val=v.code, })),
 
 	get = @(){
@@ -442,22 +443,33 @@ local confimplmap = {
 				local val = fget( conf, "get") ?? ::getField( ::clientconf, conf.pid);
 				return rtf( list.find( @( v) v.val==val)["lbl"] || "？");
 			}
-			return { key=conf.lbl, mode=0, lbl=fn, _name=conf.pid.replace( ".", "_"), conf=conf};
+			return { key=conf.lbl, mode=0, lbl=fn, rlbl="", _name=conf.pid.replace( ".", "_"), conf=conf};
 		},
 		action = @( iv, conf){
 			local list = fget( conf, "list");
-			local val = ::getField( ::clientconf, conf.pid);
+			local val = conf["get"] ? conf["get"]() : ::getField( ::clientconf, conf.pid);
 			local idx = list.findi( @( v) v.val==val);
 			if( idx < 0) idx = 0;
-			local sel = RPGMain.showUI( {
-				key = "dialog_choices"
-				uipath = "dialog_choices2.ui"
-				list = list.map( @( v) v.lbl)		//	選択肢ダイアログはstring[]のみ
-				place = iv
-				backop = 2
-				pos = { left=-14, right=-14 }
-				focus = "item"..idx
-			});
+			local sel;
+			if( conf["uipath"]){
+				sel = RPGMain.showUI( {		//	広々モード
+					key = "dialog_choices"
+					uipath = conf["uipath"]
+					list = list.map( @( v, i) +{ lbl=v.lbl, rlbl="", _name="item"..i })		//	選択肢ダイアログはstring[]のみ
+					backop = 2
+					focus = "item"..idx
+				});
+			}else{
+				sel = RPGMain.showUI( {
+					key = "dialog_choices"
+					uipath = "dialog_choices2.ui"
+					list = list.map( @( v) v.lbl)		//	選択肢ダイアログはstring[]のみ
+					place = iv
+					backop = 2
+					pos = { left=-14, right=-14 }
+					focus = "item"..idx
+				});
+			}
 			if( sel >= 0){
 				if( conf["set"]){
 					return conf.set( list[sel].val);

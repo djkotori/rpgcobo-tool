@@ -311,6 +311,9 @@ BACK_TO_ITEMSEL:
 		//	ターゲットが無い場合はそのまま実行。脱出アイテムなど、マクロ実行をするもののみ。「脱出しますか？」みたいな確認ポップアップを表示。マクロ内でいいか
 		if( !item.data["cmdtgt"]){
 			local used = st.menufunc( item.data, null, null);
+			if( used){
+				::rpgstat.countup( item.id, "use", 1);	//	使用回数カウント
+			}
 			if( !view.isShown()){	//	メニュー実行時にメニューを閉じてたらそのままメインメニューも閉じる。ワープ魔法、テントなど
 				return false;
 			}
@@ -337,6 +340,7 @@ BACK_TO_ITEMSEL:
 					}
 					if( used){
 						src.consumeForSkill( item.data);
+						::rpgstat.countup( item.id, "use", 1);	//	使用回数カウント
 					}else{ // 使われなかった。
 						::playSound( "SE002");
 					}

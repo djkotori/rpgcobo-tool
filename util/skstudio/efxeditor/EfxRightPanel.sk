@@ -289,7 +289,8 @@ class EfxRightPanel
 	}
 
 	function modevent( e){
-		local cmd = e.actioncmd, pid = cmd.prop.pid;
+		if( e.id != ACTION_PERFORMED) return;
+		local cmd = e.actioncmd, pid = cmd["prop"]["pid"];
 		if( cmd.cmd == "prop"){
 			if( setModifierParam( selgd, pid, cmd.val) != undefined){
 				editor.refreshParticle();
@@ -486,7 +487,7 @@ class EfxRightPanel
 			}
 			break;
 		case "scalesize":
-			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale"});
+			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale", icon="\ue56b", ok=1});
 			if( s != 100){
 				s *= 0.01;
 				editor.sizeScaleParticleGroup( selgd, s);
@@ -496,7 +497,7 @@ class EfxRightPanel
 			}
 			break;
 		case "scaletime":
-			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale"});
+			local s = Popups.showNumInput({ val=100, range=(10,400), q=1, title="$T.pop_numscale", icon="\ue9e4", ok=1});
 			if( s != 100){
 				s *= 0.01;
 				editor.timeScaleParticleGroup( selgd, s);

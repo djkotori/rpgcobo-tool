@@ -219,7 +219,7 @@ class EncountDialog extends UndoableDialog
 		}
 		case "paste":
 		{
-			local bb = decodeBASE64( cbdata, ByteBuffer());
+			local bb = decodeBASE64( cbdata);
 			local bmp = ObjectInput.decode( bb);
 			setAreaBitmap( gid, bmp);
 			break;
@@ -423,7 +423,7 @@ class EncountDialog.EncountAreaCanvas extends SKView
 	}
 
 	function setData( a){
-		local bb = decodeBASE64( a, ByteBuffer());
+		local bb = decodeBASE64( a);
 		bitmap = ObjectInput.decode( bb);
 		repaint();
 	}

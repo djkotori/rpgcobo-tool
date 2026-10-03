@@ -12,14 +12,7 @@ local eventcmd = RPGSystem.eventcmd;
 
 /////////////////// 共通パラメータ、関数
 
-local color0 = (0x00A3D9ff, 0x73DCFFff)
-local color1 = (0xFF9326ff, 0xFFB973ff)
-local color2 = (0x00D9D9ff, 0x99FFFFff)
-local color3 = (0xCCA4FFff, 0xDFBFFFff)
-local color4 = (0xD9D900ff, 0xFFFF99ff)
-local color5 = (0x00B285ff, 0x99FFE5ff)
-local color6 = (0x7dc14dff, 0x92e05aff)
-local color7 = (0xFF6D6Dff, 0xFFBFBFff)
+import EventCommanedColor;
 
 //	計算操作
 local compoplist = [
@@ -1333,13 +1326,14 @@ local presetuimenu(){
 		{ lbl="$T.side_dbview_store", icon="\ue54c", type="store", submenu=[], },
 		{ lbl="$T.lbl_menu", icon="\ueae7", type="mainmenu submenu sysmenu", submenu=[], },
 		{ lbl="$T.lbl_dialog", icon="\ue8ef", type="choose dialog", submenu=[], },
+		{ lbl="$T.lbl_extension", icon="\ue87b", type="ext", submenu=[], },
 		{ lbl="$T.lbl_etc", icon="\ue5d3", type=null, submenu=[], },
 	];
 	foreach( i,v in RPGSystem.ui._list){
 		local m = menu.find( @( x) !x.type || x.type.contains( v.type));
 		if( m) m.submenu .. { lbl=v.lbl, val=v.key, icon=v["icon"]};
 	}
-	return menu;
+	return menu.filter( @( v) length( v.submenu));
 }
 
 //	cmd_showui : UI表示操作。色々なUIを汎用的に表示する

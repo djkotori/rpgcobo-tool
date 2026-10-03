@@ -2016,9 +2016,9 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		ssaopass?.performPass( r);
 		if( litprepass.enablesss){
 			ssspass.performPass( r);
-			lightingpass.m.tex0 = ssspass.target;
+			lightingpass.m.tex3 = ssspass.target;
 		}else{
-			lightingpass.m.tex0 = null;
+			lightingpass.m.tex3 = null;
 		}
 		//	lighting pass (gbuffers, shadow) -> hdcolortex
 		lightingpass.performPass( r);

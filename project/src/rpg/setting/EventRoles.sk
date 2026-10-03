@@ -865,6 +865,8 @@ RPGSystem.markerdef .. {
 	props = [
 		nameiconprop,
 		reqsprop,
+		{ pid="dowarp", lbl="$T.cmd_mapmove_dest", type=BOOL, defval=false },
+		{ pid="dest", lbl="$T.cmd_mapmove_dest", type=PORTAL, cnt="cnt6v.ui", hide=@( pl) !pl.getParam( "dowarp") },
 	]
 }
 

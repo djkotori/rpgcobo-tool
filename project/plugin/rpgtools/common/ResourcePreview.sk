@@ -273,7 +273,7 @@ class ResourcePreviewCanvas
 				sk3d.setSource( pm);
 			}else
 			if( val["bw64"]){
-				local bb = uncompressZSTD( decodeBASE64( val.bw64, ByteBuffer()));
+				local bb = uncompressZSTD( decodeBASE64( val.bw64));
 				local bw = ObjectInput.decode( bb);
 				local bw3d = SK3DBlockWorld( bw);
 				bw3d.rembottom = false;

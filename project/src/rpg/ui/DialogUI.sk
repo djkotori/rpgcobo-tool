@@ -23,7 +23,7 @@ RPGSystem.ui ..
 	uilist = [
 		{ lbl="$T.lbl_normal", val=null, },		//	標準タイプ
 		{ lbl="$T.lbl_popup", val="dialog_choices2.ui", },	//	ポップアップタイプ。左右に短い、表示演出が短い
-		{ lbl="$T.lbl_title", val="dialog_choices3.ui", },	//	常駐タイプ。
+		{ lbl="$T.lbl_row3", val="dialog_choices3.ui", },	//	3列タイプ。
 	]
 
 	backoplist = [
@@ -34,7 +34,7 @@ RPGSystem.ui ..
 	
 	props = @( cmd){
 		local a = [];
-		a .. { pid="uipath", lbl="$T.lbl_view", type=LIST, list=uilist, variable=1 }
+		a .. { pid="uipath", lbl="$T.lbl_appearance", type=LIST, list=uilist, variable=1 }
 		a .. { pid="uipos", lbl="$T.lbl_position", type=UIPOSITION, variable=1 }
 		a ..{
 			pid="usevar", lbl=~(compiletemplate_c( T.tmpl_use_v), {v="$T.lbl_arrayvar"}), type=BOOL, refresh=1, 
@@ -536,6 +536,7 @@ RPGSystem.ui ..
 					::rpgstat.money += pr1 * n;
 				}else{
 					rpgstat.addItemID( itemid, n, item.LV);
+					::rpgstat.discover( itemid, n);		//	アイテム発見＋取得数追加
 					::rpgstat.money -= pr1 * n;
 				}
 				ret = true;

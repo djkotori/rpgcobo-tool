@@ -29,73 +29,41 @@ local securelvlist = [
 	{ lbl="$T.securelv2", val="permission_lv2"},
 ]
 
+local buildproplist( pf){
+	return @()[
+		outdirprop,
+		...preferenceprops.filter( @( v) v["ctg"]=="build" && v["pf"]==pf),
+	];
+}
+
 local buildtargets = [
 	{
 		id = "webgl"
 		lbl = "$T.build_webgl"
 		icon = "\ue051"
 		desc = "$T.build_webgl_desc"
-		props = [
-			outdirprop,
-			{ pid="usesw", lbl="$T.lbl_usesw", type=BOOL, defval=true },
-			{ pid="debuggl", lbl="$T.lbl_debuggl", type=BOOL, defval=false },
-		],
+		props = buildproplist( "webgl")
 	},
 	{
 		id = "win32"
 		lbl = "$T.build_win32"
 		icon = "\ueb75"
 		desc = "$T.build_win32_desc"
-		props = [
-			outdirprop,
-			{ pid="exename", lbl="$T.lbl_exename", type=STRING,
-				format=@( val) {
-					foreach( v in exe_invals) val = val.replace( v, '-');
-					if( !globMatch( "*.exe", val.toLowerCase())) val = val .. ".exe"
-					return val;
-				}
-				defval = "rpgexe.exe"
-			},
-			{ pid="securelv", lbl="$T.securelv", type=LIST, list=securelvlist, defval=@() ::sakana["permission"] },
-		],
+		props = buildproplist( "win32")
 	},
 	{
 		id = "android"
-		lbl = "Android (gradle)"
+		lbl = "$T.build_android"
 		icon = "\ue859"
 		desc = "$T.build_android_desc"
-		props = [
-			outdirprop,
-			{ pid="apkpackage", lbl="$T.lbl_apkpackage", type=STRING,
-				format=@( val) {
-					local pc = '.', a = [], cmnum=0;
-					foreach( c in val.toLowerCase()){
-						if( c>='0' && c<='9'){
-							if( pc == '.') c = 'x';
-						}else
-						if( c=='.'){
-							if( pc == '.' || (cmnum++)>=4) c = 'x';
-						}else{
-							if( c<'a' || c>'z') c = 'x';
-						}
-						a .. char( c);
-						pc = c;
-					}
-					return a.join();
-				},
-				deflbl = "com.rpgcobo.{rpgid}",
-				defval = "",
-			},
-		],
+		props = buildproplist( "android"),
 	},
 	{
 		id = "ios"
-		lbl = "iOS (xcode)"
+		lbl = "$T.build_ios"
 		icon = "\ue027"
 		desc = "$T.build_ios_desc"
-		props = [
-			outdirprop,
-		],
+		props = buildproplist( "ios"),
 	},
 ];
 
@@ -122,7 +90,7 @@ class BuildDialog extends UndoableDialog
 		super( v);
 		conf = deepclone( ::workspace["build"]) || {target="webgl", outdir="", };
 		foreach( v in buildtargets){
-			setDefaultProperties( v.props, conf);
+			setDefaultProperties( fget( v, "props"), conf);
 		}
 		zipg = view.findChild( "zipg");
 		zipg.setVisible( false);
@@ -144,7 +112,7 @@ class BuildDialog extends UndoableDialog
 		buildtgt = t;
 		targetmenu.selectItem( t);
 		view.setValue( "targetdesc", t.desc);
-		proplist.bindProperties( t.props);
+		proplist.bindProperties( fget( t, "props"));
 		//	conf変更
 		conf.target = t.id;
 		local d = Date();
@@ -314,13 +282,6 @@ class BuildDialog extends UndoableDialog
 			local redo = [@(){ ::setProperty( prop, data, val); }];
 			local undo = [@(){ ::setProperty( prop, data, oldval); }];
 			submitOp( redo, undo, trk);
-			//	
-			// ::setProperty( cmd.prop, conf, cmd.val);
-			// if( cmd.prop["refresh"]){
-			// 	local props = fget( propdef, "props", propdef, data);
-			// 	proplist.bindProperties( props);
-			// 	proplist.setParameters( data);
-			// }
 		}
 	}
 	
@@ -387,10 +348,16 @@ class BuildingDialog extends Dialog
 		});
 		local conf = ::workspace.build;
 		local rpgid = ::conf.setting["rpgid"];
+		//	metainfo64作成。パッケージに埋め込まれる
+		local metainfo = {};
+		foreach( k, v in preferenceprops.filter( @( v) v["ctg"]=="build" && v["pf"]==conf.target)){
+			metainfo[v.pid] <- conf[v.pid] || null;
+		}
+		local metainfo64 = encodeBASE64( encodeJSON( metainfo, 4));
 		//	※ビルドサーバーのセッション開始までが接続処理
 		try{
 			//	initリクエストでセッション開始。
-			local params = { token=::account.token, ...conf, rpgid=rpgid};
+			local params = { token=::account.token, ...conf, rpgid=rpgid, metainfo64=metainfo64};
 			local res = ::account.requestAPI( {api="build_init", method="POST", buildserv=buildserv, params=params});	//	test {result="Error", error="Duplicated build session"};
 			if( res.result == "OK"){
 				session = res.session;

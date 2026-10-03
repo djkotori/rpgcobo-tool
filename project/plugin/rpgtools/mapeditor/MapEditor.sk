@@ -95,7 +95,7 @@ class MapEditor extends EditorViewBase
 		if( path.startsWith( "/.x/map_asset/MA")){
 			bwres = ::getResource( path);
 			local d = bwres.getContent();
-			local bb = uncompressZSTD( decodeBASE64( d.bw64, ByteBuffer()));
+			local bb = uncompressZSTD( decodeBASE64( d.bw64));
 			w = ObjectInput.decode( bb);
 
 			tools.findChild( "tool_event").setVisible( false);

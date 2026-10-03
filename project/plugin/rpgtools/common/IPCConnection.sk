@@ -46,7 +46,7 @@ class IPCConnection
 		case EXEC_RESPONSE:
 		{
 			local cmdid = e.keycode;
-			local bb = decodeBASE64( e.actioncmd, ByteBuffer());
+			local bb = decodeBASE64( e.actioncmd);
 			local retval = ObjectInput.decode( bb) ?? null;	//	undefinedはnullに変換する
 			local resptr = retmap[cmdid & ~0x20000000];
 			if( resptr) resptr << retval;

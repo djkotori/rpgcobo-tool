@@ -5,6 +5,7 @@ import PropertyType;
 
 ::preferencetypes .. { id="apikey", lbl="$T.act_setting_apikey", };
 ::preferencetypes .. { id="debug", lbl="$T.act_setting_debug", };
+::preferencetypes .. { id="build", lbl="$T.lbl_build", };
 
 //	gemini
 preferenceprops .. {
@@ -53,6 +54,73 @@ preferenceprops .. {
 
 preferenceprops .. {
 	ctg="debug", pid="debuglv", lbl="$T.pref_debuglv", type=SCALAR, range=(0,99), defval=0,
+}
+
+///////////////////////////	ビルド用設定
+
+local buildprops = {
+	getpref = @() ::workspace.build[pid] || null,
+	applypref = @( prop, val){
+		return ::workspace.build[pid] <- val;
+	}
+}
+
+preferenceprops .. {
+	ctg="build", pid="WEBGL", lbl="$T.build_webgl", type=HEADER
+}
+
+preferenceprops .. {
+	ctg="build", pf="webgl", pid="usesw", lbl="$T.lbl_usesw", type=BOOL, defval=true, ...buildprops
+}
+
+preferenceprops .. {
+	ctg="build", pf="webgl", pid="debuggl", lbl="$T.lbl_debuggl", type=BOOL, defval=false, ...buildprops
+}
+
+preferenceprops .. {
+	ctg="build", pid="WINDOWS", lbl="$T.build_win32", type=HEADER
+}
+
+local exe_invals = "\"<>|:*?\\/";
+
+preferenceprops .. {
+	ctg="build", pf="win32", pid="exename", lbl="$T.lbl_exename", type=STRING,
+	format=@( val) {
+		foreach( v in exe_invals) val = val.replace( v, '-');
+		if( !globMatch( "*.exe", val.toLowerCase())) val = val .. ".exe"
+		return val;
+	}
+	defval = "rpgexe.exe", ...buildprops
+}
+
+preferenceprops .. {
+	ctg="build", pid="ANDROID", lbl="$T.build_android", type=HEADER
+}
+
+preferenceprops .. { 
+	ctg="build", pf="android", pid="apkpackage", lbl="$T.lbl_apkpackage", type=STRING,
+	format=@( val) {
+		local pc = '.', a = [], cmnum=0;
+		foreach( c in val.toLowerCase()){
+			if( c>='0' && c<='9'){
+				if( pc == '.') c = 'x';
+			}else
+			if( c=='.'){
+				if( pc == '.' || (cmnum++)>=4) c = 'x';
+			}else{
+				if( c<'a' || c>'z') c = 'x';
+			}
+			a .. char( c);
+			pc = c;
+		}
+		return a.join();
+	},
+	deflbl = "com.rpgcobo.{rpgid}",
+	defval = "", ...buildprops
+}
+
+preferenceprops .. {
+	ctg="build", pid="IOS", lbl="$T.build_ios", type=HEADER
 }
 
 

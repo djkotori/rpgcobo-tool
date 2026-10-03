@@ -981,6 +981,7 @@
 	//	イベントプロパティ
 	"lbl_moveaction"					: {"ja":"移動アクション", "en":"Move Action"}
 	"lbl_movespd"						: {"ja":"移動速度", "en":"Move Speed"}
+	"lbl_movefreq"						: {"ja":"移動頻度", "en":"Move Frequency"}
 	"lbl_playani"						: {"ja":"アニメを再生", "en":"Play Anime"}
 	"lbl_ui"							: {"ja":"UI", "en":"UI"}
 	"lbl_who"							: {"ja":"誰が", "en":"Who"}
@@ -1108,6 +1109,7 @@
 	"icon_elem"							: {"ja":"属性アイコン", "en":"Element Icons"}
 	"icon_cond"							: {"ja":"状態アイコン", "en":"Condition Icons"}
 	"icon_equip"						: {"ja":"装備アイコン", "en":"Equip Icons"}
+	"icon_job"							: {"ja":"ジョブアイコン", "en":"Job Icons"}
 	"icon_skill"						: {"ja":"スキルアイコン", "en":"Skill Icons"}
 	"icon_item"							: {"ja":"アイテムアイコン", "en":"Item Icons"}
 	"icon_weapon"						: {"ja":"武器アイコン", "en":"Weapon Icons"}
@@ -1301,13 +1303,15 @@
 	"build_webgl_desc"					: {"ja":"ウェブブラウザで動作するhtml, js等をビルドします。\nPCやスマートフォンでプレイ可能です。", "en":"Build HTML, JS, etc. that run in a web browser.\nCan be played on PC or Smartphone."}
 	"build_win32"						: {"ja":"Windows (exe)", "en":"Windows (exe)"}
 	"build_win32_desc"					: {"ja":"Windows PC用のアプリをビルドします。", "en":"Windows .exe"}
+	"build_android"						: {"ja":"Android (gradle)", "en":"Android (gradle)"}
 	"build_android_desc"				: {
 		"ja":"Android用のアプリをビルドします。出力フォルダ内にあるbuild_apk.batを実行するとAPKが生成されます。", 
 		"en":"Windows .exe"
 	},
+	"build_ios"							: {"ja":"iOS (xcode)", "en":"iOS (xcode)"}
 	"build_ios_desc"				: {
 		"ja":"iPhone/iPad用のアプリをビルドします。出力されたxcodeファイルをMac上でビルドしてください。", 
-		"en":"Windows .exe"
+		"en":"Build an app for iPhone/iPad. Please build the output xcode file on a Mac."
 	},
 	"tmpl_building_target"				: {"ja":"$v をビルド中", "en":"Building $v"}
 

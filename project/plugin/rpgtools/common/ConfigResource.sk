@@ -180,8 +180,8 @@ class ConfigItemResource extends Resource
 	}
 }
 
-//	ゲーム設定からのサブ項目は、ほかのID連番リソースではなく個別の～～～～～～～。
-//	0:system, 1:type, 2:gvar, 3:dict
+//	ゲーム設定からのサブ項目は、ほかのID連番リソースではなく個別の設定管理方法。
+//	0:system, 1:type, 2:gvar, 3:dict, (4:achieve) ※拡張可能
 //	
 class GameConfigResource extends Resource
 {

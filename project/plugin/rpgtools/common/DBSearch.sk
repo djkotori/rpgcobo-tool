@@ -23,7 +23,8 @@ local srcdir = dirname( callee().getSourceName());
 //	
 class GotoDBSearch
 {
-	ITEMUIPATH = srcdir .. "/ui/dbsearchitem.ui"
+	static searchdbtypes = ["player","job","cond","skill","item","weapon","armor","enemy","map","quest","store","macro"];
+	static ITEMUIPATH = srcdir .. "/ui/dbsearchitem.ui"
 
 	popup = null;			//	ProjectSearchPopup
 
@@ -165,7 +166,7 @@ class GotoDBSearch
 	//	
 	function _search( k, conf){
 		local a = [];
-		foreach( i in #["player","job","cond","skill","item","weapon","armor","enemy","map","quest","store","macro"]){
+		foreach( i in searchdbtypes){
 			_searchdb( i, ::conf[i], k, a);
 		}
 		_searchgvar( ::conf.gvar, k, a);

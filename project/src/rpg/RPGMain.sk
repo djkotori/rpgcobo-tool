@@ -472,6 +472,7 @@ import GamepadStateID;
 			layer.clearChildren();
 		}
 		uistack.clear();
+		buttonhelp( null);
 	}
 
 	//	RPGSystem.uiに登録されたUIを表示する。入力処理があるUIの場合はそのまま入力処理に移り、終わるまで
@@ -855,13 +856,13 @@ import GamepadStateID;
 	}
 
 	btnhelpmap = {
-		title = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_BACK, "$T.btn_pause"] ],
-		stage = [ [BTN_CURSOR,"$T.btn_move"], [BTN_A,"$T.btn_search"], [BTN_B,"$T.btn_jump"], [BTN_X,"$T.btn_menu"], [BTN_BACK, "$T.btn_pause"] ],
-		battle = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_X,"$T.btn_skillinfo"], [BTN_Y,"$T.btn_auto"], [BTN_BACK, "$T.btn_pause"] ],
-		menu = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_BACK, "$T.btn_pause"] ],
-		menu_s = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_Y,"$T.btn_sort"], [BTN_BACK, "$T.btn_pause"] ],
-		menu_p = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_LR,"$T.btn_page"], [BTN_BACK, "$T.btn_pause"] ],
-		menu_sp = [ [BTN_CURSOR,"$T.btn_cursor"], [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_Y,"$T.btn_sort"], [BTN_LR,"$T.btn_page"], [BTN_BACK, "$T.btn_pause"] ],
+		title = [ [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_BACK, "$T.btn_pause"] ],
+		stage = [ [BTN_A,"$T.btn_search"], [BTN_B,"$T.btn_jump"], [BTN_X,"$T.btn_menu"], [BTN_BACK, "$T.btn_pause"] ],
+		battle = [ [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_X,"$T.btn_skillinfo"], [BTN_Y,"$T.btn_auto"], [BTN_BACK, "$T.btn_pause"] ],
+		menu = [ [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_BACK, "$T.btn_pause"] ],
+		menu_s = [ [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_Y,"$T.btn_sort"], [BTN_BACK, "$T.btn_pause"] ],
+		menu_p = [ [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_LR,"$T.btn_page"], [BTN_BACK, "$T.btn_pause"] ],
+		menu_sp = [ [BTN_A,"$T.btn_apply"], [BTN_B,"$T.btn_back"], [BTN_Y,"$T.btn_sort"], [BTN_LR,"$T.btn_page"], [BTN_BACK, "$T.btn_pause"] ],
 	};
 	
 	_btnhelp = null;
@@ -876,7 +877,7 @@ import GamepadStateID;
 		if( _btnhelp){
 			foreach( km in kma){
 				local v = km[1], c = km[0];
-				sb .. buttonicon( c) .. " " .. v .. "    ";
+				sb .. buttonicon( c) .. " " .. lang( v) .. "    ";
 			}
 		}
 		::rootview.setValue( "btninfolbl", string( sb));

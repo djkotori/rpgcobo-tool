@@ -445,6 +445,7 @@ local rootevent( e){
 	case VK_F2:
 		if( !::RPGMain.pause){
 			revertRenderSkip( "info");
+			revertRenderSkip( "btninfog");
 			revertRenderSkip( "stageui");
 			revertRenderSkip( "message");
 			revertRenderSkip( "menu");

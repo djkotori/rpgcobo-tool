@@ -69,6 +69,15 @@ function loadPlugin( args, opt){
 		::TipsRunner.tipsjsonlist .. "/plugin/rpgtools/rpgtips.json";
 		::UIEditor.widgetfactory ... [
 			{
+				name = "POPLABEL",
+				icon = FileIcons.ttf,
+				func = @(){
+					local v = SKPopLabelView( "9999");
+					v.bnd.set( 0, 0, 128, 32);
+					return v;
+				}
+			},
+			{
 				name = "RPGLIST",
 				icon = FileIcons.rpglist,
 				func = @(){

@@ -148,18 +148,30 @@ class PropertyBehaviors.EfxModVelocity extends PropertyBehavior
 
 local axischks = { "xchk":0, "ychk":1, "zchk":2, }
 
-local adddiv( a){ 
+local aget( a, w, lerp){
+	if( w >= 1.0) return a.last();
+	local t = w * (length(a)-1), i = t|0;
+	return lerp( a[i], a[i+1], t%1.0);
+}
+
+local _resize( a, newlen, lerp){
+	if( newlen <= 0) return false;
+	local l2 = newlen, a2 = [];
+	for( local l = 0;l < l2;l ++){ a2 .. aget( a, l*1.0/(l2-1), lerp); }
+	(a.clear()) ... a2;
+	return true;
+}
+
+local adddiv( a, lerp=Math.lerp){ 
 	if( length( a)<16){
-		a .. a.last();
-		return true;
+		return _resize( a, length(a)+1, lerp);
 	}
 	return false;
 }
 
-local remdiv( a){
+local remdiv( a, lerp=Math.lerp){
 	if( length( a)>2){
-		a.pop();
-		return true;
+		return _resize( a, length(a)-1, lerp);
 	}
 	return false;
 }
@@ -360,7 +372,7 @@ class EfxColorEditView extends SKView
 					repaint();
 				}
 			}else{
-				local a = Popups.showNumInput({ val=c&255, range=(0,255), q=1, ui="bar"});
+				local a = Popups.showNumInput({ val=c&255, range=(0,255), q=1, ui="bar", title="$T.lbl_opacity", icon="\ue3e9"});
 				if( a != null && a != (c&255)){
 					col[i] = (c&0xffffff00)|(a&0xff);
 					postActionEvent( col[i]);
@@ -395,17 +407,16 @@ class PropertyBehaviors.EfxModColor extends PropertyBehavior
 	}
 	
 	function setParam( v){
-		// printf( "vcolorrrrrrrrrrrrrrrrrrrrrrrrrr %S\n", encodeJSON( v));
 		curv.setColors( v.color);
 	}
 
 	function paramevent( e){
 		switch( e.src["name"]){
 		case "addbtn": 
-			if( adddiv( curv.col)){ curv.setColors( curv.col); }else return;
+			if( adddiv( curv.col, Math.lerpcolor)){ curv.setColors( curv.col); }else return;
 			break;
 		case "delbtn": 
-			if( remdiv( curv.col)){ curv.setColors( curv.col); }else return;
+			if( remdiv( curv.col, Math.lerpcolor)){ curv.setColors( curv.col); }else return;
 			break;
 		}
 		postActionEvent( true);
@@ -420,12 +431,18 @@ class EfxCurveEditView extends SKView
 	val = null;			//	0.0-1.0
 	changed = false;
 	tipscale = 1.0;
+	tiptime = 0;
+
+	pointed = -1;
 
 	//	sprite, textbox
 	backsp = null;		//	Sprite
 	divsp = null;		//	Sprite
 	valsp = null;		//	Sprite
 	valpm = null;		//	
+
+	mi = 0.0;
+	ma = 1.0;
 
 	constructor(){
 		backsp = Sprite();
@@ -438,15 +455,21 @@ class EfxCurveEditView extends SKView
 		// stretchalign = 15;
 	}
 
-	function setCurves( a, mi, ma){
+	function setCurves( a, mi=null, ma=null){
 		div = length( a);
 		val = array( div);
-		for( local l = 0;l < div;l ++){ val[l] = (a[l]-mi) / (ma-mi); }
+		if( ma != null){
+			this.mi = mi;
+			this.ma = ma;
+			for( local l = 0;l < div;l ++){ val[l] = (a[l]-mi) / (ma-mi); }
+		}else{
+			for( local l = 0;l < div;l ++){ val[l] = a[l]; }
+		}
 		buildPolygonMesh();
 		repaint();
 	}
 
-	function getCurves( mi, ma){
+	function getCurves(){
 		local a = tuple( div);
 		foreach( i, v in val) a[i] = v*(ma-mi) + mi;
 		return a;
@@ -475,6 +498,7 @@ class EfxCurveEditView extends SKView
 		//	sp
 		for( local l = 0;l < div;l ++){
 			local x = itox( l), y = vtoy( val[l]);
+			if( pointed == l) valsp.color = 0xFFcc00ff; else valsp.color = 0xFFFFFFFF;
 			skDrawSprite( valsp, x-3, y-3, 6, 6);
 		}
 	}
@@ -523,7 +547,27 @@ class EfxCurveEditView extends SKView
 		return i;
 	}
 
+	function ispointed( x, y){
+		local i = xtoi( x), v = ytov( y);
+		local px = itox( i), py = vtoy( val[i]);
+		return Math.abs( x-px) <= 5 && Math.abs( y-py) <= 5;
+	}
+
 	function showContextMenu(){
+		local menudata = [
+			{ lbl="$T.lbl_set($T.lbl_center)", id="center" },
+		];
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "center":
+			setCurves( val.map( @( v) 0.5));
+			postActionEvent();
+			break;
+		}
+	}
+
+	function settips( v){
+		tips = ::rtf( (pointed>=0 ? "[#ff3]%.2f":"%.2f") % (v*(ma-mi) + mi)); 
 	}
 
 	//	
@@ -532,7 +576,15 @@ class EfxCurveEditView extends SKView
 		switch( e.id){
 		case MOUSE_MOVED:
 			local i = xtoi( e.lx), v = ytov( e.ly);
-			tips = "%.2f" % (v*tipscale);
+			local p0 = pointed;
+			if( ispointed( e.lx, e.ly)){
+				pointed = xtoi( e.lx);
+				settips( val[pointed]);
+			}else{
+				pointed = -1;
+				settips( v);
+			}
+			if( pointed != p0) repaint();
 			break;
 		case MOUSE_PRESSED:
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -540,17 +592,21 @@ class EfxCurveEditView extends SKView
 				return showContextMenu();
 			}
 			local i = xtoi( e.lx), v = ytov( e.ly);
+			pointed = i;
 			val[i] = v;
 			buildPolygonMesh();
 			repaint();
 			changed = true;
+			settips( v);
 			break;
 		case MOUSE_DRAGGED:
 			local i = xtoi( e.lx), v = ytov( e.ly);
+			pointed = i;
 			val[i] = v;
 			buildPolygonMesh();
 			repaint();
 			changed = true;
+			settips( v);
 			break;
 		case MOUSE_RELEASED:
 			if( changed){
@@ -587,7 +643,7 @@ class PropertyBehaviors.EfxModScale extends PropertyBehavior
 	function getParam(){
 		return {
 			xyz = (xchk.isSelected()?1:0)|(ychk.isSelected()?2:0)|(zchk.isSelected()?4:0),
-			scale = curv.getCurves( 0.0, 2.0),
+			scale = curv.getCurves(),
 		}
 	}
 	
@@ -601,10 +657,10 @@ class PropertyBehaviors.EfxModScale extends PropertyBehavior
 	function paramevent( e){
 		switch( e.src["name"]){
 		case "addbtn": 
-			if( adddiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( adddiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		case "delbtn": 
-			if( remdiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( remdiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		}
 		postActionEvent( true);
@@ -661,10 +717,10 @@ class PropertyBehaviors.EfxModRotation extends PropertyBehavior
 	function paramevent( e){
 		switch( e.src["name"]){
 		case "addbtn": 
-			if( adddiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( adddiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		case "delbtn": 
-			if( remdiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( remdiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		}
 		local ax = axischks[e.src["name"]];
@@ -691,22 +747,21 @@ class PropertyBehaviors.EfxModTexAnime extends PropertyBehavior
 	
 	function getParam(){
 		return {
-			frame = curv.getCurves( 0.0, 10.0),
+			frame = curv.getCurves(),
 		}
 	}
 	
 	function setParam( v){
 		curv.setCurves( v.frame, 0.0, 10.0);
-		curv.tipscale = 10.0;
 	}
 
 	function paramevent( e){
 		switch( e.src["name"]){
 		case "addbtn": 
-			if( adddiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( adddiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		case "delbtn": 
-			if( remdiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( remdiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		}
 		postActionEvent( true);
@@ -742,7 +797,7 @@ class PropertyBehaviors.EfxModUV2 extends PropertyBehavior
 		return {
 			uv = (uchk.isSelected()?1:0) | (vchk.isSelected()?2:0),
 			scale = scaleval.getValue(),
-			scroll = curv.getCurves( -1.0, 1.0),
+			scroll = curv.getCurves(),
 		}
 	}
 	
@@ -760,10 +815,10 @@ class PropertyBehaviors.EfxModUV2 extends PropertyBehavior
 	function paramevent( e){
 		switch( e.src["name"]){
 		case "addbtn": 
-			if( adddiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( adddiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		case "delbtn": 
-			if( remdiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( remdiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		}
 		postActionEvent( true);
@@ -884,32 +939,33 @@ class PropertyBehaviors.EfxModScalar extends PropertyBehavior
 	static uipath = "/skstudio/ui/efxeditor/mod_scalar.ui"
 	
 	curv = null;		//	EfxCurveEditView
+	range = null;
 
 	function init(){
-		curv = EfxCurveEditView();
 		local curvp = view.findChild( "curvp");
 		curv = EfxCurveEditView();
 		curv.stretchalign = 15;
 		curv.setRect( 0, 0, curvp.bnd.w, curvp.bnd.h);
 		(curv.viewdata = ::SKViewEntityData()).staticparams = [( SKViewPropertyID.SIZE_STATIC, (curv.bnd.w,curv.bnd.h))];	//	todo: この手順を無くさんとなー
 		curvp.addChild( curv);
+		range = prop["range"] || (0.0, 1.0);
 	}
 	
 	function getParam(){
-		return curv.getCurves( 0.0, 1.0);
+		return curv.getCurves();
 	}
 	
 	function setParam( v){
-		curv.setCurves( v, 0.0, 1.0);
+		curv.setCurves( v, range[0], range[1]);
 	}
 
 	function paramevent( e){
 		switch( e.src["name"]){
 		case "addbtn": 
-			if( adddiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( adddiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		case "delbtn": 
-			if( remdiv( curv.val)){ curv.setCurves( curv.val, 0.0, 1.0); }else return;
+			if( remdiv( curv.val)){ curv.setCurves( curv.val); }else return;
 			break;
 		}
 		postActionEvent( true);

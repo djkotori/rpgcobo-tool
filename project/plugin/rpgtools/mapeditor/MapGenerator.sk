@@ -728,7 +728,7 @@ class MapGenerator
 	function objbw( objid){
 		local ba = ::conf._resource.map_asset[objid];
 		if( !ba["bw64"]) return null;
-		local bb = uncompressZSTD( decodeBASE64( ba.bw64, ByteBuffer()));
+		local bb = uncompressZSTD( decodeBASE64( ba.bw64));
 		return ObjectInput.decode( bb);
 	}
 	

@@ -94,6 +94,7 @@ class SkillCommand
 	
 	skill = null;			//	conf.skill|item : 隊列変更などの特別なものはconf外のオブジェクトが入る
 	resetskill = null;		//	実行後に元に戻すスキル
+	countid = null;			//	使用後に使用回数をカウントするID
 
 	//	その他の影響。オプションにより追加されていく。以下の指定が可能。
 	//	・HP,MP,TPダメージ（回復）
@@ -155,7 +156,8 @@ class SkillCommand
 		}
 		execBody();
 		//	コマンド終了処理
-		emitOption( "postcommand", this);	//	
+		emitOption( "postcommand", this);
+		if( countid) ::rpgstat.countup( countid, "use", 1);	//	使用回数カウント
 	}
 	
 	//	コマンドを指定した時点でskillが付く。
