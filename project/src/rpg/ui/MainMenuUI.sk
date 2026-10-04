@@ -59,6 +59,18 @@ local oplist = [
 	{ lbl="$T.uiop_lighten", val="lighten" }
 ];
 
+local efxon(){
+	if( !::rpgstage.startMacro( "X001", false, {W=true, X=false, Y=false, Z=false})){
+		::rpgstage.screenfx.screenEffectOn( { sfxid="raster0", pow=6, color=0xaaaaaaff, time=200});
+	}
+}
+
+local efxoff(){
+	if( !::rpgstage.startMacro( "X001", false, {W=false, X=false, Y=false, Z=false})){
+		::rpgstage.screenfx.screenEffectOff( { sfxbits=2, time=400});
+	}
+}
+
 local showMainMenuUI( prms){
 	if( prms["op"]){
 		//	サブメニューが表示されているときはサブメニューに対して行う。hideの時は処理を中断する必要あり
@@ -73,7 +85,7 @@ local showMainMenuUI( prms){
 		}
 		return null;
 	}
-	::rpgstage.screenfx.screenEffectOn( { sfxid="raster0", pow=6, color=0xaaaaaaff, time=200});
+	efxon();
 	local menuptr = ptr( "menu0"), grayptr = ptr();
 	local view = RPGMain.showView({
 		uipath = "menu_main.ui"
@@ -116,8 +128,7 @@ BACK_TO_MENUSEL:
 	});
 	if( menuitem == "back"){
 		view.actionAndDie( "hide");
-		::rpgstage.screenfx.screenEffectOff( { sfxbits=2, time=400});
-		// view.waitAction();
+		efxoff();
 		return true;
 	}
 	local focuschara = ::rpgstat.members[0].dataid;	//	先頭キャラをとりあえずフォーカス
@@ -153,7 +164,7 @@ BACK_TO_CHARASEL:
 		});
 		if( !ret){	//	サブメニューのshowUIでfalseが返ったらメインメニューも同時に抜ける
 			view.removeFromParent();
-			::rpgstage.screenfx.screenEffectOff( { sfxbits=2, time=400});
+			efxoff();
 			return true;
 		}
 		//	サブメニュー終了。再びメインメニューを表示して最後に選択してたメニューをフォーカス。※キャラ選択に行った方がいいかも
@@ -168,7 +179,7 @@ BACK_TO_CHARASEL:
 		});
 		if( !ret){
 			view.actionAndDie( "hide");
-			::rpgstage.screenfx.screenEffectOff( { sfxbits=2, time=400});
+			efxoff();
 			return true;
 		}
 		if( menuitem.ui["charasel"]){

@@ -59,8 +59,9 @@ preferenceprops .. {
 ///////////////////////////	ビルド用設定
 
 local buildprops = {
-	getpref = @() ::workspace.build[pid] || null,
+	getpref = @() ::workspace["build"][pid] ?? this["defval"] ?? null,
 	applypref = @( prop, val){
+		if( !::workspace["build"]) ::workspace.build <- {};
 		return ::workspace.build[pid] <- val;
 	}
 }

@@ -631,7 +631,6 @@ class ResourceFileSelectDialog extends Dialog
 		local dir = ::getResource( fget( prop, "dir"));
 		::skstudio.fileview.refreshDir( dir.path);
 		local a = [];
-		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
 		foreach( r in dir.getList()){
 			try{
 				if( !r.name.endsWith( ".vox")) continue;
@@ -647,6 +646,7 @@ class ResourceFileSelectDialog extends Dialog
 			}
 		}
 		a.sort( @( a,b) a.id<>b.id || a.data["name"]<>b.data["name"] )
+		if( prop["nullable"]) a[0] <- { id="rem", data={ ret="rem"}};
 		previewlist.setItemList( a);
 	}
 

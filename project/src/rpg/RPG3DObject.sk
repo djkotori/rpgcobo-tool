@@ -1445,6 +1445,10 @@ class RPG3DVoxChara extends RPG3DObject
 		setPivot( #Vector3D( 0.0, 0.01, 0.0));	//	Z fightingしちゃうのを応急措置
 		bnd.set( 0, 1.0, 0, 0.8, 1.0, 0.8);		//	ちゃんと計算。。。
 		gbnd.set( bnd);
+
+		if( cv["vox_itemr"]) setEquipVox( cv["vox_itemr"], "item_R");
+		if( cv["vox_iteml"]) setEquipVox( cv["vox_iteml"], "item_L");
+
 		//	b3body
 		local colsize = cv["colsize"]||#(0.4,0.8,0.4);
 		local shp = createShape( cv["colshp"]||SK_SHAPE_CAPSULE, colsize);
@@ -1501,6 +1505,7 @@ class RPG3DVoxChara extends RPG3DObject
 	//	※盾モデルはオプションの効果で発動し、頻繁に入れ替わる。
 	//	
 	function setEquipVox( wv, place="item_R"){
+		if( typeof( wv) == SS_STRING) wv = ::conf._resource.equip_vox[wv];
 		for( local l = 0;l < 4;l ++) delete pmmap[place..l];
 		if( !wv) return;
 		local vc = ::getResourceContent( wv.vox[0]);
@@ -1535,6 +1540,13 @@ class RPG3DVoxChara extends RPG3DObject
 		//	
 		setGSelectorID( 200);
 		updatePartsVisibles();
+	}
+
+	function hasEquipVox( place){
+		for( local l = 0;l < 4;l ++){
+			if( pmmap[place..l]) return true;
+		}
+		return false;
 	}
 
 	//	フォーカス対象を設定する。

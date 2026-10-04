@@ -26,7 +26,7 @@ local priceprop = {
 
 local eqtypeprop = {
 	pid = "eqtype"
-	lbl = lang( {"ja":"装備タイプ", "en":""}),
+	lbl = "$T.type_eqtype",
 	type = LIST
 	//	武器の編集なら武器のみ、防具の編集なら防具のみにフィルタ
 	list = @( pl) typelist( "eqtype").filter( @( v) pl.ref.eqmask & (1<<v.data.eqctg))
@@ -35,7 +35,7 @@ local eqtypeprop = {
 
 local eqflagprop = {
 	pid = "eqflag"
-	lbl = lang( {"ja":"専用装備フラグ", "en":""}),
+	lbl = "$T.type_eqflag",
 	type = LIST
 	list = @() [{lbl="$T.lbl_none",val=-1,icon=""}, ...typelist( "eqflag")]
 	defval = -1

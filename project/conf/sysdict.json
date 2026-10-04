@@ -95,6 +95,7 @@
 	"equip":{ "ja":"装備", "en":"Equipment"},
 	"weapon":{ "ja":"武器", "en":"Weapon"},
 	"armor":{ "ja":"防具", "en":"Armor"},
+	"sheld":{ "ja":"盾", "en":"Shield"},
 
 	"mymoney":{ "ja":"所持金", "en":"Money"},
 	"buyitem":{ "ja":"%S を購入", "en":"Buy %S"},

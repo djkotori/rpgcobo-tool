@@ -395,7 +395,7 @@ class EfxEditor extends EditorViewBase
 		//
 		sb .. "\t\tmod = [\n"
 		foreach( m in g.mod){
-			sb .. sprintf( "\t\t%S,\n", encodeJSON( m));
+			sb .. sprintf( "\t\t%S,\n", encodeJSON( m, 4));
 		}
 		sb .. "\t\t]\n"
 		//

@@ -712,6 +712,7 @@ class RPGStage
 	//	マクロイベントを実行する。これはイベント処理外でマクロを呼び出したいときに使う。
 	//	メインイベントとして実行する場合は、今あるメインイベントが終了するまで待つか、失敗する。
 	function startMacro( macroid, ismain=true, wvar=null){
+		if( !length( conf.macro[macroid]["cmdblock"])) return null;
 		local md = {	//	手動実行できるようにデータをいじくる
 			cmdblock = [],
 			...conf.macro[macroid],
