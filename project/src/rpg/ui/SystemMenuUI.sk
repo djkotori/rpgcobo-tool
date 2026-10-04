@@ -123,6 +123,7 @@ RPGSystem.ui ..
 	type = "submenu"		//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
 	topinfo = "$T.save"
 	icon = "\ue30a"
+	order = 100
 	
 	props = [				//	
 	],
@@ -192,6 +193,7 @@ RPGSystem.ui ..
 	type = "submenu"		//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
 	topinfo = "$T.loadgame"
 	icon = "\ue30a"
+	order = 110
 	
 	props = [				//	
 		{ pid="backop", lbl="$T.lbl_backop", type=LIST, list=[
@@ -556,6 +558,7 @@ RPGSystem.ui ..
 	type = "submenu"		//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
 	topinfo = "$T.config"
 	icon = "\ue30a"
+	order = 120
 
 	configtabs = [
 		{ lbl="$T.config_game", list=[ cmdconf, battlespdconf, btnhelpconf, bgmvolconf, sevolconf, langconf], }
@@ -657,6 +660,7 @@ RPGSystem.ui ..
 	nochange_menuui = true
 	topinfo = "$T.exitgame"
 	icon = "\ue30a"
+	order = 999				//	
 
 	props = [
 	],

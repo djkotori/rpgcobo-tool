@@ -30,7 +30,7 @@ local place2list = [
 local showTopInfoUI( uidef, prms){
 	local view = rootview.findChild( "info_top");
 	if( prms["op"]=="hide"){
-		view.name = null;	//	以後名前で拾えないように
+		if( view) view.name = null;	//	以後名前で拾えないように
 		return view?.actionAndDie( "hide");
 	}
 	if( view){

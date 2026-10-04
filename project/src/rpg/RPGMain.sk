@@ -523,16 +523,20 @@ import GamepadStateID;
 	//	
 	function pushTopInfo( ti){
 		local oldti = ::rootview.findChild( "info_top")["ref"];
-		showUI( { key="info_top", text=ti, });
+		if( length( ti)){
+			showUI( { key="info_top", text=ti, });
+		}else{
+			showUI( { key="info_top", op="hide", });
+		}
 		return oldti;
 	}
 
 	//	
 	function popTopInfo( oldti){
 		local curti = ::rootview.findChild( "info_top");
-		if( curti){	//	既に消されてる場合はpopしない。イベント等で起こる
+		// if( curti){	//	既に消されてる場合はpopしない。イベント等で起こる ... 消して良し？
 			showUI( oldti ? oldti : { key="info_top", op="hide", });
-		}
+		// }
 	}
 
 	//	conf.uimapを全検索してuipathがベースUIのデータを取得。毎回やるのは重いのでキャッシュする
@@ -574,7 +578,7 @@ import GamepadStateID;
 		local _getview( v) v && (v instanceof SKView ? v : ::rootview.findChild( v));
 		local lyr = _getview( t.layer);
 		local r = getUIResource( t.uipath);
-		local v = ::loadSKView( r);
+		local v = ::loadSKView( r, t["viewcls"]);
 		v.name ??= t["name"];
 		//	レイアウト
 		local plc = _getview( t["place"]) || lyr;	//	レイアウトの基準ビュー。lyrの子である必要は無し
@@ -602,6 +606,9 @@ import GamepadStateID;
 		v.modal = t["modal"]||false;
 		lyr.addChild( v);	//	挿入位置も設定できるといいかも
 		//	値の設定
+		if( t["prefunc"]){
+			t.prefunc( v);
+		}
 		if( t["binds"]){
 			v.bindValues( t.binds);
 		}
@@ -721,6 +728,7 @@ import GamepadStateID;
 		[BTN_LB] = { id="page", keycode=BTN_LB, count=-1 },
 		[BTN_RB] = { id="page", keycode=BTN_RB, count=1 },
 		[BTN_B] = { id="back", keycode=BTN_B },
+		[BTN_Y] = { id="etc", keycode=BTN_Y },
 		[BTN_X] = { id="click", keycode=BTN_X },
 		[BTN_START] = { id="start", keycode=BTN_START },
 		[BTN_A] = { id="click", keycode=BTN_A },

@@ -468,12 +468,12 @@ class MapCanvas extends CanvasBehavior
 		local bw = editor.bw;
 		local w = bw.w * 4, h = bw.d * 4;
 		local renderer = SK3DRenderer( scn);
-		renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));	//	bloomオフでーーーー
+		renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_mapedit"));	//	bloomオフでーーーー
 		renderer.bgpass.setColor( 0x000000ff);
 		//
 		local cam = Camera();
 		local hw = bw.w*0.25, hh = bw.d*0.25;
-		cam.ortho( -hw, hw, -hh, hh, -1000, 1000);
+		cam.ortho( -hw, hw, -hh, hh, -300, 300);
 		cam.lookat( Vector3D( hw, 30, hh), Vector3D( hw, 0, hh), Vector3D( 0, 0, 1));
 		renderer.setCamera( cam);
 		local t1 = skGetTime();

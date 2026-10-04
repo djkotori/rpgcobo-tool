@@ -1436,8 +1436,8 @@
 	"ui_store_choices"					: {"ja":"ストア表示「選択肢」", "en":"Show 'Choices' Store"}
 	"ui_store_sellitem"					: {"ja":"所持アイテムの売却", "en":"Sell owned Items"}
 	
+	"lbl_blurstage"						: {"ja":"ステージをぼかす", "en":"Blur Stage"}
 	"lbl_link_dataid"					: {"ja":"データIDを紐づけ", "en":"Link Data ID"}
-	
 	"lbl_anyone"						: {"ja":"誰でも", "en":"Anyone"}
 	"lbl_only_alives"					: {"ja":"生者のみ", "en":"Only alives"}
 	"lbl_only_deads"					: {"ja":"死者のみ", "en":"Only deads"}

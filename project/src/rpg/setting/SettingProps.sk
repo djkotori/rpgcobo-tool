@@ -301,7 +301,7 @@ settingprops .. {
 	lbl = @() (T.format_view % T.exitgame),
 	type = LIST,
 	list = RPGProperties.uivisiblelist,
-	defval = 3
+	defval = 0
 };
 
 ////////////////////////////////////////////////////////////////////////////////

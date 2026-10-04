@@ -1,0 +1,37 @@
+﻿//	
+//	マップUI機能プラグイン
+//	ミニマップ、全体マップの表示機能を提供するプラグイン
+//	ミニマップは、ステージ中の画面左下に自分の周りの地形やオブジェクトを表示します。
+//	全体マップは、メニューから表示することができ、ステージ全体の地形やオブジェクトの配置を確認することができます。
+//	
+import PropertyType;
+import RPGPropertyType;
+
+local srcdir = dirname( callee().getSourceName());
+
+
+local showmaplist = [
+	{ lbl="$T.lbl_hide", val=0},
+	{ lbl={"ja":"Y ボタン", "en":"Y Button"}, val=1},
+	{ lbl={"ja":"メニューに追加", "en":"Add to Main Menu"}, val=2}
+];
+
+//	プラグイン定義
+pluginfo <- {
+	name : { "ja":"マップUI拡張","en":"Map UI Extension"}
+	author : "djkotori"
+	ver : "0.1.0"
+	tags : ["ui"]
+	order : 10
+	desc : { "ja":"ミニマップ、全体マップの表示機能を提供します。", "en":"Provides the functionality to display a minimap and an overall map in the game." }
+	props : [
+		{ pid = "showmaptype", lbl={"ja":"全体マップ表示タイプ", "en":"Map Showing Type"}, type=LIST, list=showmaplist, defval = 0, },
+	]
+}
+
+//	optはpluginfo.propsの情報が来る。{id:val,...}のテーブルで来る。
+//	ソースは分けておいた方がplugin.sk自体の読み込み負荷は減る
+function loadPlugin( args, opt){
+	runsk( srcdir .. "/MapUIExtension.sk");
+	return true;
+}

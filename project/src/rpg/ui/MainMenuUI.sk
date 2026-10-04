@@ -59,13 +59,13 @@ local oplist = [
 	{ lbl="$T.uiop_lighten", val="lighten" }
 ];
 
-local efxon(){
+local bluron(){
 	if( !::rpgstage.startMacro( "X001", false, {W=true, X=false, Y=false, Z=false})){
 		::rpgstage.screenfx.screenEffectOn( { sfxid="raster0", pow=6, color=0xaaaaaaff, time=200});
 	}
 }
 
-local efxoff(){
+local bluroff(){
 	if( !::rpgstage.startMacro( "X001", false, {W=false, X=false, Y=false, Z=false})){
 		::rpgstage.screenfx.screenEffectOff( { sfxbits=2, time=400});
 	}
@@ -85,7 +85,7 @@ local showMainMenuUI( prms){
 		}
 		return null;
 	}
-	efxon();
+	if( prms["bluron"]) bluron();
 	local menuptr = ptr( "menu0"), grayptr = ptr();
 	local view = RPGMain.showView({
 		uipath = "menu_main.ui"
@@ -100,10 +100,10 @@ local showMainMenuUI( prms){
 				local _name="menu"..i;
 				local disable = false;
 				return {
-					_name=_name, lbl=(stat==1)?"":v.lbl, key=v.key, stat=stat, ui=v, disable=stat!=3,
+					_name=_name, lbl=(stat==1)?"":v.lbl, key=v.key, stat=stat, ui=v, disable=stat!=3, order=v["order"]??99,
 					grayout= (stat==2) ? "on" : @() (~grayptr && ~menuptr!=_name) ? "on" : "off"
 				}
-			}),
+			}).sort( @( v) v.order),
 			//	メンバーリスト。メニュー項目にはまずキャラ選択をするメニューがあり、それの対応で選択可能なリストになる
 			memberlist = ::rpgstat.members.map( ::bindMemberList),
 			//	他の細々した表示物
@@ -128,7 +128,7 @@ BACK_TO_MENUSEL:
 	});
 	if( menuitem == "back"){
 		view.actionAndDie( "hide");
-		efxoff();
+		if( prms["bluron"]) bluroff();
 		return true;
 	}
 	local focuschara = ::rpgstat.members[0].dataid;	//	先頭キャラをとりあえずフォーカス
@@ -164,7 +164,7 @@ BACK_TO_CHARASEL:
 		});
 		if( !ret){	//	サブメニューのshowUIでfalseが返ったらメインメニューも同時に抜ける
 			view.removeFromParent();
-			efxoff();
+			if( prms["bluron"]) bluroff();
 			return true;
 		}
 		//	サブメニュー終了。再びメインメニューを表示して最後に選択してたメニューをフォーカス。※キャラ選択に行った方がいいかも
@@ -179,7 +179,7 @@ BACK_TO_CHARASEL:
 		});
 		if( !ret){
 			view.actionAndDie( "hide");
-			efxoff();
+			if( prms["bluron"]) bluroff();
 			return true;
 		}
 		if( menuitem.ui["charasel"]){
@@ -199,9 +199,15 @@ RPGSystem.ui ..
 	btnhelp = "menu";
 	icon = "\ueae7"
 	
-	props = [					//	メインメニューにプロパティは無い
+	props = [
 		{ pid="op", lbl="$T.lbl_operation", type=LIST, list=oplist, refresh=true }
+		{ pid="bluron", lbl="$T.lbl_blurstage", type=BOOL }
 	],
+
+	defval = {
+		op = null
+		bluron = true
+	},
 
 	uifunc = showMainMenuUI,		//	
 };
@@ -373,8 +379,9 @@ RPGSystem.ui ..
 	key = "menu_item"
 	lbl = "$T.item"
 	type = "submenu"			//	mainmanu, submenu, choose, dialog, message, info, debug, misc, 
-	topinfo = "$T.item";
+	topinfo = "$T.item"
 	icon = "\ueae7"
+	order = 10
 
 	props = [					//	アイテムメニューにプロパティは無い
 	],
@@ -406,6 +413,7 @@ RPGSystem.ui ..
 	charasel = true					//	キャラ選択が必要
 	topinfo = "$T.skill";
 	icon = "\ueae7"
+	order = 20
 
 	props = [					//	アイテムメニューにプロパティは無い
 	],
@@ -506,6 +514,7 @@ RPGSystem.ui ..
 	charasel = true					//	キャラ選択が必要
 	topinfo = "$T.equip";
 	icon = "\ueae7"
+	order = 30
 	
 	props = [						//	メインメニューにプロパティは無い
 	],
@@ -727,6 +736,7 @@ RPGSystem.ui ..
 	charasel = true					//	キャラ選択が必要
 	topinfo = "$T.job";
 	icon = "\ueae7"
+	order = 40
 	
 	props = [						//	プロパティは無い
 	],
@@ -898,6 +908,7 @@ RPGSystem.ui ..
 	charasel = true					//	キャラ選択が必要
 	hide_presetui = true;			//	プリセットUIのリスト表示から外す
 	icon = "\ueae7"
+	order = 50
 	
 	props = [						//	プロパティは無い
 	],

@@ -1341,7 +1341,6 @@ class RPG3DPicture extends RPG3DObject
 	function picfx( id){
 		if( id=="die"){
 			fxtype = 1; fxspd = 0.0006; fxw = 0.0;
-			playSound( "SE111");
 		}
 	}
 	
@@ -1349,6 +1348,7 @@ class RPG3DPicture extends RPG3DObject
 	function deathAnime(){
 		anime2( #{id="die"});
 		picfx( "die");
+		playSound( "SE111");
 	}
 }
 

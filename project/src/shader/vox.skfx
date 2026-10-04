@@ -226,7 +226,7 @@ fs depth
 
 technique base
 {
-	apilevel = 30;
+	apilevel = 30, 31;
 	
 	//	pbr deferred pass
 	pass {

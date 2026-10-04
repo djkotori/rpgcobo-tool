@@ -96,6 +96,7 @@ RPGSystem.ui ..
 	],
 	
 	defval = {
+		op = null,
 		uipath = "message_talk.ui",
 		text = "*message_talk*",
 		name = "",
@@ -137,6 +138,7 @@ RPGSystem.ui ..
 	],
 	
 	defval = {
+		op = null,
 		uipath = "message_talk_pic.ui",
 		text = "*message_talk*",
 		name = "",
@@ -172,6 +174,7 @@ RPGSystem.ui ..
 	],
 	
 	defval = {
+		op = null,
 		uipath = "message_big.ui",
 		text = "*message_big*",
 		pos = {},	//	中心

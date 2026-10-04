@@ -1,0 +1,566 @@
+import ControlID;
+import VirtualKeyCode;
+import GamepadButtonCode;
+import PropertyType;
+import RPGPropertyType;
+
+local srcdir = dirname( callee().getSourceName());
+local v_0 = Vector3D();
+
+local D = {
+	"showmap" = {"ja":"マップ表示", "en":"Show Map"}
+	"minimap" = {"ja":"ミニマップ", "en":"Mini map"}
+	"bigmap" = {"ja":"全体マップ", "en":"Big map"}
+	"excmd_explormap" = {"ja":"マップ踏破", "en":"Map Exploration"}
+	"excmd_explormap_tips" = {"ja":"ミニマップ、全体マップの未踏破部分をすべて塗ったり消去します。ダンジョンなどで使用します。", "en":"Fills/clears all unexplored areas on the mini map and the big map. Used in dungeons, etc."}
+	"explor" = {"ja":"踏破モード", "en":"Exploration Mode"}
+}
+
+local evcolorlist = [ 0xffffffff, 0x26FFFFff, 0x55FF33ff, 0xFFFF4Dff, 0xFF4D4Dff, 0xFF73FFff, 0xFF9326ff ];
+// import EventCommanedColor;
+
+local colorex1 = (0xeebb11FF, 0xffcc22FF);
+
+//	マップ踏破チェック。指定した座標が踏破済みかどうかを返す。
+local explorchk( explor, mapmask, p){
+	return !explor || (mapmask && mapmask.get( p.x|0, mapmask.h-1-(p.z|0)));
+}
+
+//	マスクテクスチャを設定する。mapspはマップのスプライト、mapmaskは踏破マスク。
+local setMaskTexture( mapsp, mapmask){
+	if( !mapmask) return;
+	local maskimg = #RGBAImage( 1024, 1024);
+	maskimg.setSize( mapmask.w, mapmask.h);
+	mapmask.toRGBAImage( maskimg, 0, -1);
+	if( !mapsp.tex1){
+		mapsp.tex1 = Texture();
+	}
+	mapsp.tex1.load( maskimg);
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+//	
+//	ミニマップ機能。
+//	- showUIの ext_minimap でミニマップを表示する。
+//	- マッププロパティに minimap==0,1,2,3。 0=非表示、1=通常、2=マスク
+//	- RPGStage.updateStepsで移動時に移動マスクを更新する。
+//	- RPGStageの初期化時にミニマップを追加。
+//	
+//	全体マップ機能
+//	- showUIの ext_bigmap で全体マップを表示する。
+//	- マッププロパティに bigmap==false/true。 メニューから全体マップ？ステージ上でYボタンで表示？
+//	
+
+class ::RPGMinimap
+{
+	view = null;
+	explor = false;			//	踏破モード
+
+	mapsp = null;				//	Sprite : マップショットのSprite。bndは実物大に引き延ばされる。mapgに追加される。mapgは回転する
+	splist = null;				//	Sprite[] : ミニマップに表示するアイコンのリスト。ランドマーク、イベントが入っている
+	myicon = null;				//	TextBox : 
+	maskimg = null;				//	RGBAImage : マップのmaskmapで更新される。
+	maskdirty = true;
+
+	mapg = null;				//	SKView : ミニマップの親View。回転する
+	icong = null;				//	SKView : アイコンの親View。回転しない
+	dirg = null;				//	SKView : 方向表示の親View。回転する
+	
+	pixscale = 8.0;				//	ワールド座標からピクセル座標へ変換比率。通常は1m=8px。200pxは25m相当。
+	cx = 0; cy = 0;				//	minimapの中心座標(px)。
+	ww = 0; wd = 0;				//	RPGStageのマップのサイズ(m)
+	wpmat = null;				//	Matrix : ワールド座標からピクセル座標への変換行列。(x,z,0)で計算
+
+	constructor( v, mm){
+		view = v;
+		explor = mm;
+		mapg = v.findChild( "mapg");
+		icong = v.findChild( "icong");
+		dirg = v.findChild( "dirg");
+		local attr = #FontAttribute( Fonts.get( "icon"), 16, 0xffffffff, 0|(2<<4));
+		attr.strokecolor = 0x00000099;
+		myicon = TextBox( attr);
+		myicon.setText( "\ue55d");
+		splist = [];
+		//
+		setRPGStage( ::rpgstage);
+		v.addUpdateFunc( updateFrame.bindenv( this));
+		local menulayer = ::rootview.findChild( "menu");
+		view.bindValue( @() length( menulayer.children) ? "menuon" : "menuoff");
+	}
+
+	function setExplor( mm){
+		explor = mm;
+		maskdirty = true;
+	}
+	
+	//	
+	function setRPGStage( st){
+		local bw = st.bw;
+		cx = view.bnd.w/2; cy = view.bnd.h/2;
+		ww = bw.w/2.0; wd = bw.d/2.0;
+		//	マップショット
+		mapsp = ::getSprite( "/data/mapdata/%S.webp" % st.mapid);
+		mapsp.bnd.set( 0, 0, ww * pixscale, wd * pixscale);	//	128ブロック = 64m = 512px
+		mapsp.blend = SK_PMAMIX;
+		local rv = SKRenderableView(), self = this;
+		rv.renderfunc = @(){
+			skDrawSprite( self.mapsp);
+		};
+		mapg.addChild( rv);
+		//	アイコン
+		myicon.x = cx - myicon.bnd.w/2;
+		myicon.y = cy - myicon.bnd.h/2;
+		local iv = SKRenderableView();
+		iv.renderfunc = @(){
+			skDrawSprites( self.splist, self.myicon);
+		};
+		icong.addChild( iv);
+		//
+		local idir = -st.camdir;
+		wpmat = Matrix();
+		wpmat.translate( cx, cy, 0.0).rotate( idir, 0.0, 0.0).scale( pixscale, pixscale, 1.0).translate( 0, -wd, 0).scale( -1, 1, 1);
+	}
+
+	function updateFrame( dt){
+		updateMask();
+		local st = ::rpgstage;
+		setWorldPos( st.player3d.pos, st.player3d.prevdir);
+		local idir = -st.camdir;
+		if( mapg.rot.z != idir){
+			mapg.rot.z = idir;
+			dirg.rot.z = idir;
+			mapg.repaint();
+			dirg.repaint();
+		}
+		// view.visible = !length( menulayer.children);	//	メニューが表示されているときはミニマップを隠す
+		return true;
+	}
+
+	function updateMask(){
+		if( maskdirty){
+			if( explor){
+				setMaskTexture( mapsp, ::rpgstage.stat.mapmask);
+			}else{
+				mapsp.tex1 = null;
+			}
+			maskdirty = false;
+		}
+	}
+
+	//	ワールド座標を指定する。
+	function setWorldPos( p, dir){
+		myicon.setCharaExtra( {r=dir*Math.RTOD});
+		//	mapspはmapgが回転しているのでwpmatは使わない
+		mapsp.bnd.x = -p.x * pixscale + cx;
+		mapsp.bnd.y = -(wd-p.z) * pixscale + cy;
+		mapg.repaint();
+		icong.repaint();
+		//	events
+		updateEventSprites();
+		foreach( sp in splist){
+			local e = sp.ref, ep = e.rp3d.pos, col = (evcolorlist[e.data["col"]] || evcolorlist[0]) & 0xffffff00;
+			local d = v_0( ep.x-p.x, ep.z-p.z, 0.0).scale( pixscale), len = d.length(), r = cx*0.9;
+			if( len >= r){
+				d.scale( r/len);
+				local a = Math.clamp( (160-len) / (160-r), 0.0, 1.0);
+				sp.color = Math.lerpcolor( 0, col, a);
+			}else{
+				sp.color = col;
+			}
+			sp.pos.x = d.x + cx;
+			sp.pos.y = -d.y + cy;
+		}
+	}
+
+	//	イベントのミニマップへの表示を更新
+	//	基本的にランドマークだけ表示すればよし
+	function updateEventSprites(){
+		splist.clear();
+		foreach( e in ::rpgstage.events){
+			if( !e.rp3d) continue;
+			if( e.data["role"] != "portal" && e.data["role"] != "pdoor") continue;
+			if( !explorchk( explor, ::rpgstage.stat.mapmask, e.rp3d.pos)) continue;
+			local sp = ::getSprite( "/presetui/uiimg/icon_glow.png");
+			sp.bnd.set( -8, -8, 16, 16);
+			sp.pos = Vector3D();
+			sp.ref = e;
+			splist .. sp;
+		}
+	}
+}
+
+local oplist = [
+	{ lbl="$T.lbl_show", val=null }	//	showの場合はop=nullが入る
+	{ lbl="$T.lbl_hide", val="hide" }	
+];
+
+local showMiniMap( prm){
+	local view = ::rootview.findChild( "ext_minimap");
+	if( prm["op"]=="hide"){
+		view.name = null;	//	以後名前で拾えないように
+		return view?.actionAndDie( "hide");
+	}
+	if( view){
+		view.ref.setExplor( prm["explor"]||false);
+	}else{
+		local r = ::RPGMain.getUIResource( srcdir .. "/ext_minimap.ui");
+		view = ::loadSKView( r);
+		view.name = "ext_minimap";
+		view.pos( 160, 580);	//	位置調整をプラグインプロパティで
+		local minimap = view.ref = RPGMinimap( view, prm["explor"]||false);
+		::rootview.findChild( "stageui").addChild( view);
+	}
+}
+
+//////////// UIに登録
+
+RPGSystem.ui ..
+{
+	key = "ext_minimap"
+	lbl = D.minimap
+	type = "ext"
+	icon = "\ue87b"
+
+	props = [
+		{ pid="op", lbl="$T.lbl_op", type=LIST, list=oplist, variable=1 }
+		{ pid="explor", lbl=D.explor, type=BOOL, variable=1, hide=@( pl) !!pl.getParam( "op") }
+	],
+	defval = { op=null, explor=false, },
+
+	uifunc = showMiniMap
+};
+
+local bluron(){
+	if( !::rpgstage.startMacro( "X001", false, {W=true, X=false, Y=false, Z=false})){
+		::rpgstage.screenfx.screenEffectOn( { sfxid="raster0", pow=6, color=0xaaaaaaff, time=200});
+	}
+}
+
+local bluroff(){
+	if( !::rpgstage.startMacro( "X001", false, {W=false, X=false, Y=false, Z=false})){
+		::rpgstage.screenfx.screenEffectOff( { sfxbits=2, time=400});
+	}
+}
+
+//	大マップの主にマップ画像表示とランドマーク表示を担当するクラス
+class ::RPGBigmap
+{
+	view = null;
+	explor = false;				//	踏破モード
+
+	map = null;
+	ww = 0;
+	wd = 0;
+	mapsp = null;				//	Sprite : マップショットのSprite。bndは実物大に引き延ばされる。mapgに追加される。mapgは回転する
+	splist = null;				//	Sprite[] : ミニマップに表示するアイコンのリスト。ランドマーク、イベントが入っている
+	tblist = null;				//	Sprite[] : 
+	myicon = null;				//	TextBox : 
+	
+	function setup( v, mapid, m){
+		view = v;
+		map = m;
+		ww = map.size[0];
+		wd = map.size[2];
+		local st = ::rpgstage;
+		explor = ::rpgstat.stagemap[mapid]["statmap"]["explor"] ?? ::conf.map[mapid]["showmap"]["explor"];	//	まだ入ったことのないマップではマップ設定から取得
+		local mapimg = v.findChild( "mapimg");
+		mapsp = ::getSprite( "/data/mapdata/%S.webp" % mapid);
+		mapsp.blend = SK_PMAMIX;
+		if( explor){
+			setMaskTexture( mapsp, st.stat.mapmask);
+		}
+		mapimg.setSprite( mapsp);
+		mapimg.updateLayout();
+		//	sprites
+		local gr48 = ::getSprite( "/presetui/uiimg/gr48.png");
+		gr48.blend = SK_MULT;
+		gr48.bnd.set( -1, -1, mapsp.bnd.w+2, mapsp.bnd.h+2);	//	128ブロック = 64m = 512px
+		local attr = #FontAttribute( Fonts.get( "icon"), 16, 0xffffffff, 0|(2<<4));
+		attr.strokecolor = 0x00000099;
+		myicon = TextBox( attr);
+		myicon.setText( "\ue55d");
+		local ppos = toMapPos( st.player3d.pos);
+		myicon.x = ppos.x - myicon.bnd.w/2;
+		myicon.y = ppos.y - myicon.bnd.h/2;
+		myicon.setCharaExtra( {r=st.player3d.dir*Math.RTOD});
+		splist = [];
+		tblist = [];
+		foreach( eid, ed in map.event){
+			if( ed["role"] != "portal" && ed["role"] != "pdoor") continue;
+			local epos = Vector3D( ed.pos).scale( 0.5);
+			if( !explorchk( explor, st.stat.mapmask, epos)) continue;
+			local sp = ::getSprite( "/presetui/uiimg/icon_glow.png");
+			sp.bnd.set( -8, -8, 16, 16);
+			sp.pos = toMapPos( epos);
+			sp.color = (evcolorlist[ed["col"]] || evcolorlist[0]);
+			sp.ref = ed;
+			splist .. sp;
+		}
+		foreach( mid, mk in map.marker){
+			if( mk["type"] != "landmark") continue;
+			if( !::reqchk( mk["reqs"])) continue;
+			local lpos = Vector3D( mk.pos).scale( 0.5);
+			if( !explorchk( explor, st.stat.mapmask, lpos)) continue;
+			local sp = makelandmark( mk, lpos);
+			tblist .. sp;
+		}
+		//	
+		local iv = SKRenderableView(), self = this;
+		iv.renderfunc = @(){
+			skDrawSprites( gr48, self.splist, self.myicon);
+		};
+		local tv = SKRenderableView(), self = this;
+		tv.renderfunc = @(){
+			skDrawSprites( self.tblist);
+		};
+		mapimg.addChild( iv);
+		v.findChild( "strokeg").addChild( tv);
+	}
+
+	function makelandmark( mk, mkpos){
+		local attr = #FontAttribute( Fonts.get( "ui"), 16, 0xffffffff);
+		local tb = TextBox( attr, mk.icon .. mk.name), r = tb.bnd;
+		local p = toMapPos( mkpos);
+		tb.x = p.x - r.w/2;
+		tb.y = p.y - r.h;
+		return tb;
+	}
+
+	//	ワールド座標からマップ画像の位置に座標変換。原点はmapimgの左上
+	function toMapPos( wp){
+		local p = Vector3D( wp[0]*2, wd-1-wp[2]*2, 0.0).scale( mapsp.bnd.w / ww, mapsp.bnd.h / wd, 1.0).add( mapsp.bnd.x, mapsp.bnd.y, 0.0);
+		return p;
+	}
+}
+
+local showBigMap( prm){
+	local mapid = prm["mapid"] || ::rpgstage.mapid, map = ::conf.map[mapid];
+	local bigmap = RPGBigmap();
+	local view = RPGMain.showView({
+		uipath = srcdir .. "/ext_bigmap.ui"
+		name = "ext_bigmap"
+		layer = "menu"
+		binds = {
+			mapname = (map["name"] || "？？？？？"),
+		},
+		prefunc = @( v){	//	ここで初期化処理などを行う
+			bigmap.setup( v, mapid, map);
+		},
+		action = "show"
+	});
+	suspend();	//	"etc"ボタンが連続できちゃうな。。。
+	//	メニュー選択
+	local menuitem = RPGMain.uiLoop( {
+		"action" : @( e){
+			return e.item;
+		}
+		"select" : @( e){ }
+		"back" : @( e){ ::playSound( "SE004"); return "back"; }
+		"etc" : @( e){ ::playSound( "SE004"); return "back"; }
+	});
+	// if( menuitem == "back"){
+		view.actionAndDie( "hide");
+		return true;
+	// }
+};
+
+local oplist = [
+	{ lbl="$T.uiop_show", val=null }	//	showの場合はop=nullが入る
+	{ lbl="$T.uiop_hide", val="hide" }	
+	{ lbl="$T.uiop_darken", val="darken" }
+	{ lbl="$T.uiop_lighten", val="lighten" }
+];
+
+RPGSystem.ui ..
+{
+	key = "ext_bigmap"
+	lbl = D.bigmap
+	type = "submenu"
+	icon = "\ue87b"
+	topinfo = "";			//	""で消す
+	btnhelp = "menu";
+
+	props = [
+		{ pid="op", lbl="$T.lbl_op", type=LIST, list=oplist, variable=1 }
+		{ pid="mapid", lbl="$T.dlg_newmap_mapid", type=DATAID, datatype=["map"], nullable=1, variable=1 }
+		{ pid="explor", lbl=D.explor, type=BOOL, variable=1 }
+	],
+	defval = { explor=false, mapid=null},
+	
+	//	メニューの表示状態を返す。0=非表示、1=空白、2=グレーアウト、3=選択可能1
+	function menustat(){
+		local showmaptype = ::module.plugmap["mapui"]["showmaptype"];
+		local showbigmap = ::rpgstage.stat.statmap["showmap"]["bigmap"];
+		printf( "ext_bigmap showmaptype=%S stat=%S\n", showmaptype, showbigmap);
+		if( showmaptype != 2) return 0;		//	2以外はメニューとしては表示しない
+		return showbigmap ? 3 : 2;
+	}
+
+	uifunc = showBigMap
+};
+
+//////////// イベントコマンド登録
+
+
+//	mapmaskを全踏破、又は消去するイベントコマンド。ダンジョンなどで宝箱からそのフロアのマップを取得したりする際に使用する。
+//	※現在、行ったことのないマップには全踏破コマンドは使えない
+RPGSystem.eventcmd .. 
+{
+	category = 4
+	key = "excmd_explormap"
+	name = D.excmd_explormap
+	icon = "\ue562"
+	color = colorex1
+	tips = D.excmd_explormap_tips
+
+	props = [
+		{ pid="mapid", lbl="$T.dlg_newmap_mapid", type=DATAID, datatype=["map"], variable=1 },
+		{ pid="op", lbl="$T.lbl_op", type=LIST, list=["$T.lbl_clear","$T.lbl_fill"] variable=1 },
+	]
+
+	defval = { op=1, mapid="M000", }
+	
+	cmdinfo = @( cmd){
+		local cmddef = this, props = fget( cmddef, "props");
+		local mi = propstr( cmddef.props, cmd, "mapid");
+		local oi = propstr( cmddef.props, cmd, "op");
+		local info = sprintf( "%S => %S", mi, oi);
+		return {
+			info = info,
+		}
+	}
+	
+	exec = @( runner, cmd){
+		local stat = ::rpgstat.stagemap[ cmd.mapid];
+		if( !stat) return;
+		switch( cmd.op){
+		case 0:	//	クリア
+			if( stat.mapmask) stat.mapmask.fill( 0);
+			break;
+		case 1:	//	全踏破
+			if( !stat.mapmask){
+				local map = ::conf.map[ cmd.mapid];
+				stat.mapmask = Bitmap( map.w/2, map.d/2, 0);
+			}
+			if( stat.mapmask) stat.mapmask.fill( 1);
+			break;
+		}
+	}
+}
+
+
+//////////// マッププロパティ追加
+local stageprops = RPGSystem.stageprops;
+stageprops .. {
+	mapedit=true, pid="showmap", lbl=D.showmap, type=PROPERTYLIST, 
+	propdef = {
+		name = D.showmap, icon = "\uf11e",
+		props = [
+			{ pid="minimap", lbl=D.minimap, type=BOOL, defval=false, },
+			{ pid="bigmap", lbl=D.bigmap, type=BOOL, defval=false, },
+			{ pid="explor", lbl=D.explor, type=BOOL, defval=false, },
+		]
+		tostring = @( v){
+			local s = "";
+			if( v["minimap"]) s = s .. lang( D.minimap);
+			if( v["bigmap"]) s = s .. " " .. lang( D.bigmap);
+			if( v["explor"]) s = s .. " " .. lang( D.explor);
+			return s;
+		}
+	}
+	defval = { minimap=false, bigmap=false, explor=false },
+};
+
+
+RPGMain.btnhelpmap["stage_map"] <- [ [BTN_A,"$T.btn_search"], [BTN_B,"$T.btn_jump"], [BTN_X,"$T.btn_menu"], [BTN_Y,D.showmap], [BTN_BACK, "$T.btn_pause"] ];
+
+{	//	ラップしてRPGStage.updateStepsを拡張する。
+	local _updateSteps = RPGStage.updateSteps;
+	function RPGStage::updateSteps( dt){
+		local c = ::rpgvar.STEPCNT;
+		_updateSteps( dt);
+		if( c != ::rpgvar.STEPCNT) updateMinimapMask();	//	移動した。マスク画像を更新する。
+	}
+
+	//	
+	local makepenbmp(){
+		local setbmp = [ "  ***  ", " ***** ", "*******", "*******", "*******", " ***** ", "  ***  "];
+		local bmp = Bitmap( 7, 7, 0);
+		for( local y=0; y<7; y++){
+			for( local x=0; x<7; x++){
+				if( setbmp[y][x]=='*') bmp.set( x, y, 1);
+			}
+		}
+		return bmp;
+	}
+
+	function RPGStage::updateMinimapMask(){
+		//	マスク画像は2ブロック単位。現在位置から+-6ブロック(7x7m)範囲を更新する。
+		local p = player3d.pos;
+		local bx = (p.x|0), by = (bw.d/2)-1-(p.z|0);
+		local pen = #makepenbmp();
+		local mapmask = stat.mapmask;
+		if( !mapmask) mapmask = stat.mapmask = Bitmap( bw.w/2, bw.d/2, 0);
+		local h = mapmask.hashcode();
+		mapmask.draw( pen, bx-3, by-3);
+		if( h != mapmask.hashcode()){
+			local v = ::rootview.findChild( "ext_minimap");
+			if( v["ref"]) v["ref"].maskdirty = true;
+		}
+	}
+
+	local showmaptype = ::module.plugmap["mapui"]["showmaptype"];
+
+	//	ステージ起動時にミニマップを表示するため、RPGStage.launchをラップする。
+	local _launch = RPGStage.launch;
+	function RPGStage::launch( opt=null){
+		_launch( opt);
+		local sm = stat.statmap["showmap"];
+		if( sm["minimap"]){
+			updateMinimapMask();
+			RPGMain.showUI( { key="ext_minimap", explor=sm["explor"], op=null });
+		}
+		if( sm["bigmap"] && showmaptype==1){
+			RPGMain.buttonhelp( "stage_map");
+		}
+	}
+
+	//	プラグイン設定から全体マップを開く方法を取得
+	switch( showmaptype){
+	case 1:
+	{	//	Yボタンでマップ表示。
+		local _processControl = PlayerMoveAction.processControl;
+		function PlayerMoveAction::processControl( st, dt){
+			local cid = st.cid, v = st.val;
+			switch( cid){
+			case CTRL_ETC:
+				if( v && landed){
+					if( !::rpgstage.stat.statmap["menuopenable"]){	//	メニュー開閉不能。マップも開けない
+						::playSound( "SE002"); break;
+					}
+					rpgstage.mainevent = #{evid="map"};	
+					rpgstage.setTimeScale( 0.0);
+					ctr.setActive( false);
+					newthread().start( @(){	//	このスレッドはブロック不能なので新しいスレッドでメニューを開く。
+						::playSound( "SE005");
+						bluron();
+						RPGMain.showUI( { key="ext_bigmap"});		//	このメソッドはメニューを閉じるまでブロックする。
+						rpgstage.mainevent = null;
+						rpgstage.setTimeScale( 1.0);
+						bluroff();
+					}, this);
+				}
+				return;
+			}
+			_processControl( st, dt);
+		}
+		break;
+	}
+	case 2:
+	{	//	メニューに追加
+		
+		break;
+	}
+	}
+}

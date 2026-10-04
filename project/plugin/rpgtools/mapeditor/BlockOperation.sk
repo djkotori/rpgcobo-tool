@@ -234,7 +234,7 @@ class BlockOperation
 			local z = stk.pop(), y = stk.pop(), x = stk.pop(), k = y^(x*128)^(z<<20);
 			if( chk[k]) continue;	//	調べたフラグ
 			chk[k] <- 1;
-			local oldblk = bw.blockat( x, y, z) & 0x3ff;
+			local oldblk = bw.blockat( x, y, z) & 0x7ff;
 			if( oldblk == blk0){
 				pos.set( x, y, z);
 				local ok = _plcblk( pos, blk);
