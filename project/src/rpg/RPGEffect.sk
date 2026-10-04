@@ -153,7 +153,7 @@ class RPGVibeModifier extends SK3DModifier
 		axis = t["axis"]||0;
 		time = -(t["delay"]|0);
 	}
-
+	
 	function modify( o, dt){
 		time += dt;
 		if( time >= totaltime) return false;
@@ -175,7 +175,7 @@ class RPGVibeModifier extends SK3DModifier
 //	
 class RPGEfxAnimeModifier extends SK3DModifier
 {
-	order = 100;
+	order = 109;
 
 	delay = 100;			//	再生開始までのディレイ
 	ani = null;				//	アニメーションデータ

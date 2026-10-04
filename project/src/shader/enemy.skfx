@@ -155,9 +155,11 @@ fs overlay
 		highp vec2 uv = transuv( v_uv.xy);
 		mediump vec4 t = texture2D( coltex1, uv);
 		mediump vec4 pix = vec4( 0.0);
+		mediump vec4 clp = vec4( 1.0);
+		collapsefx( int( p1[1].x), p1[1].y, clp, uv * p1[0].zw);
 		//	overlay
 		mediump vec4 ovcol = overlayefx( v_wvp);
-		pix = ovcol * t.w;
+		pix = ovcol * t.w * clp.w;
 		//	outline
 		float b = outline_tex( coltex1, uv, p1[3].xy, t.w) * p1[0].x;
 		pix = mix( pix, envcol, b);
@@ -240,7 +242,7 @@ technique def
 	//	overlay pass
 	pass {
 		using outline_tex, overlayout;
-		using noalpha, overlayefx;
+		using noalpha, collapsefx, overlayefx;
 		BLEND = PMAMIX;
 		DEPTHMASK = OFF;
 		POLYGONOFFSET = -60;

@@ -611,7 +611,7 @@ class BattleRunnerBase
 		::rpgstat.money += money;
 		foreach( item in items){
 			::rpgstat.addItemID( item.dataid, item.num, item["LV"]);
-			::rpgstat.discover( itemid, num);		//	アイテム発見＋取得数追加
+			::rpgstat.discover( item.dataid, num);		//	アイテム発見＋取得数追加
 		}
 		//	最後にクリック待ち
 		RPGMain.showUI( { key="misc_waitclick"});	// RPGMain.waitClick();
