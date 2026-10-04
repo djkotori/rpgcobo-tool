@@ -456,15 +456,6 @@ local weatherpropdef(){
 
 stageprops .. {
 	mapedit=true,
-	pid="mapshotmode",
-	lbl="$T.lbl_mapshotmode",
-	type=LIST,
-	list=["$T.uivisible0","$T.uivisible3","$T.lbl_automapping"]
-	defval = 0
-}
-
-stageprops .. {
-	mapedit=true,
 	pid="weather",
 	lbl="$T.setting_weather",
 	type = PROPERTYLIST,
