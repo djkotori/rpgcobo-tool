@@ -922,7 +922,7 @@ class MapTools.tool_event extends MapTool
 		}
 		local defdata = fget( def, "defdata");
 		local ev = { role=key, pos=pos, name=name, col=col, flags=1, ...deepclone( defdata), ...merge};
-		if( fget( def, "props", def, ev).find( @( x) x.pid == "dest")){
+		if( fget( def, "props", def, ev)?.find( @( x) x.pid == "dest")){
 			ev.dest <- { mapid=editor.mapid, pos=(editor.bw.w/4,null,editor.bw.d/4,0), };
 		}
 		local self = this;
