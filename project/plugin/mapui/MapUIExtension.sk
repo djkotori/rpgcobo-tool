@@ -275,7 +275,7 @@ class ::RPGBigmap
 		//	sprites
 		local gr48 = ::getSprite( "/presetui/uiimg/gr48.png");
 		gr48.blend = SK_MULT;
-		gr48.bnd.set( -1, -1, mapsp.bnd.w+2, mapsp.bnd.h+2);	//	128ブロック = 64m = 512px
+		gr48.bnd.set( -2+mapsp.bnd.x, -2+mapsp.bnd.y, mapsp.bnd.w+2, mapsp.bnd.h+2);	//	128ブロック = 64m = 512px
 		local attr = #FontAttribute( Fonts.get( "icon"), 16, 0xffffffff, 0|(2<<4));
 		attr.strokecolor = 0x00000099;
 		myicon = TextBox( attr);

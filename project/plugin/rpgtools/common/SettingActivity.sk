@@ -95,6 +95,22 @@ preferenceprops .. {
 }
 
 preferenceprops .. {
+	ctg="build", pf="win32", pid="steam", lbl="$T.lbl_steambuild", type=PROPERTYLIST,
+	propdef = {
+		name = "$T.lbl_steambuild",
+		props = [
+			{ pid="enable", lbl="$T.lbl_enable", type=BOOL, defval=false },
+			{ pid="appid", lbl="Steam App ID", type=STRING, defval="" },
+			{ pid="appurl", lbl="Steam Rest URL", type=STRING, defval="" },
+		],
+		tostring=@( val) {
+			return !val["enable"] ? "$T.lbl_disabled" : ("$T.lbl_enabled : App ID=%S" % val["appid"]);
+		}
+	}
+	defval = { enable=false, appid="480", appurl=""}, ...buildprops
+}
+
+preferenceprops .. {
 	ctg="build", pid="ANDROID", lbl="$T.build_android", type=HEADER
 }
 

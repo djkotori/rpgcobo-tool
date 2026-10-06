@@ -92,6 +92,10 @@ class PropertyEditPopup extends MobablePopup
 		op.submit( redo, undo, trk);
 	}
 
+	function cancelEnabled(){	//	ESCXキーでキャンセル可能
+		return true;
+	}
+
 	function execMenu( m){
 		printf( "%S execMenu %S\n", getclassname( this), encodeJSON( m));
 		switch( m["uid"]){

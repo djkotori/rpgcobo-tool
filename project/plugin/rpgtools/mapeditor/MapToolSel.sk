@@ -43,6 +43,7 @@ local camworks = [
 	{ lbl="Field Map", val={"fovy":30,"hpb":[0,38,0],"viewport":15.0,"yoffs":0.5} },
 	{ lbl="Indoor Map", val={"fovy":30,"hpb":[0,30,0],"viewport":13.0,"yoffs":1.0} },
 	{ lbl="Maze Map", val={"fovy":26,"hpb":[0,62,0],"viewport":13.5,"yoffs":0.7} },
+	{ lbl="World Map", val={"fovy":28,"hpb":[0,48,0],"viewport":17.0,"yoffs":0.5} },
 ];
 
 local presetcamlist( e){

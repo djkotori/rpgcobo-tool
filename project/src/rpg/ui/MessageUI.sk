@@ -25,7 +25,7 @@ local showTalkUI( uidef, prms){
 		}
 		return null;
 	}
-	local msgtxt = (::[prms["msgcls"]]||MessageText) ( prms.text);	//	MessageText, StoryText, ...
+	local msgtxt = (::[prms["msgcls"]]||MessageText) ( prms.text, prms);	//	MessageText, StoryText, ...
 	local binds = {
 		nameg = ptr({ hide=!length( prms["name"])}),
 		name = prms["name"],
@@ -282,6 +282,9 @@ class MessageText extends RichText
 {
 	static sleepscales = { "<":200, ">":50, "=":100, }
 
+	prms = null;			//	実行元のshowUIに渡されたパラメータ。
+	rp3d = null;			//	エモーションなどを実行するRPG3DObject。nullの場合あり。
+
 	sleepbase = 40;
 	autobreak = false;		//	クリック無しでページを送る。村人などが並列イベントで勝手にしゃべるような場合
 	interrupt = false;		//	表示の強制終了。
@@ -289,6 +292,12 @@ class MessageText extends RichText
 	thread = null;			//	runしたスレッド。インタラプトを掛けるために保存。
 
 	sound = null;
+
+	constructor( s, p=null){
+		super( s);
+		prms = p;
+		rp3d = p["rp3d"];
+	}
 
 	function applyToLabel( lbl){
 		super.applyToLabel( lbl);
@@ -330,6 +339,7 @@ class MessageText extends RichText
 				case ".": skipping = false; waitclk(); break;
 				case "p": skipping = false; waitclk(); pagebreak( l-1); break;	//	はみ出し直後にあるとスキップしたほうが良いかも
 				case "<": case "=": case ">": charsleep = sleepbase*(sleepscales[tag]||100)/100; break;
+				default: actionTag( tag); break;
 				}
 			}
 			if( skipping){
@@ -352,7 +362,33 @@ class MessageText extends RichText
 		}
 		tb.drawlen = tblen;
 		lbl.repaint();
+		while( tblen == (code[ci][0]??-1)){	//	タグ掃き出し。送り系のタグは無視。
+			actionTag( code[ci++][1]);
+		}
 		waitclk();	//	最後のwaitclick。テキストを消去したりスクロールを戻したりはしない。
+	}
+
+	function actionTag( tag){
+		if( tag.startsWith( "FX")){	//	エフェクト発生。エモーション用に近い
+			rp3d?.effect( tag);
+		}else
+		if( tag.startsWith( "SE")){	//	サウンド発生
+			local sp = ::soundmanager.getSoundPlayable( tag);
+			if( sp){
+				if( rp3d && sp["src3d"]) rp3d.playSound( tag);
+				else ::playSound( tag);
+			}
+		}else
+		if( tag.startsWith( "VA")){	//	ボイス発生
+			local a = tag.split( " ");
+			local vaid = a[0], vkey = a[1];
+			local sp = ::getVoicePlayable( vaid, vkey);
+			if( sp){
+				sp.muteg = 64;	//	chはmutegでOK
+				::soundmanager.muteGroup( sp);	//	ミュート処理
+				sp.play();
+			}
+		}
 	}
 }
 

@@ -134,7 +134,7 @@ class RichText
 				(attr = clone attr).linebreak = ++linebreak; tb.setAttribute( attr, pos);
 			break;	
 			default:
-				if( tag[0] in conf.stylemap){
+				if( (tag[0] in conf.stylemap) && !tag[1]){
 					local st = conf.stylemap[tag[0]];
 					attr = clone attr;
 					attr.font = ::Fonts.get( st["font"]) || attr0.font;
@@ -152,7 +152,7 @@ class RichText
 
 
 local chrset = function( s){ local t = {}; foreach( c in s) t[c] <- true; return t; }
-local istag = chrset( "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-#*/.<>=");
+local istag = chrset( "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-#*/.<>= ");
 
 //	※emojiエンコードをした状態で行う。ここで得た文字列はutf8などにエンコードしようとするとエラーが起きる。
 class TagProsessor
@@ -209,7 +209,7 @@ class TagProsessor
 		}
 	}
 	
-	function lexID(){
+	function lexTagBody(){
 		sbuf.clear();
 		for( ;;){
 			sbuf .. char( ch);
@@ -228,7 +228,7 @@ class TagProsessor
 			case ' ': case '\t': case '\r': next(); continue; //	skip space
 			default:
 				if( istag[ch] || ch>=256){
-					return lexID();
+					return lexTagBody();
 				}else{
 					throw Exception( sprintf( "Syntax Error : %d[%c]",ch,ch));
 				}

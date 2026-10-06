@@ -1508,11 +1508,49 @@ class PropertyBehaviors.Message extends PropertyBehavior
 	static proptype = MESSAGE;
 	static uipath = srcdir .. "/ui/prop_message.ui"
 
-	// static menuitems = [
-	// 	{ lbl="$T.lbl_preview", val="preview", icon="\uf1c5" },
-	// 	// "---",
-	// 	// { lbl="$T.lbl_help", val="help", icon="\ue887" },
-	// ]
+	static voicepropdef = {
+		name = "$T.cmd_voice"
+		icon = "\ue029"
+		props = @(){
+			local a = [];
+			a .. { pid="voiceid", lbl="$T.lbl_voiceactor", type=RESID, restype="voice", variable=1, refresh=1 },
+			a .. { pid="voicekey", lbl="$T.lbl_voicekey", type=LIST, variable=1,
+				list = @( pl){
+					local vaid = pl.getParam( "voiceid");
+					local va = ::conf._resource.voice[vaid];
+					if( !va){
+						return [{ lbl="$T.lbl_none", val=0, }];
+					}else{
+						local tb = {};
+						foreach( lang in ::sakana.languagelist){
+							foreach( v in va[lang.code]["list"]){
+								local k = v.key;
+								if( tb[k]) tb[k].lbl = tb[k].lbl..(lang.icon);
+								else tb[k] <- { lbl=k.." "..lang.icon, val=k, }
+							}
+						}
+						local a = Table.map( tb, @( v, i) v).sort( @( v) v.val);
+						return a;
+					}
+				},
+				set = @( prop, data, val){
+					::soundmanager.checkctx();
+					data[prop.pid] = val;
+					local sp = ::getVoicePlayable( data["voiceid"], val);
+					if( sp) sp.play();
+				}
+			};
+			a .. { pid="play", lbl="", type=CUSTOMBUTTON, cnt="cnt5.ui", tostring="PLAY", icon="\ue745", ui="1", 
+				edit=@( pl){
+					::soundmanager.checkctx();
+					local vaid = proplist.getParam( "voiceid"), vkey = proplist.getParam( "voicekey");
+					local sp = ::getVoicePlayable( vaid, vkey);
+					if( sp) sp.play();
+				}
+			};
+			return a;
+		}
+	};
 
 	edit = null;	//	GPUITextEdit
 
@@ -1558,12 +1596,18 @@ class PropertyBehaviors.Message extends PropertyBehavior
 			{ id="textrun", lbl="${T.lbl_speed} =", val="[=]", func=ctxfunc},
 			{ id="textrun", lbl="${T.lbl_speed} <", val="[<]", func=ctxfunc},
 		];
+		local actions = [
+			{ id="action", lbl="$T.lbl_effect", icon="\ue3e7" restype="efx", func=ctxfunc},
+			{ id="action", lbl="$T.lbl_sound", icon="\ue7f4", restype="snd", func=ctxfunc},
+			{ id="voice", lbl="$T.lbl_voice", icon="\ue029", func=ctxfunc},
+		];
 		//
 		local a = [
 			{ id="style", lbl="$T.lbl_text$T.lbl_style", func=ctxfunc, submenu=styles },
 			{ id="size", lbl="$T.lbl_font$T.lbl_size", func=ctxfunc, submenu=sizes },
 			{ id="color", lbl="$T.lbl_font$T.lbl_color", func=ctxfunc, submenu=colors },
 			{ id="textrun", lbl="$T.lbl_textrun", func=ctxfunc, submenu=textruns },
+			{ id="action", lbl="$T.lbl_action", func=ctxfunc, submenu=actions },
 			"-",
 			{ id="dataname", lbl="$T.lbl_insert: '$T.lbl_itemname'", icon="\uf120", func=ctxfunc },
 			{ id="dataiconname", lbl="$T.lbl_insert: '\uf3a0$T.lbl_itemname'", icon="\uf120",func=ctxfunc },
@@ -1607,6 +1651,18 @@ class PropertyBehaviors.Message extends PropertyBehavior
 		case "color":
 		case "textrun":
 			edit.textedit.insertText( mi.val);
+			break;
+		case "action":
+			local ret = ResourceSelectDialog.run( null, {restype=mi.restype});
+			if( ret){
+				edit.textedit.insertText( "[%S]" % ret);
+			}
+			break;
+		case "voice":
+			local ret = PropertyEditPopup.run( null, voicepropdef, {voiceid="VA000", voicekey="BTL_BEGIN1"});
+			if( ret){
+				edit.textedit.insertText( "[%S %S]" % (ret.voiceid, ret.voicekey));
+			}
 			break;
 		case "dataname":
 		case "dataiconname":

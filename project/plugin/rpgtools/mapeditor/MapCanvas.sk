@@ -266,6 +266,11 @@ class MapCanvas extends CanvasBehavior
 		if( bw3d){
 			bw3d.checkUpdateInCameraMesh( camwork.cam);
 		}
+		if( skychk.isSelected()){
+			::voxmtl.updateFrame( dt);
+		}else{
+			::voxmtl.setFrame( ::voxmtl.frametime=0);
+		}
 		return true;
 	}
 

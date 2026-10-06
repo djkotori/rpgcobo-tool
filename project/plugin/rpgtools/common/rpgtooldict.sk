@@ -1320,6 +1320,7 @@
 	
 	"lbl_outdirname"					: {"ja":"出力フォルダ名", "en":"Output Folder"}
 	"lbl_exename"						: {"ja":"exeファイル名", "en":"Exe File name"}
+	"lbl_steambuild"					: {"ja":"Steam向けにビルド", "en":"Build to Steam"}
 	"lbl_apkpackage"					: {"ja":"APKパッケージ名", "en":"APK Package Name"}
 	"lbl_usesw"							: {"ja":"サービスワーカーを使用", "en":"Use ServiceWorker"}
 	"lbl_debuggl"						: {"ja":"グラフィックをデバッグ", "en":"Debug Graphics"}

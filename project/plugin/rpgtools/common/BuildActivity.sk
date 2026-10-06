@@ -75,6 +75,8 @@ buildziphash <- 0;
 //	
 class BuildDialog extends UndoableDialog
 {
+	static ignodefilemap = { ".metainfo"=1, "plugin"=1, "tmp"=1 };	//	無視するファイルマップ。ビルド時にzipに含めないファイルやディレクトリを指定。
+	
 	targetmenu = null;				//	MenuBehavior
 	proplist = null;				//	ListBehavior
 	zipg = null;
@@ -162,7 +164,7 @@ class BuildDialog extends UndoableDialog
 			}
 		}
 		//	プラグイン以外をまず入れる
-		foreach( f in srcdir.getList()) visitfile( f, @( f) f.name!="plugin" && f.name!="tmp");
+		foreach( f in srcdir.getList()) visitfile( f, @( f) !ignodefilemap[f.name]);
 		//	プラグインを選択的に入れる
 		visitfile( FileRef( srcdir, "plugin/plugin.json"), @( f) 1);
 		foreach( plug in Module.plugs){

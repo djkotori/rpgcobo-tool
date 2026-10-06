@@ -584,9 +584,7 @@ class RPGEventRunner
 		local _cmd = replaceTemplate( cmd);
 		if( _cmd != cmd) _cmd = clone _cmd;
 		_cmd.caller <- this;
-		if( _cmd["who"]){
-			_cmd.rp3d <- getWho3D( _cmd.who);
-		}
+		_cmd.rp3d <- (_cmd["who"] && getWho3D( _cmd.who)) || rp3d;
 		local p = null;
 		local ret = RPGMain.showUI( _cmd);
 		//	クローズタイミング
