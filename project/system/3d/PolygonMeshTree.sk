@@ -1,0 +1,240 @@
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	
+//	PolygonMeshTree : PolygonMeshの階層構造を管理するクラス
+//	保存時には、pmを内包することもできるし、外部参照にすることもできる。gltfなどから読んだ場合は大体内包される。
+//	pm自体も、modeldata, motiondata, textureなどのリソースを内包して一つのファイルに収められる。
+//	base64で膨らますよりはバイナリにしちゃったほうが良いかも。Serializableでいこう。
+//	中のバッファ系も全部Serializableにする。
+//	
+
+//	PolygonMeshをそのまま生成するためのソースデータ。
+//	
+class PolygonMeshSource extends Serializable
+{
+	static SerialUID = 480;
+
+	<ser_o> name = null;			//	メッシュ名
+	<ser_o> vtx = null;				//	VertexBuffer : 頂点データ。共有されている場合もある？
+	<ser_o> face = null;			//	PolygonFaceSource[] : 
+	<ser_o> motion = null;			//	MotionData : スキンアニメ
+	<ser_o> shapekeys = null;		//	ShapeKeyList : シェイプアニメ
+	<ser_o> bnd = null;				//	Rect3D : バウンディングボックス
+	<ser_o> pivot = null;			//	Transform : ピボット
+	<ser_o> wmapname = null;		//	[weight map name] : vtxのSK_WEIGHTIDXのインデックスに対応するボーン名
+	<ser_o> animap = null;			//	[{ id:"stand", st:5, en:9, spd:4, loop:true, replay=false }] : 
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+	<ser_o> reserved3 = null;
+	<ser_o> reserved4 = null;
+
+	function toPolygonMesh( mtls){
+		local pm = PolygonMesh();
+		pm.vtx = vtx;
+		pm.motion = motion;
+		pm.bnd = bnd;
+		pm.pivot = pivot;
+		pm.wmapname = wmapname;
+		pm.face = [];
+		foreach( i, f in face){
+			local pf = PolygonFace();
+			pf.idx = f.idx;
+			pf.mode = f.mode;
+			pf.visiblemask = f.visiblemask;
+			pf.offs = f.idxoffs;
+			pf.len = f.idxlen;
+			pf.voffs = f.vtxoffs;
+			// pf.matid = mtls[f.matid];	//	cloneSharedMtlで初めてセットする
+			pm.face .. pf;
+		}
+		if( shapekeys){
+			pm.setShapeKeys( shapekeys);
+		}
+		pm.ref = this;
+		return pm;
+	}
+
+	function cloneSharedMtl( srcpm, mtls){
+		local pm = clone srcpm;		//	マテリアルが先にcloneされちゃうな～。。。
+		foreach( i, f in pm.face){
+			local fs = face[i];
+			f.m = mtls[fs.matid];	//	nullはまずい
+		}
+		return pm;
+	}
+}
+
+class PolygonFaceSource extends Serializable
+{
+	static SerialUID = 481;
+
+	<ser_o> idx = null;				//	IndexBuffer : 頂点インデックス
+	<ser_b> mode = SK_TRIANGLES;	//	プリミティブモード
+	<ser_b> matid = -1;				//	マテリアルID
+	<ser_i> visiblemask = -1;		//	可視マスク。これで設定する場合は少ない
+	<ser_i> idxoffs = 0;			//	インデックスオフセット
+	<ser_i> idxlen = 0;				//	インデックス長
+	<ser_i> vtxoffs = 0;			//	頂点オフセット
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+}
+
+//	
+class MaterialSource extends Serializable
+{
+	static SerialUID = 482;
+	
+	<ser_o> name = null;
+	<ser_o> tec = null;
+	<ser_b> mtype = 0;
+	<ser_i> basecol = -1;
+	<ser_h> rough = 0.9;
+	<ser_h> metal = 0.1;
+	<ser_i> mparam = 0;
+	<ser_i> texmap = 0;
+	<ser_i> Ka = -1;
+	<ser_i> Kd = -1;
+	<ser_i> Ks = -1;
+	<ser_i> Ke = -1;
+	<ser_h> shiness = -1;
+	//
+	<ser_b> blend = 0;
+	<ser_b> depthtest = SK_LESS;
+	<ser_b> depthmask = 1;
+	<ser_b> alphatest = 0;
+	<ser_b> cullface = SK_CCW;
+	<ser_b> tex0 = -1;				//	pmt.textures[tex0]のインデックス
+	<ser_b> tex1 = -1;
+	<ser_b> tex2 = -1;
+	<ser_b> tex3 = -1;
+	<ser_i> uvbits = 0;
+	<ser_i> visiblemask = SK_VISIBLE_OPAQUE;
+	<ser_h> normalscale = 1.0;
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+	<ser_o> reserved3 = null;
+	<ser_o> reserved4 = null;
+	
+	//	コピーするフィールド。tec, tex0~3, reserved以外
+	static fids = [ "name", "mtype", "basecol", "rough", "metal", "mparam", "texmap", "Ka", "Kd", "Ks", "Ke", "shiness", "blend", "depthtest", "depthmask", "alphatest", "cullface", "uvbits", "visiblemask",
+					"normalscale" ];
+	
+	//	Materialオブジェクトに変換する。texsはテクスチャの配列。
+	function toMaterial( texs){
+		local m = Material();
+		foreach( fid in fids){
+			m[fid] = this[fid];
+		}
+		m.tec = skFXFindTechnique( tec);
+		m.tex0 = texs[tex0];
+		m.tex1 = texs[tex1];
+		m.tex2 = texs[tex2];
+		m.tex3 = texs[tex3];
+		return m;
+	}
+}
+
+class TextureSource extends Serializable
+{
+	static SerialUID = 483;
+
+	<ser_s> name = null;			//	テクスチャ名
+	<ser_o> data = null;			//	圧縮された画像データ
+	<ser_s> path = null;			//	外部参照の場合のパス(相対)
+	<ser_o> sampler = null;			//	SamplerState : サンプラー情報
+	<ser_b> flags = null;			//	テクスチャフラグ。
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+}
+
+class PolygonMeshNode extends Serializable
+{
+	static SerialUID = 484;
+
+	<ser_o> name = null;			//	ノード名
+	<ser_i> id = -1;				//	ノードID。
+	<ser_i> parentid = -1;			//	親ノードID。ルートの場合は-1。
+	<ser_i> meshid = -1;			//	int : meshsrcsのインデックス
+	<ser_i> skinid = -1;			//	int : ボーンだった場合に>=0
+	<ser_i> bonerootid = -1;			//	int : ボーンだった場合に>=0
+	<ser_o> tf = null;				//	Transform : ノードの座標変換。アニメはしないんかな
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+	<ser_o> reserved3 = null;
+	<ser_o> reserved4 = null;
+}
+
+class PolygonMeshTree extends Serializable
+{
+	static SerialUID = 485;
+
+	<ser_o> meshes = null;			//	PolygonMeshSource[] : 
+	<ser_o> materials = null;		//	Material[] : 
+	<ser_o> textures = null;		//	jpg,webpなどの画像データが圧縮状態で入る。{ name, data|path, sampler}
+	<ser_o> nodes = null;			//	PolygonMeshNode[] : ノードの配列。id連番。
+	
+	//	以下キャッシュ。ロードは初回のみ行われる。
+
+	res = null;
+	_sortednodes = null;			//	
+	_texlist = null;				//	Texture[] : キャッシュされたtexturesのリスト。Textureの参照は共有される。
+	_mtllist = null;				//	Material[] : キャッシュされたmaterialsのリスト。※SK3DObjectにインスタンス化された時に clone されて展開される。
+	_meshlist = null;				//	PolygonMesh[] : キャッシュされたmeshesのリスト。※SK3DObjectにインスタンス化された時に clone されて展開される。
+
+	ref = null;
+
+	//	Resource.load時に呼ばれる。リソースの参照を保持する。
+	function loaded( r){
+		res = r;
+	}
+
+	//	各PolygonMeshTreeに対して1回呼ばれる。meshesのリストを取得する。
+	function ensureCache(){
+		if( _meshlist) return true;
+		_sortednodes = nodes.sort( @( v) v.parentid*1000+v.id);	//	parentidがidの後に来てはいけない
+		//	キャッシュが無いので初回のロード処理。
+		//	テクスチャ読み込みは並列に
+		_texlist = array( length( textures)); local waits = [], self = this;
+		foreach( i, ts in textures){
+			local cimg = ts.data || res.getResource( ts.path)?.loadData();	//	テクスチャをresで共有してる場合ダブっちゃう。。。
+			if( cimg){
+				waits .. [skLoadImageAsync( cimg), @( img){ if( img){ local t = self._texlist[i] = Texture(); t.load( img, ts.flags); t.ref = ts; } }];
+			}
+		}
+		foreach( w in waits){
+			local img = w[0].get(); w[1]( img);
+		}
+		_mtllist = [];
+		foreach( m in materials){
+			_mtllist .. m.toMaterial( _texlist);
+		}
+		//	メッシュリスト作成
+		_meshlist = [];
+		foreach( i, m in meshes){
+			local pm = m.toPolygonMesh( _mtllist);
+			_meshlist .. pm;
+		}
+		return _meshlist;
+	}
+}
+
+//	VertexBuffer, IndexBuffer, MotionData, ShapeKeyList をSerializableに登録する。
+//	writeはツール以外では蛇足ではある。。。
+
+local VALUE_VERTEXBUFFER	= 490;
+local VALUE_INDEXBUFFER		= 491;
+local VALUE_MOTIONDATA		= 492;
+local VALUE_SHAPEKEYLIST	= 493;
+
+local infunc( i){
+	loadData( i.bb);
+}
+
+local outfunc( o){
+	storeData( o.bb);
+}
+
+registerSerializable( VertexBuffer, VALUE_VERTEXBUFFER, infunc, outfunc);
+registerSerializable( IndexBuffer, VALUE_INDEXBUFFER, infunc, outfunc);
+registerSerializable( MotionData, VALUE_MOTIONDATA, infunc, outfunc);
+registerSerializable( ShapeKeyList, VALUE_SHAPEKEYLIST, infunc, outfunc);

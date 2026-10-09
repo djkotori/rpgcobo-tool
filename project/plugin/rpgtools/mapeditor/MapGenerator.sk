@@ -84,7 +84,7 @@ local heightnoiseprop = {
 //	
 local treedensprop = {
 	pid="treedens", lbl="Tree Density", type=RANGE, cnt="cnt6.ui", notarg=1,
-	range=(0.0,1.0), q=100, defval=[0.3,0.4]
+	range=(0.0,1.0), q=100, defval=[0.5,0.8]
 };
 
 local rockdensprop = {
@@ -194,8 +194,8 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 		bioobjdensmap = {
 			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREE_S]: 0.12,[TREE_M]: 0.07,[TREE_L]: 0.04,[FLOWERS_A]: 0.4, [FLOWERS_B]: 0.3, [FLOWERS_C]: 0.3},
 			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREE_S]: 0.04,[TREE_M]: 0.0, [TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
-			[FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.2, [TREE_M]: 0.3, [TREE_L]: 0.4, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
-			[MOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.2, [ROCK_L]: 0.4, [TREE_S]: 0.03,[TREE_M]: 0.06,[TREE_L]: 0.1, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
+			[FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.2, [TREE_M]: 0.35, [TREE_L]: 0.45, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
+			[MOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.2, [ROCK_L]: 0.4, [TREE_S]: 0.04,[TREE_M]: 0.02,[TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
 			[EXMOUNTAIN]:{ [ROCK_S]: 0.0, [ROCK_M]: 0.0, [ROCK_L]: 0.0, [TREE_S]: 0.0, [TREE_M]: 0.0, [TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
 		},
 		objsizemap = {
@@ -208,7 +208,7 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5), [SEA]=8|(0<<5), 
 			//
 			[ROCK_S]=20|(17<<12), [ROCK_M]=20|(18<<12), [ROCK_L]=20|(19<<12), 
-			[TREE_S]=20|(3<<12), [TREE_M]=20|(1<<12), [TREE_L]=20|(0<<12),
+			[TREE_S]=20|(67<<12), [TREE_M]=20|(65<<12), [TREE_L]=20|(64<<12),
 			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5),
 		},
 		//	zoom時の境界処理。川や道路の境界を滑らかにする。川はボールド処理を施す。
@@ -650,7 +650,7 @@ class MapGenerator
 					if( !biocnt) continue;	//	このバイオームは16x16の中に存在しない。
 					local m = bioobjdensmap[l], t = {};
 					foreach( i, v in m){
-						local n = Math.iround( v * (d0[(i-20)/3]||0.0) * biocnt * rnd( 0.7, 1.0) * 0.02 );
+						local n = Math.iround( v * (d0[(i-20)/3]||0.0) * biocnt * rnd( 0.7, 1.0) * 0.03 );
 						if( n){
 							t[i] <- n;
 							trycnt += n;

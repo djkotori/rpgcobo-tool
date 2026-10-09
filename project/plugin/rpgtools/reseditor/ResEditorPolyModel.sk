@@ -1,0 +1,157 @@
+//***LicenseHere
+
+import VirtualKeyCode;
+import ModifiersMask;
+import PropertyType;
+import RPGPropertyType;
+
+local srcdir = dirname( callee().getSourceName());
+
+local colshplist = [
+	{ lbl="BOX", icon="\ue3e0", val=SK_SHAPE_BOX },
+	{ lbl="SPHERE", icon="\ue836", val=SK_SHAPE_SPHERE },
+	{ lbl="CAPSULE", icon="\ue0d4", val=SK_SHAPE_CAPSULE },
+	{ lbl="CYLINDER", icon="\ue71c", val=SK_SHAPE_CYLINDER },
+];
+
+
+////////////////////////////////////////////////////////////////////////////////
+//	
+//	ResEditorPolyModel : ポリゴンモデル
+//	※要素一つ一つが重くなりがちなので、プレビュー画像は読み込み時に作成。pmt保存時に更新とする。abc.pmt => abc.webp。プレビュー作成はPMEditor内のstatic functionに
+//	
+//	
+
+//	
+class ResEditorPolyModel extends ResEditor
+{
+	static RESSLOTUI = "/ui/resslot3.ui";
+
+	static props = [
+		{ pid="name", lbl="$T.lbl_name", type=LANGSTRING, defval=null }
+		{ pid="pmt", lbl="$T.lbl_model", type=GRAPHIC, dir="/resource/poly_mdl", restype="pmt", nullable=true, defval=null }
+		{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-10.0,10.0), q=100, defval=[0,0,0] }
+		{ pid="hpb", lbl="$T.lbl_rotation", type=VEC3, range=(-180,180), defval=[0,0,0] }
+		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,4.0), q=10, defval=1.0, ui="bar" }
+		{ pid="charause", lbl="$T.lbl_charause", type=BOOL, defval=false },
+		{ pid="mapuse", lbl="$T.lbl_mapuse", type=BOOL, defval=false },
+
+
+
+		{ pid="colshp",	lbl="$T.lbl_collision",	type=LIST, list=colshplist, defval=SK_SHAPE_CAPSULE },
+		{ pid="colsize", lbl="$T.lbl_size", type=VEC3, range=(0.01,1.5),q=100, defval=(0.4,0.8,0.4) },
+		{ pid="animap", lbl="$T.lbl_anime", type=ANIMEMAP, defval=[], cnt="cnt6.ui", },
+		{ pid="memo", lbl="$T.lbl_memo", type=STRING, multiline=true, cnt="cnt6.ui", },
+	];
+
+	static titlelbl = "$T.lbl_resedit : $T.side_res_poly_mdl";
+	
+	function init( path){
+		super.init( path);
+		resdirpath = ::resroot.file.path .. "/resource/poly_mdl";
+	}
+	
+	function itemSelected( v){
+		local d = v.data;
+		if( !d) d = v.data = data[v.id] <- { name=""};
+		setDefaultProperties( props, d);
+		//
+		proplist.bindProperties( props);
+		proplist.setParameters( d);
+	}
+
+	function propevent( e){
+		local cmd = e.actioncmd;
+		if( cmd.cmd != "prop") return;
+		local pid = cmd.prop.pid, val = cmd.val;
+		switch( pid){
+		default:
+			setParamOp( selitem.id, cmd.prop, val);
+			break;
+		}
+	}
+	
+	function itemAction( e){
+	}
+
+	function showItemContextMenu( e){
+		local resid = selitem.id, d = data[resid];
+		local r = ::getResource( d["pmt"]);
+		local cbdata = getClipboard( "resitem");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local menudata = [
+			{ id="editpmt", lbl="$T.lbl_edit", icon="\ue745", disable=!r  },
+			"-",
+			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d" },
+			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!isPastable( cbdata)},
+			"-",
+			{ id="sort", lbl="$T.lbl_idsort", icon="\ue240"},
+			{ id="dir", lbl="$T.lbl_openresdir", icon="\ue89e"},
+			{ id="import", lbl="$T.lbl_import_3d", icon="\ue675"},
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "copy":
+			copy();
+			break;
+		case "paste":
+			paste( cbdata);
+			break;
+		case "editpmt":
+			::skstudio.openEditor( r.path);
+			break;
+		case "sort": return showIDSortDialog();
+		case "dir": return skOpenURL( "dir://"..resdirpath);
+		case "import":
+			local sndpath = skstudio.showFileOpen( { filter=["*.gltf","*.glb"], abspath=true, pathgroup="poly_mdl" });
+			if( sndpath){
+				local f = FileRef( sndpath);
+				showImportGLTF( f);
+			}
+			break;
+		}
+	}
+
+	function showImportGLTF( f){
+		local pmt = null;
+		try{
+			local loader = GLTFLoader();
+			pmt = loader.loadGLTF( r.loadData());
+		}catch( e){
+			Popups.showError( "glTFの読み込み中にエラーが発生しました。詳細はログを確認してください。");
+		}
+		
+
+		
+
+		
+		
+	}
+}
+
+
+//	3Dモデルファイルのインポートダイアログ。pmtにして保存する。現在はgltf,glbに対応。
+//	※インポートオプションは今のところなし。名前だけ入力欄あり
+//	ダイアログ表示時点ですでにgltf->pmtへの変換が行われている。テクスチャは全て埋め込み。
+//	
+class PolyImportDialog extends UndoableDialog
+{
+	static props = [
+		{ pid="name", lbl="$T.lbl_filename", type=STRING, }
+	];
+
+	DIALOGUIPATH = srcdir .. "/ui/import3ddialog.ui"
+
+	preview = null;			//	CanvasBehavior
+	proplist = null;		//	PropertyListBehavior
+
+	infile = null;			//	FileRef
+	pmt = null;				//	コンバート後のpmt。
+	
+	data = null;			//	結果。Resourceとかpmtとかが入ってる
+
+	static function run( d){
+		local p = PolyImportDialog( DIALOGUIPATH, d);
+		p.show( null);
+		return p.ret ? p.data : null;
+	}
+}

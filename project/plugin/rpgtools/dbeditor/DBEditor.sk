@@ -44,24 +44,30 @@ class DBEditor extends EditorViewBase
 		local dbtype = getdbtype( path);
 		if( !dbtype) return null;
 		local ed;
-		switch( dbtype){
-		case "player": ed = ::loadSKView( srcdir.."/ui/dbeditor_player.ui", DBEditorPlayer); break;
-		case "job": ed = ::loadSKView( srcdir.."/ui/dbeditor_job.ui", DBEditorJob); break;
-		case "skill": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorSkill); break;
-		case "item": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorItem); break;
-		case "armor": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorArmor); break;
-		case "weapon": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorWeapon); break;
-		case "cond": ed = ::loadSKView( srcdir.."/ui/dbeditor_cond.ui", DBEditorCond); break;
-		case "enemy": ed = ::loadSKView( srcdir.."/ui/dbeditor_enemy.ui", DBEditorEnemy); break;
-		case "setting": ed = ::loadSKView( srcdir.."/ui/dbeditor_setting.ui", DBEditorSetting); break;
-		case "type": ed = ::loadSKView( srcdir.."/ui/dbeditor_type.ui", DBEditorType); break;
-		case "dict": ed = ::loadSKView( srcdir.."/ui/dbeditor_dict.ui", DBEditorDict); break;
-		case "gvar": ed = ::loadSKView( srcdir.."/ui/dbeditor_gvar.ui", DBEditorGvar); break;
-		case "macro": ed = ::loadSKView( srcdir.."/ui/dbeditor_macro.ui", DBEditorMacro); break;
-		case "store": ed = ::loadSKView( srcdir.."/ui/dbeditor_store.ui", DBEditorStore); break;
+		ed = ::DBEditor.createCustomEditor( path, dbtype);
+		if( !ed){
+			switch( dbtype){
+			case "player": ed = ::loadSKView( srcdir.."/ui/dbeditor_player.ui", DBEditorPlayer); break;
+			case "job": ed = ::loadSKView( srcdir.."/ui/dbeditor_job.ui", DBEditorJob); break;
+			case "skill": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorSkill); break;
+			case "item": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorItem); break;
+			case "armor": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorArmor); break;
+			case "weapon": ed = ::loadSKView( srcdir.."/ui/dbeditor_skill.ui", DBEditorWeapon); break;
+			case "cond": ed = ::loadSKView( srcdir.."/ui/dbeditor_cond.ui", DBEditorCond); break;
+			case "enemy": ed = ::loadSKView( srcdir.."/ui/dbeditor_enemy.ui", DBEditorEnemy); break;
+			case "setting": ed = ::loadSKView( srcdir.."/ui/dbeditor_setting.ui", DBEditorSetting); break;
+			case "type": ed = ::loadSKView( srcdir.."/ui/dbeditor_type.ui", DBEditorType); break;
+			case "dict": ed = ::loadSKView( srcdir.."/ui/dbeditor_dict.ui", DBEditorDict); break;
+			case "gvar": ed = ::loadSKView( srcdir.."/ui/dbeditor_gvar.ui", DBEditorGvar); break;
+			case "macro": ed = ::loadSKView( srcdir.."/ui/dbeditor_macro.ui", DBEditorMacro); break;
+			case "store": ed = ::loadSKView( srcdir.."/ui/dbeditor_store.ui", DBEditorStore); break;
+			}
 		}
 		ed?.init( path);
 		return ed;
+	}
+
+	static function createCustomEditor( path, dbtype){
 	}
 
 	//	作業中のデータでデバッグするための情報取得

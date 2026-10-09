@@ -19,7 +19,7 @@ param def
 	uniform highp mat4 pmat <id=PMAT>;
 	uniform highp mat4 uvmat <id=UVMAT>;
 
-	uniform mediump mat4 mtl <id=PBRMATERIAL>;
+	uniform mediump vec4 mtl[6] <id=PBRMATERIAL>;
 	uniform mediump mat4 colormat <id=COLORMAT>;
 	uniform highp mat4 p1 <id=MISC1MAT>;
 	uniform lowp vec4 envcol <id=ENVCOLOR>;
@@ -124,7 +124,7 @@ fs def
 		$(COLORMAT) pix = colormat * pix;
 		G g;
 		g.n = normalize( v_n);
-		mediump mat4 m = mtl;
+		mediump vec4 m[6] = mtl;
 		g.rough = m[1].x;
 		g.metal = m[1].y;
 		g.gsel = m[1].z;

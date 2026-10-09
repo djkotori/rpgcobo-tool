@@ -317,7 +317,7 @@ class SystemVarAccessor
 	]);
 
 	static function add( t){
-		varmap .. t["func"] ? t : makesvar( t);
+		varmap .. (t["func"] ? t : makesvar( t));
 	}
 	
 	function makevar( key){

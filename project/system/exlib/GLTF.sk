@@ -1,0 +1,615 @@
+/**
+ *	GLTF.sk
+ *	glTF(.gltf/.glb)をロードしてSakanaGLのPolygonMeshTreeに変換する。
+ *	ネイティブのパース処理はaddon "gltf"(private/gltf)のGLTFModelクラスが行い、
+ *	ここではその結果からVertexBuffer/IndexBuffer/Material/BoneParts/ShapeKeyListなど
+ *	SakanaGLのオブジェクトを組み立てる。
+ *	
+ *	- 複数モデル対応のために階層構造の PolygonMeshTree を構築する。
+ *	- gltf を変換し、.pmtにする。リソースの chara_mdl.json はpmtを管理する。
+ *	- pmtは直接SK3DObjectにセット可能。
+ *	- PMEditor は、pmtを直接読み込んで編集可能。マテリアルは全てのpmのものを統合して表示する。スキンはノードを切り替えつつ編集可能。
+ *	- 複数アニメは、単一のキーフレームに展開され、名前とフレーム範囲の情報をpmtに保持する。
+ *	
+ *	gltfアドオンはツールでのみ使用。ゲームからは使用されない。skstudio.dllに入れちゃったほうが良いわこれは
+ */
+
+local GLTF_ATTR_MAP = {
+	POSITION  = SK_POSITION,
+	NORMAL    = SK_NORMAL,
+	TANGENT   = SK_TANGENT,
+	UV1       = SK_UV1,		//	combined vec4(uv0.xy, uv1.xy), matches pbr.skfx's in_uv<id=UV1>
+	COLOR0    = SK_COLOR1,
+	JOINTS0   = SK_WEIGHTIDX,
+	WEIGHTS0  = SK_WEIGHT,
+};
+local GLTF_TYPE_MAP = { FLOAT = SK_FLOAT, UBYTE = SK_UBYTE, USHORT = SK_USHORT, UINT = SK_UINT };
+//	tinygltf mode 0..6 -> SK_*  (LINE_LOOP(2) has no SK equivalent, approximated as SK_LINES)
+local GLTF_MODE_MAP = [ SK_POINTS, SK_LINES, SK_LINES, SK_LINESTRIP, SK_TRIANGLES, SK_TRIANGLESTRIP, SK_TRIANGLEFAN ];
+
+local GLTF_wrapMode( w){
+	switch( w){
+	case 33071: return SK_CLAMP;		//	CLAMP_TO_EDGE
+	case 33648: return SK_MIRROR;		//	MIRRORED_REPEAT
+	default:    return SK_WRAP;		//	REPEAT(10497) or unspecified
+	}
+}
+
+//	描画モードに対応する可視マスクの配列
+local modeblends = [SK_VISIBLE_OPAQUE,SK_VISIBLE_OPAQUE,SK_VISIBLE_TRANSPARENT,SK_VISIBLE_DECAL,SK_VISIBLE_DECAL,SK_VISIBLE_DECAL]
+
+
+class GLTFLoader
+{
+	file = null;				//	FileRef : glTFファイル。相対パスの解決に使用する。
+	gltftexcache = null;		//	{imageIdx_srgb : Texture}  1回のloadGLTF呼び出し内でのみ使う使い捨てキャッシュ
+	
+	constructor(){
+		if( !::["GLTFModel"]){	//	gltfを全く使わないのもありなので、最初に使う段階でloadAddonする
+			module.loadAddon( "gltf");
+		}
+		gltftexcache = {};
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//	geometry
+
+	//	プリミティブの頂点属性の並びを比較用の文字列にする
+	// function streamSignature( streams){
+	// 	local s = "";
+	// 	foreach( st in streams) s += st.attr + ":" + st.type + ":" + st.elems + ";";
+	// 	return s;
+	// }
+	
+	function buildVertexBuffer( streams, vtxdata){
+		// local sa = [];
+		// foreach( st in streams){
+		// 	sa .. {
+		// 		attr = GLTF_ATTR_MAP[st.attr],
+		// 		type = GLTF_TYPE_MAP[st.type],
+		// 		elems = st.elems,
+		// 		normalize = st.normalize,
+		// 		offset = st.offset,
+		// 		stride = st.stride,
+		// 	};
+		// }
+		local sa = streams;	//	sonomama
+		// printf( "STREAMS %S\n", encodeJSON( sa, 5));
+		local vb = VertexBuffer();
+		vb.create( sa, vtxdata.size);
+		vtxdata.pos = 0;
+		vb.load( vtxdata);
+		// for( local l = 0;l < 8;l ++){
+		// 	local vbs = vb[l];
+		// 	if( vbs){ printf( "----------------------- VertexBufferSteram[%d]\n", l); vbs.describe(); }
+		// }
+		return vb;
+	}
+
+	function buildIndexBuffer( idxtype, idxdata, vtxnum){
+		local ib = IndexBuffer();
+		ib.create( idxtype);
+		idxdata.pos = 0;
+		ib.load( idxdata, 0, vtxnum-1);
+		return ib;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//	material / texture
+
+	//	GLTFの画像をRGBAImageにして返す。
+	function getGLTFImag( g, imgid){
+		if( imgid < 0) return null;
+		local imginfo = g.getImage( imgid);
+		if( imginfo.uri){
+			local f = FileRef( file, imginfo.uri);
+			if( f.exists()) return skLoadImag( f.load());
+		}else{
+			local img = skLoadImage( imginfo.data); imginfo.data.pos = 0;
+			return img;
+		}
+	}
+
+	//	複数のパラメータ画像を1つの画像に合成する。 RGBA = (R=occ, G=rough, B=metal, A=em)固定
+	function combineParamImages( mrimg, occimg, emimg){
+		local sam = SamplerState( SK_CLAMP, SK_CLAMP, SK_LINEAR, SK_LINEAR);
+		local mrsp, occsp, emsp;
+		local mrtex = Texture(); mrtex.load( mrimg); //mrtex.setSamplerState( sam);
+		local mrsp = Sprite( mrtex); mrsp.color = 0x00ffff01; mrsp.blend = SK_ADD; mrsp.bnd.set( 0, 0, 1, 1);
+		if( occimg){
+			local occtex = Texture(); occtex.load( occimg); occtex.setSamplerState( sam);
+			occsp = Sprite( occtex); occsp.color = 0xff000001; occsp.blend = SK_ADD; occsp.bnd.set( 0, 0, 1, 1);
+		}
+		if( emimg){
+			local emtex = Texture(); if( emimg) emtex.load( emimg); emtex.setSamplerState( sam);
+			emsp = Sprite( emtex); emsp.blend = SK_ADD; emsp.bnd.set( 0, 0, 1, 1);
+			emsp.colormat = Matrix( 0,0,0,0.2125, 0,0,0,0.7154, 0,0,0,0.0721, 0,0,0,0);	//	0.2125, 0.7154, 0.0721 αにグレイスケールを指定
+		}
+		local w = Math.max( mrimg["width"], occimg["width"], emimg["width"]);
+		local h = Math.max( mrimg["height"], occimg["height"], emimg["height"]);
+		local outtex = Texture(); outtex.create( w, h, SK_RGBA8, 0);
+		skPushRenderStates();
+		skPushMatrix( 0, 1, 2);
+		local oldrt = skSetRenderTarget( outtex);
+		skSetViewport( 0, 0, w, h);
+		skInitMatrix( SK_WORLD);
+		skInitMatrix( SK_VIEW);
+		skSetMatrix( SK_PROJECTION, Matrix.fromOrtho( 0, 1, 1, 0, -2000, 2000));
+		skClearScreen( #ClearParam( 0,0,0,0, 1));
+		skSetRenderState( SK_CULLFACE, 0);
+		skSetRenderState( SK_DEPTHTEST, 0);
+		skDrawSprites( mrsp, occsp, emsp);
+		skFlush();
+		local outimg = RGBAImage( w, h);
+		skReadPixels( 0, 0, w, h, outimg);
+		skPopMatrix( 2, 1, 0);
+		skSetRenderTarget( oldrt);
+		skPopRenderStates();
+		return outimg;
+	}
+
+	//	tex0=metallic+roughness, tex1=occlusion, tex2=emission
+	//	tex0はあるとして、tex1, tex2があれば合成して返す。tex2はrgb=>aのグレイスケールに
+	//	※キャッシュは現在効かない。多数のメッシュが同じ構成をしていた場合はキャッシュしたい
+	function assignCombinedParamTextures( g, pmt, tex0, tex1, tex2){
+		local t0 = skGetTime();
+		local mrimg = getGLTFImag( g, tex0.index);
+		local occimg = getGLTFImag( g, tex1.index);
+		local emimg = getGLTFImag( g, tex2.index);
+		local t1 = skGetTime();
+		local img = mrimg;
+		local texmap = (2<<16)|(3<<8);		//	G=rough(PID2) B=metal(PID3)
+		if( occimg || emimg){
+			img = combineParamImages( mrimg, occimg, emimg);		//	imgにoccimg, emimgを合成。RGBA = (R=occ, G=rough, B=metal, A=em)固定
+			local t2 = skGetTime();
+			if( occimg) texmap |= (4<<24);		//	R = mparam[0](PID4)
+			if( emimg) texmap |= (5);	//	A = mparam[1](PID5)
+			local t3 = skGetTime();
+			local imgdata = img.encodeWebp( 95);	//	非可逆圧縮でいいかな。。？ これが重い。。。
+			imgdata.pos = 0;
+			local ts = TextureSource();
+			local imginfo = g.getImage( tex0.index);
+			ts.name = imginfo.name .. "_combined";
+			ts.data = imgdata;
+			pmt.textures .. ts;
+			local texid = length( pmt.textures)-1;
+			local t4 = skGetTime();
+			return [texid,texmap];
+		}else{
+			return [assignTextureID( g, pmt, tex0), texmap];
+		}
+	}
+
+	//	
+	function assignTextureID( g, pmt, texref){
+		if( !texref || texref.index < 0) return -1;
+		local tex = g.getTexture( texref.index);
+		local key = tex.source;
+		local cached = gltftexcache[key];
+		if( cached != undefined) return cached;
+		//
+		local imginfo = g.getImage( key);
+		local ts = TextureSource();
+		ts.name = imginfo.name;		//	どっちがいいかな
+		if( imginfo.data){		//	コピーしないとまずい。落ちる
+			ts.data = ByteBuffer();
+			ts.data.putBuffer( imginfo.data);
+			ts.data.pos = 0;
+			imginfo.data.pos = 0;
+		}else
+		if( length( imginfo.uri)){
+			ts.path = imginfo.uri;		//	有効なパスに。。。
+		}
+		// <ser_o> sampler = null;			//	SamplerState : サンプラー情報
+		// <ser_b> flags = null;			//	テクスチャフラグ。srgbは。。どこ
+		pmt.textures .. ts;
+		local texid = length( pmt.textures)-1;
+		gltftexcache[key] <- texid;
+		return texid;
+	}
+
+	//	glTFのPBR metallic-roughnessマテリアルをSakanaGLのMaterialに変換する。
+	//	tex0=basecolor, tex1=normal, tex2=(rough,metal)パック済みテクスチャ。
+	//	project/system/shader/pbr.skfxのCOLORTEX3/texmapパック仕様に合わせる。
+	function buildMaterial( g, pmt, matIdx){
+		local m = MaterialSource();
+		m.tec = "pbr.basic";
+		m.visiblemask = DEFAULT_VISIBLEMASK;
+		m.mtype = 0;
+		local gm = g.getMaterial( matIdx);
+		printf( "gltf material[%d]: %S\n", matIdx, encodeJSON( gm, 5));
+		m.name = gm.name;
+		local bc = gm.basecolor;
+		local clamp255 = function( v){ v = v*255.0; return v<0?0:(v>255?255:v); };
+		m.basecol = (int(clamp255(bc[0]))<<24) | (int(clamp255(bc[1]))<<16) | (int(clamp255(bc[2]))<<8) | int(clamp255(bc[3]));
+		m.rough = gm.roughness;
+		m.metal = gm.metallic;
+		m.normalscale = gm.normalScale;
+		
+		local em = gm.emissive, es = gm.emissiveStrength;
+		local eb = 0;//int( clamp255( (em[0]*0.3+em[1]*0.59+em[2]*0.11)*es));
+		m.mparam = 0xff000000 | (eb<<16);		//	byte3=AO(1.0固定) byte2=emission
+
+		if( (m.tex0 = assignTextureID( g, pmt, gm.baseColorTex)) >= 0){	//	こいつはsrgb
+			m.uvbits |= gm.baseColorTex.texcoord;
+		}
+		if( (m.tex1 = assignTextureID( g, pmt, gm.normalTex)) >= 0){
+			m.uvbits |= gm.normalTex.texcoord << 8;
+		}
+		if( gm.metallicRoughnessTex.index >= 0){
+			local combined = assignCombinedParamTextures( g, pmt, gm.metallicRoughnessTex, gm.occlusionTex, gm.emissiveTex);
+			m.tex2 = combined[0];
+			m.texmap = combined[1];
+			m.uvbits |= gm.metallicRoughnessTex.texcoord << 8;	//	
+		}
+		m.visiblemask = modeblends[0];
+		switch( gm.alphaMode){
+		case "MASK":
+			m.alphatest = 1;
+			m.alpharef = gm.alphaCutoff;
+			break;
+		case "BLEND":
+			m.blend = SK_MIX;
+			m.depthmask = 0;
+			m.visiblemask = modeblends[2];
+			break;
+		}
+		m.cullface = gm.doubleSided ? SK_OFF : SK_CW;		//	gltfは右手系なのでcw
+		return m;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//	skeleton / animation
+
+	function writeTransformTimeline( frames, jt){
+		local tfmap = {};
+		foreach( f in frames){
+			local tf = Transform( jt);
+			local t = f["t"], s = f["s"], r = f["r"];
+			if( t){ tf.tx = t[0]; tf.ty = t[1]; tf.tz = t[2]; }
+			if( s){ tf.sx = s[0]; tf.sy = s[1]; tf.sz = s[2]; }
+			if( r){ tf.rx = r[0]; tf.ry = r[1]; tf.rz = r[2]; tf.rw = r[3]; }
+			tfmap[f.frame] <- tf;
+			if( f.frame == 0) printf( "frame %d local transform: %f %f %f    %f %f %f %f  %S\n", f.frame, tf.tx, tf.ty, tf.tz, tf.rx, tf.ry, tf.rz, tf.rw, (t&&1)|(s&&2)|(r&&4));
+		}
+		local tl = TransformTimeline.create( tfmap);
+		return tl;
+	}
+	
+	function getNodeLocalTransform( g, node){
+		local t = node.translation, s = node.scale, r = node.rotation;
+		return Transform( t[0], t[1], t[2], s[0], s[1], s[2], r[0], r[1], r[2], r[3]);
+	}
+
+	function getNodeGlobalMatrix( g, node){
+		local tflayers = [getNodeLocalTransform( g, node)];
+		while( node.parent >= 0){
+			node = g.getNode( node.parent);
+			tflayers[0] <- getNodeLocalTransform( g, node);
+		}
+		return Matrix().integrate( tflayers);
+	}
+
+	//	skinIdxのボーン階層+指定アニメーション(anim=null時はバインドポーズのみ)からMotionDataを構築する。
+	//	bindposeと各フレームのトランスフォームはpmnodeのローカル座標にする。
+	function buildMotion( g, skinIdx, anim, pmnode){
+		local skin = g.getSkin( skinIdx);
+		local joints = skin.joints;
+		local bindpose = skin.bindpose;
+		local n = joints.len();
+
+		local nodeToJoint = {};
+		foreach( ji, nodeIdx in joints) nodeToJoint[nodeIdx] <- ji;
+
+		local trackmap = {};
+		if( anim) foreach( tr in anim.tracks) trackmap[tr.node] <- tr;
+
+		//	
+		local pmmat = getNodeGlobalMatrix( g, pmnode), pminvmat = pmmat.invert34();
+		printf( "PM %S global matrix\n", pmnode.name);
+		pmmat.print();
+
+		local parts = array( n);
+		local partsmap = {};
+		for( local ji = 0; ji < n; ji ++){
+			local nodeIdx = joints[ji];
+			local jnode = g.getNode( nodeIdx);
+			local bp = BoneParts();
+			bp.id = ji;
+
+			local pnode = jnode.parent, pj = -1;
+			while( pnode >= 0){
+				if( pnode in nodeToJoint){ pj = nodeToJoint[pnode]; break; }
+				pnode = g.getNode( pnode).parent;
+			}
+			bp.parentid = pj;
+			//	
+			local o = ji*16;
+			bp.bindpose = Matrix( bindpose.slice( o, o+16));
+			pminvmat.mult34( bp.bindpose, bp.bindpose);	//	メッシュノードのローカル座標に変換
+			bp.invbindpose = bp.bindpose.invert34();
+			bp.length = 10.1;
+			bp.name = jnode.name;
+			printf( "joint %S bindpose\n", jnode.name);
+			bp.bindpose.print();
+			
+			local track = trackmap[nodeIdx];
+			// printf( "NODE..... %S   %S\n", encodeJSON( node), encodeJSON( track, 5));
+			local frames;
+			if( track){
+				frames = track.keys;
+			//	frames = [];	foreach( key in track.keys) frames .. { frame=key.frame, t=key.t, s=key.s, r=key.r };	//	コピーしてるだけ
+			}else{
+				frames = [ { frame=0, t=jnode.translation, s=jnode.scale, r=jnode.rotation } ];
+			}
+			local jt = getNodeLocalTransform( g, jnode)
+			bp.transline = writeTransformTimeline( frames, jt);
+
+			parts[ji] = bp;
+			partsmap[jnode.name] <- bp;
+		}
+		local mot = MotionData();
+		mot.parts = parts;
+		mot.partsmap = partsmap;
+		mot.start = 0;
+		return mot;
+	}
+
+	//	メッシュに紐づくシェイプキー(モーフターゲット)アニメーションをShapeStateTimelineとして構築する。
+	function buildShapeTimeline( shapetrack){
+		local w = ByteBuffer();
+		local keys = shapetrack.keys;
+		local num = keys.len();
+		if( num == 0) return null;
+		local keynum = keys[0].w.len();
+		w.puts( keys[0].frame);
+		w.puts( keys[num-1].frame);
+		w.putb( keynum);
+		w.putb( 0);
+		foreach( key in keys){
+			w.putb( keynum);				//	全ウェイトを毎フレーム書き込む(簡易実装)
+			for( local i=0;i<keynum;i++){ w.putb( i); w.putb( key.w[i]); }
+		}
+		w.puti( 0);
+		w.pos = 0;
+		local tl = ShapeStateTimeline();
+		tl.loadData( w);
+		return tl;
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//	mesh assembly
+
+	//	gltfのジオメトリをPolygonMeshSourceに変換する。
+	function buildPolygonMeshSource( g, meshidx){
+		local meshtb = g.getMesh( meshidx);
+		printf( "g.getMesh %S\n %S\n", meshtb, encodeJSON( meshtb, 5));
+		local prims = meshtb.primitives;
+		if( !prims.len()) throw Exception( "glTF mesh has no primitives");
+		
+		local pms = PolygonMeshSource();
+		pms.name = meshtb.name;
+		pms.vtx = buildVertexBuffer( meshtb.streams, meshtb.vtxdata);
+		local b = meshtb.bnd;
+		pms.bnd = Rect3D( (b[0]+b[3])*0.5, (b[1]+b[4])*0.5, (b[2]+b[5])*0.5, (b[3]-b[0])*0.5, (b[4]-b[1])*0.5, (b[5]-b[2])*0.5);
+		pms.face = [];
+		local prims = meshtb.primitives;
+		foreach( prim in prims){
+			local fs = PolygonFaceSource();
+			fs.mode = prim.mode;
+			fs.matid = prim.material;
+			fs.idx = buildIndexBuffer( prim.idxtype, prim.idxdata, pms.vtx.len());
+			fs.visiblemask = -1;
+			fs.idxoffs = 0;
+			fs.idxlen = prim.idxlen;
+			fs.vtxoffs = prim.vtxoffs;
+			pms.face .. fs;
+		}
+		// pms.vtx[0].describe();
+		return pms;
+		
+		//	残りの対応。。。
+		// motion,wmapname,animap : nodeの方から探してセットする
+		//shapekeys : 下で
+		// <ser_o> pivot = null;			//	Transform : ピボット 設定いらないかな
+
+		/*
+		local meshtb = g.getMesh( meshidx);
+		local prims = meshtb.primitives;
+		if( prims.len() == 0) throw Exception( "glTF mesh has no primitives");
+		local baseSig = streamSignature( prims[0].streams);
+		local used = [];
+		local idxtype = null;
+		foreach( i, p in prims){	//	被りが無いならマージしていきたい。。。
+			if( streamSignature( p.streams) != baseSig){
+				printf( "GLTF: primitive[%d] has a different vertex layout than primitive[0], skipped\n", i);
+				continue;
+			}
+			if( idxtype == null) idxtype = p.idxtype;
+			else if( idxtype != p.idxtype){
+				printf( "GLTF: mixed index types in one mesh are not supported\n");
+				continue;
+			}
+			used .. p;
+		}
+		local vtxbuf = ByteBuffer();
+		local idxbuf = ByteBuffer();
+		local vtxoffset = 0;
+		local idxoffsetInIndices = 0;
+		local faceinfo = [];			//	[material, mode, offs, len, voffs]
+		local bnd = null;
+		//	
+		foreach( p in used){
+			if( p.idxtype != idxtype) throw Exception( "GLTF: mixed index types in one mesh are not supported");
+			vtxbuf.putBuffer( p.vtxdata);
+			idxbuf.putBuffer( p.idxdata);
+			faceinfo .. [ p.material, GLTF_MODE_MAP[p.mode] || SK_TRIANGLES, idxoffsetInIndices, p.idxcount, vtxoffset];
+			vtxoffset += p.vtxnum;
+			idxoffsetInIndices += p.idxcount;
+			local b = p.bnd;
+			if( !bnd){ bnd = [ b[0],b[1],b[2],b[3],b[4],b[5] ]; }
+			else{
+				for( local k=0;k<3;k++){ if( b[k] < bnd[k]) bnd[k] = b[k]; }
+				for( local k=3;k<6;k++){ if( b[k] > bnd[k]) bnd[k] = b[k]; }
+			}
+		}
+
+		local vtx = buildVertexBuffer( used[0].streams, vtxbuf);
+		local idx = buildIndexBuffer( idxtype, idxbuf, vtx.len());
+		
+		local faces = [];
+		foreach( fi in faceinfo){
+			local f = PolygonFace();
+			f.mode = fi[1];
+			f.m = buildMaterial( g, fi[0]);
+			f.idx = idx;
+			f.offs = fi[2];
+			f.len = fi[3];
+			f.voffs = fi[4];
+			faces .. f;
+		}
+
+		local cx=(bnd[0]+bnd[3])*0.5, cy=(bnd[1]+bnd[4])*0.5, cz=(bnd[2]+bnd[5])*0.5;
+		local hx=(bnd[3]-bnd[0])*0.5, hy=(bnd[4]-bnd[1])*0.5, hz=(bnd[5]-bnd[2])*0.5;
+
+		local pm = PolygonMesh();
+		pm.vtx = vtx;
+		pm.face = faces;
+		pm.bnd = Rect3D( cx,cy,cz, hx,hy,hz);
+
+		//	shape keys ( morph targets) : プリミティブが1つの場合のみ対応
+		if( used.len() == 1 && used[0].hasShapeKeys){
+			local sk = ShapeKeyList();
+			used[0].shapekeydata.pos = 0;
+			sk.loadData( used[0].shapekeydata);
+			pm.shapekeys = sk;
+			pm.baseshapevtx = VertexBuffer();
+			local extract = [];
+			for( local l = 0;l < sk.attrlen();l ++){
+				extract .. { attr = sk.attrAt(l), elems = sk.elemsAt(l), type = SK_FLOAT, normalize = 0 };
+			}
+			pm.baseshapevtx.extractFrom( vtx, extract);
+			pm.targetshapevtx = VertexBuffer();
+			pm.targetshapevtx.copyFrom( pm.baseshapevtx);
+			pm.vtx = [ vtx, pm.targetshapevtx ];
+			pm.shapesource = ShapeState();
+			pm.shapesource.shapekeys = sk;
+			pm.shapetarget = clone pm.shapesource;
+		}
+		return pm;
+		*/
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//	entry point
+
+	/**
+	*	glTF/glb形式のByteBufferをPolygonMeshTreeに変換する。
+	*	@param bb  glTF(.gltf, UTF8限定)またはglb形式のByteBuffer
+	*/
+	function loadGLTF( bb, f=null, meshIndex=0, animIndex=0){
+		this.file = f;
+		local g = GLTFModel.parse( bb);
+		local pmt = PolygonMeshTree();
+		pmt.textures = [];
+		pmt.materials = [];
+		pmt.meshes = [];
+		pmt.nodes = [];
+		//	マテリアル作成。pbrパラメータ画像の合成も行う。合成する場合は画像は埋め込まれる。
+		//	テクスチャはマテリアル生成時に追加される。
+		local mtlnum = g.materialCount();
+		for( local l = 0;l < mtlnum;l ++){
+			pmt.materials .. buildMaterial( g, pmt, l);
+		}
+		//	メッシュ作成。各メッシュはPolygonMeshSourceとしてpmt.meshesに追加される。
+		local meshnum = g.meshCount();
+		for( local l = 0;l < meshnum;l ++){
+			pmt.meshes .. buildPolygonMeshSource( g, l);
+		}
+		//	アニメーション取得。ノードに使う
+		local animes = [], animnum = g.animationCount();
+		for( local l = 0;l < animnum;l ++) animes .. g.getAnimation( l);
+		//
+		//	ノード作成。ノードにスキンが設定されている場合、対応するメッシュにボーンを設定する。なので、一つのメッシュに複数のスキンは設定不能。cloneはできるか
+		local nodenum = g.nodeCount();
+		for( local l = 0;l < nodenum;l ++){
+			local nd = g.getNode( l);
+			local mn = PolygonMeshNode();
+			mn.name = nd.name;
+			mn.meshid = nd.mesh;
+			mn.skinid = nd.skin;
+			mn.bonerootid = nd.boneroot;
+			mn.id = l;
+			mn.parentid = nd.parent;
+			mn.tf = getNodeLocalTransform( g, nd);
+			if( nd.skin >= 0){
+				local pms = pmt.meshes[mn.meshid];
+				//	PolygonMeshTreeは1つのMotionDataしか持てないので、合成する必要がある。motionsはまとめて一つのmotionにする。
+				//	その分、アニメーションの対応テーブルを作る。⇒animap
+				local motions = array( animnum);
+				for( local a = 0;a < animnum;a ++) motions[a] = buildMotion( g, nd.skin, animes[a], nd);
+				pms.motion = motions[0];
+				local wmapname = pms.wmapname = array( length( pms.motion.partsmap), null);
+				foreach( k, v in pms.motion.partsmap){
+					wmapname[v.id] = v.name;
+				}
+			}
+			pmt.nodes .. mn;
+		}
+		return pmt;
+		/*
+		try{
+			if( meshIndex < 0 || meshIndex >= g.meshCount()) throw Exception( "GLTF: mesh index out of range");
+			local meshtb = g.getMesh( meshIndex);
+			printf( "g.getMesh %S\n %S\n", meshtb, encodeJSON( meshtb, 5));
+			for( local i = 0;i < g.nodeCount();i ++){
+				local nd = g.getNode( i);
+				printf( "node %S\n", encodeJSON( nd, 5));
+			}
+			pm = buildPolygonMeshSource( g, meshtb);
+			
+			//	skin : このメッシュを参照していてskinを持つ最初のnodeを探す
+			local skinIdx = -1;
+			for( local i = 0;i < g.nodeCount();i ++){
+				local nd = g.getNode( i);
+				if( nd.mesh == meshIndex && nd.skin >= 0){ skinIdx = nd.skin; break; }
+			}
+			if( skinIdx >= 0){
+				local animnum = g.animationCount();
+				local motions = array( animnum);
+				for( local a = 0;a < animnum;a ++) motions[a] = buildMotion( g, skinIdx, g.getAnimation( a));
+				pm.customdata = { gltfAnimations = motions };
+				if( animIndex >= 0 && animIndex < animnum){
+					pm.motion = motions[animIndex];
+				}else if( animnum == 0){
+					pm.motion = buildMotion( g, skinIdx, null);
+				}
+			}
+			if( pm.motion){
+				local mot = pm.motion;
+				local wmapname = pm.wmapname = array( length( mot.partsmap), null);
+				foreach( k, v in mot.partsmap){
+					wmapname[v.id] = v.name;
+				}
+			}
+			//	shape animation ( glTF "weights" channel) : 選択中のanimIndexにこのメッシュを
+			//	対象にしたシェイプトラックがあればShapeStateTimelineとして設定する。
+			if( pm.shapekeys && animIndex >= 0 && animIndex < g.animationCount()){
+				local anim = g.getAnimation( animIndex);
+				foreach( st in anim.shapetracks){
+					if( st.mesh == meshIndex){ pm.shapeline = buildShapeTimeline( st); break; }
+				}
+			}
+		}catch( e){
+			g.dispose();
+			throw e;
+		}
+		g.dispose();
+		if( res){
+			res["userdata"] = pm;
+			return clone pm;
+		}
+		return pm;
+		*/
+	}
+}

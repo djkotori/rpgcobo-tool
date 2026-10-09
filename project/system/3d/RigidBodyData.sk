@@ -2,19 +2,28 @@
 //////////////////////////////////////////////////////////////////////////////////////
 //
 //	
-//
+//	PolygonMeshTreeから書き出しされるのでSerializableにする必要あり
 
-class RigidBodyData
+
+class RigidBodyData extends Serializable
 {
-	partsname = null;			// string 対応ボーン名
-	shapes = null;				// RigidBodyShapeData[] 形状リスト
-	dynamic = false;			// bool RigidBodyを物理シミュレーションさせるかどうか
-	mass = 0.01;				// float 質量
-	lineardamp = 0.1;			// float Linear減衰
-	angulardamp = 0.5;			// float Angular減衰
-	constraints = null;			// RigidBodyConstraintData[] Constraintデータ
-	collisiongroup = 0x1;		// int 属するグループ
-	collisionmask = 0x3f;		// int コリジョンマスク
+	static SerialUID = 486;
+
+	<ser_o> partsname = null;			// string 対応ボーン名
+	<ser_o> shapes = null;				// RigidBodyShapeData[] 形状リスト
+	<ser_o> dynamic = false;			// bool RigidBodyを物理シミュレーションさせるかどうか
+	<ser_f> mass = 0.01;				// float 質量
+	<ser_f> lineardamp = 0.1;			// float Linear減衰
+	<ser_f> angulardamp = 0.5;			// float Angular減衰
+	<ser_o> constraints = null;			// RigidBodyConstraintData[] Constraintデータ
+	<ser_i> collisiongroup = 0x1;		// int 属するグループ
+	<ser_i> collisionmask = 0x3f;		// int コリジョンマスク
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+	<ser_o> reserved3 = null;
+	<ser_o> reserved4 = null;
+
+	ref = null;					//	参照用（エディタ等で使用）
 	
 	function _cloned( org){
 		shapes = clone shapes;
@@ -110,13 +119,17 @@ class RigidBodyData
 	}
 }
 
-class RigidBodyShapeData
+class RigidBodyShapeData extends Serializable
 {
-	shapetype = 0;				// 形状タイプ。SK_SHAPE_BOX等
-	pos = null;					// Vector3D Shapeの位置
-	rot = null;					// Vector3D Shapeの角度(HPB)(rad)
-	size = null;				// Vector3D Shapeのサイズ
-	
+	static SerialUID = 487;
+
+	<ser_i> shapetype = 0;				// 形状タイプ。SK_SHAPE_BOX等
+	<ser_o> pos = null;					// Vector3D Shapeの位置
+	<ser_o> rot = null;					// Vector3D Shapeの角度(HPB)(rad)
+	<ser_o> size = null;				// Vector3D Shapeのサイズ
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
+
 	function _cloned( org){
 		pos = clone pos;
 		rot = clone rot;
@@ -145,13 +158,17 @@ class RigidBodyShapeData
 
 local vec1 = Vector3D(), vec2 = Vector3D();
 
-class RigidBodyConstraintData
+class RigidBodyConstraintData extends Serializable
 {
-	pairpartsname = null;	// string 他方の接続先パーツ
-	limit = null;			// [llx,lly,llz,lux,luy,luz, lax,lay,laz,uax,uay,uaz]
-	bounce = null;			// [x,y,z] 回転の復元力
-	damp = null;			// [x,y,z] 回転の減衰
-	spring = null;			// [spring, stiffness, damping * 6] バネ設定
+	static SerialUID = 488;
+
+	<ser_o> pairpartsname = null;	// string 他方の接続先パーツ
+	<ser_o> limit = null;			// [llx,lly,llz,lux,luy,luz, lax,lay,laz,uax,uay,uaz]
+	<ser_o> bounce = null;			// [x,y,z] 回転の復元力
+	<ser_o> damp = null;			// [x,y,z] 回転の減衰
+	<ser_o> spring = null;			// [spring, stiffness, damping * 6] バネ設定
+	<ser_o> reserved1 = null;
+	<ser_o> reserved2 = null;
 	
 	function _cloned( org){
 		limit = clone limit;

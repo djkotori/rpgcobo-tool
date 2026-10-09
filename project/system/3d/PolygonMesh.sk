@@ -16,7 +16,7 @@ class MotionData
 
 	start = 1;				//	start frame time
 	
-	function loadMotionData( bb){
+	function loadData( bb){
 		if( bb.get4Code() != "SMOT") throw Exception( "invalid file header");
 		partsmap = {};
 		//	read parts list
@@ -41,6 +41,29 @@ class MotionData
 		}
 		bb.getb();	//	reserved
 		if( num) zinvert = (parts[0].bindpose.abs() < 0.0);
+	}
+
+	function storeData( bb){
+		bb.put4Code( "SMOT");
+		bb.putb( 0);
+		bb.putb( length( parts));
+		foreach( p in parts){
+			p.storeBoneParts( bb);
+		}
+		if( customs){
+			bb.putb( length( customs));
+			foreach( k in customs.keys().sort()){
+				local v = customs[k];
+				bb.putt( k);
+				bb.puts( length( v));
+				foreach( vv in v){
+					bb.putf( vv);
+				}
+			}
+		}else{
+			bb.putb(0);
+		}
+		bb.putb(0);
 	}
 	
 	//	指定した名前と時間のカスタム値を取得するフレーム間は線形保管される
@@ -73,6 +96,26 @@ with BoneParts
 		transline = TransformTimeline();
 		transline.loadData( bb);
 		bb.geti();
+	}
+	
+	function storeBoneParts( bb){
+		bb.putt( name);
+		bb.putb( id);
+		bb.putb( ( parentid&0xff)+1);
+		if( pivot){
+			bb.putb( 1);
+			bb.putf( pivot.x);
+			bb.putf( pivot.y);
+			bb.putf( pivot.z);
+		}else{
+			bb.putb( 0);
+		}
+		for( local l = 0;l < 16;l ++){
+			bb.putf( bindpose[l]);
+		}
+		bb.putf( length);
+		writeTransformTimeline( p.timeline, bb);
+		bb.puti( 0)
 	}
 }
 
@@ -167,6 +210,8 @@ class PolygonMesh
 
 	//	instance state
 	cloned = false;
+
+	ref = null;
 	
 	constructor( v=null, f=null){
 		res = ::resroot;
@@ -263,33 +308,10 @@ class PolygonMesh
 		//	ShapeKey
 		local hasshape = bb.getb();
 		if( hasshape){
-			shapekeys = ShapeKeyList();
-			shapekeys.loadData( bb);
-			if( shapekeys.keylen() == 0){
-				shapekeys = null;
-			}else{
-				local a = [];
-				for( local l = 0;l < shapekeys.attrlen();l ++){
-					a .. {
-						attr = shapekeys.attrAt( l)
-						elems = shapekeys.elemsAt( l)
-						type = SK_FLOAT
-						normalize = 0
-					}
-				}
-				//	
-				baseshapevtx = VertexBuffer();
-				baseshapevtx.extractFrom( vtx, a);
-				targetshapevtx = VertexBuffer();
-				targetshapevtx.copyFrom( baseshapevtx);
-				vtx = [vtx, targetshapevtx];		//	SS_POSITIONがtargetshapevtxに上書きされる
-				
-				shapesource = ShapeState();
-				shapesource.shapekeys = shapekeys;
-				
-				shapetarget = clone shapesource;
-				//shapetarget[8] = 1.0;
-				//shapetarget.rehash();
+			local sk = ShapeKeyList();
+			sk.loadData( bb);
+			if( sk.keylen()){
+				setShapeKeys( sk);
 			}
 		}
 		//	ShapeStateTimeline
@@ -300,6 +322,32 @@ class PolygonMesh
 		bb.getb();
 		bb.gets();						//	reserved
 		//	done!!!!!
+	}
+
+	function setShapeKeys( sk){
+		shapekeys = sk;
+		local a = [];
+		for( local l = 0;l < shapekeys.attrlen();l ++){
+			a .. {
+				attr = shapekeys.attrAt( l)
+				elems = shapekeys.elemsAt( l)
+				type = SK_FLOAT
+				normalize = 0
+			}
+		}
+		//	
+		baseshapevtx = VertexBuffer();
+		baseshapevtx.extractFrom( vtx, a);
+		targetshapevtx = VertexBuffer();
+		targetshapevtx.copyFrom( baseshapevtx);
+		vtx = [vtx, targetshapevtx];		//	SS_POSITIONがtargetshapevtxに上書きされる
+		
+		shapesource = ShapeState();
+		shapesource.shapekeys = shapekeys;
+		
+		shapetarget = clone shapesource;
+		//shapetarget[8] = 1.0;
+		//shapetarget.rehash();
 	}
 
 	//	このPolygonMeshがボーンやシェイプによって変形したVertexBufferを計算して設定する。
@@ -419,19 +467,25 @@ class PolygonMeshLoader
 		return m;
 	}
 	
-	function loadTexture( tex){
-		local src, sam = null;
-		if( typeof( tex) == SS_ARRAY){
-			src = tex[0];
-			sam = SamplerState( tex[1], tex[1], tex[2], tex[2]);
+	function loadTexture( t){
+		local sam, path, d64, tex;
+		if( typeof( t) == SS_STRING){
+			path = t;
 		}else{
-			src = tex;
+			path = t["path"]; d64 = t["data64"];
 		}
-		local ret = ::getTexture( res.getResource( src));
-		if( ret && sam){
-			ret.setSamplerState( sam);
+		if( d64){
+			local ibb = decodeBASE64( d64);
+			local img = skLoadImage( ibb);
+			tex = Texture();
+			tex.load( img);
+		}else{
+			tex = ::getTexture( res.getResource( path));
 		}
-		return ret;
+		if( tex && sam){
+			tex.setSamplerState( sam);
+		}
+		return tex;
 	}
 	
 	function clear(){
@@ -460,7 +514,7 @@ function getMotionData( res){
 	local mod = res.userdata;
 	if( !mod){
 		mod = MotionData();
-		mod.loadMotionData( res.loadData());
+		mod.loadData( res.loadData());
 		res.flush();
 		res.userdata = mod;
 	}

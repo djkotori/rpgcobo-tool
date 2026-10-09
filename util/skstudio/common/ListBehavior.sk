@@ -887,7 +887,7 @@ function applyItemSort( list, e){
 	foreach( v in a){
 		if( v == ins) continue;
 		list.removeValue( v);
-		local ii = ins?list.indexOf( ins) : len;
+		local ii = ins?list.indexOf( ins) : length( list);
 		list[ii] <- v;
 	}
 	return list;

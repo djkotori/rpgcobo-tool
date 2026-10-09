@@ -169,13 +169,13 @@ class DBSideView extends SKView
 	}
 
 	function setCurrentPath( path){
+		local r = getResource( path);
 		local dbtype = getdbtype( path);
-		if( (#("setting","type","dict","gvar")).contains( dbtype)){
+		if( r.pres.path == "/.x/game"){
 			setType( "game");
 		}else{
 			setType( dbtype);
 		}
-		local r = getResource( path);
 		local i = allitems.findi( @( v) v.res==r);
 		setPage( i/100);
 		pager.setPage( i/100);

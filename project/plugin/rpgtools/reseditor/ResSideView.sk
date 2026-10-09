@@ -10,7 +10,7 @@ local srcdir = dirname( callee().getSourceName());
 class ResourceSideView extends SKView
 {
 	static restypelist = [ 
-		"chara_vox", /*"obj_vox",*/ "equip_vox", "*", "enemy_pic", "event_pic", /*"enemy_pm",*/ "efx", "*", "map_vox", "map_asset", "*", "icon", "uimap", "*", "bgm", "snd", "voice",
+		"chara_vox", "equip_vox", "poly_mdl", "*", "enemy_pic", "event_pic", "efx", "*", "map_vox", "map_asset", "*", "icon", "uimap", "*", "bgm", "snd", "voice",
 	];
 	
 	reslist = null;			//	ListBehavior : 

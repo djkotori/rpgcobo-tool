@@ -1,0 +1,205 @@
+//	
+//	実績システムプラグイン
+//	ベースの実績システムを実装しつつ、利用可能ならプラットフォームの実績機能も利用する。
+//	現在のところ、Steam, Game Center(iOS) をサポート。
+//	
+//	/data/achieve.json に定義される。この中に各実績のID、名称、説明、条件などが記述される。
+//	sharedstatに各実績の達成状況を保存するが、プラットフォーム側のデータが存在する場合はそちらを優先する。
+//	
+//	pluginfoのプロパティには各プラットフォームの実績機能を利用するかどうかの設定が含まれる。
+//	usesteam : Steamの実績機能を利用するかどうか
+//	usegamecenter : Game Centerの実績機能を利用するかどうか
+//	
+//	usesteam時に実績定義でsteam用のIDが設定されていない場合はその実績は利用できない。Game Centerについても同様。
+//	
+
+import PropertyType;
+
+local srcdir = dirname( callee().getSourceName());
+
+//	プラグイン定義
+pluginfo <- {
+	name : { "ja":"アチーブメント(実績)","en":"Achievement System"}
+	author : "djkotori"
+	ver : "0.1.0"
+	tags : ["ui","game","achievement"]
+	order : 8
+	desc : { "ja":"実績システムを提供します。", "en":"Provides the functionality of an achievement." }
+	props : [
+		{ pid : "usesteam", lbl : { "ja":"Steamの実績を使用", "en":"Use Steam Achievement" }, type : BOOL, defval : false },
+		{ pid : "usegamecenter", lbl : { "ja":"Game Centerの実績を使用", "en":"Use Game Center Achievement" }, type : BOOL, defval : false },
+	]
+}
+
+function loadPlugin( args, opt){
+
+	local D = {
+		"achieve" = {"ja":"実績", "en":"Achievement"}
+		"achievelist" = {"ja":"達成した実績", "en":"Achieved List"}
+		"rate" = {"ja":"達成率", "en":"Achieved Rate"}
+		"varrate" = {"ja":"実績達成率", "en":"Achieved Rate"}
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////
+	//	実績システム共通処理。イベントコマンド、クエリ変数、UI
+
+	RPGSystem.eventcmd .. {
+		category = 1							//	変数処理カテゴリ。
+		key = "excmd_achieve"					//	※イベントコマンドで同じキーが存在してはいけない
+		name = { "ja":"実績を解放","en":"Unlock Achievement"}
+		tips = { "ja":"実績を手動で解放します。","en":"Manually unlocks an achievement."}
+		icon = "\uea23"
+		color = (0x00A3D9ff, 0x73DCFFff)
+		props = [
+			{ pid = "aidx", lbl = lang( D.achieve).." ID", type=LIST, list=@(){			//	実績IDは配列のindex
+				local achieve = ::conf["achieve"], a = [ { lbl="$T.lbl_notset", icon="", val=-1 } ];
+				foreach( i, item in achieve["items"]){	//	[100]のリスト
+					if( item["enabled"]) a .. { lbl=item["name"], icon=item["icon"], val=i };
+				}
+				return a;
+			} },
+		]
+		defval = { aidx = -1 }
+
+		cmdinfo = @( cmd){
+			local info = propstr( props, cmd, "aidx");
+			return {
+				info = info,
+			}
+		}
+
+		exec = @( runner, cmd){
+			::achieve.unlockAchievement( cmd["aidx"]);
+		}
+	}
+	
+	//	クエリ変数登録。指定した実績が達成されているかどうかを取得するための変数アクセサ。
+	//	
+	class AchieveVarAccessor
+	{
+		name = {"ja":"実績の達成", "en":"Achievement Status"};
+		icon = "\uf80c"
+		type = VarType.VAR_BOOL
+		varbits = 16
+		
+		prefix = "ACV";		//	ACV_00 ~ ACV_99 数値は飛ぶ
+		namefmt = "%S";
+		getfunc = null;
+
+		constructor(){
+		}
+
+		function getfunc( varname){
+			local aid = int( varname.substring( 4));
+			return !!::sharedstat.etc[achievemap][aid];		//	sharedstat.etc.achievemap には実績達成のキャッシュがある
+		}
+
+		function makevar( key){
+			if( !key.startsWith( prefix)) return undefined;
+			local aid = int( key.substring( 4));
+			local v = ::conf["achieve"]["items"][aid];
+			if( !v) return undefined;
+			return getfunc;
+		}
+
+		//	ツール用。一覧表示するためのリストを表示。
+		//	key, name, icon, type(bool,int,float,string,any,none), rw, 
+		function list(){
+			local a = [];
+			foreach( i, v in ::conf["achieve"]["items"]){
+				if( v["enabled"]) a .. info( "%S_%02d" % ( prefix, i));
+			}
+			a.sort( @( v) v.key);
+			return a;
+		}
+		
+		function info( key){
+			local aid = int( key.substring( 4));
+			local v = ::conf["achieve"]["items"][aid];
+			if( !v) return null;
+			local name = sprintf( ::lang( namefmt), v.name);
+			return { key=key, name=name, icon=v["icon"], type=type, }
+		}
+	}
+
+	RPGSystem.varaccs .. AchieveVarAccessor();
+	//	達成率をシステム変数に登録
+	SystemVarAccessor.add({
+		key = "ACVRATE", name = @() lang( D.varrate), type = VarType.VAR_INT, readonly = true,
+		func = @( key, val=undefined){
+			local achievemap = ::sharedstat.etc["achievemap"];
+			local x = 0, num = length( achievemap);
+			foreach( v in achievemap) x += (v?1:0);
+			return ( num > 0 ? ( x*100/num) : 0);
+		}
+	});
+
+	//	実績のリストを表示する。サブメニューかな。。。メニューから、タイトルから、
+	//	
+	local showAchieveList = @( prm){
+		//	実績の状態を取得
+		local achievemap = ::sharedstat.etc["achievemap"];
+		local achieve = ::conf["achieve"]["items"];
+		local winnum = achieve.reduce( @(v,x,i) x+=(achievemap[i]?1:0), 0), num = length( achievemap);
+		//	
+		local view = RPGMain.showView({
+			uipath = srcdir.."/ext_achieve.ui"
+			layer = "message"
+			name = "ext_achieve"
+			binds = {
+				itemlist = achieve.map( @( v, i){
+					local x = achievemap[i];
+					if( !x) return undefined;
+					return { name=v["name"], icon=v["icon"], desc=v["desc"], _name="i0" };
+				})
+				statlbl = lang( D.rate) .. (": %d / %d (%d％)" % ( winnum, num, ( winnum*100/num)))
+			},
+			action = "show"
+			focus = "i0"
+		});
+		//	操作に対する処理は基本的に不要。カーソルで選択が移動するのみ。
+		local selitem = RPGMain.uiLoop( {
+			"action" : @( e){	//	決定。何もしない
+			}
+			"select" : @( e){	//	選択。何もしない
+			}
+			"back" : @( e){ return "back"; }
+		});
+		view.actionAndDie( "hide");
+		view.waitAction();
+		return true;
+	};
+
+	RPGSystem.ui ..
+	{
+		key = "ext_achieve"
+		lbl = D.achieve
+		type = "submenu"
+		
+		icon = "\uea23"
+		// topinfo = @() lang( D.achievelist);
+		btnhelp = "menu";
+		
+		props = [],
+		defval = {},
+
+		uifunc = showAchieveList,
+	};
+
+	module.hookAction( "conf_postload", @(){
+		try{
+			conf["achieve"] <- loadconf( `/data/achieve.json`);
+		}catch( ex){
+			printf( "/data/achieve.json load error: %S\n", ex);
+		}
+	}, -110);
+
+	//	以下、ツールから実行かゲームから実行かで読むファイルを変更
+	//	
+	if( ::["SKStudio"]){
+		runsk( srcdir .. "/AchieveForTool.sk");
+	}else{
+		runsk( srcdir .. "/AchieveForGame.sk");
+	}
+	return true;
+}

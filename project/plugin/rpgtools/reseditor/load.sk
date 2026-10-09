@@ -13,3 +13,4 @@ runsk( "ResEditorMapAsset.sk");
 runsk( "ResEditorVoice.sk");
 runsk( "ResEditorUI.sk");
 runsk( "MapVoxCollisionDialog.sk");
+runsk( "ResEditorPolyModel.sk");

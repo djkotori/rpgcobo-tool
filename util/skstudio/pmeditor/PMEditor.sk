@@ -1,21 +1,29 @@
 import VirtualKeyCode;
 import ModifiersMask;
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+//	
+//	gltf対応のためにPMEditorを強化。
+//	- 複数メッシュのサポートのため、PolygonMeshTreeを使用。それに伴いPMEditorも複数メッシュの編集を可能に。
+//	- gltfはツールで読み込み、PolygonMeshTree(pmt)に変換される。
+//	- PMEditorは .pm, .pmt を読み込み可能。.pmは内部でpmtに変換され、書き出す際にpm形式で保存される。
+//	- PMEditorは .gltf, .glb の読み込みは不可。必ずpmt変換を通して開く。
+//	- マテリアルの編集はあまり変更の必要はなし。パーツ・シェイプ編集では選択されているpmtノード(SK3DObject)が対象になり、ボーンツリーなどはpmtノードのものになる。
+//	- 
+//	
+
 class PMEditor extends EditorViewBase
 {
 	res = null;				//	Resource : 
-	op = null;				//	DataOperationStack : pmdata(=table)のオペレーションスタック
 	
-	pm = null;
-	pmdata = null;			//	読み込み時のpmdata。dirtyチェックに使う
-	
+	pmt = null;				//	PolygonMeshTree : 編集対象のメッシュツリー。.pmを読み込んでもpmtになる
 	//	view
 	canvas = null;			//	PMCanvas : プレビューキャンバス
 	rightpanel = null;		//	RightPanel : 
 	timeline = null;		//	TimelineBarBehavior : タイムライン
 	
 	static function createEditor( path){
-		if( !path.endsWith( ".pm")) return null;
+		if( !path.endsWith( ".pm") && !path.endsWith( ".pmt") && !path.endsWith( ".gltf") && !path.endsWith( ".glb")) return null;
 		//	
 		local ed = ::loadSKView( "/skstudio/ui/pmeditor/pmeditor.ui", PMEditor);
 		ed.init( path);
@@ -23,32 +31,32 @@ class PMEditor extends EditorViewBase
 	}
 	
 	function init( path){
+		op = OperationStack();
 		canvas = PMCanvas( this);
 		rightpanel = PMRightPanel( findChild( "right"), this);
 		timeline = TimelineBarBehavior( findChild( "timeline"));
 		timeline.view.addEventListener( VALUE_EVENT, timeevent);
 		openResource( ::getResource( path));
-		local self = this;
-		local setpmfunc = @( d){
-			local loader = PolygonMeshLoader( self.res);
-			local func = compilestring( d);
-			local t = func();	//	テーブルにデータが入る
-			loader.load( t)
-			self.setPM( loader.mesh, t);
-		};
-		op = DataOperationStack( setpmfunc, encodePM( pm));
 	}
 	
 	function openResource( r){
 		res = r;
 		r.userdata = null;
 		//	データセット
-		local loader = PolygonMeshLoader( r);
-		loader.load();
-		setPM( loader.mesh, loader.data);
+		if( r.name.endsWith( ".pm")){
+			pmt = pmToPMT( r);
+		}else
+		if( r.name.endsWith( ".pmt")){
+			pmt = r.getContent();
+		}else
+		if( r.name.endsWith( ".gltf") || r.name.endsWith( ".glb")){
+			local loader = GLTFLoader();
+			pmt = loader.loadGLTF( r.loadData());
+		}
+		setPolygonMeshTree( pmt);
 		
 		/////////////////////////////////////////////////////
-		local editinfo = pmdata["editinfo"] && decodeJSON( pmdata.editinfo);
+		local editinfo = null;//editable && pmdata["editinfo"] && decodeJSON( pmdata.editinfo);
 		if( editinfo){
 			if( !RenderSettings.getRenderSettingData( editinfo["rsetid"])){
 				editinfo.rsetid <- getDefaultRSetID();
@@ -62,31 +70,100 @@ class PMEditor extends EditorViewBase
 			local rsetid = getDefaultRSetID();
 			canvas.setRenderSettingID( rsetid);
 		}
+
+		selectMesh( meshAt( 0));
+	}
+
+	function meshAt( idx){
+		//	meshtreeには { pmt, mtls, pms, node3dmap } が入ってる。
+		local pm = canvas.sk3d.meshtree.pms[idx];
+		return pm;
+	}
+
+	function selectMesh( pm){
+		canvas.selectMesh( pm);
+		rightpanel.selectMesh( pm);
 	}
 
 	function getDefaultRSetID(){
+		return "pbr_fw";
 		local pmispbr = false;
-		foreach( f in pm.face){
-			if( f.m.isPBR()){ pmispbr = true; break; }
+		local ma = canvas.sk3d.getMaterials();
+		foreach( m in ma){
+			if( m.isPBR()){ pmispbr = true; break; }
 		}
-		local env = canvas.view.renderer.env;
-		local envispbr = env.data.renderpass>=1;
-		if( pmispbr != envispbr){
-			foreach( v in RenderSettings.data){
-				local ispbr = v.renderpass>=1;
-				if( pmispbr == ispbr){
-					return v.id;
-				}
-			}
-		}
-		return RenderSettings.data[0].id;
+		return pmispbr ? "pbr_fw" : "legacy";
 	}
 
-	//	DataOperationStack用に引数を変え
-	//	
-	function submitOp( sb, trk=null){
-		op.submit( sb, trk);
-		::skstudio.updateChangeFile( this);
+	function pmToPMT( pmres){
+		local loader = PolygonMeshLoader( pmres);
+		loader.load();
+		local pm = loader.mesh;
+		//
+		local pmt = PolygonMeshTree();
+		local texmap = {};
+		local pmfaces = [];
+		//	textures, materials
+		pmt.materials = [];
+		pmt.textures = [];
+		foreach( i, f in pm.face){
+			local msrc = MaterialSource();
+			foreach( fid in MaterialSource.fids){
+				msrc[fid] = f.m[fid];
+			}
+			msrc.tec = f.m.tec.name;
+			for( local j = 0; j < 4; j ++){
+				local fid= "tex"..j, tex = f.m[fid];
+				if( !tex) continue;
+				local res = realref( tex.ref);	//	Resource
+				local ti = texmap[res];
+				if( ti == undefined){
+					local ts = TextureSource();
+					ts.name = res.name;
+					ts.path = res.path;
+					ti = length( pmt.textures);
+					pmt.textures .. ts;
+					texmap[res] <- ti;
+				}
+				msrc[fid] = ti;
+			}
+			pmt.materials .. msrc;
+			//
+			local fsrc = PolygonFaceSource();
+			fsrc.idx = f.idx;
+			fsrc.idxoffs = f.offs;
+			fsrc.idxlen = f.len;
+			fsrc.mode = f.mode;
+			fsrc.vtxoffs = f.voffs;
+			fsrc.matid = i;
+			pmfaces .. fsrc;
+		}
+		//	mesh
+		local pmsrc = PolygonMeshSource();
+		pmsrc.name = pmres.name;
+		pmsrc.vtx = pm.vtx;
+		pmsrc.face = pmfaces;
+		pmsrc.motion = pm.motion;
+		pmsrc.shapekeys = pm.shapekeys;
+		pmsrc.bnd = pm.bnd;
+		pmsrc.pivot = pm.pivot;
+		pmsrc.wmapname = pm.wmapname;
+		//	node
+		local node = PolygonMeshNode();
+		node.id = 0;
+		node.meshid = 0;
+		node.tf = Transform();
+		//
+		pmt.meshes = [pmsrc];
+		pmt.nodes = [node];
+		pmt.res = pmres;
+		pmt.ref = loader.data;
+		return pmt;
+	}
+
+	function setPolygonMeshTree( pmt){
+		canvas.setPolygonMeshTree( pmt);
+		rightpanel.setPolygonMeshTree( pmt);
 	}
 	
 	function rootevent( e){
@@ -96,6 +173,7 @@ class PMEditor extends EditorViewBase
 		}
 	}
 
+	//	.pm以外(glTF等)は読み込み専用のためundo/redo/saveは何もしない
 	function execMenu( m){
 		printf( "PMEditor execMenu %S\n", encodeJSON( m));
 		switch( m["uid"]){
@@ -108,8 +186,13 @@ class PMEditor extends EditorViewBase
 			::skstudio.updateChangeFile( this);
 			break;
 		case "menu_file_save":
-			savePM();
+			if( res.name.endsWith( ".pm")){
+				savePM();
+			}else{
+				savePMT();
+			}
 			op.markSaved();
+			::skstudio.fileview.refreshDir( res.path);
 			::skstudio.updateChangeFile( this);
 			break;
 		}
@@ -117,19 +200,13 @@ class PMEditor extends EditorViewBase
 	}
 
 	function timeevent( e){
-		canvas.sk3d.anime( e.actioncmd, e.actioncmd, 1.0, 0, 0.006);
-	}
-
-	function setPM( p, pmd){
-		pm = p;
-		pmdata = pmd;
-		rightpanel.setPM( p);
-		canvas.setPM( p);
+		canvas.pm3d.anime( e.actioncmd, e.actioncmd, 1.0, 0, 0.006);
 	}
 
 	function savePM(){
+		local pm = meshAt( 0);
 		local sb = StringBuffer();
-		encodePM( pm, sb);
+		encodePM( pm, pmt.ref, sb);
 		//
 		local s = string( sb);
 		printf("%S\n", s);		
@@ -137,9 +214,7 @@ class PMEditor extends EditorViewBase
 		local bb = ByteBuffer();
 		bb.putText( s);
 		bb.pos = 0;
-		pm.res.file.save( bb);
-		::skstudio.fileview.refreshDir( pm.res.path);
-
+		// pm.res.file.save( bb);
 		// postNotifyEvent( sprintf( ".pm saved - %S", pm.res.file.path));
 	}
 
@@ -160,16 +235,37 @@ class PMEditor extends EditorViewBase
 	static cullname  = ["SK_OFF","SK_CW","SK_CCW"]
 	
 	function _texsrc( res, tex){
-		return 	::getRelativePath( res.pres.path, realref( tex.ref).path);
+		local ts = tex.ref;		//	TextureSource
+		if( ts){
+			local t = {};
+			if( ts.data){
+				t.data64 <- encodeBASE64( ts.data);
+			}else
+			if( ts.path){
+				t.path <- ts.path;
+			}
+			return encodeJSON( t);
+		}else{
+			return "null";
+		}
 	}
 	
-	function encodePM( pm, sb=null){
+	function encodePM( pm, pmdata, sb=null){
 		local sb = sb||(#StringBuffer()).clear();
 		sb.printf( "///  PolygonMesh written by SKStudio.\n/// \n")
 		sb.printf( "return {\n")
 		sb.printf( "editinfo = \"%S\"\n", encodeESC( encodeJSON( getEditInfo())));
-		sb.printf( "modeldata = \"%S\"\n", pmdata.modeldata);
-		if( pmdata["motiondata"]) sb.printf( "motiondata = \"%S\"\n", pmdata.motiondata);
+		if( pmdata["model64"]){
+			sb.printf( "model64 = \"%S\"\n", pmdata.model64);
+		}else{
+			sb.printf( "modeldata = \"%S\"\n", pmdata.modeldata);
+		}
+		if( pmdata["motion64"]){
+			sb.printf( "motion64 = \"%S\"\n", pmdata.motion64);
+		}else
+		if( pmdata["motiondata"]){
+			sb.printf( "motiondata = \"%S\"\n", pmdata.motiondata);
+		}
 		sb.printf( "bnd = [%f,%f,%f,%f,%f,%f]\n", pm.bnd.x, pm.bnd.y, pm.bnd.z, pm.bnd.r, pm.bnd.s, pm.bnd.t);
 		if( pm.shapesets){
 			sb.printf( "\nshapesets = %S\n", encodeJSON( pm.shapesets));
@@ -216,10 +312,10 @@ class PMEditor extends EditorViewBase
 		if( m.alphatest) sb.printf( "\t\talphatest = %S\n" , testname[m.alphatest])
 		if( m.cullface != m0.cullface) sb.printf( "\t\tcullface = %S\n" , cullname[m.cullface])
 		//	texture
-		if( m.tex0) sb.printf( "\t\ttexture0 = \"%S\"\n" , _texsrc( res, m.tex0))
-		if( m.tex1) sb.printf( "\t\ttexture1 = \"%S\"\n" , _texsrc( res, m.tex1))
-		if( m.tex2) sb.printf( "\t\ttexture2 = \"%S\"\n" , _texsrc( res, m.tex2))
-		if( m.tex3) sb.printf( "\t\ttexture3 = \"%S\"\n" , _texsrc( res, m.tex3))
+		if( m.tex0) sb.printf( "\t\ttexture0 = %S\n" , _texsrc( res, m.tex0))
+		if( m.tex1) sb.printf( "\t\ttexture1 = %S\n" , _texsrc( res, m.tex1))
+		if( m.tex2) sb.printf( "\t\ttexture2 = %S\n" , _texsrc( res, m.tex2))
+		if( m.tex3) sb.printf( "\t\ttexture3 = %S\n" , _texsrc( res, m.tex3))
 		if( m.uvbits) sb.printf( "\t\tuvbits = %d\n" , m.uvbits)
 		if( m.texw0 != 1.0) sb.printf( "\t\ttexw0 = %f\n" , m.texw0)
 		if( m.texw1 != 1.0) sb.printf( "\t\ttexw1 = %f\n" , m.texw1)
@@ -230,11 +326,76 @@ class PMEditor extends EditorViewBase
 	}
 }
 
+
+class PMRightPanel
+{
+	editor = null;
+	view = null;
+	body = null;
+
+	tabs = null;
+	curpanel = null;
+
+	mtlpanel = null;			//	PMMaterialPanel
+	partspanel = null;			//	PMPartsPanel
+	shapepanel = null;			//	PMShapePanel
+	
+	pmselect = null;			//	MenuBehavior
+	
+	constructor( v, e){
+		view = v;
+		body = v.findChild( "body");
+		editor = e;
+		tabs = TabsBehavior( v.findChild( "tabs"), ["Material","Anime","Bones","Shapes"]);
+		//	panels
+		mtlpanel = PMMaterialPanel( ::loadSKView( "/skstudio/ui/pmeditor/pmmtl.ui"), editor);
+		partspanel = PMPartsPanel( ::loadSKView( "/skstudio/ui/pmeditor/pmparts.ui"), editor);
+		body.addChild( mtlpanel.view);
+		
+		tabs.listview.addEventListener( ACTION_EVENT, tabevent);
+
+		pmselect = MenuBehavior( v.findChild( "pmselect"));
+		pmselect.view.addEventListener( ACTION_EVENT, pmselectevent);
+	}
+
+	function setPolygonMeshTree( pmt){
+		pmselect.setMenu( pmt.meshes.map( @( m, i)+{ lbl=m.name, val=m, icon="\ue86b", }));
+	}
+
+	function selectMesh( pm){
+		mtlpanel.setPM( pm);
+		partspanel.setPM( pm);
+	}
+
+	function pmselectevent( e){
+		e.consume();
+		local ms = e.actioncmd.val;
+		local pm = editor.canvas.sk3d.meshtree.pms.find( @( pm) pm.ref == ms);
+		// printf( "PMMMMMMMMMMMMMMMMMMMMMMMMMMM %S %S %S\n", ms, encodeJSON( e.actioncmd), pm);
+		editor.selectMesh( pm);
+	}
+
+	function tabevent( e){
+		e.consume();
+		body.clearChildren();
+		local pnl = null;
+		switch( e.actioncmd){
+		case 0:	pnl = mtlpanel.view; break;
+		case 1: 
+		case 2:	pnl = partspanel.view; break;
+		case 3:
+		}
+		if( !pnl) return;
+		pnl.stretchSize( body.bnd.w, body.bnd.h);
+		body.addChild( pnl);
+	}
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //	register SKStudio
 
 skstudio.registerEditor( {
 	uid = "editor_pm",
-	matches = @( path){ return path.endsWith( ".pm"); }
+	matches = @( path){ return path.endsWith( ".pm") || path.endsWith( ".glb") || path.endsWith( ".gltf"); }
 	createEditor = PMEditor.createEditor,
 });

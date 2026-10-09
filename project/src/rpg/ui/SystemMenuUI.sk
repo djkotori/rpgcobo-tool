@@ -356,7 +356,7 @@ local fullconf = {		//	PCのみ
 	refresh = true,
 	...onoffconf,
 
-	disable = (osname!="Windows")
+	disable = @() ClientConfig.isFullScreenOnly()
 
 	set = @( val){
 		::clientconf.screen.fullscreen = val;
@@ -379,7 +379,7 @@ local winresoconf = {		//	PCのみ
 	pid = "screen.reso_window"
 	type = "choice"
 	list = @() ClientConfig.getAvailableWindowSizes().map( @( v)({ lbl="[f2]"..v, val=v}))
-	disable = @() (osname!="Windows")// || ::clientconf.screen.fullscreen
+	disable = @() ClientConfig.isFullScreenOnly()
 	
 	set = @( val){
 		if( ::clientconf.screen.reso_window == val) return;
@@ -391,13 +391,13 @@ local winresoconf = {		//	PCのみ
 	}
 };
 
-local scresoconf = {		//	PCのみ
+local scresoconf = {		//	PCのみ？iOS,Androidの解像度はquaconfから変更。WebGLも変えられない。
 	lbl = "$T.screen_reso_screen"
 	desc = "$T.screen_reso_screen_desc"
 	pid = "screen.reso_screen"
 	type = "choice"
 	list = @() ClientConfig.getAvailableDisplaySizes().map( @( v)({ lbl="[f2]"..v, val=v}))
-	disable = @() (osname!="Windows")// || !::clientconf.screen.fullscreen
+	disable = @() ClientConfig.isFullScreenOnly()
 
 	set = @( val){
 		if( ::clientconf.screen.reso_screen == val) return;

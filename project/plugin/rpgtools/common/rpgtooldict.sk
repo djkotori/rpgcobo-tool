@@ -1030,10 +1030,10 @@
 	"side_resource"						: {"ja":"リソース", "en":"Resource"}
 	"side_res_chara_vox"				: {"ja":"キャラボクセル", "en":"Chara Voxel"}
 	"side_res_obj_vox"					: {"ja":"オブジェクトボクセル", "en":"Object Voxel"}
+	"side_res_poly_mdl"					: {"ja":"ポリゴンモデル", "en":"Polygon Model"}
 	"side_res_equip_vox"				: {"ja":"装備ボクセル", "en":"Equip Voxel"}
 	"side_res_event_pic"				: {"ja":"イベントピクチャ", "en":"Event Picture"}
 	"side_res_enemy_pic"				: {"ja":"エネミーピクチャ", "en":"Enemy Picture"}
-	"side_res_enemy_pm"					: {"ja":"エネミーモデル", "en":"Enemy Model"}
 	"side_res_efx"						: {"ja":"エフェクト", "en":"Effect"}
 	"side_res_map_vox"					: {"ja":"マップボクセル", "en":"Map Voxel"}
 	"side_res_map_asset"				: {"ja":"マップアセット", "en":"Map Asset"}
@@ -1043,6 +1043,8 @@
 	"side_res_icon"						: {"ja":"アイコン", "en":"Icon"}
 	"side_res_uimap"					: {"ja":"UI", "en":"UI"}
 	"side_res_chara_etc"				: {"ja":"キャラ一般", "en":"Chara Etc"}
+
+	
 
 	"lbl_voxel"							: {"ja":"ボクセル", "en":"Voxel"}
 	"lbl_editvox"						: {"ja":"ボクセルを編集", "en":"Edit Voxel"}
@@ -1056,6 +1058,8 @@
 	"lbl_centerpos"						: {"ja":"中心位置", "en":"Center Pos"}
 	"lbl_attackpos"						: {"ja":"攻撃位置", "en":"Attack Pos"}
 	"lbl_groundpos"						: {"ja":"接地位置", "en":"Ground Pos"}
+	"lbl_charause"						: {"ja":"キャラとして使用", "en":"Use for Character"}
+	"lbl_mapuse"						: {"ja":"マップに配置", "en":"Place for Map"}
 	"lbl_eventuse"						: {"ja":"イベントとして配置", "en":"Place as Event"}
 	"lbl_editasset"						: {"ja":"アセットを編集", "en":"Edit this Asset"}
 	"lbl_plcoffs"						: {"ja":"配置オフセット", "en":"Place Offset"}
@@ -1092,6 +1096,7 @@
 	"pop_imgimport"						: {"ja":"イメージをインポートしました", "en":"Imported an Image file"}
 	"confirm_importimg"					: {"ja":"イメージをインポートしますか？", "en":"Do you want to import an image?"}
 	"check_convert_webp"				: {"ja":"WebPに変換(推奨)", "en":"Convert to WebP (recommended)"}
+	"dlg_3dimport"						: {"ja":"3Dモデルのインポート", "en":"Import 3D Model"}
 
 	"lbl_baseui"						: {"ja":"ベースとなるUI", "en":"Base UI"}
 	"lbl_langui"						: {"ja":"使用するUIの選択(言語ごと)", "en":"Select UI to use (by language)"}

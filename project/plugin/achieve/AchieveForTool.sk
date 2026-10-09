@@ -1,0 +1,260 @@
+//***LicenseHere
+
+import VirtualKeyCode;
+import ModifiersMask;
+import PropertyType;
+import RPGPropertyType;
+
+local D = {
+	name : { "ja":"アチーブメント(実績)","en":"Achievement System"}
+
+	defname = {"ja":"新しい実績", "en":"New Achievement"}
+	defdesc = {"ja":"実績の達成条件などの説明を書いてください。", "en":"Write the description of the achievement conditions."}
+
+	platform = {"ja":"プラットフォーム対応", "en":"Platform Support"}
+
+	steam_id = {"ja":"Steam API名", "en":"Steam API Name"}
+	gamecenter_id = {"ja":"Game Center 達成項目ID", "en":"Game Center Achieve ID"}
+}
+
+
+local srcdir = dirname( callee().getSourceName());
+
+////////////////////////////////////////////////////////////////////////////////
+//	
+//	DBEditorAchieve : 実績リストの作成
+//	
+
+local reqsprop = {
+	pid="reqs", lbl="$T.lbl_appearreqs", type=REQUIREMENTS, cnt="cnt6.ui", varbits=4|8|16, defval=null
+}
+
+class ::DBEditorAchieve extends DBEditor
+{
+	static props = [
+		{ ...RPGProperties.nameiconprop, defval=@() [::lang( D.defname), "\uf24e"] },
+		{ pid="enabled", lbl="$T.lbl_enabled", type=BOOL, defval=true }
+		{ ...RPGProperties.descprop, defval=@() ::lang( D.defdesc) },
+		reqsprop,
+		// RPGProperties.memoprop,
+		{ pid="H", lbl=@() D.platform, type=HEADER}
+		{ pid="steam_id", lbl=@() D.steam_id, type=STRING, defval="" }
+		{ pid="gamecenter_id", lbl=@() D.gamecenter_id, type=STRING, defval="" }
+	];
+
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	selitem = null;			//	
+
+	//	view
+	itemlist = null;
+	proplist = null;
+	
+	function init( path){
+		op = OperationStack();
+		setValue( "titlelbl", "$T.lbl_dbedit : " .. lang( D.name));
+		
+		proplist = PropertyListBehavior( findChild( "proplist"));
+		proplist.listview.addEventListener( ACTION_EVENT, propevent);
+		proplist.bindProperties( props);
+		
+		addEventListener( ACTION_EVENT, actionevent);
+
+		res = ::getResource( path);
+		data = deepclone( res.getContent()) || {};
+		if( !data["items"]) data.items <- [];
+		
+		itemlist = ListBehavior( findChild( "itemlist"), data.items);
+		itemlist.multisel = true;
+		itemlist.dndfunc = 3;
+		itemlist.listview.addEventListener( ACTION_EVENT, itemevent);
+		itemlist.listview.addEventListener( ITEM_EVENT, itemevent);
+		itemlist.listview.addEventListener( KEY_EVENT, itemevent);
+		local self = this;
+		itemlist.setviewfunc = @( la, v, i){
+			v.setValue( "idx", "%02d" % la.items.indexOf( i));
+			v.setValue( "icon", i["icon"]);
+			v.setValue( "name", i["name"]);
+			v.setValue( "desc", i["desc"]);
+			v.findChild( "g").anime( i["enabled"] ? 0 : -1);
+			v.pickable = false;
+		}
+		refresh();
+	}
+
+	function refresh(){
+		if( selitem){
+			proplist.setParameters( selitem);
+		}
+		proplist.listview.setVisible( !!selitem);
+		itemlist.refreshItems();
+	}
+
+	//	
+	function selectItem( v){
+		selitem = v;
+		refresh();
+	}
+	
+	function execMenu( m){
+		printf( "%S execMenu %S\n", getclassname( this), encodeJSON( m));
+		switch( m["uid"]){
+		case "menu_edit_undo":
+			op.undo();
+			refresh();
+			::skstudio.updateChangeFile( this);
+			return true;
+		case "menu_edit_redo":
+			op.redo();
+			refresh();
+			::skstudio.updateChangeFile( this);
+			return true;
+		case "menu_file_save":
+			op.markSaved();
+			res.save( data);
+			::skstudio.updateChangeFile( this);
+			::skstudio.fileview.refreshDir( res.path);
+			return true;
+		}
+		return false;
+	}
+
+	function propevent( e){
+		local cmd = e.actioncmd;
+		if( cmd["cmd"] == "prop"){
+			local prop = cmd.prop;
+			local item = this.selitem;
+			local val = cmd.val;
+			local trk = null;//"-"..pid;
+			local oldval = ::getProperty( prop, item);
+			//	
+			local self = this;
+			local redo = [@(){
+				::setProperty( prop, item, val); if( prop["refresh"]) self.bindTypeProperties();
+			}];
+			local undo = [@(){
+				::setProperty( prop, item, oldval); if( prop["refresh"]) self.bindTypeProperties();
+			}];
+			submitOp( redo, undo, trk);
+			refresh();
+		}
+	}
+
+	function itemevent( e){
+		local cmd = e.actioncmd;
+		switch( e.id){
+		case ITEM_SELECTED:
+			selectItem( cmd);
+			break;
+		case ITEM_REMOVE:
+			deleteSelectedItems();
+			break;
+		case ITEM_SORT:
+		{
+			local li = data.items;
+			local oldli = clone li, newli = ::applyItemSort( clone li, e);
+			local redo = [@(){ li.clear() ... newli; }];
+			local undo = [@(){ li.clear() ... oldli; }];
+			submitOp( redo, undo);
+			itemlist.refreshItems();
+			break;
+		}
+		case ACTION_PERFORMED:
+			if( e.isMouseDown( BUTTON2_MASK)){
+				showItemContextMenu( e);
+			}
+			break;
+		}
+	}
+	
+	//	
+	function showItemContextMenu( e){
+		local sels = itemlist.getSelectedItems( true);
+		local cbdata = getClipboard( "storeitem");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local menudata = [
+			{ id="add", lbl="$T.lbl_add", icon="\ue146" },
+			"-",
+			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d", disable=!sels },
+			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!cbdata},
+			"-",
+			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", disable=!sels },
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "add":
+			e.src = null;
+			showAddItem( e);
+			break;
+		case "copy":
+			putClipboard( "storeitem", sels);
+			break;
+		case "paste":
+			local data = this.data;
+			local vals = cbdata;
+			local oldsel = selitem;
+			local self = this;
+			local redo = [@(){ data.items ... vals; self.selectItem( vals[0]); self.itemlist.setSelectedItems( vals); }];
+			local undo = [@(){
+				foreach( v in vals) data.items.removeValue( v);
+				self.selectItem( oldsel);
+				self.itemlist.setSelectedItem( oldsel);
+			}];
+			submitOp( redo, undo);
+			refresh();
+			break;
+		case "delete":
+			deleteSelectedItems();
+			break;
+		}
+	}
+
+	function deleteSelectedItems(){
+		local delli = itemlist.getSelectedItems();
+		local li = data.items;
+		local oldli = clone li, newli = li.filter( @( v) !delli.contains( v));
+		local redo = [@(){ li.clear() ... newli; }];
+		local undo = [@(){ li.clear() ... oldli; }];
+		submitOp( redo, undo);
+		itemlist.refreshItems();
+	}
+
+	function actionevent( e){
+		switch( e.src["name"]){
+		case "additembtn":
+			showAddItem( e);
+			break;
+		}
+	}
+
+	function showAddItem( e){
+		local data = this.data;
+		local oldsel = selitem;
+		local self = this;
+		local val = {};
+		::setDefaultProperties( props, val);
+		
+		local redo = [@(){ data.items .. val; self.selectItem( val); self.itemlist.setSelectedItem( val); }];
+		local undo = [@(){ data.items.removeValue( val); self.selectItem( oldsel); self.itemlist.setSelectedItem( oldsel); }];
+		submitOp( redo, undo);
+		refresh();
+	}
+}
+
+
+///////////////////////////////////////
+//	DBSideView, DBEditor に追加
+
+{
+	local gamedir = getResource( "/.x/game");
+	gamedir.list .. GameConfigResource( gamedir, "achieve", "アチーブメント", "\uea23");
+
+	local _createCustomEditor = DBEditor.createCustomEditor;
+
+	function DBEditor::createCustomEditor( path, dbtype){
+		if( dbtype == "achieve"){
+			return ::loadSKView( srcdir.."/dbeditor_achieve.ui", DBEditorAchieve);
+		}
+		return _createCustomEditor( path, dbtype);
+	}
+
+}

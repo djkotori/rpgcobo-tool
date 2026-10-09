@@ -1,0 +1,196 @@
+import VirtualKeyCode;
+import GamepadButtonCode;
+import PropertyType;
+import RPGPropertyType;
+
+local srcdir = dirname( callee().getSourceName());
+
+local D = {
+	"unlock_achieve" = {"ja":"[b][#f90]実績を達成！[O] : %S %S", "en":"[b][#f90]Achieved![O] : %S %S"},
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+//	
+//	実績システム処理。ゲームランタイム用。
+//	
+////////////////////////////////////////////////////////////////////////////////////
+
+//	実績システムのメインクラス。
+class ::AchievementSystem
+{
+	thread = null;
+	running = false;
+
+	//	実績をアンロックする。
+	function showUnlockAchievement( aidx){
+	}
+
+	//	実績の UI を表示する。プラットフォーム固有の実装がある場合はそれを利用する。
+	function showAchievementListUI(){
+	}
+
+	//	実績の達成状況を同期する。ネットワークやプラットフォームの状態に応じて更新される。開始時に1回だけ呼び出す。
+	function syncAchievementStatus(){
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////
+	
+	//	手動で実績を達成する。達成済みの場合は何もせずfalseを返す。
+	function achieve( aidx){
+		local achievemap = ::sharedstat.etc["achievemap"];
+		if( !achievemap[aidx] && ::conf["achieve"][aidx]){
+			achievemap[aidx] <- 1;
+			::sharedstat.dirty = true;
+			showUnlockAchievement( aidx);	//	ゲームのUIで表示するか、Steam等のプラットフォームに通知する。
+			return true;
+		}
+		return false;
+	}
+
+	//	未達成の実績をチェックし、自動で達成状況を更新する。
+	//	※このメソッドは、1個の実績を解除したら関数を終了する。タイミングの制御のため。
+	//	※このメソッドを呼び出す場合は、achievemapの同期がしっかりとれていることが必要。
+	function checkUnlockAchievements(){
+		local achievemap = ::sharedstat.etc["achievemap"];
+		foreach( i, v in ::conf["achieve"]["items"]){
+			if( !(i in achievemap) || achievemap[i] || !length( v["reqs"])) continue;	//	reqsない場合は手動のみ
+			local b = ::reqchk( v["reqs"]);		//	条件を満たしているかチェック
+			if( b){
+				achievemap[i] <- 1;
+				::sharedstat.dirty = true;
+				showUnlockAchievement( i);	//	ゲームのUIで表示するか、Steam等のプラットフォームに通知する。
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	//	実績システムを開始する。タイトル画面が表示されて少し経ってから実際のチェックなどを開始する。
+	function start(){
+		thread = newthread( "AchievementSystem thread");
+		thread.start( run, this);
+	}
+
+	function run(){
+		running = true;
+		//	最初のステージが開始されて少し待つ
+		while( !::["rpgstage"]){
+			sleep( 100);	//	少し待つ
+		}
+		//	実績の達成状況を同期する。
+		syncAchievementStatus();
+		sleep( 2000);	//	最初のステージが開始されてから少し待つ。立ち上がった瞬間に実績チェックが走らないようにするため。
+		//	ここからループ。アンロックをチェックし続ける。
+		while( running){
+			if( checkUnlockAchievements() >= 0){
+				sleep( 1000);	//	アンロック表示が立て続けに出ると見づらいため少し待つ
+			}
+			sleep( 100);
+		}
+	}
+}
+
+//	実績のデフォルト実装。どのプラットフォームでも利用可能。WindowsやWebなどで利用される。
+//	MiscUIの通知を利用して実績のアンロックをユーザーに知らせる。
+class AchievementSystem.DefaultImpl extends AchievementSystem
+{
+	//	実績をアンロックする。
+	function showUnlockAchievement( aidx){
+		//	デフォルトではログメッセージでアンロック表示。。。
+		local v = ::conf.achieve.items[aidx];
+		RPGMain.showUI( { key="message_log", text= lang( D.unlock_achieve) % ( v["icon"], v["name"])});
+		::playSound( "SE007");	//	実績アンロック時の効果音を再生する。
+	}
+
+	//	実績の UI を表示する。プラットフォーム固有の実装がある場合はそれを利用する。閉じられるまで待機する。
+	function showAchievementListUI(){
+		//	ShowUIで ext_achieve を表示する。
+		RPGMain.showUI( { key="ext_achieve"});
+	}
+	
+	//	実績の達成状況を同期する。ネットワークやプラットフォームの状態に応じて更新される。開始時に1回だけ呼び出す。
+	function syncAchievementStatus(){
+		//	デフォルト実装では、"shared.bin"に保存されている情報をそのまま利用する。
+		//	ここでは、confとデータの対応を同期する。
+		local achievemap = ::sharedstat.etc["achievemap"];
+		if( !achievemap) achievemap = (::sharedstat.etc["achievemap"] <- {});
+		local items = ::conf["achieve"]["items"];
+		foreach( i, v in items){
+			if( !(i in achievemap)) achievemap[i] <- 0;
+		}
+		foreach( i, v in achievemap){
+			if( !(i in items)) removei;		//	achieve.confに存在しない実績はachievemapから削除する
+		}
+	}
+}
+
+//	Steam用の実績実装クラス。実際のSteam APIを利用して実績のアンロックや取得を行う。
+//	Windowsで::SteamAPIが有効、かつusesteamの時にSteamの実績機能を利用する。
+class AchievementSystem.SteamImpl extends AchievementSystem.DefaultImpl
+{
+	//	実績の達成状況を同期する。ネットワークやプラットフォームの状態に応じて更新される。開始時に1回だけ呼び出す。
+	function syncAchievementStatus(){
+		//	Steam APIを利用して実績の達成状況を同期する。
+		//	Steam実績にあるAPI名とachieve.confのキー名が対応するものだけを有効化。その他の実績データは無視する。
+		local items = ::conf["achieve"]["items"] || [];
+		local steamstat = ::SteamAPI.getAchievements();	//	Steamの実績情報を取得する。{ API名: 解放日時|0, ... } のテーブル。
+		local achievemap = {};
+		foreach( i, v in steamstat){
+			local aidx = items.findi( @( v) v["steam_id"] == i);	//	設定の中に対応するSteam API名があるか検索
+			if( aidx >= 0) achievemap[aidx] <- (v?1:0);
+		}
+		::sharedstat.etc["achievemap"] <- achievemap;
+	}
+
+	//	実績の UI を表示する。プラットフォーム固有の実装がある場合はそれを利用する。閉じられるまで待機する。
+	function showAchievementListUI(){
+		::SteamAPI.activateGameOverlay( "achievements");
+		sleep( 500);
+		while( ::SteamAPI.isOverlayActive()){
+			sleep( 100);
+		}
+	}
+}
+
+//	GameCenter(iOS)用の実績実装クラス。実際のiOS APIを利用して実績のアンロックや取得を行う。
+//	iOS動作時、かつusegamecenterの時にGameCenterの実績機能を利用する。
+class AchievementSystem.GameCenterImpl extends AchievementSystem.DefaultImpl
+{
+	//	実績の達成状況を同期する。ネットワークやプラットフォームの状態に応じて更新される。開始時に1回だけ呼び出す。
+	function syncAchievementStatus(){
+		//	iOS APIを利用して実績の達成状況を同期する。
+		//	iOSにある達成項目IDとachieve.confのキー名が対応するものだけを有効化。その他の実績データは無視する。
+		local items = ::conf["achieve"]["items"] || [];
+		local gcstat = ::iOS.getAchievements();	//	Game Centerの実績情報を取得する。{ 達成項目ID: bool, ... } のテーブル。
+		local achievemap = {};
+		foreach( i, v in gcstat){
+			local aidx = items.findi( @( v) v["gamecenter_id"] == i);	//	設定の中に対応する達成項目IDがあるか検索
+			if( aidx >= 0) achievemap[aidx] <- (v?1:0);
+		}
+		::sharedstat.etc["achievemap"] <- achievemap;
+	}
+}
+
+//	conf読み込み。applytransが-100なのでそれより前に。
+module.hookAction( "conf_postload", @(){
+	//	プラットフォーム初期化
+	local achieve = null;
+	local pluginfo = ::module.plugmap["achieve"];
+	local osname = skGetOSName();
+	switch( osname){
+	case "Windows":
+		if( pluginfo["usesteam"] && ::["SteamAPI"]){	//	testplay.skからの起動ではsteamは無効
+			achieve = AchievementSystem.SteamImpl();	//	初期化でエラーの場合はachieveをnullに
+		}
+		break;
+	case "iOS":
+		if( pluginfo["usegamecenter"]){
+			achieve = AchievementSystem.GameCenterImpl();	//	初期化でエラーの場合はachieveをnullに
+		}
+		break;
+	}
+	if( !achieve) achieve = AchievementSystem.DefaultImpl();	//	デフォルト実装を利用
+	//	実績システムをグローバルに設定する。
+	::achieve <- achieve;
+	achieve.start();
+}, 100);

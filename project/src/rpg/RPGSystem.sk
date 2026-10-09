@@ -317,11 +317,11 @@ class RPGResource
 		"CE" : "chara_etc",		//	特殊なキャラ見た目。非表示ぐらい。
 		"CV" : "chara_vox",
 		"OV" : "obj_vox",
+		"PM" : "poly_mdl",		//	glTF等。キャラ、装備、エネミーと何でも使える
 		"EV" : "equip_vox",
 		"PC" : "event_pic",
 		"EP" : "enemy_pic",
 		"VP" : "event_pic",
-		"EM" : "enemy_pm",
 		"FX" : "efx",
 		"MV" : "map_vox",
 		"MA" : "map_asset",

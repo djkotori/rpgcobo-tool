@@ -296,7 +296,7 @@ class VariableBehavior
 				setTab( -1);
 				local vi = ::RPGVarAccessor.getVarInfo( var);
 				local n = length( vi.key)>=3 ? "\n":" ";
-				local s = sprintf( "[C][b]{ %S }%S[O][i][#def][-2]%S", vi.key, n, vi.name);
+				local s = sprintf( "[C][b]{ %S }%S[O][i][#def][-2]%S", vi.key, n, fget( vi, "name"));
 				local rt = RichText( s);
 				varlbl.setText( rt);
 				typeicon.setText( vi["icon"] ||"\ue322");

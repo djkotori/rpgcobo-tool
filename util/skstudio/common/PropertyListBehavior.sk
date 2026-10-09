@@ -2349,6 +2349,144 @@ class PropertyBehaviors.Range extends PropertyBehavior
 	}
 }
 
+class PropertyBehaviors.ImageSource extends PropertyBehavior
+{
+	static proptype = IMAGESOURCE;
+	static uipath = "imagesrc.ui"
+
+	static texcache = {};			//	cdataを毎回デコードせずにキャッシュする
+
+	cdata = null;		//	ByteBuffer : compressed image
+	path = null;		//	string : resource path
+
+	infolbl = null;		//	path, size, ...
+	pic = null;			//	SKImageView
+
+	function init(){
+		super.init();
+		infolbl = view.findChild( "infolbl");
+		pic = view.findChild( "pic");
+	}
+	
+	//	ByteBuffer|string|null
+	function setParam( v){
+		cdata = path = null;
+		if( typeof( v) == SS_STRING){
+			path = v;
+		}else
+		if( v instanceof ByteBuffer){
+			cdata = v;
+		}
+		updateImage();
+	}
+
+	function getParam(){
+		return cdata || path;
+	}
+
+	function updateImage(){
+		local sb = StringBuffer(), datasize = 0;
+		if( cdata){
+			local k = "%S.%S" % (cdata.hashcode(), cdata.remain);
+			if( !texcache[k]){
+				local img = skLoadImage( cdata); cdata.pos = 0;
+				local tex = Texture();
+				tex.load( img);
+				texcache[k] <- tex;
+			}
+			pic.setSprite( Sprite( texcache[k]));
+			sb .. "$T.lbl_embededimage";
+			datasize = cdata.remain;
+		}else
+		if( path){
+			pic.setParam( SKViewPropertyID.IMAGE, path);
+			sb .. "[P]" .. path .. "[O]";
+			datasize = getResource( path).file.size;
+		}else{
+			pic.setParam( SKViewPropertyID.IMAGE, "/skstudio/img/ui/pic_tr.png");
+			infolbl.setText( "$T.lbl_notset");
+			return;
+		}
+		sb .. "\nDATA SIZE: " .. sizestr( datasize);
+		sb .. "\nPIXELS: %d x %d" % ( pic.sp.tex0.width, pic.sp.tex0.height);
+		
+		infolbl.setText( ::rtf( string( sb)));
+	}
+	
+	function paramevent( e){
+		if( e.id != ACTION_PERFORMED) return;
+		if( e.src["name"] == "imgbtn"){
+			showContextMenu( e);
+		}
+	}
+
+	function showContextMenu( e){
+		local hasimg = cdata || path;
+		local hascb = skCheckClipboardType( ClipboardType.CLIPBOARD_IMAGE);
+		local menudata = [
+			{ id="browse", lbl="$T.lbl_selectfile", icon="\ue2c8"},
+			{ id="explor", lbl="$T.filetabs_ctxmenu_explor", disable=!path},
+			"-",
+			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d", disable=!hasimg },
+			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!hascb },
+			{ lbl="$T.lbl_clear", id="clear", icon="\uf0ff" },
+			"-",
+			{ lbl="$T.lbl_embedimage", id="embed", icon="\ue171", disable=!path },
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "browse":
+			local prm = { filter=["*.png","*.webp","*.jpg","*.ktx"], abspath=true, pathgroup="imgsrc" } ... (path && { path=path, });
+			local newpath = skstudio.showFileOpen( prm);
+			if( newpath){
+				if( newpath.startsWith( ::resroot.file.path)){
+					//	プロジェクト内のパスに変換
+					newpath = "/" .. newpath.substring( length( ::resroot.file.path));
+					setParam( newpath);
+				}else{
+					local bb = FileRef( newpath).load( ByteBuffer());
+					local img = skLoadImage( bb); bb.pos = 0;	//	読めるか確かめる
+					//	プロジェクト外の画像は、プロジェクト内に取り込むかcdataにする必要あり。
+					if( !img || !Dialogs.confirm( {msg="プロジェクト外の画像が選択されました。埋め込みますか？"})){
+						return;
+					}
+					setParam( bb);
+				}
+				postActionEvent( true);
+			}
+			break;
+		case "explor":
+			skstudio.explor( path);
+			break;
+		case "copy":
+			local img = null;
+			if( cdata){
+				img = skLoadImage( cdata); cdata.pos = 0;
+			}else{
+				img = skLoadImage( ::getResource( path).loadData());
+			}
+			skPutClipboardData( img);
+			break;
+		case "paste":
+			local img = skGetClipboardData( ClipboardType.CLIPBOARD_IMAGE);
+			if( img){
+				local imgbb = img.encodeWebp( 100); imgbb.pos = 0;
+				setParam( imgbb);
+				postActionEvent( true);
+			}
+			break;
+		case "clear":
+			setParam( null);
+			postActionEvent( true);
+			break;
+		case "embed":
+			local bb = getResource( path).file.load( ByteBuffer());
+			setParam( bb);
+			postActionEvent( true);
+			break;
+		}
+	}
+}
 
 
 ::proptextfuncmap <- {

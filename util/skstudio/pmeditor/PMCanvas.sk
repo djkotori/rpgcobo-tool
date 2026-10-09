@@ -12,10 +12,10 @@ class PMCanvas extends CanvasBehavior
 	bonechk = null;		//	GPUIButton :
 	gridchk = null;		//	GPUIButton :
 	skychk = null;		//	GPUIButton :
-	timeline = null;	//	TimelineBarBehavior :
 	
 	//	sk3d
 	sk3d = null;		//	SK3DObject : 
+	pm3d = null;		//	SK3DObject : 選択中のPolygonMeshが含まれる
 	bndsk = null;		//	SK3DObject : 
 	bonesk = null;		//	BoneGroup : 
 
@@ -26,6 +26,8 @@ class PMCanvas extends CanvasBehavior
 	constructor( e){
 		super( e.findChild( "3D"), e.findChild( "head"));
 		editor = e;
+		camwork.znear = 0.1;
+		camwork.zfar = 300.0;
 		
 		physchk = e.findChild( "physchk");
 		bndchk = e.findChild( "bndchk");
@@ -49,32 +51,38 @@ class PMCanvas extends CanvasBehavior
 		view.scn.disablesimulation = true;
 	}
 
-	function setPM( pm){
+	function setPolygonMeshTree( pmt){
 		if( sk3d) scn.removeObject( sk3d);
-		sk3d = SK3DObject( pm);
+		sk3d = SK3DObject( pmt);
 		sk3d.addChild( bndsk);
 		sk3d.addChild( bonesk);
 		scn.addObject( sk3d);
 		bonesk.clearBones();
-		bonesk.addBones( sk3d);
+	}
+	
+	//	
+	function selectMesh( pm){
+		pm3d = sk3d.children.find( @( v) v.mesh == pm);
+		bonesk.clearBones();
+		bonesk.addBones( pm3d);
 		resetRigidBody();
+		//	
+		local r = pm3d.bnd;
+		bndsk.pos( r.x, r.y, r.z);
+		bndsk.scale( r.r, r.s, r.t);
+		bndsk.matdirty = true;
+		bndsk.setPivot( pm3d.mat);
 	}
 
 	function resetRigidBody(){
-		sk3d.disablePhysicalBones();
-		sk3d.enablePhysicalBones();
-		bonesk.resetRigidBodies( sk3d);
+		pm3d.disablePhysicalBones();
+		pm3d.enablePhysicalBones();
+		bonesk.resetRigidBodies( pm3d);
 	}
 
 	//	毎フレーム呼ばれる
 	function updateFunc( dt){
 		camwork.updateCamera( dt);
-		if( sk3d){
-			local r = sk3d.bnd;
-			bndsk.pos( r.x, r.y, r.z);
-			bndsk.scale( r.r, r.s, r.t);
-			bndsk.matdirty = true;
-		}
 		bonesk.updateBoneMatrices();
 		return true;
 	}

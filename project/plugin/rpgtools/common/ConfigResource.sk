@@ -242,10 +242,10 @@ class GameResourceResource extends Resource
 	static resiconmap = {
 		"chara_vox" : ("\uf11c",0x99ffaaff),
 		"obj_vox" : ("\uf11a",0x99ffaaff),
+		"poly_mdl" : ("\ue86b",0x99ffaaff),
 		"equip_vox" : ("\uf11a",0x99ffaaff),
 		"event_pic" : ("\ue416",0x99ffaaff),
 		"enemy_pic" : ("\ue859",0x99ffaaff),
-		"enemy_pm" : ("\ue859",0x99ffaaff),
 		"efx" : ("\ue3e7",0x99ffaaff),
 		"map_vox" : ("\uf11d",0x99ffaaff),
 		"map_asset" : ("\uea09",0x99ffaaff),
@@ -367,6 +367,7 @@ local initConfigResource(){
 	//	リソースリソース設定
 	x.list .. GameResourceResource( x, "chara_vox", "$T.side_res_chara_vox", "\ue8b8");
 	x.list .. GameResourceResource( x, "equip_vox", "$T.side_res_equip_vox", "\ue8b8");
+	x.list .. GameResourceResource( x, "poly_mdl", "$T.side_res_poly_mdl", "\ue86b");
 	x.list .. GameResourceResource( x, "enemy_pic", "$T.side_res_enemy_pic", "\ue8b8");
 	x.list .. GameResourceResource( x, "event_pic", "$T.side_res_event_pic", "\ue8b8");
 	x.list .. GameResourceResource( x, "map_vox", "$T.side_res_map_vox", "\ue8b8");

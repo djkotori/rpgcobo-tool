@@ -22,7 +22,7 @@ function getTecs(){
 local testlist  = ["0:OFF","1:LESS","2:LEQUAL","3:GREATER","4:GEQUAL","5:EQUAL","6:NOTEQUAL","7:ALWAYS","8:NEVER"]
 
 //	共通プロパティー
-local tecprop = { pid="tec",	lbl="Shader",	type=LIST, list=getTecs };
+local tecprop = { pid="tec",	lbl="Shader",	type=LIST, list=getTecs, refresh=1 };
 local blendmodeprop = { pid="blendmode",lbl="BlendMode",	type=LIST, list=["0:OPAQUE","1:MASKED","2:TRANSPAR","3:DECAL","4:MASKED DECAL","5:TRANS DECAL"] };
 local blendprop = { pid="blend",		lbl="$T.lbl_blend",			type=LIST,		list=::SKVP[IMAGEBLEND].list};
 local alphatestprop = { pid="alphatest",	lbl="AlphaTest",	type=BOOL };
@@ -32,6 +32,25 @@ local cullfaceprop = { pid="cullface",	lbl="Culling",	type=LIST, list=["0:OFF","
 local shadowprop = { pid="shadow",lbl="Shadow",	type=LIST, list=["0:OFF","1:RECV","2:CAST","3:RECV+CAST"] };
 
 local modeblends = [SK_VISIBLE_OPAQUE,SK_VISIBLE_OPAQUE,SK_VISIBLE_TRANSPARENT,SK_VISIBLE_DECAL,SK_VISIBLE_DECAL,SK_VISIBLE_DECAL]
+
+//	パス|データ、サンプラー、メニュー
+local texprop = {
+	pid = "tex?",
+	lbl = "Texture?",
+	type = PROPERTYLIST,
+	propdef = {
+		name = "Texture", icon = "\ue40b",
+		props = [
+			{ pid="imgsrc", lbl="$T.lbl_image", type=IMAGESOURCE, cnt="cnt5.ui" },
+			{ pid="coord", lbl="UV coord", type=LIST, list=["0:UV0","1:UV1"], },
+		]
+		tostring = @( v){
+			if( !v["imgsrc"]) return "$T.lbl_notset";
+			local s = (typeof( v.imgsrc)==SS_STRING) ? (v.imgsrc.substring( v.imgsrc.lastIndexOf( "/")+1)) : "$T.lbl_embededimage";
+			return s;
+		}
+	}
+};
 
 //	レガシープロパティ
 local legacyprops = [
@@ -48,16 +67,16 @@ local legacyprops = [
 	cullfaceprop,
 	shadowprop,
 	{ pid="shiness",	lbl="Shiness", type=SCALAR, range=(1,100), q=1 },
-	{ pid="tex0",	lbl="ColorMap1", type=PATH },
-	{ pid="tex1",	lbl="ColorMap2", type=PATH },
-	{ pid="tex2",	lbl="ColorMap3", type=PATH },
-	{ pid="tex3",	lbl="ColorMap4", type=PATH },
+	{ ...texprop, pid="tex0", lbl="ColorMap1",}
+	{ ...texprop, pid="tex1", lbl="ColorMap2",},
+	{ ...texprop, pid="tex2", lbl="ColorMap3",},
+	{ ...texprop, pid="tex3", lbl="ColorMap4",},
 ];
 
 //	PBRプロパティ
 local pbrprops0 = [
 	tecprop,
-	{ pid="mtype", lbl="PBRType", type=LIST, list=["0:STANDARD","1:DECAL","2:SUBSURF","3:SHEEN","4:CLEARCOAT","5:TRANSPAR","6:ANISOTRO","7:CLOTH"]}
+	{ pid="mtype", lbl="PBRType", type=LIST, list=["0:STANDARD","1:DECAL","2:SUBSURF","3:SHEEN","4:CLEARCOAT","5:TRANSPAR","6:ANISOTRO","7:CLOTH"], refresh=1}
 	{ pid="G1", lbl="PBR Params", type=HEADER, }
 	{ pid="basecol",	lbl="BaseColor",	type=RGBA },
 	{ pid="rough",	lbl="Roughness",	type=SCALAR, range=(0.0,1.0), q=100, ui="bar" },
@@ -66,9 +85,9 @@ local pbrprops0 = [
 
 local pbrprops1 = [
 	{ pid="G2", lbl="Textures", type=HEADER, }
-	{ pid="tex0",	lbl="ColorMap", type=PATH },
-	{ pid="tex1",	lbl="NormalMap", type=PATH },
-	{ pid="tex2",	lbl="ParamMap", type=PATH },
+	{ ...texprop, pid="tex0", lbl="ColorMap",}
+	{ ...texprop, pid="tex1", lbl="NormalMap",}
+	{ ...texprop, pid="tex2", lbl="ParamMap",}
 	{ pid="G3", lbl="Misc", type=HEADER, }
 	cullfaceprop,
 	blendmodeprop,
@@ -128,7 +147,8 @@ class PMMaterialPanel
 	}
 	
 	function selectMaterial( i){
-		selmtl = editor.pm.face[i].m;
+		local pm = editor.canvas.pm3d.mesh;
+		selmtl = pm.face[i].m;
 		assignProperties( selmtl);
 	}
 
@@ -165,8 +185,10 @@ class PMMaterialPanel
 		case "tex1":
 		case "tex2":
 		case "tex3":
-			local tex = m[pid];
-			return tex["ref"]["path"] || null;
+			local tex = m[pid], ts = tex["ref"], i = pid[3]-'0';
+			local r = ts["path"] ? editor.res.getResource( ts.path) : null;
+			local coord = (m.uvbits>>(i*8))&0xff;
+			return ts ? { imgsrc=r["path"]||ts.data, coord=coord, } : { imgsrc=null, coord=coord, };
 		//	特殊
 		case "blendmode":
 			if( m.visiblemask&SK_VISIBLE_DECAL){
@@ -191,6 +213,73 @@ class PMMaterialPanel
 			return m.mparam|0xff;	//	rgb
 		}
 	}
+
+	//	マテリアルのテクスチャを変更する。
+	function _changetex( m, pid, val){
+		local pmt = editor.pmt, mtls = editor.canvas.sk3d.meshtree.mtls;
+		local imgsrc = val["imgsrc"];
+		local mi = mtls.indexOf( m), ms = pmt.materials[ mi];	//	MaterialSource取得。
+		local tex0 = m[pid], ts0 = tex0["ref"], tex1, ts1;
+		//	同じかチェック
+		if( !tex0 && !imgsrc) return;
+		local _key( imgpath, imgdata){ return imgpath || imgdata?.hashcode() || 0; }
+		local valkey = _key( typeof( imgsrc)==SS_STRING && imgsrc, (imgsrc instanceof ByteBuffer) && imgsrc);
+		local ts0key = _key( ts0["path"], ts0["data"]);
+		if( valkey == ts0key) return;	//	同じソースを参照している
+		//
+		local img, imgpath, imgdata;
+		if( typeof( imgsrc) == SS_STRING){
+			img = skLoadImage( ::getResource( imgsrc).loadData());
+			imgpath = ::getRelativePath( editor.res.pres.path, imgsrc);		//	※Resourceはちょっと相対パスのルールが違う・・・・・・・・・・
+			imgdata = null;
+		}else
+		if( imgsrc instanceof ByteBuffer){
+			img = skLoadImage( imgsrc); imgsrc.pos = 0;
+			imgpath = null;
+			imgdata = imgsrc;
+		}
+		if( !img){	//	テクスチャを外す
+			local texa = #["tex0", "tex1", "tex2", "tex3"];
+			if( ts0){
+				local tscnt = mtls.reduce( @( m, acc){
+					foreach( pid in texa) acc += (ts0==m[pid]["ref"]);
+					return acc;
+				}, 0);
+				if( tscnt <= 1){	//	誰も使わなくなったので削除。インデックスを詰める
+					local ti = pmt._texlist.indexOf( tex0);
+					delete pmt._texlist[ti];
+					delete pmt.textures[ti];
+					foreach( ms in pmt.materials){
+						foreach( pid in texa){
+							if( ms[pid] >= ti) ms[pid]--;	//	tume
+						}
+					}
+				}
+			}
+			ms[pid] = -1;
+			m[pid] = null;
+		}else{
+			local k = _key( imgpath, imgdata);
+			local ti = pmt.textures.findi( @( v) _key( v.path, v.data)==k );	//	
+			if( ti >= 0){
+				tex1 = pmt._texlist[ti];
+				ts1 = tex1["ref"];
+				ms[pid] = ti;
+				m[pid] = tex1;
+			}else{	//	新しいTextureSourceを作成して追加
+				tex1 = Texture();
+				tex1.load( img);
+				ts1 = TextureSource();
+				ts1.path = imgpath;
+				ts1.data = imgdata;
+				tex1.ref = ts1;
+				pmt.textures .. ts1;
+				pmt._texlist .. tex1;
+				ms[pid] = length( pmt.textures)-1;
+				m[pid] = tex1;
+			}
+		}
+	}
 	
 	function setMaterialParam( m, pid, val){
 		switch( pid){
@@ -211,8 +300,9 @@ class PMMaterialPanel
 		case "tex1":
 		case "tex2":
 		case "tex3":
-			local tex = ::getTexture( editor.res.getResource( val));
-			m[pid] = tex;
+			_changetex( m, pid, val);
+			local i = pid[3]-'0';
+			m.uvbits = (m.uvbits & ~(0xff<<(i*8))) | ((val["coord"]&0xff)<<(i*8));
 			return true;
 		//	特殊
 		case "blendmode":
@@ -245,13 +335,19 @@ class PMMaterialPanel
 	function propevent( e){
 		local cmd = e.actioncmd;
 		if( cmd["cmd"] != "prop") return;
-		local pid = cmd.prop.pid;
-		if( setMaterialParam( selmtl, pid, cmd.val)){
-			editor.submitOp( editor.encodePM( editor.pm));	//	
-			if( pid == "tec" || pid == "mtype"){
-				assignProperties( selmtl);
+		local prop = cmd.prop, pid = cmd.prop.pid, self = this;
+		local oldval = getMaterialParam( selmtl, pid);
+		local _setval( m, pid, val){
+			self.setMaterialParam( m, pid, val);
+			if( prop["refresh"] && m == self.selmtl){	//	別の選択になってる場合はUIは更新しない
+				self.assignProperties( m);
+			}else{
+				self.proplist.setParameters( {[pid]=val});
 			}
 		}
+		local redo = [@() _setval( self.selmtl, pid, cmd.val)];
+		local undo = [@() _setval( self.selmtl, pid, oldval)];
+		editor.submitOp( redo, undo);
 	}
 
 	function actionevent( e){

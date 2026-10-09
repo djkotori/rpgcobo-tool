@@ -47,6 +47,7 @@ skClearParam( ClearParam( 0, 0, 0, 1));
 
 runsk("/system/exlib/Zip.sk");
 runsk("/system/exlib/TinyHTTPServer.sk");
+runsk("/system/exlib/GLTF.sk");
 
 runsk("/skstudio/functions.sk");
 runsk("/skstudio/common/load.sk");

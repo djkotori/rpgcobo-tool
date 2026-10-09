@@ -5,6 +5,7 @@
 //
 
 runsk("/system/3d/PolygonMesh.sk");
+runsk("/system/3d/PolygonMeshTree.sk");
 runsk("/system/3d/ParticleSystem.sk");
 runsk("/system/3d/SK3DObject.sk");
 runsk("/system/3d/SK3DScene.sk");

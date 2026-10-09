@@ -12,19 +12,19 @@ local shapeidlist = [SK_SHAPE_BOX,SK_SHAPE_SPHERE,SK_SHAPE_CAPSULE,SK_SHAPE_CYLI
 
 //	on/off
 local props1 = [
-	{ pid="phys",	lbl="Physical Bone",	type=BOOL, cnt="cnt1.ui" },
+	{ pid="phys",	lbl="Physical Bone",	type=BOOL, cnt="cnt1.ui", refresh=3, custom=true},
 ];
 
 //	group/mask, shapes, dynamic
 local props2 = [
 	{ pid="collisiongroup",	lbl="Col Group",	type=BIT8 },
 	{ pid="collisionmask",	lbl="Col Mask",	type=BIT8 },
-	{ pid="shapesel",		lbl="Shapes",		type=3415, cnt="cnt1.ui", minlen=1, newicon="\ue3e0"},
+	{ pid="shapesel",		lbl="Shapes",		type=3415, cnt="cnt1.ui", minlen=1, newicon="\ue3e0", refresh=1},
 	{ pid="shapetype",		lbl="Type",		type=LIST, list=shapelist},
 	{ pid="shapesize",		lbl="Size",		type=VEC3, range=(0.01, 10.0), q=100 },
 	{ pid="shapepos",		lbl="Position",	type=VEC3, range=(-10.0, 10.0), q=100 },
 	{ pid="shaperot",		lbl="Rotation",	type=VEC3, range=(-360, 360), },
-	{ pid="dynamic",			lbl="Physical Type",	type=LIST, cnt="cnt1.ui", list=["0:KINEMATIC","1:DYNAMIC"]},
+	{ pid="dynamic",			lbl="Physical Type",	type=LIST, cnt="cnt1.ui", list=["0:KINEMATIC","1:DYNAMIC"], refresh=3},
 ];
 
 //	mass, constraint select
@@ -37,9 +37,9 @@ local props3 = [
 
 //	constraint params
 local props4 = [
-	{ pid="consttarget",		lbl="Target",		type=3416, list=[] },
-	{ pid="constangular",	lbl="Angular Limit",	type=3417, range=(-180, 180), q=1 },
-	{ pid="constlinear",		lbl="Linear Limit",	type=3417, range=(-10, 10), q=100 },
+	{ pid="consttarget",		lbl="Target",		type=3416, list=@( pl, val) ::skstudio.editor.rightpanel.partspanel.constraintList( val) },
+	{ pid="constangular",	lbl="Angular Limit",	type=3417, range=(-180, 180), q=1, cnt="cnt5.ui" },
+	{ pid="constlinear",		lbl="Linear Limit",	type=3417, range=(-10, 10), q=100, cnt="cnt5.ui" },
 ];
 
 class PropertyBehaviors.Sel4 extends PropertyBehavior
@@ -161,7 +161,12 @@ class PropertyBehaviors.Constraint extends PropertyBehavior
 	
 	function paramevent( e){
 		if( e.id == VALUE_CHANGED) return;
-		postActionEvent( true);
+		local n = e.src["name"];
+		if( n == "lockbtn" || n == "freebtn"){
+			cnt.postActionEvent( {prop=prop, val=null, cmd=n, cmdarg=null, tween=false, src=e.src });
+		}else{
+			postActionEvent( true);
+		}
 	}
 }
 
@@ -173,11 +178,15 @@ class PMPartsPanel
 	partstree = null;		//	ListBehavior
 	proplist = null;		//	GPUIListView
 
+	pm = null;				//	Current mesh
+	
 	//	selection
-	selparts = null;
-	selrbdata = null;
-	selshape = null;
-	selcons = null;
+	// selparts = null;
+	// selrbdata = null;
+	// selshape = null;
+	// selcons = null;
+
+	sel = null;				//	{ pm, parts }
 	
 	constructor( v, e){
 		view = v;
@@ -202,36 +211,33 @@ class PMPartsPanel
 	}
 	
 	function setPM( p){
+		pm = p;
 		local pt = buildPartsTree( p, p.motion);
-		//	パーツツリーが一致している場合は同じpmと判定。ただしpmはdeepclone状態。
-		//	その場合はツリーのexpand状態とかを保存しておきたい。。。
-		if( false){
-			//	現状の選択状態を保存する。
-			local partsidx = partstree.curidx;
-			local shapeidx = selrbdata["shapes"]?.indexOf( selshape);
-			local considx = selrbdata["constraints"]?.indexOf( selcons);
-			
-			
-			assignProperties();
-		}else{
-			partstree.setItemTree( pt);
-			partstree.expandAll();
-			partstree.scrollIndexToVisible( 0);
-			partstree.setSelectedIndex( 0);
-			selectParts( pt.children[0] || null);
-		}
+		partstree.setItemTree( pt);
+		partstree.expandAll();
+		partstree.scrollIndexToVisible( 0);
+		partstree.setSelectedIndex( 0);
+		selectParts( pt.children[0] || null);
 	}
-	
+
+	function _rbdata( sel){
+		return sel.pm.rbdataset[ sel.parts["parts"]["name"]] || null;
+	}
+
 	function selectParts( pb){
-		selparts = pb;
-		selshape = selcons = null;
-		selrbdata = editor.pm.rbdataset[ pb["parts"]["name"]] || null;
-		if( selrbdata){
-			if( length( selrbdata.shapes)){
-				selshape = selrbdata.shapes[0];
+		sel = {
+			pm = pm;
+			parts = pb;
+		};
+		local rbdata = _rbdata( sel);
+		if( rbdata){
+			if( !rbdata.ref) rbdata.ref = { shape = null; cons = null; };
+			//
+			if( length( rbdata.shapes)){
+				rbdata.ref.shape = rbdata.shapes[0];
 			}
-			if( length( selrbdata.constraints)){
-				selcons = selrbdata.constraints[0];
+			if( length( rbdata.constraints)){
+				rbdata.ref.cons = rbdata.constraints[0];
 			}
 		}
 		assignProperties();
@@ -283,14 +289,14 @@ class PMPartsPanel
 	
 	function assignProperties(){
 		local props = [];
-		if( !selparts) return proplist.bindProperties( props);
+		if( !sel["parts"]) return proplist.bindProperties( props);
 		props ... props1;
-		if( selrbdata){
+		local rbdata = _rbdata( sel);
+		if( rbdata){
 			props ... props2;
-			if( selrbdata.dynamic){
+			if( rbdata.dynamic){
 				props ... props3;
-				if( selcons){
-					props4[0].list = partstree.itemtree.pblist;	//	mu-----------
+				if( rbdata.ref.cons){
 					props ... props4;
 				}
 			}
@@ -298,44 +304,57 @@ class PMPartsPanel
 		proplist.bindProperties( props);
 		local prms = {};
 		foreach( p in props){
-			local v = getPartsParam( p.pid);
+			local v = getPartsParam( sel, p.pid);
 			if( v != undefined) prms[p.pid] <- v;
 		}
 		proplist.setParameters( prms);
 	}
+
+	function constraintList( val){
+		local selname = sel.parts["parts"]["name"];
+		local rbdataset = pm.rbdataset;
+		return partstree.itemtree.pblist.map( @( v){
+			local n = v.parts["name"], rbdata = rbdataset[n];
+			if( !rbdata) return undefined;
+			return { lbl=n, val=n, icon=v["icon"], disable=(n==selname)};
+		});
+	}
 	
 	static function vtoa( v){ return (v.x,v.y,v.z); }
 
-	function getPartsParam( pid){
+	function getPartsParam( sel, pid){
+		local rbdata = _rbdata( sel), rbref = rbdata["ref"];
 		switch( pid){
-		case "phys": return !!selrbdata;
+		case "phys": return !!rbdata;
 		case "collisiongroup": case "collisionmask": case "collisionmask":
-			return selrbdata[pid];
+			return rbdata[pid];
 		case "shapesel":
 		{
-			local v = { idx=selrbdata.shapes.indexOf( selshape), len=length( selrbdata.shapes), icons=[]};
-			foreach( s in selrbdata.shapes){
+			local v = { idx=rbdata.shapes.indexOf( rbref.shape), len=length( rbdata.shapes), icons=[]};
+			foreach( s in rbdata.shapes){
 				local i = shapeidlist.indexOf( s.shapetype);
 				v.icons .. shapelist[i].icon;
 			}
 			return v;
 		}
-		case "shapetype": return shapeidlist.indexOf( selshape.shapetype);
-		case "shapesize": return vtoa( selshape.size);
-		case "shapepos": return vtoa( selshape.pos);
-		case "shaperot": return vtoa( selshape.rot * Math.RTOD);
-		case "dynamic": return selrbdata.dynamic ? 1 : 0;
-		case "mass": return selrbdata.mass;
-		case "angulardamp": return selrbdata.angulardamp;
-		case "lineardamp": return selrbdata.lineardamp;
+		case "shapetype": return rbref.shape.shapetype;
+		case "shapesize": return vtoa( rbref.shape.size);
+		case "shapepos": return vtoa( rbref.shape.pos);
+		case "shaperot": return vtoa( rbref.shape.rot * Math.RTOD);
+		case "dynamic": return rbdata.dynamic ? 1 : 0;
+		case "mass": return rbdata.mass;
+		case "angulardamp": return rbdata.angulardamp;
+		case "lineardamp": return rbdata.lineardamp;
+		case "consttarget":
+			return rbref.cons["pairpartsname"] || null;
 		case "constsel":
-			return selcons ? { idx=selrbdata.constraints.indexOf( selcons), len=length( selrbdata.constraints)} : {idx=-1,len=0};
+			return rbref.cons ? { idx=rbdata.constraints.indexOf( rbref.cons), len=length( rbdata.constraints)} : {idx=-1,len=0};
 		case "constangular":
-			if( !selcons) return undefined;
-			return _getconstval( selcons, 6, 9);
+			if( !rbref.cons) return undefined;
+			return _getconstval( rbref.cons, 6, 9);
 		case "constlinear":
-			if( !selcons) return undefined;
-			return _getconstval( selcons, 0, 0);
+			if( !rbref.cons) return undefined;
+			return _getconstval( rbref.cons, 0, 0);
 		}
 		return undefined;
 	}
@@ -350,143 +369,163 @@ class PMPartsPanel
 		};
 	}
 	
-	function setPartsParam( pid, val){
+	function setPartsParam( sel, pid, val){
+		local rbdata = _rbdata( sel), rbref = rbdata["ref"];
 		switch( pid){
-		case "phys":
-			setPhysicsOn( val);
-			return true;
 		case "shapesel":
-			local s = selrbdata.shapes[val.idx];
-			if( s){ selshape = s; assignProperties(); }
+			local s = rbdata.shapes[val.idx];
+			if( s){ rbref.shape = s; }
 			return true;
 		case "shapetype":
-			selshape.shapetype = shapeidlist[val];
-			syncParam( "shapesel");
+			rbref.shape.shapetype = val;
+			proplist.setParameters( {shapesel=getPartsParam( sel, "shapesel")});
 			return true;
 		case "shapesize":
-			selshape.size = Vector3D( val);
+			rbref.shape.size = Vector3D( val);
 			return true;
 		case "shapepos":
-			selshape.pos = Vector3D( val);
+			rbref.shape.pos = Vector3D( val);
 			return true;
 		case "shaperot":
-			selshape.rot = Vector3D( val).scale( Math.DTOR);
+			rbref.shape.rot = Vector3D( val).scale( Math.DTOR);
 			return true;
 		case "dynamic":
-			selrbdata.dynamic = !!val;
+			rbdata.dynamic = !!val;
 			partstree.refreshItems();
 			assignProperties();
 			return true;
 		case "mass":
-			selrbdata.mass = val;
+			rbdata.mass = val;
 			return true;
 		case "angulardamp":
-			selrbdata.angulardamp = val;
+			rbdata.angulardamp = val;
 			return true;
 		case "lineardamp":
-			selrbdata.lineardamp = val;
+			rbdata.lineardamp = val;
 			return true;
 		case "constangular":
-			if( !selcons) return false;
-			_setconstval( selcons, val, 6, 9);
+			if( !rbref.cons) return false;
+			_setconstval( rbref.cons, val, 6, 9);
 			return true;
 		case "constlinear":
-			if( !selcons) return false;
-			_setconstval( selcons, val, 0, 0);
+			if( !rbref.cons) return false;
+			_setconstval( rbref.cons, val, 0, 0);
+			return true;
+		case "collisiongroup": case "collisionmask": case "collisionmask":
+			rbdata[pid] = val;
 			return true;
 		}
 	}
 
 	function _setconstval( cons, v, l, s){
 		local lim = cons.limit, sp = cons.spring;
-		lim[l  ] = v.dlim[0]; lim[l+1] = v.dlim[1]; lim[l+2] = v.dlim[2];
-		lim[l+3] = v.ulim[0]; lim[l+4] = v.ulim[1]; lim[l+5] = v.ulim[2];
+		if( l >= 0){
+			lim[l  ] = v.dlim[0]; lim[l+1] = v.dlim[1]; lim[l+2] = v.dlim[2];
+			lim[l+3] = v.ulim[0]; lim[l+4] = v.ulim[1]; lim[l+5] = v.ulim[2];
+		}
 		//
-		sp[s  ] = v.spchk[0]; sp[s+3] = v.spchk[1]; sp[s+6] = v.spchk[2];
-		sp[s+1] = v.stiff[0]; sp[s+4] = v.stiff[1]; sp[s+7] = v.stiff[2];
-		sp[s+2] = v.damp [0]; sp[s+5] = v.damp [1]; sp[s+8] = v.damp [2];
+		if( s >= 0){
+			sp[s  ] = v.spchk[0]; sp[s+3] = v.spchk[1]; sp[s+6] = v.spchk[2];
+			sp[s+1] = v.stiff[0]; sp[s+4] = v.stiff[1]; sp[s+7] = v.stiff[2];
+			sp[s+2] = v.damp [0]; sp[s+5] = v.damp [1]; sp[s+8] = v.damp [2];
+		}
 	}
 
 	function actionPartsParam( fid, val, cmd){
+		local rbdata = _rbdata( sel), rbref = rbdata["ref"], self = this;
 		switch( fid){
+		case "phys":
+		{
+			local oldval = !!rbdata, _sel = clone sel, _rbdata = RigidBodyData();
+			local redo = [@(){ self.setPhysicsOn( _sel, val, _rbdata); self.assignProperties(); self.partstree.refreshItems(); }];
+			local undo = [@(){ self.setPhysicsOn( _sel, oldval, _rbdata); self.assignProperties(); self.partstree.refreshItems(); }];
+			editor.submitOp( redo, undo);
+			return true;
+		}
 		case "shapesel":
 			switch( cmd){
 			case "add": 
-				if( length( selrbdata.shapes) < 4){
-					selshape = _newrbshape();
-					selrbdata.shapes .. selshape;
-					assignProperties();
+				if( length( rbdata.shapes) < 4){
+					local shp = _newrbshape();
+					local redo = [@(){ rbref.shape = shp; rbdata.shapes .. shp; self.assignProperties(); }];
+					local undo = [@(){ rbdata.shapes.pop(); rbref.shape = rbdata.shapes.last(); self.assignProperties(); }];
+					editor.submitOp( redo, undo);
 					return true;
 				}
 				break;
 			case "del": 
-				if( length( selrbdata.shapes) > 1){
-					local i = val.idx;
-					if( delete selrbdata.shapes[i]){
-						selshape = selrbdata.shapes[i] || selrbdata.shapes[i-1];
-						assignProperties();
-						return true;
-					}
+				if( length( rbdata.shapes) > 1){
+					local i = val.idx, shp = rbdata.shapes[i];
+					local redo = [@(){ delete rbdata.shapes[i]; rbref.shape = rbdata.shapes[i] || rbdata.shapes[i-1]; self.assignProperties(); }];
+					local undo = [@(){ rbdata.shapes[i] <- shp; rbref.shape = shp; self.assignProperties(); }];
+					editor.submitOp( redo, undo);
 				}
 				break;
 			}
-			break;
+			return true;
 		case "constsel":
 			switch( cmd){
 			case "add":
-				if( length( selrbdata.constraints) < 4){
-					local cons = _newrbconst( selparts);
+				if( length( rbdata.constraints) < 4){
+					if( !rbdata.constraints) rbdata.constraints = [];
+					local cons = _newrbconst( sel.parts);
 					if( cons){
-						selcons = cons;
-						if( selrbdata.constraints) selrbdata.constraints .. cons; else selrbdata.constraints = [cons];
-						assignProperties();
+						local redo = [@(){ rbref.cons = cons; rbdata.constraints .. cons; self.assignProperties(); }];
+						local undo = [@(){ rbdata.constraints.pop(); rbref.cons = rbdata.constraints.last(); printf( "constr? %S\n", rbref.cons); self.assignProperties(); }];
+						editor.submitOp( redo, undo);
 						return true;
+					}else{
+						Popups.showError( "$T.editor_pm_error_constraint");
 					}
 				}
 				break;
 			case "del": 
-				if( length( selrbdata.constraints)){
-					local i = val.idx;
-					if( delete selrbdata.constraints[i]){
-						selcons = selrbdata.constraints[i] || selrbdata.constraints[i-1] || null;
-						assignProperties();
-						return true;
-					}
+				if( length( rbdata.constraints)){
+					local i = val.idx, cons = rbdata.constraints[i];
+					local redo = [@(){ delete rbdata.constraints[i]; rbref.cons = rbdata.constraints[i] || rbdata.constraints[i-1] || null; self.assignProperties(); }];
+					local undo = [@(){ rbdata.constraints[i] <- cons; rbref.cons = cons; self.assignProperties(); }];
+					editor.submitOp( redo, undo);
 				}
 				break;
 			}
-			break;
+			return true;
+		case "constangular":
+		case "constlinear":
+			printf( "constangular/constlinear cmd: %S %S\n", fid, cmd);
+			local _setvalmap = #{
+				"lockbtn": { dlim=[0.0,0.0,0.0] ulim=[0.0,0.0,0.0], },
+				"freebtn": { dlim=[-180.0,-180.0,-180.0] ulim=[180.0,180.0,180.0], },
+			};
+			local cons = rbref.cons, setval = _setvalmap[cmd];
+			if( setval){
+				local l = fid=="constangular"?6:0, oldval = _getconstval( cons, l, 0);
+				local redo = [@(){ self._setconstval( cons, setval, l, -1); self.assignProperties(); }];
+				local undo = [@(){ self._setconstval( cons, oldval, l, -1); self.assignProperties(); }];
+				editor.submitOp( redo, undo);
+			}
+			return true;
 		}
 	}
 
-	function syncParam( fid){
-		proplist.setParameters( {[fid]=getPartsParam( fid)});
-	}
-	
-	function setPhysicsOn( b){
-		local pm = editor.pm;
-		local name = selparts.parts.name;
+	function setPhysicsOn( sel, b, rbdata){
+		local name = sel.parts["parts"]["name"];
 		if( !b){
-			delete pm.rbdataset[name];
-			selrbdata = null;
+			delete sel.pm.rbdataset[name];
 		}else
-		if( !selrbdata){
-			//	デフォルトのRigidBodyDataを作る！
-			local rbdata = selrbdata = RigidBodyData();
-			if( !pm.rbdataset) pm.rbdataset = { [name]=rbdata}; else pm.rbdataset[name] <- rbdata;
-			//	
+		if( !_rbdata( sel)){
+			//	デフォルトのRigidBodyDataを設定。rbdataは参照を共有できるように外部から渡す
+			if( !sel.pm.rbdataset) sel.pm.rbdataset = { [name]=rbdata}; else sel.pm.rbdataset[name] <- rbdata;
 			rbdata.partsname = name;
+			if( !rbdata.ref) rbdata.ref = { shape=null, cons=null }; else rbdata.ref.shape = rbdata.ref.cons = null;	//	refも共有
 			local shp = RigidBodyShapeData();
 			shp.shapetype = SK_SHAPE_BOX;
 			shp.size = Vector3D( 0.1, 0.1, 0.1);
 			shp.pos = Vector3D( 0.0, 0.0, 0.0);
 			shp.rot = Vector3D( 0.0, 0.0, 0.0);
-			selshape = _newrbshape();
-			rbdata.shapes = [selshape];
-			selcons = null;
+			rbdata.ref.shape = _newrbshape();
+			rbdata.shapes = [rbdata.ref.shape];
+			rbdata.ref.cons = null;
 		}
-		partstree.refreshItems();
-		assignProperties();
 	}
 
 	function _newrbshape(){
@@ -518,15 +557,24 @@ class PMPartsPanel
 	}
 
 	function propevent( e){
-		local cmd = e.actioncmd, pid = cmd.prop.pid;
-		if( cmd.cmd=="prop"){
-			if( setPartsParam( pid, cmd.val)){
-				editor.submitOp( editor.encodePM( editor.pm));
-				editor.canvas.resetRigidBody();
+		local cmd = e.actioncmd, prop = cmd["prop"], pid = prop["pid"];
+		if( cmd.cmd=="prop" && !prop["custom"]){
+			local refresh = prop["refresh"]|0, _sel = clone sel;
+			local oldval = getPartsParam( _sel, pid), self = this;
+			local _setval( val){
+				self.setPartsParam( _sel, pid, val);
+				self.editor.canvas.resetRigidBody();
+				if( _sel.pm == self.pm){
+					if( refresh & 1) self.assignProperties();
+					else self.proplist.setParameters( { [pid]=val, });
+					if( refresh & 2) self.partstree.refreshItems();
+				}
 			}
+			local redo = [@() _setval( cmd.val)];
+			local undo = [@() _setval( oldval)];
+			editor.submitOp( redo, undo);
 		}else{
-			if( actionPartsParam( pid, cmd.val, cmd.cmd)){
-				editor.submitOp( editor.encodePM( editor.pm));
+			if( actionPartsParam( pid, cmd["val"], cmd.cmd)){
 				editor.canvas.resetRigidBody();
 			}
 		}

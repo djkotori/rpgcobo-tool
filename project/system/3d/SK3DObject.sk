@@ -120,6 +120,7 @@ class SK3DObject extends SK3DRenderNode
 	res = null;				//	related resouce
 //	mesh = null;			//	PolygonMesh
 //	ptc = null;				//	Particle
+	meshtree = null;		//	PolygonMeshTree
 	
 	//
 	alive = true;			//
@@ -148,11 +149,12 @@ class SK3DObject extends SK3DRenderNode
 //	drawedge = false;		//
 	
 	//	visibility
-	layer = 0;				//
+	layer = 0;				//	
 	
 	//	motion
 	// shapetarget = null;		//	ShapeTarget ...
 	motion = null;			//	current BoneMotion
+	motionmap = null;		//	motionを切り替えるためのマップ
 	animlayers = null;		//	AnimationLayers
 	// shapemotion = null;		//	ShapeStateTimeline
 	
@@ -220,8 +222,15 @@ class SK3DObject extends SK3DRenderNode
 				src = src.getContent();
 			}
 		}
+		setSourceBody( src);
+	}
+
+	function setSourceBody( src){
 		if( src instanceof ParticleEffect){
 			setParticle( src);
+		}else
+		if( src instanceof PolygonMeshTree){
+			setPolygonMeshTree( src);
 		}else
 		if( src["face"] && src["vtx"]){	//	instanceof PolygonMeshだとエディタでおかしくなる場合がある。暫定
 			setPolygonMesh( src);
@@ -249,6 +258,35 @@ class SK3DObject extends SK3DRenderNode
 			return ptc.alive;
 			// return ptc.isActionRunning();
 		}
+	}
+
+	function setPolygonMeshTree( pmt){
+		pmt.ensureCache();
+		local mtls = pmt._mtllist.map( @( v) clone v);	//	マテリアルを全てclone
+		local pms = [];
+		local node3dmap = {};
+		//	全て1個下の階層に追加していく。ノードが一つの場合はthisに入れちゃいたい感じも。
+		foreach( n in pmt._sortednodes){
+			if( n.bonerootid >= 0){	//	ボーンそのものはSK3DObjectのノードにはならない
+				// printf( "BONE IGNORED!!!!!!!!!!!: %S %S %S %S\n", n.id, n.name, n.bonerootid, pmt.nodes[n.bonerootid].name);
+				continue;
+			}
+			local n3d = SK3DObject();	//	メッシュが空でも作られる。。。
+			local pm = pmt._meshlist[n.meshid];
+			if( pm){
+				pm = pmt.meshes[n.meshid].cloneSharedMtl( pm, mtls);
+				pms .. pm;
+				n3d.setPolygonMesh( pm);
+			}
+			n3d.tflayers[0] <- n.tf;
+			local pn = node3dmap[n.parentid];
+			if( pn) n3d.tflayers[0] <- pn.mat;
+			node3dmap[n.id] <- n3d;
+			addChild( n3d);
+			// printf( "NODE ADDED: %S %S %S\n", length( node3dmap), n.id, n.name);
+		}
+		// printf( "TOTAL NODES: %S\n", length( node3dmap));
+		meshtree = { pmt=pmt, mtls=mtls, pms=pms, node3dmap=node3dmap };
 	}
 	
 	function setPolygonMesh( m){
@@ -530,14 +568,15 @@ class SK3DObject extends SK3DRenderNode
 	function getMaterials( cache=true){
 		local ma = materials;
 		if( !materials){
-			ma = [];
-			if( cache) materials = ma;
-			foreach( f in mesh["face"]){ ma .. f.m; }
-			foreach( f in ptc["groups"]){ ma .. f.m; }
+			local mt = {};
+			foreach( f in mesh["face"]){ mt[f.m] <- 1; }
+			foreach( f in ptc["groups"]){ mt[f.m] <- 1; }
 			foreach( go in groups){
-				foreach( f in go.mesh["face"]){ ma .. f.m; }
-				foreach( f in go.ptc["groups"]){ ma .. f.m; }
+				foreach( f in go.mesh["face"]){ mt[f.m] <- 1; }
+				foreach( f in go.ptc["groups"]){ mt[f.m] <- 1; }
 			}
+			ma = Table.keys( mt);
+			if( cache) materials = ma;
 		}
 		return ma;
 	}

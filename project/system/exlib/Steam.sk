@@ -1,0 +1,136 @@
+/**
+ *	Steam.sk
+ *	Steam関連の処理を行う。SteamAPIを更にラップして使いやすくする。
+ *	steam_appid, steam_appurl を指定する。これはビルド設定で指定し、exeなどの実行ファイル(appenv)に埋め込まれる。
+ */
+module.loadAddon( "sksteam");
+
+//	SteamAPIがロードされなかった場合の処理。DLLの読み込みに失敗している。
+//	基本的に続行不能。この状態ではウィンドウも生成されていない。
+if( !::["SteamAPI"]){
+	printf( "SteamAPI not found... exit\n");
+	skExit( 1);
+	return;
+}
+
+with SteamAPI
+{
+	appid <- null
+	appurl <- null;
+
+	steamid <- null;
+	authticket <- null;
+
+	steamthread <- null;
+
+	//	opt: appid, appurl, useauth, ...
+	function setupSteam( opt){
+		appid = int( opt["appid"]);
+		appurl = opt["appurl"];
+		// SteamAPIの初期化処理
+		if( restartAppIfNecessary( appid)){
+			return;
+		}
+		if( !init()){
+			//	初期化失敗。終了するしか。
+		}
+		steamid = getSteamID64( long());
+		//	Steamのコールバック処理用スレッドを起動する
+		steamthread = newthread( "Steam thread");
+		steamthread.start( run);
+	}
+
+	function run(){
+		for( ;;){
+			runSteamCallbacks();
+			suspend();
+		}
+	}
+
+	//	SteamのWeb認証用の処理を行う。失敗したら null を返す。
+	//	スタンドアローンの場合は不要だが、アイテム課金などでは必要になる。
+	function authenticate(){
+		local _ticket = getSteamAuthSessionTicket();
+		printf( "steam auth start steamid=%S, ticket=%S,%S\n", steamid, authticket[0], authticket[1]);
+		for( ;;){
+			suspend();
+			local tid = getSteamAuthSessionResult();
+			if( tid != null){
+				if( tid == 0){ return null; }	//	
+				printf( "steam auth ticket32 = %S\n", tid);	//	tidは使わない
+				break;
+			}
+		}
+		authticket = _ticket;
+		return { steamid=steamid, authticket=_ticket};
+	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////
+	//	WebAPI
+	//	Steamゲーム用に立ち上がったウェブサーバーに接続する。
+	//	RPG-Coboがもつ共通サーバーのURLも指定できるが、独自でウェブサーバーを立ち上げることも可能。
+	
+	//	clientconf.steamauthを渡す。暗号化されている。
+	function signinByStoredAuth( cauthbb) {
+		local authbb = clone cauthbb;
+		authbb.ucrypt( 0x94c269e8);
+		local auth = ObjectInput.decode( authbb);
+		local res = webGet( "stored_auth", {auth=auth});
+		return res;
+	}
+
+	//	Steamアカウントでのサインイン
+	function processSigninSteam(){
+		local name = steamapi.getPersonaName();
+		local ret = webCall( { path="signin", steamid=string( steamid), ticket=authticket[1], name=name, lang=::lang.code});
+		if( ret["auth"]){
+			local completed = completeSignIn( ret["auth"], ret["uad"]);	//	UserAccountDataも一緒に入ってくる
+			if( !completed) return false;
+			local auth = ret["auth"];
+			//	Steamでのサインインに成功したときのみsteamauthに保存。暗号化も加える。
+			local cauthbb = ObjectOutput.encode( auth);
+			cauthbb.ucrypt( 0x94c269e8);
+			if( (clientconf["steamauth"] <> cauthbb)){
+				clientconf.steamauth <- cauthbb;
+				clientconf.save();
+			}
+			return completed;
+		}
+		return false;
+	}
+
+	//	SteamのMicroTxnを利用してアイテムを購入する。
+	//	Steamは購入アイテムはアプリ側で定義しないといけない。改ざんを防ぐにはサーバー側でもアイテム情報を検証する必要がある。
+	function buyIAPItem( iapitem){
+		local shopitem = ::gamesetting.getRMShopItem( iapitem.shopitemid);
+		local desc = iapitem.name;
+		local firstbonusver = serverinfo.firstbonus.ver;
+		local ret = webCall( { path="txn_init", method="POST", iapitemid:iapitem.id, language=::lang.code, currency: steamcurrency, desc=desc, steamid:string( steamid), ticket:authticket[1]});
+		local pricetxt = ret["pricetxt"];
+		local orderid = ret["orderid"];
+		if( !orderid) {
+			printf( "txn_init Error. ret=%S\n", encodeJSON( ret));
+			return ret;
+		}
+		//	Steam CallbackからmicroTxnの結果を待つ。
+		for( ;;){
+			suspend();
+			local oid = steamapi.getMicroTxnResult();
+			if( oid != null){
+				printf( "Steam getMicroTxnResult = %S (%S)\n", oid, orderid);
+				if( !oid) return null;	//	キャンセル
+				break;
+			}
+		}
+		//	Steam側で購入処理が完了したorderidを完了してアイテム追加を行う。
+		ret = webCall( { path="txn_finalize", method="POST", orderid:orderid, pricetxt: pricetxt, language: ::language});
+		local items = ret["items"];
+		if( items){	//	itemsには追加されたアイテムが入っている
+			printf( "txn_finalize Success. ret=%S\n", encodeJSON( ret));
+			return ret;
+		}else{
+			printf( "txn_finalize Error. ret=%S\n", encodeJSON( ret));
+			return ret;	//	購入失敗。
+		}
+	}
+}

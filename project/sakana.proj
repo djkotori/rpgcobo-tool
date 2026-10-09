@@ -24,7 +24,7 @@
 		"bind":[["127.0.0.1/*",3],["192.168.*.*/*",3],["172.16.*.*/*",3],0],
 		"file":[["**/{sakana.proj,*.{exe,bat,ps1,psm1,dll}}",4,1],["**/*.local",4,1],["$cdir/**",7,1],["$datadir/**",7,1],["$cachedir/**",7,1],4],
 		"addon":[["skstudio",1],["voxengine",1],["gltf",1],["sksteam",1],["popen_s",1],0],
-		"openurl":[["https://rpg-cobo.com/**",1],["https://*.rpg-cobo.com/**",1],["https://github.com/djkotori/**",1],["http://localhost:*/**",1],["http://192.168.*.*:*/**",1],["http://172.16.*.*:*/**",1],["dir://**",1,1],["file://$cdir/**/*.html",1,1],0],
+		"openurl":[["https://rpg-cobo.com/**",1],["https://*.rpg-cobo.com/**",1],["https://github.com/djkotori/**",1],["http://localhost:*/**",1],["http://192.168.*.*:*/**",1],["http://172.16.*.*:*/**",1],["dir://**",1,1],["file://$cdir/**/*.{html,webp,png,jpg}",1,1],0],
 		"popen":[["$cdir/tools/*.{exe,ps1}",1],["$cdir/rpgcobo.exe",1],0]
 	},
 	"permission_lv1":{

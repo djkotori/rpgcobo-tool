@@ -31,6 +31,8 @@ class ResEditorEquipVox extends ResEditor
 		{ pid="memo", lbl="$T.lbl_memo", type=STRING, multiline=true, cnt="cnt6.ui" }
 	];
 
+	static titlelbl = "$T.lbl_resedit : $T.side_res_equip_vox";
+
 	function init( path){
 		super.init( path);
 		resdirpath = ::resroot.file.path .. "/resource/vox/equip";

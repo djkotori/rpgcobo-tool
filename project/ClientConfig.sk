@@ -96,7 +96,7 @@ class ClientConfig
 		return 2;
 	}
 
-	function getResolutionBits(){
+	static function getResolutionBits(){
 		local resobits = 16;
 		if( skSupportsDisplaySize( 3840, 2160)) { resobits = 31; }
 		else if( skSupportsDisplaySize( 2560, 1440)){ resobits = 30; }
@@ -106,7 +106,7 @@ class ClientConfig
 	}
 
 	//	現在のディスプレイ解像度を元に最大で表示できるウィンドウ幅を返す
-	function getAvailableWindowSizes(){
+	static function getAvailableWindowSizes(){
 		local d = dispsize;
 		return resolist.filter( @( v){
 			local wh = v.split( "x"), w = int( wh[0]), h = int( wh[1]);
@@ -115,13 +115,18 @@ class ClientConfig
 	}
 	
 	//	
-	function getAvailableDisplaySizes(){
+	static function getAvailableDisplaySizes(){
 		local b = getResolutionBits();
 		return [
 			...resolist.map( @( v, i){
 				return ( b & (1<<i)) ? v : undefined;
 			})
 		];
+	}
+	
+	//	動作しているプラットフォームがフルスクリーン専用かどうかを返す。Windows以外やSteam Deck、Big Pictureモードではフルスクリーン専用となる。
+	static function isFullScreenOnly(){
+		return skGetOSName()!="Windows" || (::["SteamAPI"]?.IsSteamRunningOnSteamDeck()) || (::["SteamAPI"]?.IsSteamInBigPictureMode());
 	}
 
 	//	実行環境に合わせてclientconfを作成する。
@@ -160,7 +165,7 @@ class ClientConfig
 	//	スクリーン解像度の最大縦幅を設定する。(Portfolio時は横幅)
 	//	Android, iOS, WebGL でのみ有効。Windowsのフルスクリーンでもやりたいができる？
 	//	render.qualityが変化したときに呼び出す
-	function setScreenResolutionLimit( h){
+	static function setScreenResolutionLimit( h){
 		local w = (h * 16 + 4) / 9;	//	仮に横幅も16:9で設定する
 		skMoveScreen( { flags=MoveScreenFlags.MOVESCREEN_MAXRESO, w=w, h=h});
 	}

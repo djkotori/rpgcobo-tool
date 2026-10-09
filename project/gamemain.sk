@@ -79,6 +79,26 @@ function preloaShaders( glob=null){
 	printf( "preloaShaders done. total time=%d\n", skGetTime( t0));
 }
 
+::metainfo <- {};
+
+local loadMetaInfo(){
+	local r = ::getResource( ".metainfo");
+	if( !r){
+		printf( ".metainfo not found.\n");
+		return;
+	}
+	try{
+		local mt = ::metainfo = decodeJSON( decodeBASE64( r.loadData()));
+		//	Steam判定。
+		if( skGetOSName()=="Windows" && mt["steam"]["enable"]){
+			runsk( "/system/exlib/Steam.sk");
+			::SteamAPI.setupSteam( mt.steam);	//	appid, [appurl] を使用
+		}
+	}catch( ex){
+		printexception( ex);
+		printf( ".metainfo load failed.\n");
+	}
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //	ゲームプレイ
@@ -90,7 +110,9 @@ function preloaShaders( glob=null){
 		local d = FileRef( skGetCurrentDir().."/savedata");	//	カレントdirが書き込み可能ならカレント/savedataをセーブフォルダに。
 		if( d.mkdirs()) ::savedir <- d;
 	}
-	if( !::["savedir"]){ ::savedir <- FileRef( skGetDataDir()); }
+	if( !::["savedir"]){ ::savedir <- FileRef( skGetDataDir()); }	//	他OSはデフォルトのデータディレクトリをセーブフォルダにする
+
+	loadMetaInfo();	//	このタイミングでOK? Steamの初期化もここ
 	
 	//	ここでclient.confを読んでスクリーンサイズ、言語などを読む。
 	runsk( "/ClientConfig.sk");	//	$savedata/client.json

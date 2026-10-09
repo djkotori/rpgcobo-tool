@@ -787,6 +787,11 @@ class SKPopLabelView extends SKView
 		textbox.height = bnd.h | 0;
 		repaint();
 	}
+	
+	function computeSizeDeltaSelf( d){
+		local fn = ::SKLabelView.computeSizeDeltaSelf;	// fontattr, textboxがあればSKLabelViewと同様に振舞える。。。
+		return fn( d);
+	}
 
 	function moveFrameSelf( t0, t){
 		super.moveFrameSelf( t0, t);

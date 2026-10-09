@@ -72,6 +72,7 @@ class ResEditor extends EditorViewBase
 		case "bgm": ed = ::loadSKView( srcdir.."/ui/bgmeditor.ui", ::ResEditorBGM); break;
 		case "voice": ed = ::loadSKView( srcdir.."/ui/voiceeditor.ui", ::ResEditorVoice); break;
 		case "uimap": ed = ::loadSKView( srcdir.."/ui/uimapeditor.ui", ::ResEditorUI); break;
+		case "poly_mdl": ed = ::loadSKView( srcdir.."/ui/reseditor.ui", ::ResEditorPolyModel); break;
 		}
 		ed?.init( path);
 		return ed;
@@ -97,6 +98,9 @@ class ResEditor extends EditorViewBase
 		res = ::getResource( path);	//	.bw resource
 		res.userdata = null;
 		data = deepclone( res.table());	//	getContent()だとmap_assetが読み込めないんでtable()にする。。。。。
+		if( !data){
+			data = {_meta={caps=100}};	//	最低限の情報でデフォルトデータ
+		}
 		//	
 		allitems = [];
 		local caps = data._meta.caps;
