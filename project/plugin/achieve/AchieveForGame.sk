@@ -6,7 +6,7 @@ import RPGPropertyType;
 local srcdir = dirname( callee().getSourceName());
 
 local D = {
-	"unlock_achieve" = {"ja":"[b][#f90]実績を達成！[O] : %S %S", "en":"[b][#f90]Achieved![O] : %S %S"},
+	"unlock_achieve" = {"ja":"[b][#f90]実績を達成！[O] : %S %S\n[-][#bff]%S", "en":"[b][#f90]Achieved![O] : %S %S\n[-][#bff]%S"},
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +98,7 @@ class AchievementSystem.DefaultImpl extends AchievementSystem
 	function showUnlockAchievement( aidx){
 		//	デフォルトではログメッセージでアンロック表示。。。
 		local v = ::conf.achieve.items[aidx];
-		RPGMain.showUI( { key="message_log", text= lang( D.unlock_achieve) % ( v["icon"], v["name"])});
+		RPGMain.showUI( { key="message_log", text= lang( D.unlock_achieve) % (v["icon"], v["name"], v["desc"])});
 		::playSound( "SE007");	//	実績アンロック時の効果音を再生する。
 	}
 

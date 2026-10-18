@@ -109,6 +109,7 @@ fs pbrlighting
 		return f[ip.y*4+ip.x];
 	}
 	
+	//	call from G prepareing stage
 	float calcshadow( in highp vec3 wvp, in highp float blk, in highp vec3 n){
 		$( SHADOWMAP){
 			const highp float ZOFFS = 0.1;
@@ -139,8 +140,12 @@ fs pbrlighting
 		}
 	}
 	
-	float calcao( in highp vec2 uv, in highp float z){
-		return texture( aotex, uv).x;
+	float calcao( in highp vec2 uv){
+		return $(AOTEX){ texture( aotex, uv).x} : {1.0};
+	}
+
+	vec4 ssshadow( highp vec2 uv){
+		return $(COLORTEX4){ texture( ssstex, uv)} : {vec4( 1.0)};
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////
@@ -282,18 +287,13 @@ fs pbrlighting
 	// 	break; \
 	// }
 
-	vec4 ssshadow( highp vec2 uv){
-		return $(COLORTEX4){ texture( ssstex, uv)} : {vec4( 1.0)};
-	}
-
 	#define PNTLIT( SHAD, mul) \
 		highp uvec2 u2 = texture( litidxtex, vec3( g.uv, g.wvp.z*dirlit[2].w+dirlit[3].w)).xy; \
-		mediump vec4 sss = ssshadow( g.uv); \
 		uint ids[6] = uint[6]( u2[0] & 1023u, (u2[0] >> 10u) & 1023u, u2[0] >> 20u, u2[1] & 1023u, (u2[1] >> 10u) & 1023u, u2[1] >> 20u ); \
 		for( int k = 0; k < 6; k++) { \
 			uint i = ids[k]; \
 			if( i == 0u) break; \
-			Light li = pointLight( i, g, mul, sss); \
+			Light li = pointLight( i, g, mul, g.sss); \
 			SHAD( g, li, Fd, Fr); \
 		} \
 	
@@ -329,8 +329,8 @@ fs pbrlighting
 	}
 
 	vec4 lighting_standard( const G g) {
-		highp float sdw = calcshadow( g.wvp, 0.0, g.n);   //  シャドウは1つ。IBL,Dirのみ効かせる。。。
-		highp float ao = g.mparam.x $(AOTEX){ * calcao( g.uv, g.wvp.z) };
+		highp float sdw = g.shadow;
+		highp float ao = g.mparam.x * g.ao;
 		highp vec3 Fd, Fr;
 		// indirect lighting
 		{
@@ -402,8 +402,8 @@ fs pbrlighting
 	}
 
 	vec4 lighting_subsurf( const G g) {
-		highp float sdw = calcshadow( g.wvp, 0.0, g.n);   //  シャドウは1つ。IBL,Dirのみ効かせる。。。
-		highp float ao = g.mparam.x $(AOTEX){ * calcao( g.uv, g.wvp.z) };
+		highp float sdw = g.shadow;
+		highp float ao = g.mparam.x * g.ao;
 		highp vec3 Fd, Fr;
 		// indirect lighting
 		{
@@ -459,6 +459,9 @@ param pbrout_forward
 fs pbrout_forward
 {
 	vec4 pbrlighting_switch( G g){	//	g ha unpack zumi
+		g.shadow = calcshadow( g.wvp, 0.0, g.n);
+		g.ao = calcao( g.uv);
+		g.sss = ssshadow( g.uv);
 		switch( g.mtype){
 		case 0u: setup_standard( g); return lighting_standard( g);
 		case 1u: return lighting_decal( g);

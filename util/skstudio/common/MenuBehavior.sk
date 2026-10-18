@@ -153,7 +153,7 @@ class MenuPopup extends Popup
 			v.setValue( "key", fget( mi, "rlbl") ?? "---");
 		}else{
 			local modkey = fget( mi, "modkey");
-			v.setValue( "key", modkey ? RichText( "[+3]"..getModifierKeyName( modkey)) : "");
+			v.setValue( "key", modkey ? RichText( "[+5] "..getModifierKeyName( modkey)) : "");
 		}
 		//	アイコン
 		v.setValue( "icon", mi["icon"]||null);

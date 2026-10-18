@@ -47,7 +47,7 @@ class PMEditor extends EditorViewBase
 			pmt = pmToPMT( r);
 		}else
 		if( r.name.endsWith( ".pmt")){
-			pmt = r.getContent();
+			pmt = ::getPolygonMeshTree( r);
 		}else
 		if( r.name.endsWith( ".gltf") || r.name.endsWith( ".glb")){
 			local loader = GLTFLoader();
@@ -86,7 +86,6 @@ class PMEditor extends EditorViewBase
 	}
 
 	function getDefaultRSetID(){
-		return "pbr_fw";
 		local pmispbr = false;
 		local ma = canvas.sk3d.getMaterials();
 		foreach( m in ma){
@@ -338,6 +337,7 @@ class PMRightPanel
 
 	mtlpanel = null;			//	PMMaterialPanel
 	partspanel = null;			//	PMPartsPanel
+	animepanel = null;			//	PMAnimePanel
 	shapepanel = null;			//	PMShapePanel
 	
 	pmselect = null;			//	MenuBehavior
@@ -350,6 +350,8 @@ class PMRightPanel
 		//	panels
 		mtlpanel = PMMaterialPanel( ::loadSKView( "/skstudio/ui/pmeditor/pmmtl.ui"), editor);
 		partspanel = PMPartsPanel( ::loadSKView( "/skstudio/ui/pmeditor/pmparts.ui"), editor);
+		animepanel = PMAnimePanel( ::loadSKView( "/skstudio/ui/pmeditor/pmparts.ui"), editor);
+		shapepanel = PMShapePanel( ::loadSKView( "/skstudio/ui/pmeditor/pmmtl.ui"), editor);
 		body.addChild( mtlpanel.view);
 		
 		tabs.listview.addEventListener( ACTION_EVENT, tabevent);
@@ -360,11 +362,13 @@ class PMRightPanel
 
 	function setPolygonMeshTree( pmt){
 		pmselect.setMenu( pmt.meshes.map( @( m, i)+{ lbl=m.name, val=m, icon="\ue86b", }));
+		animepanel.setPolygonMeshTree( pmt);
 	}
 
 	function selectMesh( pm){
 		mtlpanel.setPM( pm);
 		partspanel.setPM( pm);
+		shapepanel.setPM( pm);
 	}
 
 	function pmselectevent( e){
@@ -381,9 +385,9 @@ class PMRightPanel
 		local pnl = null;
 		switch( e.actioncmd){
 		case 0:	pnl = mtlpanel.view; break;
-		case 1: 
+		case 1: pnl = animepanel.view; break;
 		case 2:	pnl = partspanel.view; break;
-		case 3:
+		case 3: pnl = shapepanel.view; break;
 		}
 		if( !pnl) return;
 		pnl.stretchSize( body.bnd.w, body.bnd.h);
@@ -396,6 +400,6 @@ class PMRightPanel
 
 skstudio.registerEditor( {
 	uid = "editor_pm",
-	matches = @( path){ return path.endsWith( ".pm") || path.endsWith( ".glb") || path.endsWith( ".gltf"); }
+	matches = @( path){ return path.endsWith( ".pm") || path.endsWith( ".pmt") || path.endsWith( ".glb") || path.endsWith( ".gltf"); }
 	createEditor = PMEditor.createEditor,
 });

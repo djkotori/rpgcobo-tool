@@ -1116,6 +1116,7 @@
 	"icon_equip"						: {"ja":"装備アイコン", "en":"Equip Icons"}
 	"icon_job"							: {"ja":"ジョブアイコン", "en":"Job Icons"}
 	"icon_skill"						: {"ja":"スキルアイコン", "en":"Skill Icons"}
+	"icon_map"							: {"ja":"マップアイコン", "en":"Map Icons"}
 	"icon_item"							: {"ja":"アイテムアイコン", "en":"Item Icons"}
 	"icon_weapon"						: {"ja":"武器アイコン", "en":"Weapon Icons"}
 	"icon_armor"						: {"ja":"防具アイコン", "en":"Armor Icons"}
@@ -1127,6 +1128,7 @@
 	"pop_ttsgen_faulure"				: {"ja":"ボイスの生成が失敗しました。", "en":"Voice generation failed."}
 	"pop_vox_copied"					: {"ja":"ボクセルファイルが複製されました。", "en":"The voxel file has been copied."}
 	"pop_mot_copied"					: {"ja":"モーションファイルが複製されました。", "en":"The motion files have been copied."}
+	"error_import_mdl"					: {"ja":"モデルのインポート中にエラーが発生しました", "en":"An error occurred while importing the model."}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	マップサイドビュー
@@ -1174,7 +1176,9 @@
 	"lbl_tocustomevent"					: {"ja":"カスタムイベントに変換", "en":"To Custom Event"}
 
 	"lbl_blocks"						: {"ja":"ブロック", "en":"Blocks"}
-	"lbl_abschk"						: {"ja":"高さを指定", "en":"Absolute"}
+	"lbl_lvstretch"						: {"ja":"地形伸ばし", "en":"LV Stretch"}
+	"lbl_lvabs"							: {"ja":"高さセット", "en":"LV Set"}
+	"lbl_lvoffs"						: {"ja":"高さオフセット", "en":"LV Offset"}
 	"lbl_planechk"						: {"ja":"同一平面", "en":"Same Plane"}
 	"lbl_blkchk"						: {"ja":"同一ブロック", "en":"Same Block"}
 	"lbl_waterchk"						: {"ja":"水を分離", "en":"Water Group"}

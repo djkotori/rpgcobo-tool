@@ -5,13 +5,13 @@ declare mod_pbrg;
 	u1 : N23(11,11,1) P5 M4
 	u2 : P32 ↓
 */
-//	0 STANDARD  : rough6 metal6 ao8 emit8 push8(u1+)
+//	0 STANDARD  : metal6 ao8 emit8 push8(u1+)
 //	1 DECAL     : 									//	no params
-//	2 SSS       : rough6 metal6 tint18 tick5(u1)	//	tint=rgb666 thickness?
-//	3 SHEEN     : rough6 metal6 tint18 srough5(u1)
-//	4 CLEARCOAT : rough5 metal5 nxy19 amt3 crough5(u1) //	nxy:内部のn(9,9,1)。※nにはclearcoat外部のnが入る。pixelin_clearcoatで入れ替え
-//	5 TRANSPAR  : rough6 metal6 refr8 ior8			//	
-//	6 ANISOTRO  : rough5 metal5 rot15 amt5			//	rot=(0,1,0)を基準にhpp回転を5bitずつ
+//	2 SSS       : metal6 tint18 tick6				//	tint=rgb666 thickness?
+//	3 SHEEN     : metal6 tint18 srough6				//	
+//	4 CLEARCOAT : metal6 nxy19 amt3 crough4		 	//	nxy:内部のn(9,9,1)。※nにはclearcoat外部のnが入る。
+//	5 TRANSPAR  : metal6 refr8 ior8					//	
+//	6 ANISOTRO  : metal6 rot15 amt5					//	rot=(0,1,0)を基準にhpp回転を5bitずつ
 //	7 CLOTH     : --------
 //	
 //	N = dot( uvec3( n*vec3(1023.0,1023.0,0.9999)+vec3(1024.0,1024.0,1.0)), uvec3( 1, 2048, 2048*2048))
@@ -29,8 +29,9 @@ param g
 		highp float metal;
 		lowp uint mtype;		//	0,1,2,3,...
 		lowp float gsel;		//	G-Buffer Selector ID
-		highp vec4 mparam;	//	mtype ni yoru
+		highp vec4 mparam;		//	mtype ni yoru
 		highp vec3 n;			//	normal
+		highp vec3 n2;			//  clear coat normal, anisotropic refvec etc...
 		//	outer input
 		highp vec3 wvp;			//	GBufferには書き出されない。ライティングパス用の入力
 		highp vec2 uv;			//	screen uv
@@ -43,7 +44,9 @@ param g
 		highp vec3 energyCompensation;
 		highp float NoV;
 		highp vec3 reflected;
-		highp vec4 etc;				//  clear coat normal, anisotropic refvec etc...
+		mediump float shadow;
+		mediump float ao;
+		mediump vec4 sss;
 	};
 }
 
@@ -120,6 +123,7 @@ fs unpackg
 		return vec3( un.xy, sqrt( clamp( 1.0-dot( un.xy, un.xy), 0.0, 1.0)) * un.z);
 	}
 
+	//	call first!!!!!
 	void unpackg_common( out G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1){
 		highp vec2 uv = wvpp.xy*0.5 + 0.5;
 		g.wvp = reconstructWVPtex( uztex, uv+0.00002, p1[0]);	//	0.0002 : nearest offset
@@ -131,27 +135,20 @@ fs unpackg
 		g.uv = uv;
 	}
 
-	void unpackg_standard( out G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1, const highp uint u2){
-		//	common
-		unpackg_common( g, wvpp, f0, u1);
-		//	standard
+	void unpackg_standard( inout G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1, const highp uint u2){
 		highp vec4 f = vec4( (uvec4( u2)>>uvec4( 26, 16, 8, 0)) & uvec4( 63, 255, 255, 255)) * vec4( 1.0/63.0, 1.0/255.0, 1.0/255.0, 1.0/255.0);
 		g.metal = f.x;
 		g.mparam.xyz = f.yzw;	//	emit, ao, bump
 	}
 
-	void unpackg_decal( out G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1, const highp uint u2){
-		//	common
-		unpackg_common( g, wvpp, f0, u1);
+	void unpackg_decal( inout G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1, const highp uint u2){
 		g.metal = 0.0;
 		g.mparam = vec4( 0.0);
 		highp float v = uintBitsToFloat( u2);
 		g.col.xyz *= v;
 	}
 
-	void unpackg_subsurf( out G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1, const highp uint u2){
-		//	common
-		unpackg_common( g, wvpp, f0, u1);
+	void unpackg_subsurf( inout G g, const highp vec4 wvpp, const lowp vec4 f0, const highp uint u1, const highp uint u2){
 		//	subsurf
 		highp vec2 f = vec2( (uvec2( u2)>>uvec2( 26, 20)) & 63u) * (1.0/63.0);
 		highp vec3 tint = vec3( (uvec3( u2)>>uvec3( 0, 6, 12)) & 63u) * (1.0/63.0);

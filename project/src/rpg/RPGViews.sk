@@ -719,6 +719,7 @@ class SKPopLabelView extends SKView
 	static animscaleprop = { pid=6518, lbl="$T.lbl_scale", type=3321, range=(0.0,2.0)};
 	static animxprop = { pid=6519, lbl="X", type=3321, range=(-40,40)};
 	static animyprop = { pid=6520, lbl="Y", type=3321, range=(-40,40)};
+	static animadvprop = { pid=6521, lbl="$T.lbl_advance", type=3321, range=( -64, 64)};
 	
 	static icontype = "ttf";
 	
@@ -736,6 +737,7 @@ class SKPopLabelView extends SKView
 	animy = [0.0,0.0];					//	y 3321
 	animscale = [1.0,1.0];				//	scale 3321
 	animrot = [0.0,0.0];				//	rot 3321
+	animadv = [0.0,0.0];				//	advance 3321
 
 	constructor( s="", a=null){
 		fontattr = a || #FontAttribute( Fonts.get( "ui"), 20, 0xffffffff, SK_FONT_BOLD);
@@ -825,10 +827,12 @@ class SKPopLabelView extends SKView
 		textbox.setAttribute( fontattr);
 		resetanim = false;
 		//	文字ごとにFontAttribute
+		local adv = _getv( frm, animadv);
 		local ft = #{ x=0, y=0, s=1.0, r=0.0};
 		foreach( i, v in wtext){
 			local fa = clone fontattr;
 			local f = frm - animdelay*i;
+			fa.advance = adv;
 			fa.color = _getv( f, animcolor, Math.lerpcolor);
 			fa.strokecolor = _getv( f, animstroke, Math.lerpcolor);
 			ft.x = _getv( f, animx);
@@ -868,6 +872,7 @@ class SKPopLabelView extends SKView
 		animscaleprop,
 		animxprop,
 		animyprop,
+		animadvprop,
 		( SKVP[TEXTALIGN]),
 		( SKVP[WRAPTEXT]),
 		( SKVP[AUTOFITWEIGHT]),
@@ -893,6 +898,7 @@ class SKPopLabelView extends SKView
 		case 6518: return animscale;
 		case 6519: return animx;
 		case 6520: return animy;
+		case 6521: return animadv;
 		default : return super.getParam( pid);
 		}
 	}
@@ -932,6 +938,7 @@ class SKPopLabelView extends SKView
 		case 6518: animscale = p0; resetanim = true; break;
 		case 6519: animx = p0; resetanim = true; break;
 		case 6520: animy = p0; resetanim = true; break;
+		case 6521: animadv = p0; resetanim = true; break;
 		default:
 			super.setParam( pid, p0, p1, w);
 			break;

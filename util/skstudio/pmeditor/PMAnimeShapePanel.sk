@@ -1,0 +1,218 @@
+import PropertyType;
+import SKViewPropertyID;
+import VirtualKeyCode;
+import ModifiersMask;
+
+local gathermots( pmt){
+	local a = [ { lbl="$T.lbl_notset", val=null}];
+	local motmap = {};
+	foreach( m in pmt.meshes){
+		foreach( i, v in m.motionmap){
+			if( !motmap[i]){
+				motmap[i] <- true;
+				a.push( { lbl=i, val=i});
+			}
+		}
+	}
+	return a;
+}
+
+
+class PMAnimePanel
+{
+	static props = [
+		{ pid="id", lbl="ID", type=STRING },
+		{ pid="mot", lbl="$T.lbl_motion", type=LIST, refresh=1,
+			list=@( pl){
+				local ed = pl.ref;
+				return gathermots( ed.pmt);
+			}
+		},
+		{ pid="st", lbl="$T.lbl_start", type=SCALAR, range=(0,1000), },
+		{ pid="en", lbl="$T.lbl_end", type=SCALAR, range=(0,1000), },
+		{ pid="spd", lbl="$T.lbl_speed", type=SCALAR, range=(0.01,100.0), q=10, },
+		{ pid="loop", lbl="$T.lbl_loop", type=BOOL, },
+		{ pid="replay", lbl="$T.lbl_replay", type=BOOL, },
+		{ pid="play", lbl="", type=CUSTOMBUTTON, cnt="cnt5.ui", tostring="PLAY", icon="\ue745", ui="1", 
+			edit=@(){
+				local ed = proplist.ref;
+				ed.canvas.sk3d.tanime( ed.rightpanel.animepanel.selani);
+			}
+		}
+	];
+
+	editor = null;
+	view = null;
+
+	animelist = null;		//	ListBehavior
+	proplist = null;		//	GPUIListView
+
+	selani = null;
+
+	constructor( v, e){
+		view = v;
+		editor = e;
+		animelist = ListBehavior( v.findChild( "partstree"));
+		animelist.dndfunc = 3;
+		animelist.listview.addEventListener( ITEM_EVENT, listevent);
+		animelist.listview.addEventListener( ACTION_EVENT, listevent);
+		animelist.setviewfunc = @( la, v, i){
+			defaultsetview( la, v, i);
+			v.findChild( "expand").setVisible( false);
+			v.findChild( "type").setVisible( false);
+			v.setValue( "lbl", i["id"]);
+			v.pickable = false;
+		}
+		proplist = PropertyListBehavior( v.findChild( "proplist"));
+		proplist.bindProperties( props);
+		proplist.listview.addEventListener( ACTION_EVENT, propevent);
+		proplist.listview.addEventListener( ITEM_EVENT, propevent);
+		proplist.ref = e;
+	}
+	
+	//	アニメはpmt単位
+	function setPolygonMeshTree( pmt){
+		animelist.setListItems( pmt.animelist);
+		if( pmt.animelist[0]){
+			animelist.setSelectedItem( pmt.animelist[0]);
+			selectAnime( pmt.animelist[0]);
+		}
+	}
+
+	function selectAnime( ani){
+		selani = ani;
+		assignProperties();
+	}
+
+	function assignProperties(){
+		proplist.setParameters( selani);
+	}
+
+	function refresh(){
+		proplist.setParameters( selani);
+		animelist.refreshItems();
+	}
+	
+	function propevent( e){
+		local cmd = e.actioncmd, prop = cmd["prop"], pid = prop["pid"];
+		if( cmd.cmd=="prop"){
+			local refresh = prop["refresh"]|0, data = selani;
+			local oldval = ::getProperty( prop, data), self = this;
+			local redo = [@(){ ::setProperty( prop, data, cmd.val); self.refresh(); }];
+			local undo = [@(){ ::setProperty( prop, data, oldval); self.refresh(); }];
+			editor.submitOp( redo, undo);
+		}
+	}
+
+	function listevent( e){
+		e.consume();
+		local cmd = e.actioncmd;
+		switch( e.id){
+		case ITEM_SELECTED:
+			if( cmd){
+				selectAnime( cmd);
+			}
+			break;
+		case ITEM_SORT:
+		{
+			local oldli = clone animelist.items, newli = ::applyItemSort( clone oldli, e), self = this;
+			local redo = [@(){ self.animelist.items.clear() ...newli; self.refresh();}];
+			local undo = [@(){ self.animelist.items.clear() ...oldli; self.refresh(); }];
+			editor.submitOp( redo, undo);
+			break;
+		}
+		case ACTION_PERFORMED:
+			if( e.isMouseDown( BUTTON2_MASK)){
+				
+				
+			}else{
+				editor.canvas.sk3d.tanime( selani);
+			}
+			break;
+		}
+	}
+}
+
+
+
+//	保存とかできないでもいいよね。。。？？？
+//	
+class PMShapePanel
+{
+	// static baseprops = [
+	// 	{ pid = "name", lbl = "$T.lbl_name", type = STRING, },
+	// 	{ pid="G1", lbl="", type=HEADER, cnt="header0.ui"},
+	// ];
+
+	editor = null;
+	view = null;
+
+	keymenu = null;			//	MenuBehavior
+	proplist = null;		//	GPUIListView
+
+	pm = null;
+	selkey = null;			//	
+
+	wmap = null;			//	{ keyname, weight }
+
+	
+	constructor( v, e){
+		view = v;
+		editor = e;
+		v.addEventListener( ACTION_EVENT, actionevent);
+		proplist = PropertyListBehavior( v.findChild( "proplist"));
+		proplist.listview.addEventListener( ACTION_EVENT, propevent);
+		proplist.listview.addEventListener( ITEM_EVENT, propevent);
+		proplist.ref = e;
+		keymenu = MenuBehavior( v.findChild( "mtlmenu"));
+	}
+	
+	function setPM( p){
+		pm = p;
+		local pms = pm["ref"];
+		if( pms["shapekeys"]){
+			wmap = {};
+			foreach( k, v in pms["shapekeys"]["keymap"]) wmap[k] <- 0.0;
+			printf( "wmap %S\n", encodeJSON( wmap));
+		}else{
+			wmap = null;
+		}
+		refresh();
+	}
+
+	function refresh(){
+		local pms = pm["ref"];
+		if( !pms["shapekeys"]){
+			keymenu.setMenu( [{lbl="$T.lbl_none", val=null}]);
+			proplist.bindProperties( []);
+			return;
+		}
+		local _idx = selkey["val"] ?? null;
+		local sk = pms["shapekeys"], keymap = sk.keymap;	//	keymapはインデックスを名前でマップしている
+		local keylist = Table.map( keymap, @( v, k) +{ lbl=k, val=v }).sort( @( v) v.val);
+		keymenu.setMenu( [{lbl="$T.lbl_nosel", val=null}] ... keylist);
+		local item = keylist.find( @( v) v.val==_idx) || keymenu.menuitems[0];
+		selkey = item;
+		keymenu.selectItem( item);
+		//	props
+		local props = keylist.map( @( v){
+			return {
+				pid = v.lbl, lbl = v.lbl, type = SCALAR, range=(0.0, 1.0), q=100, ui="bar", dynamic = true,
+			};
+		});
+		proplist.bindProperties( props);
+		proplist.setParameters( wmap);
+	}
+
+	function actionevent( e){
+	}
+
+	function propevent( e){
+		local cmd = e.actioncmd;
+		if( cmd["cmd"] != "prop") return;
+		local prop = cmd.prop, pid = prop.pid;
+		printf( "!!!!!!!!!!!!!!!!!!!! %S %S\n", pid, cmd.val);
+		wmap[pid] <- cmd.val;
+		pm.shapetarget.assign( wmap);
+	}
+}

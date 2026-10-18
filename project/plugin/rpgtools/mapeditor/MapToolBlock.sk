@@ -1255,7 +1255,6 @@ class MapTools.tool_level extends MapTool
 	planechk = null;
 	blkchk = null;
 	waterchk = null;
-	abschk = null;
 	offschk = null;
 
 	aligns = null;	//	[min,none,max]
@@ -1275,14 +1274,11 @@ class MapTools.tool_level extends MapTool
 		selblk.view.addEventListener( ACTION_EVENT, selblkevent);
 		repchk = optionview.findChild( "repchk");
 		x2chk = optionview.findChild( "x2chk");
-		x2chk.setSelected( true);
+		// x2chk.setSelected( true);
 		planechk = optionview.findChild( "planechk");
 		blkchk = optionview.findChild( "blkchk");
 		waterchk = optionview.findChild( "waterchk");
 		waterchk.setSelected( true);
-		//
-		abschk = optionview.findChild( "abschk");
-		offschk = optionview.findChild( "offschk");
 		//
 		offsval = createNumInputBehavior( optionview.findChild( "offsval"));
 		offsval.setRange( -16, 16, 1);
@@ -1298,22 +1294,31 @@ class MapTools.tool_level extends MapTool
 
 	function setMode( m){
 		mode = m;
-		offschk.setSelected( !!m);
-		abschk.setSelected( !m);
-		if( m){
-			offsval.setRange( -16, 16, 1);
-			offsval.setValue( 4);
-		}else{
+		for( local l = 0;l < 3;l ++){
+			optionview.findChild( "mode"..l).setSelected( l==m);
+		}
+		local optg = optionview.findChild( "optg");
+		switch( m){
+		case 0:
+			optg.anime( -1);
+			break;
+		case 1:
 			offsval.setRange( 0, 32, 1);
 			offsval.setValue( 4);
+			optg.anime( 0);
+			break;
+		case 2:
+			offsval.setRange( -16, 16, 1);
+			offsval.setValue( 4);
+			optg.anime( 0);
+			break;
 		}
 	}
 
 	function optionevent( e){
 		e.consume();
 		switch( e.src["name"]){
-		case "abschk": setMode( 0); break;
-		case "offschk": setMode( 1); break;
+		case "mode0": case "mode1": case "mode2": setMode( e.src.name[4]-'0'); break;
 		case "repchk": optionview.anime( e.src.isSelected() ? 0 : -1); break;
 		case "align0": case "align1": case "align2": 
 			align = e.src.name[5]-'0';
@@ -1332,12 +1337,16 @@ class MapTools.tool_level extends MapTool
 		}
 	}
 
+	function getdh( hb){
+		return !mode ? 0 : offsval.getValue()+(mode==2?0:-(hb["by"]||0));
+	}
+
 	function incParameter( e){
 		offsval.setValue( offsval.getValue() + e.count);
 		//
 		editor.canvas.view.repaint();
 		local hb = rayTestX( e, blkflag);
-		local dh = offsval.getValue()+(mode?0:-(hb["by"]||0));
+		local dh = getdh();
 		placeLVPen( hb, getpens()[0], dh);
 	}
 
@@ -1353,7 +1362,7 @@ class MapTools.tool_level extends MapTool
 	}
 
 	function rayTestX( e, blkflag){
-		local hb = rayTest( e, blkflag);
+		local hb = rayTest( e, blkflag, true);
 		if( hb["f"] != 0) hb = null;
 		if( hb && x2chk.isSelected()){ hb.bx = (hb.bx+1)&~1; hb.bz = (hb.bz+1)&~1; }
 		return hb;
@@ -1365,7 +1374,7 @@ class MapTools.tool_level extends MapTool
 		case MOUSE_MOVED:
 		{
 			local hb = rayTestX( e, blkflag);
-			local dh = offsval.getValue()+(mode?0:-(hb["by"]||0));
+			local dh = getdh( hb);
 			placeLVPen( hb, getpens()[0], dh);
 			e.consume();
 			break;
@@ -1376,7 +1385,11 @@ class MapTools.tool_level extends MapTool
 			if( e.isMouseDown( BUTTON1_MASK)){
 				if( hb){
 					e.consume();
-					return levelerStart( e, hb);
+					if( mode == 0){
+						return stampStart( e, hb);
+					}else{
+						return levelerStart( e, hb);
+					}
 				}
 			}
 			break;
@@ -1408,7 +1421,7 @@ class MapTools.tool_level extends MapTool
 		local m = MenuPopup.run( ctxmenu);
 		switch( m["id"]){
 		case "pick":
-			setMode( 0);
+			setMode( 1);
 			offsval.setValue( hb.by);
 			break;
 		default:
@@ -1426,7 +1439,7 @@ class MapTools.tool_level extends MapTool
 		local m = mode, align = align;
 		local flags = (planechk.isSelected() && 1) | (blkchk.isSelected() && 2) | (waterchk.isSelected() && 4);
 		//	最初の描画
-		bop.levelSet({ pen:pen, hb:hb0, blk:blk, newy:m?hb0.by+offs0:offs0, align=align, flags=flags });
+		bop.levelSet({ pen:pen, hb:hb0, blk:blk, newy:m==2?hb0.by+offs0:offs0, align=align, flags=flags });
 		bop.submit( editor);
 		local nyptr = ptr( 0);
 		//	開始時のtoolfunc
@@ -1448,10 +1461,10 @@ class MapTools.tool_level extends MapTool
 				}
 				if( hb){
 					if( hb && x2){ hb.bx = (hb.bx+1)&~1; hb.bz = (hb.bz+1)&~1; }
-					bop.levelSet({ pen:pen, hb:hb, blk:blk, newy:(m?(hb.by+offs0):offs0)+~nyptr, align=align, flags=flags });
+					bop.levelSet({ pen:pen, hb:hb, blk:blk, newy:(m==2?(hb.by+offs0):offs0)+~nyptr, align=align, flags=flags });
 					if( bop.len()) bop.merge( editor);
 				}
-				local dh = self.offsval.getValue()+(m?0:-(hb["by"]||0)) + ~nyptr;
+				local dh = self.offsval.getValue()+(m==2?0:-(hb["by"]||0)) + ~nyptr;
 				self.placeLVPen( hb, pen, dh);
 				break;
 			case MOUSE_MOVED:	//	普通はこれ来ない
@@ -1481,11 +1494,15 @@ class MapTools.tool_level extends MapTool
 		if( !hb) return removeGuide( "pen");
 		local sk3d = guides["pen"];
 		if( !sk3d || sk3d.ref[0]!=pen || sk3d.ref[1]!=dh){
+			local c = PEN_PAINT; if( dh < 0) c = PEN_ERACE;
 			sk3d?.kill();
-			sk3d = createPen( pen, PEN_PAINT);
+			sk3d = createPen( pen, c);
 			//	lvmesh
 			local vd8 = getlvvd( penid);
 			local vmd = VoxelMeshBuilder.createVoxelMeshData( vd8, null, 0, 63);
+			vd8.pal = clone vd8.pal;
+			vd8.pal[1] = ::penmodecol[c];
+			vd8.pal.updateTexture();
 			local pm = vmd.createPolygonMesh( vd8.pal);
 			pm.face .. (clone pm.face[0]); pm.face[1].m = clone pm.face[1].m;
 			foreach( i,f in pm.face){
@@ -1496,10 +1513,92 @@ class MapTools.tool_level extends MapTool
 			local h3d = SK3DObject( pm);
 			h3d.pos.add( 0, 0.5+dh*0.5, 0);
 			sk3d.addChild( h3d);
+			//	arrow
+			if( dh){
+				local r = sk3d.bnd;
+				local piv = sk3d.pivot;
+				local am = ::getPolygonMesh( "/plugin/rpgtools/pm/uparrow.pm");	//	上向き矢印メッシュ
+				local m = am.face[0].m;
+				m.depthtest = SK_ALWAYS;
+				m.Kmul = ::penmodecol_rgba[c];
+				local a3d = SK3DObject( am);
+				a3d.pos( r.r*0.5/VOX_SCALE, r.s*0.5/VOX_SCALE + dh*0.5-0.25, r.t*0.5/VOX_SCALE);
+				if( dh < 0){
+					a3d.rot.setHPB( 0, 0, Math.PI);
+					a3d.pos.y += 1.0;
+				}
+				sk3d.addChild( a3d);
+			}
 			//
 			addGuide( "pen", sk3d);
 			sk3d.ref = (pen,dh);
 		}
 		movePen( hb, sk3d);
+	}
+
+
+	//	ペンの形でトップのブロックと高さを引き延ばす
+	function stampStart( e0, hb0){
+		local self = this;
+		local pens = getpens(), pen = pens[hb0.f];
+		local bop = BlockOperation( editor.bw);
+		//	スタンプの準備(BlockWorld)
+		local stamp = createStamp( hb0, pen);
+		local oldpos = (hb0.bx, hb0.by, hb0.bz);
+		local merged = ptr( false);
+		//	最初の描画は無い。ドラッグすると初めて描画。
+		//	開始時のtoolfunc
+		local fn( e){
+			e.consume();
+			switch( e.id){
+			case MOUSE_DRAGGED:
+				local hb;
+				//	ドラッグでの描画。mousedown地点の平面
+				hb = self.planeTest( e, hb0);
+				if( hb && (e.modifiers&SHIFT_MASK)){
+					self.adjustPlane( hb0, hb);
+				}
+				if( hb && (hb.bx!=oldpos[0] || hb.bz!=oldpos[2])){
+					bop.stampSet({ stamp=stamp, hb=hb, pen=pen });
+					if( bop.len()){
+						if( !~merged){
+							bop.submit( editor); merged << true;
+						}else{
+							bop.merge( editor);
+						}
+					}
+					self.placeLVPen( hb, pen, 0);
+					oldpos.set( hb.bx, hb.by, hb.bz);
+				}
+				break;
+			case MOUSE_MOVED:	//	普通はこれ来ない
+			case MOUSE_RELEASED:
+			case MOUSE_CANCELLED:
+				return null;
+			case KEY_PRESSED:
+				break;
+			}
+			return fn;
+		};
+		return fn;
+	}
+
+	function createStamp( hb0, pen){
+		local x0 = hb0.bx-pen.pivot[0], x1 = x0 + pen.w;
+		local z0 = hb0.bz-pen.pivot[2], z1 = z0 + pen.d;
+		local bw = editor.bw, h = bw.h;
+		local r = IRect3D(0, 0, 0, 1, h, 1), p = (0,0,0);
+		local ret = BlockWorld( pen.w, h, pen.d);
+		for( local z = z0, i = 0; z < z1; z ++) for( local x = x0; x < x1; x ++, i++){
+			if( pen[i]){
+				p[0] = x-x0; p[2] = z-z0;
+				for( local y = 0; y < h; y ++){
+					p[1] = y; ret.placeBlock( p, bw.blockat( x, y, z), 0);
+				}
+			}else{
+				r.x = x-x0; r.z = z-z0; ret.fillBlock( r, 32);	//	抜きブロック指定。
+			}
+		}
+		return ret;
 	}
 }

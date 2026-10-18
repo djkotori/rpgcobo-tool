@@ -226,7 +226,7 @@ class BlockOperation
 		local r = bw.w-1, t = bw.h-1, f = bw.d-1;
 		local chk = {};
 		local x0 = p.hb.bx, y0 = p.hb.by, z0 = p.hb.bz;
-		local blk0 = bw.blockat( x0, y0, z0) & 0x3ff, blk = p.blk;
+		local blk0 = bw.blockat( x0, y0, z0) & 0x7ff, blk = p.blk;
 		local pos = tp_0;
 		local stk = [x0,y0,z0];	//	一次元配列的に使う
 		local bm = -32, bp = 32;
@@ -598,4 +598,24 @@ class BlockOperation
 		return this;
 	}
 
+	function stampSet( p){
+		local stamp = p.stamp, hb = p.hb, pen = p.pen;
+		local _bw = bw;
+		local x0 = hb.bx-pen.pivot[0];
+		local z0 = hb.bz-pen.pivot[2];
+		//
+		//	undo用に元のブロック状態を保存
+		local oldbw = BlockWorld( stamp.w, _bw.h, stamp.d);
+		oldbw.drawWorld( _bw, IMat( -x0, 0, -z0), 2);	//	2:fbおかないフラグ
+		//	
+		local m = IMat( x0, 0, z0);
+		redoop .. @(){
+			// _bw.fillBlock( IRect3D( hb.bx, 0, hb.bz, stamp.w, _bw.h, stamp.d), 0);
+			_bw.drawWorld( stamp, m, 1|2);
+		};
+		undoop[0] <- @(){
+			_bw.drawWorld( oldbw, m, 1|2);
+		};
+		return this;
+	}
 }

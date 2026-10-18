@@ -48,6 +48,8 @@ import BlockFlagID;
 	0x02ffd900,
 ];
 
+::penmodecol_rgba <- penmodecol.map( @( c) (c<<24)|((c&0xff00)<<8)|((c&0xff0000)>>8)|(c>>>24));
+
 class RPGToolMesh
 {
 	static function getVoxelMesh( vd, pal=null, center=true){

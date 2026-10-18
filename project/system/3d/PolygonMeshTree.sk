@@ -17,7 +17,8 @@ class PolygonMeshSource extends Serializable
 	<ser_o> name = null;			//	メッシュ名
 	<ser_o> vtx = null;				//	VertexBuffer : 頂点データ。共有されている場合もある？
 	<ser_o> face = null;			//	PolygonFaceSource[] : 
-	<ser_o> motion = null;			//	MotionData : スキンアニメ
+	<ser_o> motion = null;			//	MotionData : スキンアニメ。motionmapの先頭
+	<ser_o> motionmap = null;		//	{string: MotionData} : スキンアニメのマップ。MotionDataは全て同じパーツマップの必要あり。
 	<ser_o> shapekeys = null;		//	ShapeKeyList : シェイプアニメ
 	<ser_o> bnd = null;				//	Rect3D : バウンディングボックス
 	<ser_o> pivot = null;			//	Transform : ピボット
@@ -32,6 +33,7 @@ class PolygonMeshSource extends Serializable
 		local pm = PolygonMesh();
 		pm.vtx = vtx;
 		pm.motion = motion;
+		pm.motionmap = motionmap;
 		pm.bnd = bnd;
 		pm.pivot = pivot;
 		pm.wmapname = wmapname;
@@ -156,8 +158,9 @@ class PolygonMeshNode extends Serializable
 	<ser_i> parentid = -1;			//	親ノードID。ルートの場合は-1。
 	<ser_i> meshid = -1;			//	int : meshsrcsのインデックス
 	<ser_i> skinid = -1;			//	int : ボーンだった場合に>=0
-	<ser_i> bonerootid = -1;			//	int : ボーンだった場合に>=0
-	<ser_o> tf = null;				//	Transform : ノードの座標変換。アニメはしないんかな
+	<ser_i> bonerootid = -1;		//	int : ボーンだった場合に>=0
+	<ser_o> tf = null;				//	Transform : ノードの座標変換
+	<ser_o> tfline = null;			//	TransformTimeline : アニメするノード用
 	<ser_o> reserved1 = null;
 	<ser_o> reserved2 = null;
 	<ser_o> reserved3 = null;
@@ -172,6 +175,11 @@ class PolygonMeshTree extends Serializable
 	<ser_o> materials = null;		//	Material[] : 
 	<ser_o> textures = null;		//	jpg,webpなどの画像データが圧縮状態で入る。{ name, data|path, sampler}
 	<ser_o> nodes = null;			//	PolygonMeshNode[] : ノードの配列。id連番。
+	<ser_o> animelist = null;		//	[{id,mot,st,en,spd,loop,replay}]: アニメ名と再生情報のリスト
+	<ser_o> metainfo = null;		//	メタ情報。インポート時の設定など。
+	<ser_o> reserved2 = null;
+	<ser_o> reserved3 = null;
+	<ser_o> reserved4 = null;
 	
 	//	以下キャッシュ。ロードは初回のみ行われる。
 
@@ -180,6 +188,7 @@ class PolygonMeshTree extends Serializable
 	_texlist = null;				//	Texture[] : キャッシュされたtexturesのリスト。Textureの参照は共有される。
 	_mtllist = null;				//	Material[] : キャッシュされたmaterialsのリスト。※SK3DObjectにインスタンス化された時に clone されて展開される。
 	_meshlist = null;				//	PolygonMesh[] : キャッシュされたmeshesのリスト。※SK3DObjectにインスタンス化された時に clone されて展開される。
+	_animap = null;					//	animelistをidでインデックスしたマップ
 
 	ref = null;
 
@@ -214,6 +223,11 @@ class PolygonMeshTree extends Serializable
 			local pm = m.toPolygonMesh( _mtllist);
 			_meshlist .. pm;
 		}
+		//	animapを作成
+		if( animelist){
+			_animap = {};
+			foreach( ani in animelist) _animap[ani.id] <- ani;
+		}
 		return _meshlist;
 	}
 }
@@ -225,16 +239,38 @@ local VALUE_VERTEXBUFFER	= 490;
 local VALUE_INDEXBUFFER		= 491;
 local VALUE_MOTIONDATA		= 492;
 local VALUE_SHAPEKEYLIST	= 493;
+local VALUE_TRANSFORM		= 494;
 
 local infunc( i){
-	loadData( i.bb);
+	loadData( i.bbuf);
 }
 
 local outfunc( o){
-	storeData( o.bb);
+	storeData( o.bbuf);
 }
 
 registerSerializable( VertexBuffer, VALUE_VERTEXBUFFER, infunc, outfunc);
 registerSerializable( IndexBuffer, VALUE_INDEXBUFFER, infunc, outfunc);
 registerSerializable( MotionData, VALUE_MOTIONDATA, infunc, outfunc);
 registerSerializable( ShapeKeyList, VALUE_SHAPEKEYLIST, infunc, outfunc);
+
+registerSerializable( Transform, VALUE_TRANSFORM,
+	function( i){ set( i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf()); },
+	function( o){ o.putf( tx); o.putf( ty); o.putf( tz); o.putf( sx); o.putf( sy); o.putf( sz); o.putf( rx); o.putf( ry); o.putf( rz); o.putf( rw); }
+);
+
+
+
+function getPolygonMeshTree( res){
+	if( typeof( res) == SS_STRING){
+		local s = res;
+		res = getResource( s);
+		if( !res) throw Exception( "getPolygonMeshTree res not found:%S", s);
+	}
+	local pmt = res.userdata;
+	if( !pmt){
+		pmt = ObjectInput.decode( res.loadData());
+		res.userdata = pmt;
+	}
+	return pmt;
+}

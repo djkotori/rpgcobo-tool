@@ -21,10 +21,10 @@ param vox
 	uniform lowp float alpharef<ID=ALPHAREF>;
 	uniform lowp vec4 p1<id=UNICOLOR1>;
 	
-	varying mediump vec3 v_lp;
+	varying highp vec3 v_lp;			//	must highp
 	flat varying mediump vec3 v_n;
-	varying highp vec3 v_wvp;
-	varying mediump vec4 v_wvpp;
+	varying highp vec3 v_wvp;			//	must highp
+	varying highp vec4 v_wvpp;			//	must highp
 	flat varying lowp vec4 v_rgbm;
 
 	flat varying lowp int v_f;

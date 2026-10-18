@@ -188,6 +188,7 @@ class PolygonMesh
 	vtx = null;				//	VertexBuffer(配列の場合もある)
 	face = null;			//	PolygonFace[]
 	motion = null;			//	MotionData
+	motionmap = null;		//	{string: MotionData}
 	bnd = null;				//	Rect3D : バウンディングボックス
 	pivot = null;			//	Transform : ピボット
 	wmapname = null;		//	list of weight map name

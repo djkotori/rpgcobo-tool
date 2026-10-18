@@ -65,6 +65,7 @@ fs pbr
 			lowp ivec4 ii = ivec4( m[3]);
 			for( int l = 0;l < 4;l ++){ lowp int i = ii[l], j = vi[i]; m[j] *= mix( vec4(1.0), vec4(tx[l]), vv[i]); }
 		}
+		G g;
 		//	normal map
 		mediump vec3 n = v_n;
 		$(UV5) {
@@ -72,7 +73,6 @@ fs pbr
 			mediump vec3 nv = (v_tan.xyz*texn.x - cross( n, v_tan.xyz)*v_tan.w*texn.y) * 0.3;
 			n = (n*(1.0/(1.0+length( nv)))) + nv;
 		}
-		G g;
 		g.col = pix * vec4( m[0].xyz, 1.0);
 		$(COLOR1) g.col *= v_col;
 		g.n = normalize( n);
@@ -225,6 +225,10 @@ fs deferlighting
 	void main(){
 		G g; lowp vec4 f0; highp uint u1, u2;
 		readg3( ivec2( gl_FragCoord), f0, u1, u2);	//	read gbuffer*3
+		unpackg_common( g, v_wvpp, f0, u1);
+		g.shadow = calcshadow( g.wvp, 0.0, g.n);
+		g.ao = calcao( g.uv);
+		g.sss = ssshadow( g.uv);
 		//	by mtype, unpack, setup, lighting => pix
 		mediump vec4 pix;
 		switch( u1>>29u){	//	g1: N(23), P(5), M(4)
@@ -323,11 +327,11 @@ fs gblur
 
 	highp vec4 blurfunc( mediump ivec2 iuv, highp float r0, highp float z0, highp vec3 n0, inout highp float sumdot){
 		highp uint u1 = texelFetch( gtex1, iuv, 0).x;
-		highp float dr = float( (u1>>23u) & 63u) / 63.0 - r0; dr = dr*dr*20.0;
+		highp float dr = float( (u1>>23u) & 63u) / 63.0 - r0; dr = dr*dr;
 		highp vec3 n = unpackn( u1);
 		highp float ddiff = (wvz( iuv) - z0) * SHARPEN;
-		highp float w = exp2( -0.0 - ddiff*ddiff - dr);
-		sumdot += clamp( dot( n, n0)+dr, 0.0, 1.0);
+		highp float w = exp2( -0.0 - ddiff*ddiff - dr*20.0);
+		sumdot += clamp( dot( n, n0)+dr*3.0, 0.0, 1.0);
 		return vec4( n*w, w);
 	}
 	

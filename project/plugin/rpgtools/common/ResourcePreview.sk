@@ -285,6 +285,16 @@ class ResourcePreviewCanvas
 				local sc = 1.0/Math.sqrt( r.r*r.r+r.s*r.s+r.t*r.t);
 				sk3d.scale( sc);
 				sk3d.matdirty = true;
+			}else
+			if( val["pmt"]){
+				local pmt = ::getPolygonMeshTree( val["pmt"]);
+				sk3d = RPG3DObject();
+				sk3d.setSource( pmt);
+				sk3d.setDir( Math.PI);
+				local r = sk3d.gbnd;
+				local sc = 1.0/Math.sqrt( r.r*r.r+r.s*r.s+r.t*r.t);
+				sk3d.scale( sc);
+				sk3d.matdirty = true;
 			}
 		}catch( ex){
 			printf( "setResourceData failure: %S %S\n", id, encodeJSON( val));
@@ -603,6 +613,7 @@ class ResourceFileSelectDialog extends Dialog
 		case "event_pic": setupEventPicList(); break;
 		case "efx": setupEffectList(); break;
 		case "texture": setupTextureList(); break;
+		case "poly_mdl": setupPolyModelList(); break;
 		}
 	}
 
@@ -701,6 +712,18 @@ class ResourceFileSelectDialog extends Dialog
 		previewlist.setItemList( a);
 	}
 
+	function setupPolyModelList(){
+		local dir = ::getResource( fget( prop, "dir"));
+		::skstudio.fileview.refreshDir( dir.path);
+		local a = [];
+		if( prop["nullable"]) a .. { id="rem", data={ ret="rem"}};
+		foreach( r in dir.getList()){
+			if( !r.name.endsWith( ".pmt")) continue;
+			a .. { id=r.name, data={ res = r, pmt = r.path, ret = r.path }}
+		}
+		previewlist.setItemList( a);
+	}
+
 	function actionevent( e){
 		if( e.src == previewlist.listview){
 			if( e.count == 2){
@@ -788,6 +811,7 @@ class ResourceSelectDialog extends Dialog
 			case "event_pic":
 			case "efx":
 			case "map_asset":
+			case "poly_mdl":
 				setupGraphicList( b, rt); break;
 			}
 			b.sort( @( v) v.id);

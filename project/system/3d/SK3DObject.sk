@@ -283,6 +283,7 @@ class SK3DObject extends SK3DRenderNode
 			if( pn) n3d.tflayers[0] <- pn.mat;
 			node3dmap[n.id] <- n3d;
 			addChild( n3d);
+			addGroup( n3d);
 			// printf( "NODE ADDED: %S %S %S\n", length( node3dmap), n.id, n.name);
 		}
 		// printf( "TOTAL NODES: %S\n", length( node3dmap));
@@ -294,6 +295,7 @@ class SK3DObject extends SK3DRenderNode
 		if( m.pivot) setPivot( m.pivot);
 		if( m){
 			motion = m.motion;
+			motionmap = m.motionmap;
 			bnd << m.bnd;
 		}else{
 			motion = null;
@@ -329,6 +331,8 @@ class SK3DObject extends SK3DRenderNode
 	function getMotion( s){
 		local mot = null;
 		if( s instanceof SS_STRING){
+			mot = motionmap[s];
+			if( mot) return mot;
 			local res = ::getResource( mot);
 			// if( !res) println( "WARNING!! motion file is not found. path=".. mot);
 			mot = ::getMotionData( res);
@@ -828,6 +832,9 @@ class SK3DObject extends SK3DRenderNode
 		}else{
 			layers[l0] = al;
 			layers[l1] = null;
+		}
+		foreach( n in meshtree["node3dmap"]){
+			n.tanime( t, ft, lyr);
 		}
 		return al;
 	}

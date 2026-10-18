@@ -22,12 +22,12 @@ class IconSelectPopup extends Popup
 		{ lbl="$T.icon_equip", range=(0xf2d0,0xf300),  },
 		
 		{ lbl="$T.icon_job", range=(0xf300,0xf320),  },
-		{ lbl="$T.icon_skill", range=(0xf320,0xf3a0),  },
+		{ lbl="$T.icon_skill", range=(0xf320,0xf370),  },
+		{ lbl="$T.icon_map", range=(0xf370,0xf3a0),  },
 		{ lbl="$T.icon_item", range=(0xf3a0,0xf4a0),  },
 		{ lbl="$T.icon_weapon", range=(0xf4a0,0xf580),  },
 		{ lbl="$T.icon_armor", range=(0xf580,0xf6a0),  },
 
-		// { lbl="$T.icon_map", range=(0xf2e0,0xf300),  },
 		{ lbl="$T.icon_deco", range=(0xf7c0,0xf800),  },
 		{ lbl="$T.icon_etc", range=(0xf800,0xf840),  },
 	];

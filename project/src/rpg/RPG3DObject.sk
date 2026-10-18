@@ -248,6 +248,10 @@ class RPG3DObject extends SK3DObject
 		if( mdl["bw64"]){	//	マップアセット！
 			sk = RPG3DMapAsset();
 			sk.setMapAsset( mdl);
+		}else
+		if( mdl["pmt"]){
+			sk = RPG3DPolyModel();
+			sk.setPolyModel( mdl);
 		}else{	//表示が無い！ゴーストモデル。
 			sk = RPG3DGhost();
 			sk.setGhost( mdl);
@@ -1790,5 +1794,27 @@ class RPG3DMapAsset extends RPG3DObject
 	
 	function getMaterials(){
 		return bw3d?.getMaterials();
+	}
+}
+
+class RPG3DPolyModel extends RPG3DObject
+{
+	polymdl = null;
+
+	function setPolyModel( x){
+		polymdl = x;
+		setSource( x.pmt);
+		//	pivotとしてTransformを指定
+		local tr = Transform();
+		local hpb = x["hpb"];
+		tr.setSRT( Vector3D( x["pos"]), Vector3D( x["scale"]||1.0), Quaternion.fromHPB( hpb[0]*Math.DTOR, hpb[1]*Math.DTOR, hpb[2]*Math.DTOR));
+		setPivot( tr);
+		//	b3body ... todo: コリジョンメッシュ
+		local colsize = efx["colsize"]||#(0.38,0.45,0.38);
+		local shp = createShape( efx["colshp"]||SK_SHAPE_CAPSULE, colsize);
+		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
+		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE|G_OBJECT);		//	キャラとはコリジョンは当たらない
+		b3body.ref = this;
+		b3body.setOffsetTransform( offsmat);
 	}
 }

@@ -32,6 +32,8 @@ enum MapGenBiomeID
 	INNERWALL = 4,		//	壁の内側。上からは真っ黒に見える。
 	LAKE1 = 7,			//	
 	LAKE2 = 8,			//	
+	//	ブロック定義バリエーション
+	MOUNTAIN_VAR = 13,		//	山のバリエーション
 };
 
 enum MapGenObjectID
@@ -148,11 +150,11 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			{ id=PLAIN, lbl="PLAIN", type="blk", blkpages=[2,3] },
 			{ id=DESERT, lbl="DESERT", type="blk", blkpages=[2,3] },
 			{ id=FOREST, lbl="FOREST", type="blk", blkpages=[2,3] },
-			{ id=MOUNTAIN, lbl="MOUNTAIN", type="blk", blkpages=[2,3] },
+			{ id=MOUNTAIN, lbl="MOUNTAIN1", type="blk", blkpages=[2,3] },
+			{ id=MOUNTAIN_VAR, lbl="MOUNTAIN2", type="blk", blkpages=[2,3] },
 			{ id=EXMOUNTAIN, lbl="EXMOUNTAIN", type="blk", blkpages=[2,3] },
 			{ id=ROAD, lbl="ROAD", type="blk", blkpages=[2,3] },
 			{ id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,3] },
-			null,
 			null,
 			{ id=RIVER, lbl="RIVER", type="blk", blkpages=[8] },
 			{ id=LAKE, lbl="LAKE", type="blk", blkpages=[8] },
@@ -183,8 +185,8 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			1.0,	//	PLAIN
 			1.0,	//	DESERT
 			1.0,	//	FOREST
-			2.6,	//	MOUNTAIN
-			3.2,	//	EXMOUNTAIN
+			1.8,	//	MOUNTAIN
+			2.4,	//	EXMOUNTAIN
 			1.0,	//	ROAD
 			1.0,	//	BRIDGE
 			0.0,	//	RIVER
@@ -192,23 +194,24 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			0.0,	//	SEA
 		],
 		bioobjdensmap = {
-			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREE_S]: 0.12,[TREE_M]: 0.07,[TREE_L]: 0.04,[FLOWERS_A]: 0.4, [FLOWERS_B]: 0.3, [FLOWERS_C]: 0.3},
+			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREE_S]: 0.2,[TREE_M]: 0.04,[TREE_L]: 0.1,[FLOWERS_A]: 0.4, [FLOWERS_B]: 0.3, [FLOWERS_C]: 0.3},
 			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREE_S]: 0.04,[TREE_M]: 0.0, [TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
-			[FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.2, [TREE_M]: 0.35, [TREE_L]: 0.45, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
-			[MOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.2, [ROCK_L]: 0.4, [TREE_S]: 0.04,[TREE_M]: 0.02,[TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
+			[FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.42, [TREE_M]: 1.5, [TREE_L]: 0.65, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
+			[MOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.4, [ROCK_L]: 0.6, [TREE_S]: 0.04,[TREE_M]: 0.02,[TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
 			[EXMOUNTAIN]:{ [ROCK_S]: 0.0, [ROCK_M]: 0.0, [ROCK_L]: 0.0, [TREE_S]: 0.0, [TREE_M]: 0.0, [TREE_L]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
 		},
 		objsizemap = {
-			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREE_S]: 3, [TREE_M]: 4, [TREE_L]: 5, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
+			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREE_S]: 2, [TREE_M]: 4, [TREE_L]: 5, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
 		},
 		//	ツールから置き換え可能。MapGenerator定義ごとにある
 		blkmap = {
 			[PLAIN]=2|(1<<5), [DESERT]=2|(7<<5), [FOREST]=2|(27<<5), 
-			[MOUNTAIN]=2|(0<<5), [EXMOUNTAIN]=2|(57<<5), [ROAD]=2|(6<<5), [BRIDGE]=3|(22<<5), 
+			[MOUNTAIN]=2|(24<<5), [EXMOUNTAIN]=2|(57<<5), [ROAD]=2|(6<<5), [BRIDGE]=3|(22<<5), 
 			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5), [SEA]=8|(0<<5), 
+			[MOUNTAIN_VAR]=2|(0<<5),
 			//
 			[ROCK_S]=20|(17<<12), [ROCK_M]=20|(18<<12), [ROCK_L]=20|(19<<12), 
-			[TREE_S]=20|(67<<12), [TREE_M]=20|(65<<12), [TREE_L]=20|(64<<12),
+			[TREE_S]=20|(74<<12), [TREE_M]=20|(75<<12), [TREE_L]=20|(67<<12),
 			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5),
 		},
 		//	zoom時の境界処理。川や道路の境界を滑らかにする。川はボールド処理を施す。
@@ -234,10 +237,10 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 				case MOUNTAIN:
 					local f = win[1], l = win[3], b = win[7], r = win[5];
 					local x = rnd( 0, 0xffff);
-					if( f != MOUNTAIN && !(x&0x3)) b4[0] = b4[3] = f;
-					if( l != MOUNTAIN && !(x&0xc)) b4[0] = b4[1] = l;
-					if( b != MOUNTAIN && !(x&0x30)) b4[1] = b4[2] = b;
-					if( r != MOUNTAIN && !(x&0xc0)) b4[2] = b4[3] = r;
+					if( f != MOUNTAIN && !(x&0x2)) b4[0] = b4[3] = f;
+					if( l != MOUNTAIN && !(x&0x4)) b4[0] = b4[1] = l;
+					if( b != MOUNTAIN && !(x&0x8)) b4[1] = b4[2] = b;
+					if( r != MOUNTAIN && !(x&0x10)) b4[2] = b4[3] = r;
 					break;
 				default:
 					local f = win[1], l = win[3], b = win[7], r = win[5];
@@ -273,20 +276,32 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			local w = bio.width, h = bio.height;
 			local basey = getrange( gendata["basey"], 2.5), hscale = getrange( gendata["heightscale"], 1.0), hnoise = getrange( gendata["heightnoise"], 1.0);
 			local biohmap = gendef.biohmap, blkmap = blkmap, rnd = rnd;
+			local wbits = (1<<SEA)|(1<<LAKE)|(1<<RIVER);
 			return @( x, z, i){
 				local b = bio[i];
 				local blk = blkmap[b], bh = biohmap[b];
 				local y = basey * hscale * bh;	//	ブロックのyはバイオームごとに基本固定の値になる。ノイズでの上下みたいなのは無し。
+				if( !((1<<b) & wbits)){	//	周囲に水系が多い場合は水系に置き換える。
+					local sc = bio.countUsed( SEA, x-1, z-1, 3, 3), lc = bio.countUsed( LAKE, x-1, z-1, 3, 3), rc = bio.countUsed( RIVER, x-1, z-1, 3, 3);
+					if( sc + lc + rc > 5){
+						b = (sc > lc && sc > rc) ? SEA : (lc > rc) ? LAKE : RIVER;
+						blk = blkmap[b]; bh = biohmap[b];
+						y = basey * hscale * bh;
+					}
+				}
 				switch( b){
 				case MOUNTAIN:
-					local nm = (bio.countUsed( MOUNTAIN, x-2, z-2, 5, 5) + bio.countUsed( EXMOUNTAIN, x-2, z-2, 5, 5)) / 25.0;
-					y += (::NoiseGen.value( x*0.15, z*0.15, 13245, 3, 2.0, 0.5) * 3.8 * nm ) * hnoise;
+					local nm = Math.pow( (bio.countUsed( MOUNTAIN, x-2, z-2, 5, 5) + bio.countUsed( EXMOUNTAIN, x-2, z-2, 5, 5)) / 25.0, 1.2);
+					local nz = ::NoiseGen.value( x*0.15, z*0.15, 13245, 3, 2.0, 0.5);
+					y += (nz * 5.2 * nm ) * hnoise;
 					local w = ::NoiseGen.worley( x*0.14, z*0.14, 512412); w*=w;
-					if( w >= 0.1) y -= 1;
+					if( w >= 0.1){ y -= 1; }
+					if( nz >= 0.5){ blk = blkmap[MOUNTAIN_VAR]; }
 					break;
 				case EXMOUNTAIN:
-					local nm = (bio.countUsed( EXMOUNTAIN, x-2, z-2, 5, 5)) / 25.0;
-					y += (::NoiseGen.value( x*0.13, z*0.13, 51213, 4, 1.8, 0.76) * (3.8 + 2.7*nm)) * hnoise;
+					local nm = Math.pow( (bio.countUsed( EXMOUNTAIN, x-2, z-2, 5, 5)) / 25.0, 1.4);
+					local nz = ::NoiseGen.value( x*0.15, z*0.15, 13245, 4, 1.5, 0.76);// x*0.15, z*0.15, 13245, 3, 2.0, 0.5);
+					y += (nz * (4.8 + 3.7*nm)) * hnoise;
 					local w = ::NoiseGen.worley( x*0.14, z*0.14, 512412); w*=w;
 					if( w >= 0.1) y -= 1.5;
 					break;
@@ -373,7 +388,7 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			local basey = 3, hscale = 1, hnoise = getrange( gendata["heightnoise"], 1.0);
 			local blkmap = blkmap, rnd = rnd;
 			return @( x, z, i){
-				local b = bio[i];
+				local b = bio[i], blk = blkmap[b];
 				local y = basey * hscale;
 				switch( b){
 				case FLOOR2:
@@ -381,7 +396,7 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 						local bl = bio[i-1], br = bio[i+1], bu = bio[i-w], bd = bio[i+w];
 						local c = (bl==FLOOR1) + (br==FLOOR1) + (bu==FLOOR1) + (bd==FLOOR1);	//	とんがったところを潰す。。。
 						if( c >= 3){
-							b = FLOOR1; break;
+							blk = blkmap[FLOOR1]; break;
 						}
 					}
 					y += 4;
@@ -398,10 +413,9 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 					break;
 				case LAKE2:
 					y += 4;
-					b = LAKE1;
+					blk = blkmap[LAKE1];
 					break;
 				}
-				local blk = blkmap[b];
 				y = Math.iround( y);
 				return blk | (y<<16);
 			}
@@ -674,7 +688,7 @@ class MapGenerator
 						}
 						if( bio.countUsed( b,tx-hs, tz-hs, sz, sz) < (sz*sz*4/5)) continue; //	バイオームが一様でない場合も配置失敗
 						//	配置する
-						objs .. { objid=i, x=tx, z=tz, rot=rnd( 0, 3)};
+						objs .. { objid=i, x=tx, z=tz, rot=rnd( 0, 3), size=sz};
 						objbmp.draw( pens[sz], tx-hs, tz-hs);
 						if( (t[i]=n-1) <= 0) delete t[i];
 						break;
@@ -735,7 +749,7 @@ class MapGenerator
 	//	generateを実行した後に、dstのバイオームチャンネルと高さチャンネル、オブジェクトリストからBlockWorldを作る。
 	//	
 	function toBlockWorld(){
-		local w = dst.width, d = dst.height, wd = w*d;
+		local w = dst.width, d = dst.height, wd = w*d, rnd = rnd;
 		local bw = BlockWorld( w, 128, d);
 		//	make blocks
 		local r = IRect3D();
@@ -773,6 +787,15 @@ class MapGenerator
 			}
 			default:	//	通常はフリーブロックを置くだけ。vidはfbtype|(fbparam<<12)
 				local y = dst[v.x + v.z*w]>>>16;
+				if( v.size >= 2){	//	大きなオブジェクトの場合は周囲の地形に合わせて高さを調整する。
+					local r = v.size/2;
+					for( local l = 0;l < 4;l ++){
+						local dx = rnd( -r, r), dz = rnd( -r, r);
+						local _y = dst[v.x+dx + (v.z-dz)*w]>>>16;
+						if( _y < y && _y >= y-4) y = _y;
+					}
+				}
+				// local y = dst[v.x + v.z*w]>>>16;
 				if( vid[0]=='M'){
 					local aw = objcache[vid] ?? (objcache[vid] <- objbw( vid));
 					if( !aw) continue;

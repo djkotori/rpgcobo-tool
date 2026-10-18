@@ -165,7 +165,8 @@ class GLTFLoader
 			if( occimg) texmap |= (4<<24);		//	R = mparam[0](PID4)
 			if( emimg) texmap |= (5);	//	A = mparam[1](PID5)
 			local t3 = skGetTime();
-			local imgdata = img.encodeWebp( 95);	//	非可逆圧縮でいいかな。。？ これが重い。。。
+			local q = (img.width>=1024) ? 92 : 100;	//	非可逆圧縮でいいかな。。？ これが重い。。。
+			local imgdata = img.encodeWebp( q);
 			imgdata.pos = 0;
 			local ts = TextureSource();
 			local imginfo = g.getImage( tex0.index);
@@ -306,8 +307,8 @@ class GLTFLoader
 
 		//	
 		local pmmat = getNodeGlobalMatrix( g, pmnode), pminvmat = pmmat.invert34();
-		printf( "PM %S global matrix\n", pmnode.name);
-		pmmat.print();
+		// printf( "PM %S global matrix\n", pmnode.name);
+		// pmmat.print();
 
 		local parts = array( n);
 		local partsmap = {};
@@ -330,8 +331,8 @@ class GLTFLoader
 			bp.invbindpose = bp.bindpose.invert34();
 			bp.length = 10.1;
 			bp.name = jnode.name;
-			printf( "joint %S bindpose\n", jnode.name);
-			bp.bindpose.print();
+			// printf( "joint %S bindpose\n", jnode.name);
+			// bp.bindpose.print();
 			
 			local track = trackmap[nodeIdx];
 			// printf( "NODE..... %S   %S\n", encodeJSON( node), encodeJSON( track, 5));
@@ -406,98 +407,16 @@ class GLTFLoader
 			pms.face .. fs;
 		}
 		// pms.vtx[0].describe();
-		return pms;
 		
 		//	残りの対応。。。
 		// motion,wmapname,animap : nodeの方から探してセットする
-		//shapekeys : 下で
-		// <ser_o> pivot = null;			//	Transform : ピボット 設定いらないかな
 
-		/*
-		local meshtb = g.getMesh( meshidx);
-		local prims = meshtb.primitives;
-		if( prims.len() == 0) throw Exception( "glTF mesh has no primitives");
-		local baseSig = streamSignature( prims[0].streams);
-		local used = [];
-		local idxtype = null;
-		foreach( i, p in prims){	//	被りが無いならマージしていきたい。。。
-			if( streamSignature( p.streams) != baseSig){
-				printf( "GLTF: primitive[%d] has a different vertex layout than primitive[0], skipped\n", i);
-				continue;
-			}
-			if( idxtype == null) idxtype = p.idxtype;
-			else if( idxtype != p.idxtype){
-				printf( "GLTF: mixed index types in one mesh are not supported\n");
-				continue;
-			}
-			used .. p;
+		//	shape keys ( morph targets)
+		if( meshtb["shapekeys"]){
+			local sk = meshtb["shapekeys"];
+			pms.shapekeys = sk;
 		}
-		local vtxbuf = ByteBuffer();
-		local idxbuf = ByteBuffer();
-		local vtxoffset = 0;
-		local idxoffsetInIndices = 0;
-		local faceinfo = [];			//	[material, mode, offs, len, voffs]
-		local bnd = null;
-		//	
-		foreach( p in used){
-			if( p.idxtype != idxtype) throw Exception( "GLTF: mixed index types in one mesh are not supported");
-			vtxbuf.putBuffer( p.vtxdata);
-			idxbuf.putBuffer( p.idxdata);
-			faceinfo .. [ p.material, GLTF_MODE_MAP[p.mode] || SK_TRIANGLES, idxoffsetInIndices, p.idxcount, vtxoffset];
-			vtxoffset += p.vtxnum;
-			idxoffsetInIndices += p.idxcount;
-			local b = p.bnd;
-			if( !bnd){ bnd = [ b[0],b[1],b[2],b[3],b[4],b[5] ]; }
-			else{
-				for( local k=0;k<3;k++){ if( b[k] < bnd[k]) bnd[k] = b[k]; }
-				for( local k=3;k<6;k++){ if( b[k] > bnd[k]) bnd[k] = b[k]; }
-			}
-		}
-
-		local vtx = buildVertexBuffer( used[0].streams, vtxbuf);
-		local idx = buildIndexBuffer( idxtype, idxbuf, vtx.len());
-		
-		local faces = [];
-		foreach( fi in faceinfo){
-			local f = PolygonFace();
-			f.mode = fi[1];
-			f.m = buildMaterial( g, fi[0]);
-			f.idx = idx;
-			f.offs = fi[2];
-			f.len = fi[3];
-			f.voffs = fi[4];
-			faces .. f;
-		}
-
-		local cx=(bnd[0]+bnd[3])*0.5, cy=(bnd[1]+bnd[4])*0.5, cz=(bnd[2]+bnd[5])*0.5;
-		local hx=(bnd[3]-bnd[0])*0.5, hy=(bnd[4]-bnd[1])*0.5, hz=(bnd[5]-bnd[2])*0.5;
-
-		local pm = PolygonMesh();
-		pm.vtx = vtx;
-		pm.face = faces;
-		pm.bnd = Rect3D( cx,cy,cz, hx,hy,hz);
-
-		//	shape keys ( morph targets) : プリミティブが1つの場合のみ対応
-		if( used.len() == 1 && used[0].hasShapeKeys){
-			local sk = ShapeKeyList();
-			used[0].shapekeydata.pos = 0;
-			sk.loadData( used[0].shapekeydata);
-			pm.shapekeys = sk;
-			pm.baseshapevtx = VertexBuffer();
-			local extract = [];
-			for( local l = 0;l < sk.attrlen();l ++){
-				extract .. { attr = sk.attrAt(l), elems = sk.elemsAt(l), type = SK_FLOAT, normalize = 0 };
-			}
-			pm.baseshapevtx.extractFrom( vtx, extract);
-			pm.targetshapevtx = VertexBuffer();
-			pm.targetshapevtx.copyFrom( pm.baseshapevtx);
-			pm.vtx = [ vtx, pm.targetshapevtx ];
-			pm.shapesource = ShapeState();
-			pm.shapesource.shapekeys = sk;
-			pm.shapetarget = clone pm.shapesource;
-		}
-		return pm;
-		*/
+		return pms;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -515,6 +434,7 @@ class GLTFLoader
 		pmt.materials = [];
 		pmt.meshes = [];
 		pmt.nodes = [];
+		pmt.metainfo = {};
 		//	マテリアル作成。pbrパラメータ画像の合成も行う。合成する場合は画像は埋め込まれる。
 		//	テクスチャはマテリアル生成時に追加される。
 		local mtlnum = g.materialCount();
@@ -527,9 +447,17 @@ class GLTFLoader
 			pmt.meshes .. buildPolygonMeshSource( g, l);
 		}
 		//	アニメーション取得。ノードに使う
-		local animes = [], animnum = g.animationCount();
-		for( local l = 0;l < animnum;l ++) animes .. g.getAnimation( l);
-		//
+		local animes, animnum = g.animationCount();
+		if( animnum > 0){
+			animes = []; pmt.animelist = [];
+			for( local l = 0;l < animnum;l ++){
+				local a = g.getAnimation( l);
+				animes .. a;
+				local ani = { id=a.name, mot=a.name, st=a.start, en=a.end, spd=1000.0/30.0, loop=false, replay=true };	//	30fps
+				pmt.animelist .. ani;
+			}
+			pmt.metainfo.animelist_org <- deepclone( pmt.animelist);
+		}
 		//	ノード作成。ノードにスキンが設定されている場合、対応するメッシュにボーンを設定する。なので、一つのメッシュに複数のスキンは設定不能。cloneはできるか
 		local nodenum = g.nodeCount();
 		for( local l = 0;l < nodenum;l ++){
@@ -542,12 +470,16 @@ class GLTFLoader
 			mn.id = l;
 			mn.parentid = nd.parent;
 			mn.tf = getNodeLocalTransform( g, nd);
+			//	TODO: ノード自身のアニメ。
+			//	スキンアニメ作成。
 			if( nd.skin >= 0){
 				local pms = pmt.meshes[mn.meshid];
-				//	PolygonMeshTreeは1つのMotionDataしか持てないので、合成する必要がある。motionsはまとめて一つのmotionにする。
-				//	その分、アニメーションの対応テーブルを作る。⇒animap
 				local motions = array( animnum);
-				for( local a = 0;a < animnum;a ++) motions[a] = buildMotion( g, nd.skin, animes[a], nd);
+				pms.motionmap = {};
+				for( local j = 0;j < animnum;j ++){
+					motions[j] = buildMotion( g, nd.skin, animes[j], nd);
+					pms.motionmap[animes[j].name] <- motions[j];
+				}
 				pms.motion = motions[0];
 				local wmapname = pms.wmapname = array( length( pms.motion.partsmap), null);
 				foreach( k, v in pms.motion.partsmap){
@@ -557,59 +489,5 @@ class GLTFLoader
 			pmt.nodes .. mn;
 		}
 		return pmt;
-		/*
-		try{
-			if( meshIndex < 0 || meshIndex >= g.meshCount()) throw Exception( "GLTF: mesh index out of range");
-			local meshtb = g.getMesh( meshIndex);
-			printf( "g.getMesh %S\n %S\n", meshtb, encodeJSON( meshtb, 5));
-			for( local i = 0;i < g.nodeCount();i ++){
-				local nd = g.getNode( i);
-				printf( "node %S\n", encodeJSON( nd, 5));
-			}
-			pm = buildPolygonMeshSource( g, meshtb);
-			
-			//	skin : このメッシュを参照していてskinを持つ最初のnodeを探す
-			local skinIdx = -1;
-			for( local i = 0;i < g.nodeCount();i ++){
-				local nd = g.getNode( i);
-				if( nd.mesh == meshIndex && nd.skin >= 0){ skinIdx = nd.skin; break; }
-			}
-			if( skinIdx >= 0){
-				local animnum = g.animationCount();
-				local motions = array( animnum);
-				for( local a = 0;a < animnum;a ++) motions[a] = buildMotion( g, skinIdx, g.getAnimation( a));
-				pm.customdata = { gltfAnimations = motions };
-				if( animIndex >= 0 && animIndex < animnum){
-					pm.motion = motions[animIndex];
-				}else if( animnum == 0){
-					pm.motion = buildMotion( g, skinIdx, null);
-				}
-			}
-			if( pm.motion){
-				local mot = pm.motion;
-				local wmapname = pm.wmapname = array( length( mot.partsmap), null);
-				foreach( k, v in mot.partsmap){
-					wmapname[v.id] = v.name;
-				}
-			}
-			//	shape animation ( glTF "weights" channel) : 選択中のanimIndexにこのメッシュを
-			//	対象にしたシェイプトラックがあればShapeStateTimelineとして設定する。
-			if( pm.shapekeys && animIndex >= 0 && animIndex < g.animationCount()){
-				local anim = g.getAnimation( animIndex);
-				foreach( st in anim.shapetracks){
-					if( st.mesh == meshIndex){ pm.shapeline = buildShapeTimeline( st); break; }
-				}
-			}
-		}catch( e){
-			g.dispose();
-			throw e;
-		}
-		g.dispose();
-		if( res){
-			res["userdata"] = pm;
-			return clone pm;
-		}
-		return pm;
-		*/
 	}
 }

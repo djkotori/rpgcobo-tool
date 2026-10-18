@@ -20,7 +20,6 @@ local colshplist = [
 //	ResEditorPolyModel : ポリゴンモデル
 //	※要素一つ一つが重くなりがちなので、プレビュー画像は読み込み時に作成。pmt保存時に更新とする。abc.pmt => abc.webp。プレビュー作成はPMEditor内のstatic functionに
 //	
-//	
 
 //	
 class ResEditorPolyModel extends ResEditor
@@ -29,17 +28,16 @@ class ResEditorPolyModel extends ResEditor
 
 	static props = [
 		{ pid="name", lbl="$T.lbl_name", type=LANGSTRING, defval=null }
-		{ pid="pmt", lbl="$T.lbl_model", type=GRAPHIC, dir="/resource/poly_mdl", restype="pmt", nullable=true, defval=null }
+		{ pid="pmt", lbl="$T.lbl_model", type=GRAPHIC, dir="/resource/poly_mdl", restype="poly_mdl", nullable=true, defval=null }
 		{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-10.0,10.0), q=100, defval=[0,0,0] }
 		{ pid="hpb", lbl="$T.lbl_rotation", type=VEC3, range=(-180,180), defval=[0,0,0] }
 		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,4.0), q=10, defval=1.0, ui="bar" }
-		{ pid="charause", lbl="$T.lbl_charause", type=BOOL, defval=false },
-		{ pid="mapuse", lbl="$T.lbl_mapuse", type=BOOL, defval=false },
-
-
-
 		{ pid="colshp",	lbl="$T.lbl_collision",	type=LIST, list=colshplist, defval=SK_SHAPE_CAPSULE },
 		{ pid="colsize", lbl="$T.lbl_size", type=VEC3, range=(0.01,1.5),q=100, defval=(0.4,0.8,0.4) },
+		
+		{ pid="charause", lbl="$T.lbl_charause", type=BOOL, defval=false },
+		{ pid="mapuse", lbl="$T.lbl_mapuse", type=BOOL, defval=true },
+
 		{ pid="animap", lbl="$T.lbl_anime", type=ANIMEMAP, defval=[], cnt="cnt6.ui", },
 		{ pid="memo", lbl="$T.lbl_memo", type=STRING, multiline=true, cnt="cnt6.ui", },
 	];
@@ -110,30 +108,33 @@ class ResEditorPolyModel extends ResEditor
 			break;
 		}
 	}
-
+	
 	function showImportGLTF( f){
+		local fn = f.name;
+		fn = fn.substring( 0, fn.lastIndexOf( ".")) .. ".pmt";
+		local pf = FileRef( ::resroot.file.path .. "/resource/poly_mdl/" .. fn);
+		if( pf.exists()){
+		}
+		//	gltf => pmt 変換
 		local pmt = null;
 		try{
 			local loader = GLTFLoader();
-			pmt = loader.loadGLTF( r.loadData());
-		}catch( e){
-			Popups.showError( "glTFの読み込み中にエラーが発生しました。詳細はログを確認してください。");
+			pmt = loader.loadGLTF( f.load());
+			local bb = ObjectOutput.encode( pmt);
+			::getResource( "/resource/poly_mdl").create( fn, bb);
+			::skstudio.fileview.refreshDir( "/resource/poly_mdl");
+		}catch( ex){
+			printexception( ex);
+			::rootview.postErrorEvent( {type="MessagePreview", error=ex, msg = "$T.error_import_mdl: " .. ex.message});
 		}
-		
-
-		
-
-		
-		
 	}
 }
-
 
 //	3Dモデルファイルのインポートダイアログ。pmtにして保存する。現在はgltf,glbに対応。
 //	※インポートオプションは今のところなし。名前だけ入力欄あり
 //	ダイアログ表示時点ですでにgltf->pmtへの変換が行われている。テクスチャは全て埋め込み。
 //	
-class PolyImportDialog extends UndoableDialog
+class ResEditorPolyModel.PolyImportDialog extends UndoableDialog
 {
 	static props = [
 		{ pid="name", lbl="$T.lbl_filename", type=STRING, }
@@ -150,8 +151,116 @@ class PolyImportDialog extends UndoableDialog
 	data = null;			//	結果。Resourceとかpmtとかが入ってる
 
 	static function run( d){
-		local p = PolyImportDialog( DIALOGUIPATH, d);
+		local p = this( DIALOGUIPATH, d);
 		p.show( null);
 		return p.ret ? p.data : null;
+	}
+}
+
+//	
+//	
+//	
+class ResEditorPolyModel.ResPreview
+{
+	view = null;
+	editor = null;
+	resid = null;
+	efxid = null;
+
+	canvas = null;		//	CanvasBehavior
+	envmenu = null;		//	MenuBehavior
+	animenu = null;		//	MenuBehavior
+	playbtn = null;		//	GPUIButton
+	pntchk = null;
+	loopchk = null;
+
+	envlist = null;
+
+	sk3d = null;
+	efxsk = null;
+
+	constructor( v, e){
+		view = v;
+		editor = e;
+		canvas = CanvasBehavior( v.findChild( "3d"), v);
+		envmenu = MenuBehavior( v.findChild( "envmenu"), envlist=getRenderSettingMenuList( false), false);	//	no sync
+		envmenu.selectItem( getEnvItem( canvas.view.renderer.env.id));
+		animenu = MenuBehavior( v.findChild( "animenu"));
+		
+		playbtn = v.findChild( "playbtn");
+		playbtn.setVisible( true);
+		v.findChild( "datamenu").setVisible( false);
+		v.addEventListener( ACTION_EVENT, actionevent);
+		loopchk = v.findChild( "loopchk");
+	}
+
+	function setResourceID( rid){
+		resid = rid;
+		local r = RPGResource.getResource( rid);
+		local mdl = { mdlid = rid};
+		local mm = ::conf._resource["poly_mdl"][mdl.mdlid];
+		//	
+		sk3d = RPG3DObject.create3DObject( mdl);
+		//	
+		sk3d.setDir( Math.PI);
+		canvas.scn.addObject( sk3d);
+		canvas.view.repaint();
+	}
+
+	function setAnimations(){
+		local animelist = sk3d["animelist"];
+		local selid = animenu.selitem["id"] || "stand";
+		if( animelist){
+			local menudata = animelist.map( @( v){
+				return { lbl = "$T.anim_"..v.id, icon = v["icon"]||"\uf2c0", id = v.id, val = v }
+			});
+			// menudata[0] <- { lbl = "$T.lbl_pause", val = { st:0, }, icon="\ue034", }
+			animenu.setMenu( menudata);
+			animenu.selectItem( @( v) v.id==selid);
+		}else{
+			animenu.setMenu( [{lbl="$T.lbl_none", val = null}]);
+		}
+	}
+
+	function getEnvItem( rsetid){
+		return envlist.find( @( v) v["id"]==rsetid);
+	}
+
+	function setRenderSettingID( rsetid){
+		local v = getEnvItem( rsetid);
+		envmenu.selectItem( @( v) v["id"]==rsetid);
+		canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( rsetid));
+	}
+	
+	function actionevent( e){
+		switch( e.src["name"]){
+		case "playbtn":
+			local v = animenu.selitem.val;
+			if( sk3d) sk3d.tanime( v);
+			break;
+		case "stopbtn":
+			if( sk3d) sk3d.tanime( { st=0});
+			break;
+		case "pntchk":
+			if( sk3d) skcol?.setVisible( pntchk.isSelected());
+		case "animenu":
+			local v = animenu.selitem.val;
+			if( sk3d) sk3d.tanime( v);
+			break;
+		case "rbtn":
+		case "lbtn":
+			local i = animenu.menuitems.indexOf( animenu.selitem);
+			i = Math.clamp( i+(e.src.name=="rbtn"?1:-1), 0, length( animenu.menuitems)-1);
+			local v = animenu.menuitems[i];
+			animenu.selectItem( v);
+			if( sk3d) sk3d.tanime( v.val);
+			break;
+		case "envmenu":
+			local rsetid = e.actioncmd["id"];
+			if( rsetid){
+				setRenderSettingID( rsetid);
+			}
+			break;
+		}
 	}
 }

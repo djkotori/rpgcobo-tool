@@ -1510,10 +1510,16 @@ TransformTimeline()
 #### メソッド
 
 ##### `loadData(buffer)`
-バイトバッファからタイムラインデータをロードします。
+ByteBufferからタイムラインデータをロードします。
 
 **引数**:
 - `buffer` (ByteBuffer): タイムラインデータ
+
+##### `storeData(buffer)`
+ByteBufferにデータを保存します。
+
+**引数**:
+- `buffer` (ByteBuffer): データ出力先
 
 ##### `evaluate(frame[, result])`
 指定フレームのTransformを評価します。

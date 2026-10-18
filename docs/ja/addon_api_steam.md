@@ -594,6 +594,23 @@ SteamAPI.activateGameOverlay("friends");
 SteamAPI.activateGameOverlayToStore(YOUR_APP_ID, 0);
 ```
 
+
+
+### `SteamAPI.isOverlayActive()`
+
+Steam オーバーレイがアクティブかどうかを取得します。
+
+**戻り値**: bool - オーバーレイがアクティブな場合 true
+
+**説明**: Steam オーバーレイが現在表示されているかどうかを確認します。
+
+**例**:
+```javascript
+if(SteamAPI.isOverlayActive()) {
+	println("Steamオーバーレイがアクティブです");
+}
+```
+
 ---
 
 ## その他のユーティリティ
