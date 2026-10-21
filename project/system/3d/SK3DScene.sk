@@ -47,10 +47,6 @@ class SK3DScene
 		sk3dsound = m;
 	}
 
-	function countObjects(){
-		return length( objs);
-	}
-
 	function addObject( sk3d){
 		objs .. sk3d;
 		sk3d.addedToScene( this);

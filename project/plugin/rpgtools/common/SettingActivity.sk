@@ -74,9 +74,39 @@ preferenceprops .. {
 	ctg="build", pf="webgl", pid="usesw", lbl="$T.lbl_usesw", type=BOOL, defval=true, ...buildprops
 }
 
+// preferenceprops .. {
+// 	ctg="build", pf="webgl", pid="debuggl", lbl="$T.lbl_debuggl", type=BOOL, defval=false, ...buildprops
+// }
+
+local webglthemelist = [
+	{id="royal", color=0x262139ff, },
+	{id="forest", color=0x18352dff, },
+	{id="light", color=0xffffffff, },
+	{id="dark", color=0x232824ff, },
+	{id="pop", color=0xe7ccdbff, },
+	{id="horror", color=0x330000ff, },
+	{id="ocean", color=0x0000ffff, },
+	{id="frost", color=0x00ffffff, },
+	{id="volcano", color=0xff3300ff, },
+	{id="desert", color=0xffffcc00, },
+	{id="steampunk", color=0x996633ff, },
+	{id="cyber", color=0x00ff00ff, },
+	{id="sakura", color=0xff99ccff, },
+	{id="yokai", color=0x663399ff, },
+	{id="astral", color=0x9999ffff, },
+	{id="pirate", color=0x663300ff, },
+	{id="sky", color=0x3399ffff, },
+	{id="crystal", color=0xccffffcc, },
+	{id="grimoire", color=0x333366ff, },
+	{id="retro", color=0x596678ff, }
+];
+
 preferenceprops .. {
-	ctg="build", pf="webgl", pid="debuggl", lbl="$T.lbl_debuggl", type=BOOL, defval=false, ...buildprops
+	ctg="build", pf="webgl", pid="theme", lbl="$T.lbl_coltheme", type=LIST, list=webglthemelist.map( @( v)+{
+		lbl="$T.theme_"..v.id, val=v.id, icon=["\uf122",v.color]
+	}), defval="dark", ...buildprops
 }
+
 
 preferenceprops .. {
 	ctg="build", pid="WINDOWS", lbl="$T.build_win32", type=HEADER

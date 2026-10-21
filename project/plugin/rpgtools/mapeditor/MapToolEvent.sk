@@ -323,7 +323,11 @@ class MapTools.tool_event extends MapTool
 			local hb = rayTest( e, blkflag, true);
 			local pens = getPenmap()["p02"], pen = pens[0];
 			//	ドアのみboxハイライト。それ以外はpenで2x2の大きさに。
-			if( hb["fbuid"] && !isDoor( hb)) hb = null;
+			if( hb["fbuid"] && !isDoor( hb)){
+				hb.fbuid = hb.fbtype = hb.fbparam = 0;
+				hb.blk = 1;		//	適当なsolidブロックに置き換える。。。
+				// hb = null;
+			}
 			placeSelectPen( hb, pen, PEN_SELECT);
 			e.consume();
 			break;
@@ -776,11 +780,14 @@ class MapTools.tool_event extends MapTool
 		d.page.clear();
 		foreach( i,p0 in def0.defpage){
 			local p = {
-				trigger = p0["trigger"] || 0,
+				trigger = fget( p0, "trigger", p0, d0) || 0,
 				pararun = !!p0["pararun"],
-				cmdblock = deepclone( p0["cmdblock"]) || [],
+				cmdblock = deepclone( fget( p0, "cmdblock", p0, d0)) || [],
 				reqs = null,
 			};
+			local searchtext = fget( p0, "searchtext", p0, d0);
+			if( searchtext) p.searchtext <- searchtext;
+			//
 			local req = p0["reqs"] || d0["reqs[%d]"%i];
 			if( req){
 				if( typeof( req) != SS_ARRAY) req = [req];

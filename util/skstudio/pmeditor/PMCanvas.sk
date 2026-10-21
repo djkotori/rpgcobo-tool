@@ -67,7 +67,7 @@ class PMCanvas extends CanvasBehavior
 		bonesk.addBones( pm3d);
 		resetRigidBody();
 		//	
-		local r = pm3d.bnd;
+		local r = Rect3D( pm3d.bnd).transform( pm3d.mat);
 		bndsk.pos( r.x, r.y, r.z);
 		bndsk.scale( r.r, r.s, r.t);
 		bndsk.matdirty = true;

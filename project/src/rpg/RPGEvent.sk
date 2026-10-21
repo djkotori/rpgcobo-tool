@@ -1387,7 +1387,8 @@ class RPGStageEventRunner extends RPGEventRunner
 		if( !stage) return false;
 		if( rp3d && rp3d.timescale <= 0.001) return false;	//	フリーズ中はトリガーしない
 		local p = stage.player3d, pr = p.gbnd, e = rp3d, er = e.gbnd;
-		switch( page.trigger){
+		local trg = fget( page, "trigger", page, data);
+		switch( trg){
 		case 0:	//	なし
 			return false;
 		case 1: //	調べる(近|遠)。※プレイヤーの操作として調べるボタン押した対象がRPGStageに100ms程残る

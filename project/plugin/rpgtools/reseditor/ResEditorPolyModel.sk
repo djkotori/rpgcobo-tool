@@ -32,13 +32,21 @@ class ResEditorPolyModel extends ResEditor
 		{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-10.0,10.0), q=100, defval=[0,0,0] }
 		{ pid="hpb", lbl="$T.lbl_rotation", type=VEC3, range=(-180,180), defval=[0,0,0] }
 		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,4.0), q=10, defval=1.0, ui="bar" }
-		{ pid="colshp",	lbl="$T.lbl_collision",	type=LIST, list=colshplist, defval=SK_SHAPE_CAPSULE },
-		{ pid="colsize", lbl="$T.lbl_size", type=VEC3, range=(0.01,1.5),q=100, defval=(0.4,0.8,0.4) },
+		{ pid="colshp",	lbl="$T.lbl_collision",	type=LIST, list=colshplist, defval=SK_SHAPE_BOX },
+		{ pid="colsize", lbl="$T.lbl_size", type=VEC3, range=(0.01,10.0),q=100, defval=(0.5,0.5,0.5) },
 		
 		{ pid="charause", lbl="$T.lbl_charause", type=BOOL, defval=false },
-		{ pid="mapuse", lbl="$T.lbl_mapuse", type=BOOL, defval=true },
+		{ pid="eventuse", lbl="$T.lbl_mapuse", type=BOOL, defval=true },
 
-		{ pid="animap", lbl="$T.lbl_anime", type=ANIMEMAP, defval=[], cnt="cnt6.ui", },
+		{ pid="animap", lbl="$T.lbl_anime", type=ANIMEMAP, defval=[], cnt="cnt6.ui", motlist=@( pl){
+			local pmtpath = pl.proplist.ref["selitem"]["data"]["pmt"];
+			local pmt = ::getPolygonMeshTree( pmtpath);
+			local a = [];	//	{lbl="$T.lbl_none", val=null}
+			if( pmt){
+				a ... pmt.getMotionIDList().map( @( i) +{ lbl=i, val=i});
+			}
+			return a;
+		}},
 		{ pid="memo", lbl="$T.lbl_memo", type=STRING, multiline=true, cnt="cnt6.ui", },
 	];
 
@@ -48,6 +56,10 @@ class ResEditorPolyModel extends ResEditor
 		super.init( path);
 		resdirpath = ::resroot.file.path .. "/resource/poly_mdl";
 	}
+
+	function isValidData( d){
+		return !!length( d["pmt"]);
+	}
 	
 	function itemSelected( v){
 		local d = v.data;
@@ -56,6 +68,17 @@ class ResEditorPolyModel extends ResEditor
 		//
 		proplist.bindProperties( props);
 		proplist.setParameters( d);
+		proplist.ref = this;
+		preview.setResourceData( v.id, d);
+		preview.setAnimations();
+	}
+
+	function updateItemView( resid, d){
+		super.updateItemView( resid, d);
+		if( resid == selitem.id){
+			preview.setResourceData( resid, d);
+			preview.setAnimations();
+		}
 	}
 
 	function propevent( e){
@@ -63,10 +86,39 @@ class ResEditorPolyModel extends ResEditor
 		if( cmd.cmd != "prop") return;
 		local pid = cmd.prop.pid, val = cmd.val;
 		switch( pid){
+		case "pmt":	// pmt変更によって、名前、col
+			setPmtParamOp( val);
+			break;
 		default:
 			setParamOp( selitem.id, cmd.prop, val);
 			break;
 		}
+	}
+
+	function setPmtParamOp( val){
+		local pmt = ::getPolygonMeshTree( val);
+		local resid = selitem.id, d = data[resid], self = this;
+		local oldpmt = d["pmt"], oldname = d["name"], oldcolsize = d["colsize"];
+		local oldpos = d["pos"];
+		local bnd = pmt.getBounds();
+		local colsize = [bnd.r,bnd.s,bnd.t];
+		local changename = !length( d.name);
+		local name = val.substring( val.lastIndexOf( "/")+1, val.lastIndexOf( "."));
+		//	
+		local redo = [@(){
+			if( changename) d.name <- {[::lang.code]=name};
+			d.pmt <- val;
+			d.colsize <- colsize;
+			self.updateItemView( resid, d);
+		}];
+		local undo = [@(){
+			if( changename) d.name <- oldname;
+			d.pmt <- oldpmt;
+			d.colsize <- oldcolsize;
+			self.updateItemView( resid, d);
+		}];
+		submitOp( redo, undo, null);	//	trk無し
+		refresh();
 	}
 	
 	function itemAction( e){
@@ -100,7 +152,7 @@ class ResEditorPolyModel extends ResEditor
 		case "sort": return showIDSortDialog();
 		case "dir": return skOpenURL( "dir://"..resdirpath);
 		case "import":
-			local sndpath = skstudio.showFileOpen( { filter=["*.gltf","*.glb"], abspath=true, pathgroup="poly_mdl" });
+			local sndpath = skstudio.showFileOpen( { filter=["*.gltf","*.glb","*.vrm"], abspath=true, pathgroup="poly_mdl" });
 			if( sndpath){
 				local f = FileRef( sndpath);
 				showImportGLTF( f);
@@ -164,7 +216,6 @@ class ResEditorPolyModel.ResPreview
 {
 	view = null;
 	editor = null;
-	resid = null;
 	efxid = null;
 
 	canvas = null;		//	CanvasBehavior
@@ -177,14 +228,14 @@ class ResEditorPolyModel.ResPreview
 	envlist = null;
 
 	sk3d = null;
-	efxsk = null;
+	skcol = null;
 
 	constructor( v, e){
 		view = v;
 		editor = e;
 		canvas = CanvasBehavior( v.findChild( "3d"), v);
 		envmenu = MenuBehavior( v.findChild( "envmenu"), envlist=getRenderSettingMenuList( false), false);	//	no sync
-		envmenu.selectItem( getEnvItem( canvas.view.renderer.env.id));
+		setRenderSettingID( "pbr_fw");
 		animenu = MenuBehavior( v.findChild( "animenu"));
 		
 		playbtn = v.findChild( "playbtn");
@@ -192,29 +243,33 @@ class ResEditorPolyModel.ResPreview
 		v.findChild( "datamenu").setVisible( false);
 		v.addEventListener( ACTION_EVENT, actionevent);
 		loopchk = v.findChild( "loopchk");
+
+		local scn = canvas.scn, b3world = scn.getB3World();
+		skcol = SK3DCollisionPreview( b3world);
+		scn.addObject( skcol);
+		pntchk = v.findChild( "pntchk");
+		pntchk.setSelected( true);
 	}
 
-	function setResourceID( rid){
-		resid = rid;
-		local r = RPGResource.getResource( rid);
-		local mdl = { mdlid = rid};
-		local mm = ::conf._resource["poly_mdl"][mdl.mdlid];
-		//	
-		sk3d = RPG3DObject.create3DObject( mdl);
-		//	
+	function setResourceData( id, val){
+		if( sk3d) canvas.scn.removeObject( sk3d);
+		sk3d = RPG3DObject.create3DObject( {mdl=val});
 		sk3d.setDir( Math.PI);
+		if( !skcol.scn){
+			canvas.scn.addObject( skcol);	//	clearされちゃってたら追加
+			skcol?.setVisible( pntchk.isSelected());
+		}
 		canvas.scn.addObject( sk3d);
 		canvas.view.repaint();
 	}
 
 	function setAnimations(){
 		local animelist = sk3d["animelist"];
-		local selid = animenu.selitem["id"] || "stand";
+		local selid = animenu.selitem["id"] || animelist[0]["id"];
 		if( animelist){
 			local menudata = animelist.map( @( v){
-				return { lbl = "$T.anim_"..v.id, icon = v["icon"]||"\uf2c0", id = v.id, val = v }
+				return { lbl = v.id, icon = v["icon"]||"\uf2c0", id = v.id, val = v }
 			});
-			// menudata[0] <- { lbl = "$T.lbl_pause", val = { st:0, }, icon="\ue034", }
 			animenu.setMenu( menudata);
 			animenu.selectItem( @( v) v.id==selid);
 		}else{

@@ -12,9 +12,11 @@ param def
 	uniform mediump sampler2D coltex2 <id=COLORTEX1>;	//	sRGB texture
 	uniform mediump samplerCube ibltex <id=ENVTEX, MIN_FILTER=LINEAR_MIP, MAG_FILTER=LINEAR, WRAP_S=CLAMP, WRAP_T=CLAMP, WRAP_R=CLAMP>;
 	
+	uniform mediump mat4 P <id=MISC1MAT>;
 	uniform mediump mat4 dirlit <id=ENV1MAT>;
 	uniform highp mat4 invpmat <id=ENV2MAT>;
 	uniform mediump mat3 invvmat3 <id=ENV4MAT>;
+	uniform mediump mat4 colormat <id=COLORMAT>;
 	
 	varying mediump vec4 v_uv;
 	varying highp vec3 v_wn;
@@ -48,12 +50,12 @@ fs decal
 fs skybox
 {
 	void main(){
-		mediump vec4 pix = textureLod( ibltex, v_wn, 0.0) * vec4( dirlit[2].y * dirlit[3].xyz, 1.0);
+		mediump vec4 pix = textureLod( ibltex, v_wn, P[0].x*2.0) * vec4( dirlit[2].y * dirlit[3].xyz, 1.0);
 		FRAGOUT
 	}
 }
 
-fs tex_srgb
+fs tex
 {
 	void main(){
 		highp vec3 wn = normalize( v_wn);
@@ -213,7 +215,7 @@ technique skybox
 
 /////////////////////////////////////////////////////////////////
 
-technique tex_srgb
+technique tex
 {
 	apilevel = 20;
 	tag = "bg";
@@ -225,7 +227,7 @@ technique tex_srgb
 		passfilter = 255;
 		param = def;
 		vs = def;
-		fs = tex_srgb;
+		fs = tex;
 	}
 	
 	//	forward+tonemap pass = direct pass (default)
@@ -236,7 +238,7 @@ technique tex_srgb
 		passfilter = 256;
 		param = def;
 		vs = def;
-		fs = tex_srgb;
+		fs = tex;
 	}
 
 	//	pbr forward pass
@@ -247,7 +249,7 @@ technique tex_srgb
 		passfilter = 512;
 		param = def;
 		vs = def;
-		fs = tex_srgb;
+		fs = tex;
 	}
 	
 	//	pbr deferred pass
@@ -258,6 +260,6 @@ technique tex_srgb
 		passfilter = 1024;
 		param = def;
 		vs = def;
-		fs = tex_srgb;
+		fs = tex;
 	}
 }

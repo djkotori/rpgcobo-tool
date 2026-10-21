@@ -961,8 +961,9 @@ class PropertyBehaviors.ListOrString extends PropertyBehavior
 	}
 	
 	function paramevent( e){
+		if( e.id != ACTION_PERFORMED) return;
 		if( e.src==menu.view){
-			local v = menu.selitem.val;
+			local v = e.actioncmd.val;
 			if( v == "**custom**"){
 				v = fget( prop, "defval") ?? "---";
 			}

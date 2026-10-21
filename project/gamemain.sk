@@ -88,7 +88,7 @@ local loadMetaInfo(){
 		return;
 	}
 	try{
-		local mt = ::metainfo = decodeJSON( decodeBASE64( r.loadData()));
+		local mt = ::metainfo = decodeJSON( r.loadData());
 		//	Steam判定。
 		if( skGetOSName()=="Windows" && mt["steam"]["enable"]){
 			runsk( "/system/exlib/Steam.sk");

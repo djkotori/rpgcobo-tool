@@ -200,7 +200,8 @@ class PolygonMesh
 	shapekeys = null;		//	ShapeKeyList
 	baseshapevtx = null;	//	VertexBuffer ... 頂点位置情報のみが入る
 	targetshapevtx = null;	//	VertexBuffer ... シェイプアニメ変形後のVertexBuffer
-	shapeline = null;		//	ShapeStateTimeline
+	// shapeline = null;		//	x ShapeStateTimeline
+	shapelinemap = null;	//	ShapeStateTimelineのマップ。motionmapのキーと対応している
 	shapesets = null;		//	{}
 	
 	//	Physics
@@ -249,7 +250,7 @@ class PolygonMesh
 			baseshapevtx?.unload();
 			targetshapevtx?.unload();
 		}
-		res = vtx = face = bones = motion = shapeline = null;
+		res = vtx = face = bones = motion = null;	//	x shapeline
 	}
 
 	function resetMaterials(){
@@ -315,10 +316,10 @@ class PolygonMesh
 				setShapeKeys( sk);
 			}
 		}
-		//	ShapeStateTimeline
+		//	x ShapeStateTimeline => MotionData
 		if( bb.getb()){
-			shapeline = ShapeStateTimeline( shapekeys);
-			shapeline.loadData( bb);
+			// shapeline = ShapeStateTimeline( shapekeys);
+			// shapeline.loadData( bb);
 		}
 		bb.getb();
 		bb.gets();						//	reserved

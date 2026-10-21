@@ -54,25 +54,7 @@ class GLTFLoader
 	////////////////////////////////////////////////////////////////////////////////////
 	//	geometry
 
-	//	プリミティブの頂点属性の並びを比較用の文字列にする
-	// function streamSignature( streams){
-	// 	local s = "";
-	// 	foreach( st in streams) s += st.attr + ":" + st.type + ":" + st.elems + ";";
-	// 	return s;
-	// }
-	
 	function buildVertexBuffer( streams, vtxdata){
-		// local sa = [];
-		// foreach( st in streams){
-		// 	sa .. {
-		// 		attr = GLTF_ATTR_MAP[st.attr],
-		// 		type = GLTF_TYPE_MAP[st.type],
-		// 		elems = st.elems,
-		// 		normalize = st.normalize,
-		// 		offset = st.offset,
-		// 		stride = st.stride,
-		// 	};
-		// }
 		local sa = streams;	//	sonomama
 		// printf( "STREAMS %S\n", encodeJSON( sa, 5));
 		local vb = VertexBuffer();
@@ -408,9 +390,6 @@ class GLTFLoader
 		}
 		// pms.vtx[0].describe();
 		
-		//	残りの対応。。。
-		// motion,wmapname,animap : nodeの方から探してセットする
-
 		//	shape keys ( morph targets)
 		if( meshtb["shapekeys"]){
 			local sk = meshtb["shapekeys"];
@@ -455,6 +434,13 @@ class GLTFLoader
 				animes .. a;
 				local ani = { id=a.name, mot=a.name, st=a.start, en=a.end, spd=1000.0/30.0, loop=false, replay=true };	//	30fps
 				pmt.animelist .. ani;
+				//	タイムラインのシェイプアニメを取得してpms.shapelinemapに追加する
+				foreach( i, sa in a["shapetracks"]){
+					local pms = pmt.meshes[sa.mesh];
+					if( !pms.shapelinemap) pms.shapelinemap = {};
+					local sl = ShapeStateTimeline(); sl.create( a.start, a.end, sa.keynum, sa.bb);
+					pms.shapelinemap[a.name] <- sl;
+				}
 			}
 			pmt.metainfo.animelist_org <- deepclone( pmt.animelist);
 		}

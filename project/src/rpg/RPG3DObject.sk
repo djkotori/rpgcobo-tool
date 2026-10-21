@@ -313,7 +313,7 @@ class RPG3DObject extends SK3DObject
 
 	//	調べるボタンで「調べる」「話す」どっちか
 	function getSearchButtonLabel(){
-		return event["page"]["searchtext"] ?? event["searchtext"] ?? "$T.btn_search";
+		return fget( event["page"], "searchtext", this, event["data"]) ?? "$T.btn_search";
 	}
 	
 	/////////////////////////////////////////////////////////////////////////
@@ -425,6 +425,8 @@ class RPG3DObject extends SK3DObject
 		al = AnimationLayer();
 		local mot = getMotion( t["mot"]);
 		if( mot) al.partsmap = mot.partsmap;
+		local sl = shapelinemap[ t["mot"]];
+		if( sl) al.shapeline = sl;
 		al.setAnime( st, en, spd, loop);
 		al.id = aid; al.part = part;
 		layers[0] = al;
@@ -1115,13 +1117,13 @@ class RPG3DGhost extends RPG3DObject
 	
 	function setGhost( go){
 		this.go = go;
-		local s = go["r"] || #(0,1.0,0,0.5,1.0,0.5);	//	ブロックサイズで2x4x2が基準
+		local s = go["r"] || (go["colsize"] ? [0,go.colsize[1],0, ...go.colsize] : #(0,1.0,0,0.5,1.0,0.5));	//	ブロックサイズで2x4x2が基準
 		bnd.set( s[0], s[1], s[2], s[3], s[4], s[5]);
 		//	b3body
-		local shp = b3Shape.createBox( bnd.r, bnd.s, bnd.t);
+		local shp = createShape( go["colshp"]||SK_SHAPE_BOX, [s[3], s[4], s[5]]);
 		local offsmat = Matrix.fromTranslate( 0, bnd.y, 0);
 		offsy = bnd.y;
-		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);		//	G_STAGEとしかコリジョンは当たらない
+		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE);
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
 	}
@@ -1386,7 +1388,7 @@ class RPG3DVoxChara extends RPG3DObject
 	}
 	
 	function getSearchButtonLabel(){
-		return event["page"]["searchtext"] ?? event["searchtext"] ?? ((bonetype=="leg2"||bonetype=="leg4") ? "$T.btn_talk" : "$T.btn_search");
+		return fget( event["page"], "searchtext", this, event["data"]) ?? ((bonetype=="leg2"||bonetype=="leg4") ? "$T.btn_talk" : "$T.btn_search");
 	}
 	
 	/////////////////////////////////////////////////////////////////////////
@@ -1807,14 +1809,21 @@ class RPG3DPolyModel extends RPG3DObject
 		//	pivotとしてTransformを指定
 		local tr = Transform();
 		local hpb = x["hpb"];
-		tr.setSRT( Vector3D( x["pos"]), Vector3D( x["scale"]||1.0), Quaternion.fromHPB( hpb[0]*Math.DTOR, hpb[1]*Math.DTOR, hpb[2]*Math.DTOR));
+		local _p = Vector3D( x["pos"]), _r = Quaternion.fromHPB( hpb[0]*Math.DTOR, hpb[1]*Math.DTOR, hpb[2]*Math.DTOR);
+		tr.setSRT( _p, Vector3D( x["scale"]||1.0), _r);
 		setPivot( tr);
+		local itr = Transform(); itr.setSRT( _p, Vector3D( 1.0), _r);
+		local invtr = itr.toMatrix().invert34();
 		//	b3body ... todo: コリジョンメッシュ
-		local colsize = efx["colsize"]||#(0.38,0.45,0.38);
-		local shp = createShape( efx["colshp"]||SK_SHAPE_CAPSULE, colsize);
-		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0);
-		b3body = b3Body( 0.0, shp, mat, G_EVENT, G_STAGE|G_OBJECT);		//	キャラとはコリジョンは当たらない
+		local colsize = x["colsize"]||#(0.38,0.45,0.38);
+		local shp = createShape( x["colshp"]||SK_SHAPE_CAPSULE, colsize);
+		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0).mult34( invtr);
+		b3body = b3Body( 0.0, shp, mat, G_OBJECT|G_EVENT, G_STAGE|G_CHARA);
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
+		//	アニメーションは、元のやつに定義のアニメを足し込む
+		local pmt = meshtree.pmt;
+		animelist = clone pmt.animelist;
+		animemap = pmt._animap;
 	}
 }

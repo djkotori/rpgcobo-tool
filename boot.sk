@@ -92,10 +92,10 @@ function SKPackage::loadData( di){
 	local p = #(0,0,0,0);	//	storage, offs16, size, flags
 	getIndexInfo( di, p);
 	local st = storages[p[0]], offs16 = p[1], size = p[2];
+	if( !size) return TempBuffer( 0);	//	size0ある。。。
 	//	file読み込み
 	st.open();
-	st.seek( offs16<<4, 0);	//SEEK_SET?
-	local bb = st.readfor( size);
+	local bb = st.readfor( offs16, size);
 	return decodeData( di, bb);	//	データデコード＆整合性チェック(native)
 }
 
@@ -108,6 +108,7 @@ class SKPackage.SKPackageStorage
 {
 	filepath = null;		//	file path
 	fs = null;				//	FileStream | reader : readerはseek,readFor,closeを実装
+	fslock = false;
 	
 	autorelease = -1;
 	
@@ -123,12 +124,13 @@ class SKPackage.SKPackageStorage
 		autorelease = -1;
 	}
 	
-	function seek( offs, origin){
-		return fs.seek( offs, origin);
-	}
-	
-	function readfor( size){
-		return fs.readfor( size, TempBuffer( size));
+	function readfor( offs16, size){
+		while( fslock) suspend();
+		fslock = true;
+		fs.seek( offs16<<4, 0);
+		local bb = fs.readfor( size, TempBuffer( size));
+		fslock = false;
+		return bb;
 	}
 	
 	function close(){

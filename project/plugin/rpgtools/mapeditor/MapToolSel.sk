@@ -326,9 +326,9 @@ class MapTools.tool_sel extends MapTool
 		if( mode == 1){
 			redo = [@(){
 				dst.clearRegion( box);
-				printf( "clear sitayo? %S %S %S\n", box.w,box.h,box.d);
 			}];
 			undo = [@(){
+				dst.clearRegion( box);
 				dst.drawWorld( boxbw, IMat( box.x, box.y, box.z));
 			}];
 		}else{
@@ -344,6 +344,7 @@ class MapTools.tool_sel extends MapTool
 				dst.clearRegion( cbox);
 			}];
 			undo = [@(){
+				dst.clearRegion( cbox);
 				dst.drawWorld( boxbw, IMat( box.x, box.y, box.z));
 			}];
 		}

@@ -22,10 +22,10 @@ local mdlprop = {
 	pid = "mdlid"
 	lbl = "$T.lbl_model"
 	type = RESID
-	restype = ["chara_etc", "chara_vox", "efx", "map_asset"]
+	restype = ["chara_etc", "chara_vox", "efx", "poly_mdl", "map_asset"]
 	filter=@( i, d){
 		switch( i[0]){
-		case 'F': case 'M': return d["eventuse"];
+		case 'F': case 'M': case 'P': return d["eventuse"];
 		}
 		return true;
 	}
@@ -172,6 +172,17 @@ RPGSystem.eventrole .. {
 		{ pid="dest", lbl="$T.cmd_mapmove_dest", type=PORTAL, cnt="cnt6v.ui", hide=@( pl){ return pl.getParam( "back"); } },
 		wipeprop,
 		{ pid="remap", lbl="$T.lbl_remap", type=BOOL, },
+		{
+			pid = "trigger0"
+			lbl = "$T.evtrigger"
+			icon = ""
+			type = LIST
+			list = [
+				{ lbl="$T.evtrigger1", val=1 }
+				{ lbl="$T.evtrigger3", val=3 }
+				{ lbl="$T.evtrigger5", val=5 }
+			]
+		}
 	]
 	
 	defdata = {
@@ -181,12 +192,14 @@ RPGSystem.eventrole .. {
 		dest = null
 		wipe = 1
 		remap = true
+		trigger0 = 5
 	}
 	
 	defpage = [
 		{
 			ani=null
-			trigger = 5
+			trigger = @( v) v["trigger0"] ?? 5
+			searchtext = @( v) v["name"]
 			wvarmap = { W="dest", X="wipe", Y="remap", Z="back" }
 			cmdblock = [
 				{
@@ -864,7 +877,7 @@ RPGSystem.markerdef .. {
 	
 	props = [
 		nameiconprop,
-		reqsprop,
+		{ ...reqsprop, lbl="$T.lbl_appearreqs"},
 	]
 }
 

@@ -391,6 +391,7 @@ class reg.ColorBackgroundPass extends reg.ImagePassBase
 		m.depthmask = 0;
 		m.depthtest = SK_LEQUAL;
 		m.misccol0 = c;
+		m.gsel = 2;
 	}
 
 	function performPass( r){
@@ -428,6 +429,63 @@ class reg.SkyboxBackgroundPass extends reg.ImagePassBase
 		m.cullface = SK_OFF;
 		m.depthmask = 0;
 		m.depthtest = SK_LEQUAL;
+		m.miscmat0 = Matrix();
+		m.miscmat0[0] = 0;
+		m.gsel = 2;
+	}
+
+	function setBlur( b){
+		m.miscmat0[0] = b;
+	}
+	
+	function performPass( r){
+		if( !(m.misccol0&0xff) && !r.currenttarget) return;
+		r.setRenderTarget( target, viewport);
+		local idx = r.currenttarget?ridx:fidx;
+		skBindVertexBuffer( vtx);
+		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);
+	}
+}
+
+//	
+//	テクスチャをバックグラウンドに描画する。sRGB指定、exposure、HSV指定が可能。
+//	
+class reg.TextureBackgroundPass extends reg.ImagePassBase
+{
+	m = null;
+
+	constructor(){
+		super( null);
+		local _pm = #_getImageMeshZ( 1.0);
+		vtx = _pm.vtx;
+		fidx = _pm.face[0].idx;
+		ridx = _pm.face[1].idx;
+		//	
+		m = createMaterial( "background.tex");
+		m.cullface = SK_OFF;
+		m.depthmask = 0;
+		m.depthtest = SK_LEQUAL;
+		m.miscmat0 = Matrix();
+		m.gsel = 2;
+	}
+
+	function setTexture( tex){
+		m.tex0 = tex;
+	}
+
+	function setGradation( g){	//	int[]
+		local n = length( g)-1, h = n * 8;
+		local img = RGBAImage( 1, h, 0x000000ff);
+		for( local l = 0;l < n;l ++){
+			local c0 = g[l], c1 = g[l+1];
+			for( local i = 0;i < 8;i ++){
+				local c = Math.lerpcolor( c0, c1, i/8.0);
+				img[l*8+i] = (c<<24)|((c&0xff00)<<8)|((c&0xff0000)>>8)|(c>>>24);
+			}
+		}
+		m.tex0 = Texture();
+		m.tex0.load( img);
+		m.tex0.setSamplerState( #SamplerState( SK_CLAMP, SK_CLAMP, SK_LINEAR, SK_LINEAR));
 	}
 	
 	function performPass( r){

@@ -800,8 +800,63 @@ class ScreenEffect.TVNoise
 	}
 }
 
+//	
+//	背景単色化
+//	回想、集中みたいなシーンでキャラだけ表示したままマップ、BGを単色化する
+//	transパスの最初にシーン全体塗りつぶし
+//	
+class ScreenEffect.MonoColorize
+{
+	time = 0.0;
+	spd = 1.0;
+	w = 0.0;
 
+	color = 0x000000ff;
+	sk3d = null;				//	3Dスクリーンオブジェクト
 
+	function start( stage, sfx, cmd){
+		color = cmd.color;
+		if( cmd.time > 0){
+			spd = 1.0 / cmd.time; w = 0.0;
+		}else{
+			spd = 1.0; w = 1.0;	//	time=0の場合はフェードスキップ
+		}
+		sk3d = SK3DMonoColorize();
+		stage.scn.addObject( sk3d);
+	}
+	
+	function end( stage, time){
+		spd = -1.0 / Math.max( time, 1);
+	}
+
+	function update( stage, dt){
+		w = Math.saturate( w + spd * dt);
+		if( w<=0.0 && spd<0.0) return finish( stage);
+		sk3d.m.misccol0 = Math.lerpcolor( color&0xffffff00, color, w);
+		return this;
+	}
+	
+	function finish( stage){
+		sk3d.kill();
+	}
+}
+
+class ScreenEffect.MonoColorize.SK3DMonoColorize extends SK3DScreenObject
+{
+	constructor(){
+		m.tec = skFXFindTechnique( "rpgsprite.monocol");
+		m.blend = SK_MIX;
+		m.depthtest = 0;
+		m.cullface = 0;
+		m.visiblemask = visiblemask = SK_VISIBLE_TRANSPARENT;
+		sortoffset = -2000.0;
+		sortscale = 0.0;
+	}
+
+	function render( cam, visiblemask){
+		super.render( cam, visiblemask);
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //	リスト登録
@@ -884,6 +939,9 @@ ScreenEffect.sfxlist <- [
 			{ pid="blink", lbl="Blink", type=SCALAR, range=(0,100), ui="bar", defval=10}
 			timeprop
 		]
+	}
+	{ id="raster4", fid="raster", icon="\ue3a3", name="$T.sfx_raster4", cls=ScreenEffect.MonoColorize,
+		props=[ { ...colorprop, defval=0x000000ff }, timeprop]
 	}
 ];
 

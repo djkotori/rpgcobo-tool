@@ -653,7 +653,9 @@ class RPGStage
 			refs.sort( @( v) v.gbnd.getFrontMostDistance( ppos));
 			foreach( ev3d in refs){
 				local ev = ev3d["event"];
-				if( ev && ev.page["trigger"]==1+l && ev.eventTriggerable() && reachTest( player3d, ev3d)){	//	2=接触, 3=1m    2の時はisolationTestはいらんかな
+				if( !ev["page"]) continue;
+				local trg = fget( ev.page, "trigger", ev.page, ev.data);
+				if( trg==1+l && ev.eventTriggerable() && reachTest( player3d, ev3d)){	//	2=接触, 3=1m    2の時はisolationTestはいらんかな
 					newdst = ev3d; goto DONE;
 				}
 			}
@@ -664,7 +666,7 @@ class RPGStage
 			searchdst = newdst;
 			searchpop.setTarget( newdst);
 			if( newdst){
-				local rt = RichText( `[+4]${buttonicon( BTN_A)}[+0]  ${newdst.getSearchButtonLabel()}`);
+				local rt = ::rtf( `[+4]${buttonicon( BTN_A)}[+0]  ${newdst.getSearchButtonLabel()}`);
 				searchpop.setValue( "lbl", rt);
 			}
 		}
@@ -727,20 +729,11 @@ class RPGStage
 		return m;
 	}
 
-
-
 	static function createBackground( bg){
 		local bgpass;
-		switch( bg["type"]){
-		case "col":
-			bgpass = SK3DRenderer.PassRegistory.ColorBackgroundPass();
-			bgpass.setColor( bg["col"]);
-			break;
-		case "grad":	//	texを作る
-			break;
-		case "tex":
-			break;
-		default:
+		local bgt = ::bgtypelist.find( @( x) x.val==bg["type"]);
+		if( bgt["create"]){
+			bgpass = bgt.create( bg);
 		}
 		return bgpass || SK3DRenderer.PassRegistory.SkyboxBackgroundPass();
 	}

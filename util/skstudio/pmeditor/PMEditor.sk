@@ -17,6 +17,7 @@ class PMEditor extends EditorViewBase
 	res = null;				//	Resource : 
 	
 	pmt = null;				//	PolygonMeshTree : 編集対象のメッシュツリー。.pmを読み込んでもpmtになる
+	readonly = false;
 	//	view
 	canvas = null;			//	PMCanvas : プレビューキャンバス
 	rightpanel = null;		//	RightPanel : 
@@ -49,9 +50,10 @@ class PMEditor extends EditorViewBase
 		if( r.name.endsWith( ".pmt")){
 			pmt = ::getPolygonMeshTree( r);
 		}else
-		if( r.name.endsWith( ".gltf") || r.name.endsWith( ".glb")){
+		if( r.name.endsWith( ".gltf") || r.name.endsWith( ".glb") || r.name.endsWith( ".vrm")){
 			local loader = GLTFLoader();
 			pmt = loader.loadGLTF( r.loadData());
+			readonly = true;
 		}
 		setPolygonMeshTree( pmt);
 		
@@ -185,6 +187,9 @@ class PMEditor extends EditorViewBase
 			::skstudio.updateChangeFile( this);
 			break;
 		case "menu_file_save":
+			if( readonly){
+				return;
+			}
 			if( res.name.endsWith( ".pm")){
 				savePM();
 			}else{
@@ -202,6 +207,11 @@ class PMEditor extends EditorViewBase
 		canvas.pm3d.anime( e.actioncmd, e.actioncmd, 1.0, 0, 0.006);
 	}
 
+	function savePMT(){
+		local bb = ObjectOutput.encode( pmt);
+		res.file.save( bb);
+	}
+
 	function savePM(){
 		local pm = meshAt( 0);
 		local sb = StringBuffer();
@@ -213,7 +223,7 @@ class PMEditor extends EditorViewBase
 		local bb = ByteBuffer();
 		bb.putText( s);
 		bb.pos = 0;
-		// pm.res.file.save( bb);
+		res.file.save( bb);
 		// postNotifyEvent( sprintf( ".pm saved - %S", pm.res.file.path));
 	}
 
@@ -400,6 +410,6 @@ class PMRightPanel
 
 skstudio.registerEditor( {
 	uid = "editor_pm",
-	matches = @( path){ return path.endsWith( ".pm") || path.endsWith( ".pmt") || path.endsWith( ".glb") || path.endsWith( ".gltf"); }
+	matches = @( path){ return path.endsWith( ".pm") || path.endsWith( ".pmt") || path.endsWith( ".glb") || path.endsWith( ".gltf") || path.endsWith( ".vrm"); }
 	createEditor = PMEditor.createEditor,
 });

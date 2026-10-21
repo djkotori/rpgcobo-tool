@@ -1,0 +1,50 @@
+declare rpgsprite;
+
+module mod_math;
+
+/////////////////////// SK3D2DRegion
+
+param monocol
+{
+	attribute mediump vec4 in_pos <ID=POSITION>;
+	attribute mediump vec4 in_uv <id=UV1>;
+
+	uniform highp usampler2D gtex0 <id=GTEX1>;	//	rgb+gsel
+	uniform lowp vec4 col<id=UNICOLOR1>;
+
+	varying mediump vec4 v_uv;
+
+	fragout mediump vec4 fragcolor;
+}
+
+vs monocol
+{
+	void main(){
+		gl_Position = in_pos;
+		v_uv = in_uv;
+	}
+}
+
+fs monocol
+{
+	void main(){
+		uint gsel = uint( texture2D( gtex0, vec2( v_uv.x, 1.0-v_uv.y)).w * 255.1);
+		vec4 lcol = vec4( tonemap_inv( toLinear( col.xyz)), col.w);
+		fragcolor = mix( vec4( 0.0), lcol, float( gsel > 100));
+	}
+}
+
+technique monocol
+{
+	apilevel = 30;
+	
+	//	forward pass only
+	pass {
+		using colorspace, tonemapping;
+
+		passfilter = 512;
+		param = monocol;
+		vs = monocol;
+		fs = monocol;
+	}
+}

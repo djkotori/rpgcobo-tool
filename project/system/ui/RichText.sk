@@ -65,6 +65,17 @@ class RichText
 	}
 
 	function applyToLabel( lbl){
+		try{
+			applyToLabelBody( lbl);
+		}catch( ex){
+			//	エラー表示はとりあえず無視しとく？
+			estr = wstring( intext);
+			code = [];
+			lbl.setText( estr);
+		}
+	}
+
+	function applyToLabelBody( lbl){
 		lbl.resetattr = lbl._defer = false;
 		//	ここでTagProcessorを通してestr,codeを生成する。
 		//	※intext => {estr,code}のキャッシュをしたほうが良い！ただ、1回しか使われないものをキャッシュするのも無駄なので、

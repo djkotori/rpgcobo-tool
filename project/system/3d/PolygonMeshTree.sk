@@ -20,6 +20,7 @@ class PolygonMeshSource extends Serializable
 	<ser_o> motion = null;			//	MotionData : スキンアニメ。motionmapの先頭
 	<ser_o> motionmap = null;		//	{string: MotionData} : スキンアニメのマップ。MotionDataは全て同じパーツマップの必要あり。
 	<ser_o> shapekeys = null;		//	ShapeKeyList : シェイプアニメ
+	<ser_o> shapelinemap = null;	//	{string: ShapeStateTimeline} : シェイプアニメのマップ。motionmapのキーと対応している
 	<ser_o> bnd = null;				//	Rect3D : バウンディングボックス
 	<ser_o> pivot = null;			//	Transform : ピボット
 	<ser_o> wmapname = null;		//	[weight map name] : vtxのSK_WEIGHTIDXのインデックスに対応するボーン名
@@ -51,6 +52,7 @@ class PolygonMeshSource extends Serializable
 		}
 		if( shapekeys){
 			pm.setShapeKeys( shapekeys);
+			pm.shapelinemap = shapelinemap;
 		}
 		pm.ref = this;
 		return pm;
@@ -192,9 +194,32 @@ class PolygonMeshTree extends Serializable
 
 	ref = null;
 
-	//	Resource.load時に呼ばれる。リソースの参照を保持する。
-	function loaded( r){
-		res = r;
+	function getBounds(){
+		local bnd = Rect3D( 0, 0, 0, -1000, -1000, -1000);
+		foreach( n in nodes){
+			if( n.meshid >= 0){
+				local pms = _meshlist[n.meshid];
+				if( pms){
+					local r = Rect3D( pms.bnd).transform( n.tf.toMatrix());
+					bnd.expand( r);
+				}
+			}
+		}
+		return bnd;
+	}
+
+	function getMotionIDList(){
+		local motmap = {};
+		local a = [];
+		foreach( m in meshes){
+			foreach( i, v in { ...m.motionmap, ...m.shapelinemap }){
+				if( !motmap[i]){
+					motmap[i] <- true;
+					a .. i;
+				}
+			}
+		}
+		return a;
 	}
 
 	//	各PolygonMeshTreeに対して1回呼ばれる。meshesのリストを取得する。
@@ -235,11 +260,12 @@ class PolygonMeshTree extends Serializable
 //	VertexBuffer, IndexBuffer, MotionData, ShapeKeyList をSerializableに登録する。
 //	writeはツール以外では蛇足ではある。。。
 
-local VALUE_VERTEXBUFFER	= 490;
-local VALUE_INDEXBUFFER		= 491;
-local VALUE_MOTIONDATA		= 492;
-local VALUE_SHAPEKEYLIST	= 493;
-local VALUE_TRANSFORM		= 494;
+local VALUE_TRANSFORM		= 490;
+local VALUE_VERTEXBUFFER	= 491;
+local VALUE_INDEXBUFFER		= 492;
+local VALUE_MOTIONDATA		= 493;
+local VALUE_SHAPEKEYLIST	= 494;
+local VALUE_SHAPESTATETIMELINE	= 495;
 
 local infunc( i){
 	loadData( i.bbuf);
@@ -253,6 +279,7 @@ registerSerializable( VertexBuffer, VALUE_VERTEXBUFFER, infunc, outfunc);
 registerSerializable( IndexBuffer, VALUE_INDEXBUFFER, infunc, outfunc);
 registerSerializable( MotionData, VALUE_MOTIONDATA, infunc, outfunc);
 registerSerializable( ShapeKeyList, VALUE_SHAPEKEYLIST, infunc, outfunc);
+registerSerializable( ShapeStateTimeline, VALUE_SHAPESTATETIMELINE, infunc, outfunc);
 
 registerSerializable( Transform, VALUE_TRANSFORM,
 	function( i){ set( i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf()); },
@@ -265,11 +292,12 @@ function getPolygonMeshTree( res){
 	if( typeof( res) == SS_STRING){
 		local s = res;
 		res = getResource( s);
-		if( !res) throw Exception( "getPolygonMeshTree res not found:%S", s);
 	}
+	if( !res) return null;
 	local pmt = res.userdata;
 	if( !pmt){
 		pmt = ObjectInput.decode( res.loadData());
+		pmt.res = res;
 		res.userdata = pmt;
 	}
 	return pmt;

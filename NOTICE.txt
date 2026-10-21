@@ -144,6 +144,11 @@ https://github.com/SnapdragonStudios/snapdragon-gsr/blob/main/LICENSE
 
 ------------------------------------------------------------------------------------------------
 
+tinygltf / MIT license
+https://github.com/syoyo/tinygltf
+
+------------------------------------------------------------------------------------------------
+
 Twitter Emoji / MIT license
 https://github.com/twitter/twemoji
 

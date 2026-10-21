@@ -155,6 +155,7 @@ class SK3DObject extends SK3DRenderNode
 	// shapetarget = null;		//	ShapeTarget ...
 	motion = null;			//	current BoneMotion
 	motionmap = null;		//	motionを切り替えるためのマップ
+	shapelinemap = null;	//	ShapeStateTimelineのマップ。motionmapのキーと対応している
 	animlayers = null;		//	AnimationLayers
 	// shapemotion = null;		//	ShapeStateTimeline
 	
@@ -195,10 +196,7 @@ class SK3DObject extends SK3DRenderNode
 
 	function _nexti( itr){
 		if( itr[0]) return null;
-		itr[0] = 1;
-		itr[1] = 0;
-		itr[2] = this;
-		return itr;
+		return itr.set( 1, 0, this);
 	}
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -215,6 +213,9 @@ class SK3DObject extends SK3DRenderNode
 			local name = src.name;
 			if( name.endsWith(".pm")){
 				src = ::getPolygonMesh( src);
+			}else
+			if( name.endsWith(".pmt")){
+				src = ::getPolygonMeshTree( src);
 			}else
 			if( name.endsWith(".ptd")){
 				src = ::ParticleEffect.getParticleEffect( src);
@@ -296,6 +297,7 @@ class SK3DObject extends SK3DRenderNode
 		if( m){
 			motion = m.motion;
 			motionmap = m.motionmap;
+			shapelinemap = m.shapelinemap;
 			bnd << m.bnd;
 		}else{
 			motion = null;
@@ -420,36 +422,6 @@ class SK3DObject extends SK3DRenderNode
 		assignBonesToPolygonMesh( mesh);
 	}
 	
-	/**
-	 * childrenも含めてオブジェクト数を返します。
-	 * @param bool findChildren chiledrenを含めるか
-	 * @return int 
-	 */
-	function countObjects( findChildren=true){
-		 local count = 1;
-		 if( !findChildren) return count;
-		 foreach( c in children) count += c.countObjects();
-		 return count;
-	}
-	
-	/**
-	 * childrenも含めてポリゴン数を返します。
-	 * @param bool findChildren chiledrenを含めるか
-	 * @return int 
-	 */
-	function countPolygons( findChildren=true){
-		local count = 0;
-		// 自分の分
-		foreach( face in mesh["face"]) {
-			count += (face.len-face.offs);
-		}
-		count /= 3;
-		if( !findChildren) return count;
-		//子供の分
-		foreach( c in children) count += c.countPolygons();
-		return count;
-	}
-	
 	////////////////////////////////////////////////////////////////////////////
 	//	シーン追加、削除
 
@@ -519,16 +491,6 @@ class SK3DObject extends SK3DRenderNode
 			}
 		}
 	}
-	
-	// function finishChildren( force=false){
-	// 	foreach( i, v in children){
-	// 		if( v.lock) continue;
-	// 		if( !force && m.lockscp) continue;
-	// 		if( !v.startScript("end")){
-	// 			v.kill();
-	// 		}
-	// 	}
-	// }
 	
 	function clearChildren(){
 		if( children){
@@ -699,20 +661,13 @@ class SK3DObject extends SK3DRenderNode
 		//	static    : 常時
 		//	dynamic   : mute時、disablesimulation時
 		animlayers.integrateBonePoses( appendbones?appendbones:bones, gmat, mutepbone||(scn&&scn.disablesimulation));
-		//	アニメーションによるバウンディングを更新するのはここ。※シミュレーションの結果は前のフレームのものになる。。。botu
-		// Bone.calcPartsLocalBounds( bones, bnd);
 		
-		//	shapeline
-		local sl;
-		if( sl = mesh["shapeline"]){
-			local layers = animlayers.layers, l0 = layers[0], l1 = layers[1];
-			if( l1){
-				local w = l1.weight;
-				sl.evaluate2( mesh.shapetarget, l0.frametime, l1.frametime, w);
-			}else{
-				sl.evaluate2( mesh.shapetarget, l0.frametime);
-			}
+		//	shapeline ... とりあえずフェードはオフで。。。
+		local layers = animlayers.layers, l0 = layers[0], sl = l0["shapeline"];
+		if( sl){
+			sl.evaluate2( mesh.shapetarget, l0.frametime);
 		}
+		
 		animating = true;
 	}
 
@@ -796,6 +751,8 @@ class SK3DObject extends SK3DRenderNode
 		local al = AnimationLayer();
 		local mot = getMotion( t["mot"]);
 		if( mot) al.partsmap = mot.partsmap;
+		local sl = shapelinemap[ t["mot"]];
+		if( sl) al.shapeline = sl;
 		al.mixtype = ("mix" in t) ? t.mix : lyr;
 		//	アニメーションをセット
 		local st = t.st, en=t["en"], spd, lp, time;

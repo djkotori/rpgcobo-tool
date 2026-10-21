@@ -345,11 +345,58 @@ stageprops .. {
 	}
 };
 
-local bgtypelist = [
-	{ lbl="$T.lbl_skybox", val="skybox", icon="\ue3c4", }
-	{ lbl="$T.sfxbit_0", val="col", icon="\ueb36", }
-	{ lbl="$T.lbl_gradation", val="grad", icon="\ue3e9", }
-	{ lbl="$T.lbl_texture", val="tex", icon="\ue3d3"}
+::bgtypelist <- [
+	{
+		lbl="$T.lbl_skybox", val="skybox", icon="\ue3c4",
+		props = @( v) [{ pid="blur", lbl="$T.lbl_blur", type=SCALAR, range=(0,10), defval=(v["blur"]||0), ui="bar" }]
+		create = @( v){
+			local bgpass = SK3DRenderer.PassRegistory.SkyboxBackgroundPass();
+			bgpass.setBlur( v["blur"]/10.0);
+			return bgpass;
+		}
+	}
+	{
+		lbl="$T.sfxbit_0", val="col", icon="\ueb36",
+		props = @( v) [{ pid="col", lbl="$T.sfxbit_0", type=RGB, defval=(v["col"]||0x000000ff), }]
+		tostring = @( v){
+			local cs = "%06x" % (v["col"]>>>8);
+			return rtf( `$T.sfxbit_0: [#$cs][+2]■`);
+		}
+		create = @( v){
+			local bgpass = SK3DRenderer.PassRegistory.ColorBackgroundPass();
+			bgpass.setColor( v["col"]);
+			return bgpass;
+		}
+	}
+	{
+		lbl="$T.lbl_gradation", val="grad", icon="\ue3e9",
+		props = [{ pid="grad", lbl="$T.lbl_gradation", type=3312, defval={color=[0x000033ff, 0x0000ffff]} }]
+		tostring = @( v){
+			local g = v["grad"]["color"]||[0x000033ff, 0x0000ffff];
+			local cs0 = "%06x" % (g[0]>>>8);
+			local cs1 = "%06x" % (g.last()>>>8);
+			return rtf( `$T.lbl_gradation: [#$cs0]■[#$cs1]■`);
+		}
+		create = @( v){
+			local bgpass = SK3DRenderer.PassRegistory.TextureBackgroundPass();
+			local g = v["grad"]["color"]||[0x000033ff, 0x0000ffff];
+			bgpass.setGradation( g);
+			return bgpass;
+		}
+	}
+	{
+		lbl="$T.lbl_texture", val="tex", icon="\ue3d3"
+		props = [
+			{ pid="tex", lbl="$T.lbl_texture", type=PATH, defval="", }
+			// { pid="uv", lbl="$T.lbl_uv", type=LIST, defval="", }	//	Cylinder, Equirectangular, Cube
+		]
+		create = @( v){
+			local bgpass = SK3DRenderer.PassRegistory.TextureBackgroundPass();
+			local tex = ::getTexture( v["tex"]);
+			bgpass.setTexture( tex);
+			return bgpass;
+		}
+	}
 ];
 
 local bgpropdef(){
@@ -359,18 +406,8 @@ local bgpropdef(){
 			local a = [
 				{ pid="type", lbl="$T.lbl_type", type=LIST, list = bgtypelist, refresh = true},
 			];
-			switch( v["type"]){
-			case "col":
-				a .. { pid="col", lbl="$T.sfxbit_0", type=RGB, defval=(v["col"]||0x000000ff), };
-				break;
-			case "grad":
-				a .. { pid="grad", lbl="$T.lbl_gradation", type=3312, defval={color=[0x000033ff, 0x0000ffff]} };
-				break;
-			case "tex":
-				a .. { pid="tex", lbl="$T.lbl_texture", type=PATH, defval="", };
-				a .. { pid="uv", lbl="$T.lbl_uv", type=LIST, defval="", };	//	Cylinder, Equirectangular, Cube
-				break;
-			}
+			local bgt = bgtypelist.find( @( x) x.val==v["type"]);
+			a ... fget( bgt, "props", bgt, v);
 			return a;
 		}
 		setprop = @( prop, data, val){
@@ -380,19 +417,8 @@ local bgpropdef(){
 			}
 		}
 		tostring = @( v){
-			local ts = bgtypelist.find( @( x) x.val==v.type)["lbl"];
-			switch( v.type){
-			case "col":
-				local cs = "%06x" % (v["col"]>>>8);
-				ts = rtf( `$ts: [#$cs]■`);
-				break;
-			case "grad":
-				local g = v["grad"]["color"]||[0xff0000ff];
-				local cs0 = "%06x" % (g[0]>>>8);
-				local cs1 = "%06x" % (g.last()>>>8);
-				ts = rtf( `$ts: [#$cs0]■[#$cs1]■`);
-				break;
-			}
+			local bgt = bgtypelist.find( @( x) x.val==v["type"]);
+			local ts = fget( bgt, "tostring", bgt, v) ?? fget( bgt, "lbl", bgt, v);
 			return ts;
 		}
 	};
@@ -406,6 +432,7 @@ stageprops .. {
 	type=PROPERTYLIST,
 	defval={ type="skybox", },
 	propdef = bgpropdef
+	bgtypelist = bgtypelist
 
 	func = @( stage, val){
 		stage.view3d.renderer.bgpass = stage.createBackground( val);

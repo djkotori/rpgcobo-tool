@@ -536,7 +536,8 @@ RPGMain.btnhelpmap["stage_map"] <- [ [BTN_A,"$T.btn_search"], [BTN_B,"$T.btn_jum
 			switch( cid){
 			case CTRL_ETC:
 				if( v && landed){
-					if( !::rpgstage.stat.statmap["menuopenable"]){	//	メニュー開閉不能。マップも開けない
+					local sm = ::rpgstage.stat.statmap["showmap"];
+					if( !sm["bigmap"] || !::rpgstage.stat.statmap["menuopenable"]){	//	メニュー開閉不能。マップも開けない
 						::playSound( "SE002"); break;
 					}
 					rpgstage.mainevent = #{evid="map"};	

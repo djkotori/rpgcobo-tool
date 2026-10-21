@@ -707,7 +707,6 @@ class MapTools.tool_carpet extends MapTool
 					break;
 				default:
 					local hb = rayTest( e, blkflag, true);
-					printf( "eeeeee %S\n", hb);
 					if( hb && hb.f == 0){//	上面のみ有効
 						return boxStart( e, hb);
 					}
@@ -1363,7 +1362,9 @@ class MapTools.tool_level extends MapTool
 
 	function rayTestX( e, blkflag){
 		local hb = rayTest( e, blkflag, true);
-		if( hb["f"] != 0) hb = null;
+		if( hb["f"]){
+			hb.setFace( 0);
+		}
 		if( hb && x2chk.isSelected()){ hb.bx = (hb.bx+1)&~1; hb.bz = (hb.bz+1)&~1; }
 		return hb;
 	}

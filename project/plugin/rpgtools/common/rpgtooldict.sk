@@ -344,6 +344,7 @@
 	"sfx_raster1"						: {"ja":"ズームブラー", "en":"Zoom Blur"}
 	"sfx_raster2"						: {"ja":"ラスタースクロール", "en":"Raster Scroll"}
 	"sfx_raster3"						: {"ja":"TVノイズ", "en":"TV Noise"}
+	"sfx_raster4"						: {"ja":"背景を単色に", "en":"BG to Solid Color"}
 	"lbl_expscale"						: {"ja":"明度スケール", "en":"Brightness"}
 
 	"sfxbit_0"							: {"ja":"カラー", "en":"Color"}
@@ -1353,6 +1354,29 @@
 	"tmpl_build_running"				: {"ja":"ゲームのビルドを実行しています… $v", "en":"Running game build... $v"},
 	"tmpl_build_error"					: {"ja":"ゲームのビルドが失敗しました\n$v", "en":"Game build failed\n$v"},
 	
+	"lbl_coltheme"						: {"ja":"カラーテーマ", "en":"Color Theme"},
+	"theme_royal"						: {"ja":"ロイヤル", "en":"Royal"},
+	"theme_forest"						: {"ja":"フォレスト", "en":"Forest"},
+	"theme_light"						: {"ja":"ライト", "en":"Light"},
+	"theme_dark"						: {"ja":"ダーク", "en":"Dark"},
+	"theme_pop"							: {"ja":"ポップ", "en":"Pop"},
+	"theme_horror"						: {"ja":"ホラー", "en":"Horror"},
+	"theme_ocean"						: {"ja":"オーシャン", "en":"Ocean"},
+	"theme_frost"						: {"ja":"フロスト", "en":"Frost"},
+	"theme_volcano"						: {"ja":"ボルケーノ", "en":"Volcano"},
+	"theme_desert"						: {"ja":"デザート", "en":"Desert"},
+	"theme_steampunk"					: {"ja":"スチームパンク", "en":"Steampunk"},
+	"theme_cyber"						: {"ja":"サイバー", "en":"Cyber"},
+	"theme_sakura"						: {"ja":"サクラ", "en":"Sakura"},
+	"theme_yokai"						: {"ja":"ヨウカイ", "en":"Yokai"},
+	"theme_astral"						: {"ja":"アストラル", "en":"Astral"},
+	"theme_pirate"						: {"ja":"パイレーツ", "en":"Pirate"},
+	"theme_sky"							: {"ja":"スカイ", "en":"Sky"},
+	"theme_crystal"						: {"ja":"クリスタル", "en":"Crystal"},
+	"theme_grimoire"					: {"ja":"グリモワール", "en":"Grimoire"},
+	"theme_retro"						: {"ja":"レトロ", "en":"Retro"}
+	
+
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	プラグイン
 	"menu_file_plugin"					: {"ja":"プラグインマネージャー", "en":"Plugin Manager"}

@@ -331,6 +331,18 @@ class PMMaterialPanel
 	function syncParam( m, pid){
 		proplist.setParameters( {[pid]=getMaterialParam( m, pid)});
 	}
+
+	function syncMaterialSource( m){
+		local sk3d = editor.canvas.sk3d;
+		local i = sk3d.meshtree.mtls.indexOf( m);
+		local ms = editor.pmt.materials[i];
+		//
+		foreach( fid in MaterialSource.fids){
+			ms[fid] = m[fid];
+		}
+		ms.tec = m.tec.name;
+		//	テクスチャは他でやってる
+	}
 	
 	function propevent( e){
 		local cmd = e.actioncmd;
@@ -339,6 +351,7 @@ class PMMaterialPanel
 		local oldval = getMaterialParam( selmtl, pid);
 		local _setval( m, pid, val){
 			self.setMaterialParam( m, pid, val);
+			self.syncMaterialSource( m);
 			if( prop["refresh"] && m == self.selmtl){	//	別の選択になってる場合はUIは更新しない
 				self.assignProperties( m);
 			}else{

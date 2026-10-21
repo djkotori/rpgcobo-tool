@@ -1373,17 +1373,19 @@ class PropertyBehaviors.AnimationMap extends PropertyBehavior
 		// { lbl="$T.lbl_help", val="help", icon="\ue887" },
 	]
 	
-	static anipropdef = {
+	static anipropdef = @( prop, pl) +{
 		name = "Anime",
 		props = @( cmd){
 			local mot = !!cmd.spd;
 			local a = [
 				{ pid="id", lbl="ID", type=STRING },
-				{ pid="mot", lbl="$T.lbl_type", type=LIST, list=[{lbl="$T.lbl_pose",val=false},{lbl="$T.lbl_anime",val=true}], refresh=1, get=@( prop, data) !!data.spd, set=@( prop, data, val){
+				{ pid="type", lbl="$T.lbl_type", type=LIST, list=[{lbl="$T.lbl_pose",val=false},{lbl="$T.lbl_anime",val=true}], refresh=1, get=@( prop, data) !!data.spd, set=@( prop, data, val){
 					if( !val){ data.spd=0.0; data.en=data.st; } else { data.spd=1.0; }; return val;
-				}},
-				{ pid="st", lbl="$T.lbl_start", type=SCALAR, range=(0,1000), },
+				}}
 			];
+			local ma = fget( prop, "motlist", prop, pl);
+			if( length( ma)) a .. { pid="mot", lbl="$T.lbl_motion", type=LIST, list=ma };
+			a .. { pid="st", lbl="$T.lbl_start", type=SCALAR, range=(0,1000), };
 			if( mot){
 				a ... [
 					{ pid="en", lbl="$T.lbl_end", type=SCALAR, range=(0,1000), },
@@ -1404,9 +1406,10 @@ class PropertyBehaviors.AnimationMap extends PropertyBehavior
 		animelist.multisel = true;
 		animelist.setviewfunc = @( la, v, i){
 			local idx = la.items.indexOf( i);
+			local mot = i["mot"]||"";
 			local rt = i.spd ?
-				  sprintf( "[M][#bff]%02d:%-9s (%03d~%03d) *%2.1f [E][#bff]%s%s", idx, i.id, i.st, i.en, i.spd, i.loop?"\ue040":"\ue31c", i.replay?"\ue042":"")
-				: sprintf( "[M][#bff]%02d:%-9s (%03d)", idx, i.id, i.st)
+				  sprintf( "[M][#bff]%02d:%-9s %S(%03d~%03d) *%2.1f [E][#bff]%s%s", idx, i.id, mot, i.st, i.en, i.spd, i.loop?"\ue040":"\ue31c", i.replay?"\ue042":"")
+				: sprintf( "[M][#bff]%02d:%-9s %S(%03d)", idx, i.id, mot, i.st)
 			v.setValue( "lbl", rtf( rt));
 			v.pickable = false;
 		}
@@ -1435,7 +1438,8 @@ class PropertyBehaviors.AnimationMap extends PropertyBehavior
 				}else{
 					local ani = e.actioncmd;
 					local cv = animelist.getItemView( e.actioncmd);
-					local v = PropertyEditPopup.run( cv, anipropdef, ani);
+					local propdef = anipropdef( prop, this);
+					local v = PropertyEditPopup.run( cv, propdef, ani);
 					if( v){
 						Table.clear( ani) ... v;	//	aniの中身を置き換え
 						animelist.refreshItems();
@@ -1485,6 +1489,9 @@ class PropertyBehaviors.AnimationMap extends PropertyBehavior
 		case "add":
 		{
 			local v = { id:"anime", st=0, en=0, spd=0.0, loop=false, replay=true };
+			local propdef = anipropdef( prop, this);
+			local p = fget( propdef, "props", propdef, v).find( @( x) x.pid == "mot");
+			if( p) v.mot <- p.list[0]["val"];
 			animelist.items .. v;
 			animelist.refreshItems();
 			postActionEvent( true);
