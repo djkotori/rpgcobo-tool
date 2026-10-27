@@ -204,6 +204,63 @@ class RPGEfxAnimeModifier extends SK3DModifier
 }
 
 
+//	壁の裏のキャラを透過する
+//	depthtestをgreaterにして半透明描画。transparentパスの描画。
+//	
+class SeeThroughModifier extends SK3DModifier
+{
+	order = 54;
+
+	rp3d = null;			//	RPG3DObject
+	+efxmat = Matrix();		//	
+	
+	time = 0.0;				//	
+
+	constructor( r){
+		rp3d = r;
+		foreach( pm in r["pmmap"]){
+			setToPM( pm);
+		}
+		r.visiblemask |= SK_VISIBLE_DECAL;
+	}
+
+	function modify( o, dt){
+		return true;
+	}
+
+	function interrupt( o){
+		foreach( pm in rp3d["pmmap"]){
+			resetFromPM( pm);
+		}
+		rp3d.visiblemask &= ~SK_VISIBLE_DECAL;
+	}
+
+	//	このエフェクトをPolygonMeshに設定する
+	function setToPM( pm){
+		local a = [];
+		foreach( f in pm.face){
+			f = clone f;
+			local m = f.m = clone f.m;
+			m.visiblemask = SK_VISIBLE_DECAL | 0x80000;	//	フラグ代わり。。。
+			m.blend = SK_MIX;
+			m.colormat = Matrix( 0,0,0,0, 0,0,0,0, 0,0,0,0, 0.2,0.2,0.2,0.2);
+			m.depthtest = SK_GREATER;
+			m.depthmask = 0;
+			m.polygonoffset1 = -1300.0;
+			a .. f;
+		}
+		pm.face ... a;
+	}
+	
+	//	エフェクトをPolygonMeshから削除する。
+	static function resetFromPM( pm){
+		foreach( f in pm.face){
+			if( f.m["visiblemask"] & 0x80000) removei;
+		}
+	}
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 //	
 //	ScreenEffect

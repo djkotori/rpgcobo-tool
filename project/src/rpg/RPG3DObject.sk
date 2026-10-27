@@ -889,7 +889,9 @@ class RPG3DObject extends SK3DObject
 		);
 		local r = #Rect2D(), v = #Vector3D(), r2 = #Rect2D();
 		r.set( 10000, 10000, -20000, -20000);
-		local m = m_1.identity().translate( pos).scale( scale.x).translate( pivot);	//	rotを抜いた座標変換
+		//	rotを抜いた座標変換
+		local m = m_1.identity().translate( pos).scale( scale.x);
+		if( pivot instanceof Vector3D) m.translate( pivot); else if( pivot instanceof Transform) m.mult34( pivot.toMatrix(), m);
 		foreach( s in sa){
 			v.set( b.r, b.s, b.t).scale( s).add( b.x, b.y, b.z).transform( m);
 			local w = v.transform( vmat).transformw( pmat);
@@ -1426,23 +1428,20 @@ class RPG3DVoxChara extends RPG3DObject
 		//	※pmmapはキャッシュするべき。パレットのみ置き換え
 		local vc = ::getResourceContent( cv.vox), vcpal = vc.pal;
 		if( cv["pal"]) vcpal = vcpal.getModPalette( cv.pal);
-		local vmdmap = VoxelMeshBuilder.createVoxelMeshDatas( vc.getPartsList().map( @( p, i){ return { id = i; vd = p.vd8; vs = 63; }; }));
-		local headmtl = null;
-		foreach( i, pm in _makepms( vmdmap, vcpal)){
-			local n = vc.partsAt( i).name, n0 = n.substring( 0, length( n)-1).."0";
+		local mtl = ::getVoxelMeshMaterial( vcpal);
+		local mtlmap = { "head0" = with( clone mtl){ polygonoffset1 = -15; }, "body0" = with( clone mtl){ polygonoffset1 = -25; } };	//	head,bodyはボクセルが被ってるので手前にオフセット
+		//
+		foreach( vdid, pm in vc.getVoxelMeshMap()){
+			pm.face[0].m = null;	//	cloneしたくない
+			pm = clone pm;
+			local n = vc.findModelParts( vdid).name, n0 = n.substring( 0, length( n)-1).."0";
 			pmmap[ n] <- pm;
 			//	calc pivot
 			local vp0 = vc.findParts( n0);
 			if( !vp0) continue;	//	パーツない場合あり
 			local m = vp0.gmat();
 			pm.pivot = Vector3D( m.u, m.v, m.r).scale( VOX_SCALE);
-			if( n == "head0"){	//	headはボクセルが被ってるので手前にオフセット。head以外でもありそう
-				if( !headmtl){
-					headmtl = clone pm.face[0].m;
-					headmtl.polygonoffset1 = -20;
-				}
-				pm.face[0].m = headmtl;
-			}
+			pm.face[0].m = mtlmap[n0] || mtl;
 		}
 		headbone = findBone( "head");
 		if( !animlayers) animlayers = AnimationLayers();
@@ -1451,10 +1450,8 @@ class RPG3DVoxChara extends RPG3DObject
 		setPivot( #Vector3D( 0.0, 0.01, 0.0));	//	Z fightingしちゃうのを応急措置
 		bnd.set( 0, 1.0, 0, 0.8, 1.0, 0.8);		//	ちゃんと計算。。。
 		gbnd.set( bnd);
-
 		if( cv["vox_itemr"]) setEquipVox( cv["vox_itemr"], "item_R");
 		if( cv["vox_iteml"]) setEquipVox( cv["vox_iteml"], "item_L");
-
 		//	b3body
 		local colsize = cv["colsize"]||#(0.4,0.8,0.4);
 		local shp = createShape( cv["colshp"]||SK_SHAPE_CAPSULE, colsize);
@@ -1488,22 +1485,7 @@ class RPG3DVoxChara extends RPG3DObject
 		}
 		return ma;
 	}
-
-	function _makepms( vmdmap, pal){
-		local mtl = null;	//	同じpalなのでマテリアルは統一できる
-		local t = {};
-		foreach( i, vmd in vmdmap){
-			local pm = t[i] <- vmd.createPolygonMesh( pal);	//	TODO : パレット調整！
-			vmd.dispose();
-			if( !mtl){
-				mtl = pm.face[0]["m"];
-			}else{
-				pm.face[0].m = mtl;
-			}
-		}
-		return t;
-	}
-
+	
 	//	wv : { "vox":"/resorce/vox/chara/man.vox", "parts":0, "pivot":[4,5,6], pal:{[idx]:0xffffffff} }
 	//	place : "item_R"|"item_L"
 	//	weapon, shieldはキャラの各パーツと同様の描画方法。だが、アニメ0は非表示となる。
@@ -1524,23 +1506,27 @@ class RPG3DVoxChara extends RPG3DObject
 		if( !bone) return;
 		local pivot = Vector3D( wv.pivot).scale( -VOX_SCALE).add( Vector3D().transform( bone.parts.bindpose) );//.transform( bone.parts.invbindpose);
 		//
+		local mtl = ::getVoxelMeshMaterial( vcpal);
 		if( vd8){	//	直接ボクセルがついてるパーツ
-			local vmd = VoxelMeshBuilder.createVoxelMeshData( vd8, null, 0, 63);
-			local pm = vmd.createPolygonMesh( vcpal);	//	TODO : パレット調整！
+			local pm = clone vc.getPartsVoxelMesh( vp.vpid);
+			pm.face[0].m = mtl;
 			pm.pivot = pivot;
 			pmmap[ place..1] <- pmmap[ place..2] <- pmmap[ place..3] <- pm;	//	1,2,3を同じpmで埋める！
 		}else{	//	下にボクセルがぶら下がってるパーツ
 			local ca = [];
 			for( local l = 1;l < 4;l ++){
 				local cp = vp.findChild( ""..l);
-				if( cp) ca .. { id = l; vd = cp.vd8; vs = 63; };
+				if( cp["vd8"]) ca .. { id = l; vdid = cp.vdid };
 			}
-			local vmdmap = VoxelMeshBuilder.createVoxelMeshDatas( ca);
-			foreach( i, pm in _makepms( vmdmap, vcpal)){
+			local vmmap = vc.getVoxelMeshMap();
+			foreach( v in ca){
+				local pm = clone vmmap[v.vdid];
+				pm.face[0].m = mtl;
 				pm.pivot = pivot;
-				pmmap[ place..i] <- pm;	//	名前は"1","2","3"のいずれか
+				pmmap[ place..v.id] <- pm;	//	名前は"1","2","3"のいずれか
 			}
-			//	TODO ※1,2,3が埋まってなかったら1で埋める！
+			if( !pmmap[ place..2]) pmmap[ place..2] <- pmmap[ place..1];
+			if( !pmmap[ place..3]) pmmap[ place..3] <- pmmap[ place..1];
 		}
 		materials = null;	//	マテリアルキャッシュをクリア
 		//	
@@ -1802,6 +1788,7 @@ class RPG3DMapAsset extends RPG3DObject
 class RPG3DPolyModel extends RPG3DObject
 {
 	polymdl = null;
+	colmat = null;
 
 	function setPolyModel( x){
 		polymdl = x;
@@ -1825,5 +1812,30 @@ class RPG3DPolyModel extends RPG3DObject
 		local pmt = meshtree.pmt;
 		animelist = clone pmt.animelist;
 		animemap = pmt._animap;
+
+		colmat = Matrix();
+	}
+
+	function update( dt, pmatdirty=true){
+		if( ::["rpgstage"]){
+			local w = Math.cos( skGetTime( ::rpgstage.envcoltime)*0.01)*0.3+0.7;
+			local iw = (1.0-w)*0.8+0.2;
+			colmat.set( iw,0,0,0, 0,iw,0,0, 0,0,iw,0, 0.2*w,w,w,1);
+		}
+		return super.update( dt, pmatdirty);
+	}
+
+	function setSelected( b){
+		if( !selbits != !b){
+			local ma = getMaterials();
+			foreach( m in ma){
+				if( b){
+					m.colormat = colmat;
+				}else{
+					m.colormat = null;
+				}
+			}
+		}
+		selbits = b;
 	}
 }

@@ -24,7 +24,7 @@ class PMEditor extends EditorViewBase
 	timeline = null;		//	TimelineBarBehavior : タイムライン
 	
 	static function createEditor( path){
-		if( !path.endsWith( ".pm") && !path.endsWith( ".pmt") && !path.endsWith( ".gltf") && !path.endsWith( ".glb")) return null;
+		if( !path.endsWith( ".pm") && !path.endsWith( ".pmt") && !path.endsWith( ".gltf") && !path.endsWith( ".glb") && !path.endsWith( ".vrm")) return null;
 		//	
 		local ed = ::loadSKView( "/skstudio/ui/pmeditor/pmeditor.ui", PMEditor);
 		ed.init( path);

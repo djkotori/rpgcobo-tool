@@ -157,12 +157,23 @@ class BlockOperation
 		local x0 = r.x, x1 = x0 + r.w;
 		local y0 = r.y, y1 = y0 + r.h;
 		local z0 = r.z, z1 = z0 + r.d;
-		local isattach = !!p.isattach;	//	透明ブロック保護
+		local mode = p.mode;
 		//	
 		for( local z = z0, i = 0; z < z1; z ++) for( local x = x0; x < x1; x ++) for( local y = y0; y < y1; y ++, i++){
 			local oldblk = bw.blockat( x, y, z);
 			local f = ::Block.getFlags( oldblk);
-			if( isattach==((f&BLK_FULLOCCLUDE)==BLK_FULLOCCLUDE) && !(f&BLK_LIQUID)) continue;	//	水も
+			// if( isattach==((f&BLK_FULLOCCLUDE)==BLK_FULLOCCLUDE) && !(f&BLK_LIQUID)) continue;	//	水も
+			switch( mode){
+			case 0:	//	erace
+				if( !oldblk) continue;
+				break;
+			case 1:	//	attach
+				if( (f&BLK_FULLOCCLUDE) == BLK_FULLOCCLUDE) continue;
+				break;
+			case 2:	//	paint
+				if( !oldblk) continue;
+				break;
+			}
 			pos.set( x, y, z);
 			_plcblk( pos, blk);
 		}

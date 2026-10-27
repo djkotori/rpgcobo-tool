@@ -34,7 +34,7 @@ class MapTools.tool_pen extends MapTool
 	blk = 1;				//	選択されたブロック
 	fillplanechk = null;	//	
 
-	static blkflags = (BLK_SOLID|BLK_LIQUID|BLK_DECAL, BLK_SOLID, BLK_SOLID|BLK_LIQUID, BLK_SOLID|BLK_LIQUID, BLK_SOLID|BLK_LIQUID);
+	static blkflags = (BLK_SOLID|BLK_LIQUID|BLK_DECAL, BLK_SOLID|BLK_SOLIDFB, BLK_SOLID|BLK_LIQUID, BLK_SOLID|BLK_SOLIDFB, BLK_SOLID|BLK_LIQUID);
 	static isattach = (false, true, false, true, false);
 	static optioofrm = (0,0,0,-1,-2);
 	
@@ -233,7 +233,7 @@ class MapTools.tool_pen extends MapTool
 		colitf.lock = true;
 		//	最初の描画
 		local trk = "rect"..skGetTime();
-		bop.rectFillBlock({ box=box, blk=blk, isattach=atc });
+		bop.rectFillBlock({ box=box, blk=blk, mode=mode });
 		bop.submit( editor, trk);
 		local fn( e){
 			e.consume();
@@ -245,7 +245,7 @@ class MapTools.tool_pen extends MapTool
 					local b = makebox( hb0, hb, atc);
 					if( b <> box){
 						self.editor.op.undo();
-						bop.rectFillBlock({ box:b, blk:blk, isattach=atc });
+						bop.rectFillBlock({ box:b, blk:blk, mode=mode });
 						bop.submit( self.editor, trk);
 						box.set( b);
 					}

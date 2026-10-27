@@ -25,6 +25,9 @@ enum MapGenBiomeID
 	RIVER = 7,			//	通行不能
 	LAKE = 8,			//	通行不能
 	SEA = 9,			//	通行不能
+	//	ブロック定義バリエーション
+	MOUNTAIN_VAR = 13,		//	山のバリエーション
+	
 	//	RENAMED
 	FLOOR1 = 0,			//	標準的な床
 	FLOOR2 = 1,			//	ひび割れた床や、模様のある床などのバリエーション
@@ -32,8 +35,16 @@ enum MapGenBiomeID
 	INNERWALL = 4,		//	壁の内側。上からは真っ黒に見える。
 	LAKE1 = 7,			//	
 	LAKE2 = 8,			//	
-	//	ブロック定義バリエーション
-	MOUNTAIN_VAR = 13,		//	山のバリエーション
+
+	//	TOWN
+	TOWN_FLOOR = 10,
+	TOWN_WOOD_FLOOR = 11,
+	TOWN_STONE_FLOOR = 12,
+	TOWN_FURNITURE = 13,
+	TOWN_PAVEMENT = 14,
+	TOWN_SEA = 15,
+	TOWN_CLIFF = 16,
+	TOWN_TREES = 17,
 };
 
 enum MapGenObjectID
@@ -535,6 +546,103 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			return objs;
 		}
 	}
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//	town タイプ
+	{	
+		lbl="Town", val="town", 
+		halfimg = false,
+		//
+		props=[
+			{ ...sizeprop, defval=[128,128] },
+			//	画像生成パラメータ
+		],
+		//
+		biocolor=[
+			_c( 104, 146, 86),		//	PLAIN
+			_c( 196, 168, 103),		//	DESERT
+			_c( 54, 122, 65),		//	FOREST
+			_c( 124, 90, 67),		//	MOUNTAIN
+			_c( 77, 54, 49),		//	EXMOUNTAIN
+			_c( 154, 116, 76),		//	ROAD
+			_c( 218, 176, 74),		//	BRIDGE
+			_c( 60, 150, 210),		//	RIVER
+			_c( 40, 90, 180),		//	LAKE
+			_c( 22, 28, 38),		//	SEA
+			_c( 183, 151, 96),		//	TOWN_FLOOR
+			_c( 151, 105, 66),		//	TOWN_WOOD_FLOOR
+			_c( 157, 157, 148),		//	TOWN_STONE_FLOOR
+			_c( 83, 61, 43),		//	TOWN_FURNITURE
+			_c( 132, 126, 116),		//	TOWN_PAVEMENT
+			_c( 38, 103, 155),		//	TOWN_SEA
+			_c( 100, 103, 113),		//	TOWN_CLIFF
+			_c( 25, 69, 42),		//	TOWN_TREES
+		],
+		bioobjdensmap = {
+		},
+		objsizemap = {
+			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREE_S]: 3, [TREE_M]: 4, [TREE_L]: 5, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
+		},
+		//	ツールから置き換え可能。MapGenerator定義ごとにある
+		blkmap = {
+			[PLAIN]=2|(1<<5), [DESERT]=2|(7<<5), [FOREST]=2|(27<<5), 
+			[MOUNTAIN]=3|(1<<5), [EXMOUNTAIN]=2|(57<<5), [ROAD]=3|(8<<5), [BRIDGE]=3|(22<<5), 
+			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5), [SEA]=8|(0<<5), 
+			//
+			[TOWN_FLOOR]=2|(12<<5), [TOWN_WOOD_FLOOR]=3|(37<<5), [TOWN_STONE_FLOOR]=3|(1<<5),
+			[TOWN_FURNITURE]=3|(37<<5), [TOWN_PAVEMENT]=2|(3<<5), [TOWN_SEA]=8|(0<<5),
+			[TOWN_CLIFF]=2|(24<<5), [TOWN_TREES]=2|(7<<5),
+			//
+			[TREE_S]=20|(74<<12), [TREE_M]=20|(75<<12), [TREE_L]=20|(67<<12),
+			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5),
+		},
+		blkmaplist = [
+			{ id=TOWN_FLOOR, lbl="FLOOR", type="blk", blkpages=[2,3] },
+			{ id=TOWN_WOOD_FLOOR, lbl="WOOD_FLOOR", type="blk", blkpages=[2,3] },
+			{ id=TOWN_STONE_FLOOR, lbl="STONE_FLOOR", type="blk", blkpages=[2,3] },
+			{ id=TOWN_PAVEMENT, lbl="PAVEMENT", type="blk", blkpages=[2,3] },
+			{ id=TOWN_SEA, lbl="SEA", type="blk", blkpages=[8] },
+			{ id=TOWN_CLIFF, lbl="CLIFF", type="blk", blkpages=[2,3] },
+			{ id=TOWN_TREES, lbl="TREES", type="blk", blkpages=[2,3] },
+			null,null,
+			{ id=TREE_S, lbl="TREE_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=TREE_M, lbl="TREE_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=TREE_L, lbl="TREE_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=FLOWERS_A, lbl="FLOWERS_A", type="blk", blkpages=[11] },
+			{ id=FLOWERS_B, lbl="FLOWERS_B", type="blk", blkpages=[11] },
+			{ id=FLOWERS_C, lbl="FLOWERS_C", type="blk", blkpages=[11] },
+		],
+		biohmap = [
+			1.0,	//	PLAIN
+			1.0,	//	DESERT
+			1.0,	//	FOREST
+			1.8,	//	MOUNTAIN
+			2.4,	//	EXMOUNTAIN
+			1.0,	//	ROAD
+			1.0,	//	BRIDGE
+			0.0,	//	RIVER
+			0.0,	//	LAKE
+			0.0,	//	SEA
+			1.0,	//	TOWN_FLOOR
+			1.0,	//	TOWN_WOOD_FLOOR
+			1.0,	//	TOWN_STONE_FLOOR
+			1.0,	//	TOWN_FURNITURE
+			1.0,	//	TOWN_PAVEMENT
+			0.0,	//	TOWN_SEA
+			1.8,	//	TOWN_CLIFF
+			1.0,	//	TOWN_TREES
+		],
+		//	バイオーム画像からブロック、高さ画像を生成する。dst[i] = blk | (y<<16) の形式で返す。
+		blkheightfunc = @( bio, dst){
+			local w = bio.width, h = bio.height;
+			local basey = 3, hscale = 1, hnoise = getrange( gendata["heightnoise"], 1.0);
+			local biohmap = gendef.biohmap,blkmap = blkmap, rnd = rnd;
+			return @( x, z, i){
+				local b = bio[i], blk = blkmap[b], bh = biohmap[b];
+				local y = basey * hscale * bh;	//	ブロックのyはバイオームごとに基本固定の値になる。ノイズでの上下みたいなのは無し。
+				return blk | (y<<16);
+			}
+		}
+	},
 ];
 
 

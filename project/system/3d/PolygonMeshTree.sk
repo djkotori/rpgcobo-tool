@@ -196,11 +196,16 @@ class PolygonMeshTree extends Serializable
 
 	function getBounds(){
 		local bnd = Rect3D( 0, 0, 0, -1000, -1000, -1000);
+		local m = Matrix();
 		foreach( n in nodes){
 			if( n.meshid >= 0){
 				local pms = _meshlist[n.meshid];
 				if( pms){
-					local r = Rect3D( pms.bnd).transform( n.tf.toMatrix());
+					local a = [n.tf];
+					while( n.parentid >= 0){
+						n = nodes[n.parentid]; a[0] <- n.tf;
+					}
+					local r = Rect3D( pms.bnd).transform( m.integrate( a));
 					bnd.expand( r);
 				}
 			}

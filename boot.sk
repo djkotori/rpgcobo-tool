@@ -26,6 +26,7 @@ function FileRef::load( bbuf = null, mode = "rb"){
 	bbuf = (bbuf?.clear()) || TempBuffer( size);
 	local is = open( "rb");
 	if( !is) throw Exception( sprintf( "file could not open : %S - %S", path, mode));
+	checksuspend();
 	for( ;;){ 
 		if( !is.read( bbuf) && is.eof()){ break; }
 		timersuspend();
@@ -46,6 +47,7 @@ function FileRef::save( bbuf, mode = "wb"){
 
 function FileStream::readfor( size, bbuf = null){
 	bbuf = (bbuf?.clear()) || ByteBuffer();
+	checksuspend();
 	for( ;;){
 		local r = read( bbuf, size-bbuf.pos);	//	throws eof
 		if( bbuf.pos >= size) break;

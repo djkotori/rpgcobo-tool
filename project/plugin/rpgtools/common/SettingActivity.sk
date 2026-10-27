@@ -124,6 +124,14 @@ preferenceprops .. {
 	defval = "rpgexe.exe", ...buildprops
 }
 
+local securelvlist = [
+	{ lbl="$T.securelv0", val="permission_lv0"},
+	{ lbl="$T.securelv1", val="permission_lv1"},
+	{ lbl="$T.securelv2", val="permission_lv2"},
+]
+
+preferenceprops .. { ctg="build", pf="win32", pid="securelv", lbl="$T.securelv_game", type=LIST, list=securelvlist, defval=@() ::sakana["permission"] },
+
 preferenceprops .. {
 	ctg="build", pf="win32", pid="steam", lbl="$T.lbl_steambuild", type=PROPERTYLIST,
 	propdef = {

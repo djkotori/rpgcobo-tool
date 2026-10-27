@@ -252,7 +252,7 @@ function getVoxelMeshMaterial( pal){
 function VoxelMeshData::createPolygonFace( pal, mtl){
 	local ib = createIndexBuffer();
 	//	渡されたmtlが無い場合のみmtlを生成。
-	if( !mtl) mtl = ::getVoxelMeshMaterial( pal);
+	if( mtl == null) mtl = ::getVoxelMeshMaterial( pal);
 	//	
 	local fa = [], vmf = #(0,0,0,0);
 	for( local l = 0; getFaceInfo( l, vmf); l++){
@@ -287,37 +287,8 @@ function VoxelMeshData::createPolygonMesh( pal=null, mtl=null){
 with VoxelContainer
 {
 	pal <- null;
-	pals <- null;
 	meta <- null;
-
-	//	VoxEditorで編集したデータを適用する。
-	//	conf._voxconf.vcdatamapにvc名で入ってる
-	function applyEditData( vcdata){
-		pals = [];
-		//	material map
-		for( local l = 0;l < 4; l ++){
-			local p = l? clone pal: pal; pals .. p;
-			local mm = vcdata.mtlmap[l], mp = vcdata.mtlpal[l];
-			for( local j = 0; j < 256;j ++){
-				p[j] = (p[j]&0xffffff) | ((mp[mm[j]]&127)<<24);	//	materialのみ置き換え
-			}
-		}
-		//	ルートのパーツ名
-		for( local l = 0, vp; vp=partsAt( l); l++){
-			if( vp.parent) continue;	//	ルートじゃない
-			local palid = vcdata.partsmtl[vp.name];
-			if( palid == undefined) continue;	//	map nasi
-			local ma = getModelsUnder( vp, []);
-			foreach( m in ma){
-				local p = pals[palid];
-				if( (m.flags & 4) && m.pal != p){	//	コンフリクトは防げそうではあるなー、、、、
-					printf( "WARNING!!!! conflict palette material....\n");
-				}
-				m.pal = pals[palid];
-				m.flags |= 4;	//	パレット割り当て済み
-			}
-		}
-	}
+	pmcache <- null;
 
 	//	指定したパーツ以下のvd8を全て取得
 	/*static*/ function getModelsUnder( vp, a){
@@ -336,11 +307,47 @@ with VoxelContainer
 		if( n.endsWith( ".vox")){
 			local vc = r.getContent();
 			vc.registerGlobal( n.substring( 0, n.lastIndexOf( ".")));	//	.voxを外した名前に。。。ダブると落ちる！
-			printf( "VoxelContainer registered. path=%S name=%S, vcid=%S\n", r.path, vc.name, vc.vcid);
 		}
 		if( r.isdir){
 			foreach( v in r.getList()) registerGlobalResources( v);
 		}
+	}
+
+	function _getmtl(){
+		foreach( v in pmcache) return v.face[0].m;
+		return ::getVoxelMeshMaterial( pal);
+	}
+
+	function getModelList(){
+		local a = [];
+		for( local l = 0;l < mdlnum;l ++) a .. modelAt( l);
+		return a;
+	}
+
+	//	PolygonMesh
+	function getVoxelMeshMap(){
+		local makelist = getModelList().map( @( vd, i) pmcache[i] ? undefined : { id = i; vd = vd; vs = 63; });
+		if( !makelist[0]) return pmcache;
+		local vmdmap = VoxelMeshBuilder.createVoxelMeshDatas( makelist);
+		local mtl = _getmtl();
+		if( !pmcache) pmcache = {};
+		foreach( i, vmd in vmdmap){
+			local pm = pmcache[i] <- vmd.createPolygonMesh( null, mtl);
+			vmd.dispose();
+		}
+		return pmcache;
+	}
+
+	function getPartsVoxelMesh( vpid){
+		if( pmcache[vpid]) return pmcache[vpid];
+		local vp = partsAt( vpid), vd8 = vp["vd8"];
+		if( !vd8) return null;
+		if( !pmcache) pmcache = {};
+		local mtl = _getmtl();
+		local vmd = VoxelMeshBuilder.createVoxelMeshData( vd8, null, 0, 63);
+		local pm = vmd.createPolygonMesh( null, mtl);
+		pmcache[vp.vdid] <- pm;
+		return pm;
 	}
 }
 

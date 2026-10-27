@@ -22,7 +22,14 @@ class DBEditorPlayer extends DBEditor
 	];
 
 	static baseprops2 = [
-		{ pid="mdlid", lbl="$T.lbl_model", type=RESID_PREVIEW, restype=["chara_vox"], defval="CV000" },
+		{ pid="mdlid", lbl="$T.lbl_model", type=RESID_PREVIEW, restype=["chara_vox", "poly_mdl"], defval="CV000",
+			filter=@( i, d){
+				switch( i[0]){
+				case 'P': return d["charause"];
+				}
+				return true;
+			}
+		},
 		{ pid="picid", lbl="$T.lbl_picture", type=RESID_PREVIEW, restype=["event_pic"], defval="" },
 	];
 	

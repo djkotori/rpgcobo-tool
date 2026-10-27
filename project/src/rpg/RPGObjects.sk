@@ -1008,7 +1008,7 @@ class RPGEnemy extends RPGCharaBase
 	
 	function setDataID( did){
 		super.setDataID( did);
-		objid = rnd.nexti();		//	ここでobjid割り振り。初期化時のいつでもいいが
+		objid = rnd.nexti( 1000000);		//	ここでobjid割り振り。初期化時のいつでもいいが
 		name = data.name;
 		updateBaseScore();
 		baseoptions = data.option.map( @( v) v?RPGOption( v):undefined);		//	ランダムあってもいいかも
@@ -1413,7 +1413,7 @@ class RPGState extends Serializable
 		}
 		local list = itemlistOf( itemid);
 		local item = RPGObject.create( itemid);
-		item.seed = rnd.nexti();
+		item.seed = rnd.nexti( 1000000);
 		if( lv) item.setLV( lv);
 		return addItem( item, n);
 	}

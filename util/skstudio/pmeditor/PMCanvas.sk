@@ -65,13 +65,14 @@ class PMCanvas extends CanvasBehavior
 		pm3d = sk3d.children.find( @( v) v.mesh == pm);
 		bonesk.clearBones();
 		bonesk.addBones( pm3d);
+		// bonesk.setPivot( pm3d.mat);
 		resetRigidBody();
 		//	
 		local r = Rect3D( pm3d.bnd).transform( pm3d.mat);
 		bndsk.pos( r.x, r.y, r.z);
 		bndsk.scale( r.r, r.s, r.t);
 		bndsk.matdirty = true;
-		bndsk.setPivot( pm3d.mat);
+		// bndsk.setPivot( pm3d.mat);
 	}
 
 	function resetRigidBody(){

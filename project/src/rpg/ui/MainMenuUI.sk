@@ -329,7 +329,7 @@ BACK_TO_ITEMSEL:
 		if( !item.data["cmdtgt"]){
 			local used = st.menufunc( item.data, null, null);
 			if( used){
-				::rpgstat.countup( item.id, "use", 1);	//	使用回数カウント
+				::rpgstat.countup( item.dataid, "use", 1);	//	使用回数カウント
 			}
 			if( !view.isShown()){	//	メニュー実行時にメニューを閉じてたらそのままメインメニューも閉じる。ワープ魔法、テントなど
 				return false;
@@ -357,7 +357,7 @@ BACK_TO_ITEMSEL:
 					}
 					if( used){
 						src.consumeForSkill( item.data);
-						::rpgstat.countup( item.id, "use", 1);	//	使用回数カウント
+						::rpgstat.countup( item.dataid, "use", 1);	//	使用回数カウント
 					}else{ // 使われなかった。
 						::playSound( "SE002");
 					}
@@ -426,7 +426,7 @@ RPGSystem.ui ..
 			local disable = src.isSkillSealed( i);
 			return {
 				lbl=(v.icon..v.name), rlbl=rtf( RPGSystem.getSkillListInfo( src, v)), id=i,
-				item={ icon=v.icon, name=v.name, data=v}, disable=disable, grayout=disable?"on":"off",
+				item={ icon=v.icon, name=v.name, data=v, dataid=i}, disable=disable, grayout=disable?"on":"off",
 			};
 		}
 		return itemuifunc( {

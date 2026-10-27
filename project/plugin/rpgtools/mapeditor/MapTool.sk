@@ -356,6 +356,27 @@ class MapTool
 				hb.by += rr.h/2;
 			}
 			break;
+		case PLC_BRIDGE:	//	ブリッジ配置。4法に対して穴がある方を配置個所に選ぶ。
+			if( hb.f==0){
+				local f0 = Vector3D( (hb.fx*2)%1.0, 0.0, (hb.fz*2)%1.0).sub( 0.5, 0.0, 0.5);	//	ブロックのどっちよりか
+				local q0 = Vector3D( hb.bx, 64.0, hb.bz).add( hb.nx, 0.0, hb.nz).add( 0.5).scale( 0.5);
+				local w = Vector3D( 0, -32.0, 0), maxd = -1, maxf = -1;
+				for( local d = 0; d < 4; d ++){
+					local q = Vector3D( 0,0,-0.5).rotate( d*0.5*Math.PI, 0, 0);
+					local f = q.dot( f0);	//	ブロックのどちら側により優先するかの判定
+					q.add( q0);	//	-z, -x, +z, +x
+					local _b = _raytest( q, w, true);
+					if( _b && _b.by >= hb.by) continue;
+					if( f > maxf){
+						maxf = f;
+						maxd = d;
+					}
+				}
+				if( maxd >= 0) hb.setFace( 1+maxd);
+			}else
+			if( hb.f!=5){	//	壁に対してはWALLと同様だが、
+			}
+			break;
 		}
 		return hb;
 	}

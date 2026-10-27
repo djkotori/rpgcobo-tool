@@ -85,12 +85,13 @@ local plclist = [
 	{ lbl="$T.plctype1", val=PLC_FLOOR }
 	{ lbl="$T.plctype2", val=PLC_WALL }
 	{ lbl="$T.plctype3", val=PLC_DOOR }
+	{ lbl="$T.plctype4", val=PLC_BRIDGE }
 ];
 
 local rooftypelist = [
-	{ lbl="三角", val=0 }
-	{ lbl="斜め", val=1 }
-	{ lbl="四角", val=2 }
+	{ lbl="$T.rooftype0", val=0 }
+	{ lbl="$T.rooftype1", val=1 }
+	{ lbl="$T.rooftype2", val=2 }
 ];
 
 local floortypelist = [
@@ -106,13 +107,13 @@ local edgeshplist = [
 ];
 
 local shapelist = [
-	{ lbl="ボックス", val=0 }
-	{ lbl="面取り1", val=1 }
-	{ lbl="面取り2", val=2 }
-	{ lbl="縦面取り1", val=3 }
-	{ lbl="縦面取り2", val=4 }
-	{ lbl="スロープ", val=5 }
-	{ lbl="階段", val=6 }
+	{ lbl="$T.shapetype0", val=0 }
+	{ lbl="$T.shapetype1", val=1 }
+	{ lbl="$T.shapetype2", val=2 }
+	{ lbl="$T.shapetype3", val=3 }
+	{ lbl="$T.shapetype4", val=4 }
+	{ lbl="$T.shapetype5", val=5 }
+	{ lbl="$T.shapetype6", val=6 }
 ];
 
 local ctypelist = [
@@ -164,7 +165,7 @@ local plcprop = { pid="plc", lbl="$T.plctype", type=LIST, list=plclist, defval=P
 local pushprop = { pid="push", lbl="$T.lbl_plcpush", type=VEC2, range=(-4,4), defval=[0,0] }		//	Y,Z
 local ctypeprop = { pid="ctype", lbl="$T.columntype", type=LIST, list=ctypelist, defval=0 }
 local pokeprop = { pid="poke", lbl="$T.lbl_poke", type=BOOL, defval=false }
-local rooftypeprop = { pid="rooftype", lbl="$T.lbl_rooftype", type=LIST, list=rooftypelist, defval=0 }
+local rooftypeprop = { pid="rooftype", lbl="$T.rooftype", type=LIST, list=rooftypelist, defval=0 }
 local shapeprop = { pid="shape", lbl="$T.lbl_shape", type=LIST, list=shapelist, defval=0 }
 local fitfloorprop = { pid="fitfloor", lbl="$T.lbl_fitfloor", type=BOOL, defval=true }
 local blendprop = { pid="blend", lbl="$T.lbl_blend", type=LIST, list=blendlist, defval=0}

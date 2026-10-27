@@ -14,6 +14,7 @@ local D = {
 	"excmd_explormap" = {"ja":"マップ踏破", "en":"Map Exploration"}
 	"excmd_explormap_tips" = {"ja":"ミニマップ、全体マップの未踏破部分をすべて塗ったり消去します。ダンジョンなどで使用します。", "en":"Fills/clears all unexplored areas on the mini map and the big map. Used in dungeons, etc."}
 	"explor" = {"ja":"踏破モード", "en":"Exploration Mode"}
+	"showinmap" = {"ja":"マップに表示", "en":"Show in Map"}
 }
 
 local evcolorlist = [ 0xffffffff, 0x26FFFFff, 0x55FF33ff, 0xFFFF4Dff, 0xFF4D4Dff, 0xFF73FFff, 0xFF9326ff ];
@@ -177,9 +178,10 @@ class ::RPGMinimap
 	//	基本的にランドマークだけ表示すればよし
 	function updateEventSprites(){
 		splist.clear();
+		local rolemap = ::RPGSystem.eventrole;
 		foreach( e in ::rpgstage.events){
 			if( !e.rp3d) continue;
-			if( e.data["role"] != "portal" && e.data["role"] != "pdoor") continue;
+			if( !e.page["showinmap"] && !rolemap[e.data["role"]]["showinmap"]) continue;
 			if( !explorchk( explor, ::rpgstage.stat.mapmask, e.rp3d.pos)) continue;
 			local sp = ::getSprite( "/presetui/uiimg/icon_glow.png");
 			sp.bnd.set( -8, -8, 16, 16);
@@ -286,8 +288,10 @@ class ::RPGBigmap
 		myicon.setCharaExtra( {r=st.player3d.dir*Math.RTOD});
 		splist = [];
 		tblist = [];
+		local rolemap = ::RPGSystem.eventrole, stagestat = ::rpgstat.stagemap[mapid];
 		foreach( eid, ed in map.event){
-			if( ed["role"] != "portal" && ed["role"] != "pdoor") continue;
+			local pageidx = stagestat["estatmap"][eid]["pageidx"] || 0;	//	保存されたページを見る。無かったら0。。。estatmapはREMAPで破棄されるのであまり信用できない
+			if( !ed["page"][pageidx]["showinmap"] && !rolemap[ed["role"]]["showinmap"]) continue;
 			local epos = Vector3D( ed.pos).scale( 0.5);
 			if( !explorchk( explor, st.stat.mapmask, epos)) continue;
 			local sp = ::getSprite( "/presetui/uiimg/icon_glow.png");
@@ -448,6 +452,23 @@ RPGSystem.eventcmd ..
 		}
 	}
 }
+
+//////////// イベントロールにプロパティ追加。カスタムイベントはページ毎にミニマップ表示の設定が可能。ポータル、ポータルドアは常に表示。
+
+{
+	local er = RPGSystem.eventrole["custom"], erprops = er["pageprops"];
+
+	er.pageprops = @( cmd){
+		local a = erprops( cmd);
+		a .. { pid="showinmap", lbl=D.showinmap, type=BOOL, get=@( prop, data) data[prop.pid]||false };
+		return a;
+	}
+
+	RPGSystem.eventrole["portal"].showinmap <- true;
+	RPGSystem.eventrole["pdoor"].showinmap <- true;
+}
+
+
 
 
 //////////// マッププロパティ追加

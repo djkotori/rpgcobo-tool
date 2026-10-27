@@ -32,7 +32,14 @@
 	"plctype0"							: {"ja":"どこでも配置", "en":"Anywhere"}
 	"plctype1"							: {"ja":"床に配置", "en":"On the Floor"}
 	"plctype2"							: {"ja":"壁に配置", "en":"On the Wall"}
-	"plctype3"							: {"ja":"ドア用配置", "en":"For Door"}
+	"plctype3"							: {"ja":"ドア配置", "en":"For Door"}
+	"plctype4"							: {"ja":"ブリッジ配置", "en":"For Bridge"}
+	
+	//	屋根タイプ
+	"rooftype"							: {"ja":"屋根タイプ", "en":"Roof Type"}
+	"rooftype0"							: {"ja":"三角", "en":"Triangular"}
+	"rooftype1"							: {"ja":"斜め", "en":"Slanted"}
+	"rooftype2"							: {"ja":"四角", "en":"Square"}
 
 	//	ブロック床の処理
 	"floortype"							: {"ja":"床の処理", "en":"Floor Rule"}
@@ -46,6 +53,17 @@
 	"columntype0"						: {"ja":"柱", "en":"Pillar"}
 	"columntype1"						: {"ja":"ハシゴ", "en":"Ladder"}
 	"columntype2"						: {"ja":"バー", "en":"Bar"}
+	"columntype3"						: {"ja":"ブリッジ", "en":"Bar"}
+
+	//	ブロックシェイプタイプ
+	"shapetype"							: {"ja":"シェイプタイプ", "en":"Shape Type"}
+	"shapetype0"						: {"ja":"ボックス", "en":"Box"}
+	"shapetype1"						: {"ja":"面取り1", "en":"Bevel1"}
+	"shapetype2"						: {"ja":"面取り2", "en":"Bevel2"}
+	"shapetype3"						: {"ja":"縦面取り1", "en":"Vert Bevel1"}
+	"shapetype4"						: {"ja":"縦面取り2", "en":"Vert Bevel2"}
+	"shapetype5"						: {"ja":"スロープ", "en":"Slope"}
+	"shapetype6"						: {"ja":"階段", "en":"Stairs"}
 
 	//	
 	"edgeshp"							: {"ja":"角の形状", "en":"Edge Shape"}

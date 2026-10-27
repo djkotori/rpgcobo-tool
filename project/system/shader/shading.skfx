@@ -151,6 +151,7 @@ define err_pbrdeferred
 
 technique basic
 {
+	apilevel = 30;
 	tag = "3d shading particle";
 	
 	pass {
@@ -190,6 +191,7 @@ technique basic
 
 technique overlay
 {
+	apilevel = 30;
 	tag = "3d shading particle";
 	
 	pass {
@@ -227,6 +229,7 @@ vsfs skin
 
 technique skin
 {
+	apilevel = 30;
 	tag = "3d shading particle";
 
 	pass {
@@ -244,6 +247,7 @@ technique skin
 
 technique skin_overlay
 {
+	apilevel = 30;
 	tag = "3d shading particle";
 
 	pass {
@@ -309,6 +313,7 @@ fs softptc
 
 technique softptc
 {
+	apilevel = 30;
 	tag = "3d shading particle";
 	
 	pass {

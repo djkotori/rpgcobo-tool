@@ -146,8 +146,10 @@ class BattleRunnerBase
 		local rp3d = RPG3DObject.create3DObject( pc.data);
 		local wmdlid = pc.getWeapon()["data"]["mdlid"];
 		local smdlid = pc.getShield()["data"]["mdlid"];
-		rp3d.setEquipVox( ::conf._resource.equip_vox[wmdlid], "item_R");
-		rp3d.setEquipVox( ::conf._resource.equip_vox[smdlid], "item_L");
+		if( rp3d["setEquipVox"]){
+			rp3d.setEquipVox( ::conf._resource.equip_vox[wmdlid], "item_R");
+			rp3d.setEquipVox( ::conf._resource.equip_vox[smdlid], "item_L");
+		}
 		//
 		rp3d.rpgobj = pc;
 		rp3d.manuaction = ManualMoveAction( rp3d);		//	バトル用のマニュアルアクション

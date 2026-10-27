@@ -155,13 +155,13 @@ function Material::isPBR(){
 	return tec.tag?.contains( "pbr");
 }
 
-function PolygonFace::constructor( ...){
-	if( vargc >= 3){
-		mode = vargv[0];
-		m = vargv[1];
-		idx = vargv[2];
-	}
-}
+// function PolygonFace::constructor( ...){
+// 	if( vargc >= 3){
+// 		mode = vargv[0];
+// 		m = vargv[1];
+// 		idx = vargv[2];
+// 	}
+// }
 
 function PolygonFace::loadPolygonFace( bb){
 	mode = bb.getb();

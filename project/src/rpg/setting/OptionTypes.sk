@@ -1399,7 +1399,7 @@ RPGSystem.option .. {
 			local as = rp3d.manuaction.act( @(){
 				wait( EFX);
 				if( opd["efx"]){ efx( opd.efx); wait( EFX); }
-				popdamage( Math.abs( v), v>0 ? 0x77ff77ff : 0xffffffff);
+				popdamage( Math.abs( v), (opd.dmgtype&1) ? 0xffffffff : 0x77ff77ff);
 				self.addPoint( DamageTypePID[opd.dmgtype], v*(opd.dmgtype&1?-1:1));	//	dieCheckを後でしないといけない
 			});
 			// countrem( self, cmd, opd["countrem"]);	//	cmdないな

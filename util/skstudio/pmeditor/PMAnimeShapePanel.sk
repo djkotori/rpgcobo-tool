@@ -211,7 +211,7 @@ class PMShapePanel
 		local cmd = e.actioncmd;
 		if( cmd["cmd"] != "prop") return;
 		local prop = cmd.prop, pid = prop.pid;
-		printf( "!!!!!!!!!!!!!!!!!!!! %S %S\n", pid, cmd.val);
+		// printf( "!!!!!!!!!!!!!!!!!!!! %S %S\n", pid, cmd.val);
 		wmap[pid] <- cmd.val;
 		pm.shapetarget.assign( wmap);
 	}

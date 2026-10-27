@@ -160,15 +160,15 @@ technique coc
 
 param dofblur
 {
-	attribute highp vec4 in_pos <ID=POSITION>;
-	attribute highp vec4 in_uv <id=UV1>;
+	attribute mediump vec4 in_pos <ID=POSITION>;
+	attribute mediump vec4 in_uv <id=UV1>;
 	
-	uniform mediump sampler2D coltex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
-	uniform lowp sampler2D coctex <id=COLORTEX2, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform mediump sampler2D coltex <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform lowp sampler2D coctex <id=COLORTEX2, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
 	
-	uniform highp mat4 p0 <id=MISC1MAT>;
+	uniform mediump mat4 p0 <id=MISC1MAT>;
 	
-	varying highp vec4 v_uv;
+	varying mediump vec4 v_uv;
 	
 	fragout mediump vec4 fragcolor;
 }
@@ -176,7 +176,7 @@ param dofblur
 fs dofblur
 {
 	void main(){
-		highp vec2 uv = v_uv.xy, d = p0[0].xy;
+		mediump vec2 uv = v_uv.xy, d = p0[0].xy;
 		float coc = texture( coctex, v_uv.xy).x;
 		float R = coc * p0[0].z + 0.1, dx = R*2.0 / ceil( R*2.0);
 		float SIGMA = R * 0.7;
@@ -219,9 +219,9 @@ param pbrmix
 	attribute mediump vec4 in_pos <ID=POSITION>;
 	attribute mediump vec4 in_uv <id=UV1>;
 	
-	uniform mediump sampler2D coltex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
-	uniform mediump sampler2D bloomtex <id=COLORTEX2, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
-	uniform mediump sampler2D blurtex <id=COLORTEX3, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform mediump sampler2D coltex <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform mediump sampler2D bloomtex <id=COLORTEX2, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform mediump sampler2D blurtex <id=COLORTEX3, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
 	uniform lowp sampler2D coctex <id=COLORTEX4>;
 	
 	uniform highp mat4 p1 <id=MISC1MAT>;
@@ -627,10 +627,9 @@ param ssaoblur
 	uniform lowp sampler2D aotex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
 	uniform highp usampler2D uztex <id=DEPTHTEX, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
 	
-	uniform mediump mat4 invpmat <id=ENV2MAT>;
-	uniform mediump mat4 p0 <id=MISC1MAT>;
+	uniform highp mat4 p0 <id=MISC1MAT>;
 	
-	varying highp vec4 v_uv;
+	varying mediump vec4 v_uv;
 	
 	fragout mediump vec4 fragcolor;
 }
@@ -643,11 +642,11 @@ fs ssaoblur
 	const float SHARPEN = 10.0;
 
 	float wvz( highp vec2 uv){
-		highp vec4 v = p0[1];
+		mediump vec4 v = p0[1];
 		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
 	}
 
-	vec2 blurfunc( highp vec2 uv, const float r, const highp float z0){
+	vec2 blurfunc( highp vec2 uv, const float r, const mediump float z0){
 		vec2 aoz = vec2( texture( aotex, uv).x, wvz( uv));
 		float ddiff = (aoz.y - z0) * SHARPEN;
 		float w = exp2( -r*r*FALLOFF - ddiff*ddiff);
@@ -656,7 +655,7 @@ fs ssaoblur
 
 	void main(){
 		highp vec2 uv = v_uv.xy;
-		highp float z0 = wvz( uv);
+		mediump float z0 = wvz( uv);
 		mediump vec2 aozsum = vec2( texture( aotex, uv).x, 1.0);
 		for( float r = 1.0; r < R; r ++){
 			aozsum += blurfunc( uv + p0[0].xy*r, r, z0);
@@ -691,9 +690,9 @@ param ssaoupsample
 	uniform lowp sampler2D aotex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
 	uniform highp usampler2D uztex <id=DEPTHTEX, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
 	
-	uniform highp mat4 p0 <id=MISC1MAT>;
+	uniform mediump mat4 p0 <id=MISC1MAT>;
 	
-	varying highp vec4 v_uv;
+	varying mediump vec4 v_uv;
 	
 	fragout mediump vec4 fragcolor;
 }
@@ -705,21 +704,21 @@ fs ssaoupsample
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
 	const float SHARPEN = 10.0;
 
-	float wvz( highp vec2 uv){
-		highp vec4 v = p0[1];
+	float wvz( mediump vec2 uv){
+		mediump vec4 v = p0[1];
 		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
 	}
 	
 	void main(){
-		highp vec2 uv = v_uv.xy;
-		highp float z0 = wvz( uv);
-		highp vec2 texsc = p0[0].xy;
+		mediump vec2 uv = v_uv.xy;
+		mediump float z0 = wvz( uv);
+		mediump vec2 texsc = p0[0].xy;
 		mediump float sumw = 0.0, sumao = 0.0;
 		for( int y=-R; y<=R; y ++){
 			for( int x=-R; x<=R; x ++){
-				highp vec2 xy = vec2( x, y);
-				highp float z = wvz( uv+xy*texsc);
-				highp float ddiff = (z - z0) * SHARPEN;
+				mediump vec2 xy = vec2( x, y);
+				mediump float z = wvz( uv+xy*texsc);
+				mediump float ddiff = (z - z0) * SHARPEN;
 				float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
 				float ao = texture( aotex, uv+xy*texsc).r;
 				sumao += ao * w;
