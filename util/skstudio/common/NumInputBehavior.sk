@@ -369,14 +369,14 @@ class NumInputBehaviorH extends NumInputBase
 		case MOUSE_PRESSED:
 			val0 = val;
 		case MOUSE_DRAGGED:
-			if( e.lx >= -mgn && e.lx < w+mgn*2.0 && e.ly >= -mgn && e.ly < h+mgn*2.0){
+			// if( e.lx >= -mgn && e.lx < w+mgn*2.0 && e.ly >= -mgn && e.ly < h+mgn*2.0){
 				local t = Math.saturate( e.lx / w);	//	0-1
 				local v = t * (maxval-minval) + minval;
 				if( barrange){
 					v = Math.round( (t*(barrange.w) + barrange.mi) / barrange.r) * barrange.r;
 				}
 				if( val != setValue( v)) postValueEvent( e.modifiers);
-			}
+			// }
 			e.consume();
 			break;
 		case MOUSE_RELEASED:

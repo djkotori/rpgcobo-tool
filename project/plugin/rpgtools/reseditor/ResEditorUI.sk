@@ -422,6 +422,7 @@ class ResEditorUI extends EditorViewBase
 			props = [
 				{ pid="path", lbl="$T.lbl_path", type=PATH, cnt="cnt5.ui" },
 				{ pid="copylibs", lbl="$T.lbl_copylibui", type=LIST, list=["$T.lbl_no","$T.lbl_yes"] },
+				{ pid="copyimgs", lbl="$T.lbl_copylibimg", type=LIST, list=["$T.lbl_no","$T.lbl_yes"] },
 			]
 			cnt = "cnt.ui"
 		};
@@ -431,7 +432,7 @@ class ResEditorUI extends EditorViewBase
 			p0 = "/resource/ui/%S_%d.ui" % (n0, l);
 			if( !FileRef( "project"..p0).exists()) break;
 		}
-		local ret = PropertyEditPopup_OK.run( null, propdef, { path=p0, copylibs=1});
+		local ret = PropertyEditPopup_OK.run( null, propdef, { path=p0, copylibs=1, copyimgs=1});
 		if( ret){
 			local p = ret.path;
 			if( FileRef( "project"..p).exists()){
@@ -442,7 +443,8 @@ class ResEditorUI extends EditorViewBase
 		}
 	}
 
-	static chkpid = [ROWPATH, BARPATH, ENVPATH];
+	static linkpid = [ROWPATH, BARPATH, ENVPATH];
+	static imgpid = [IMAGE, IMAGELIST];
 	
 	//	ベースUIを複製する。pathにパス、copylibs!=0だと、内部の.uiリンクを全てコピーする。リストも。
 	function duplicateBaseUI( baseui, prm){
@@ -461,6 +463,48 @@ class ResEditorUI extends EditorViewBase
 			return true;
 		}
 		addui( prm.path, vd);
+		//	copyimgsの場合は、/resource/userimg.ssg, work/img/resource.userimg に、/presetui/uiimg以下を全てコピー(上書き無し)。
+		//	※このコピー処理はundo対象外。。。。
+		local copyimgs = prm["copyimgs"];
+		local uissgpath = "/resource/userimg";
+		if( copyimgs){
+			local srcr = ::getResource( "/presetui/uiimg.ssg"), srcssg = decodeJSON( srcr.loadData());
+			local srcwork = FileRef( "work/img/presetui.uiimg");
+			//
+			local dstr = ::getResource( "/resource/userimg.ssg"), dstssg = null;
+			local dstwork = FileRef( "work/img/resource.userimg");
+			if( !dstr){
+				dstssg = { "imagedir":"../../work/img/resource.userimg", "cliplist":[], "pma":1, "margin":2, "maxwidth":2048, "maxheight":2048, "filetype":3 };
+				local bb = ByteBuffer(); encodeJSON( dstssg, 5, bb); bb.pos = 0;
+				dstr = ::getResource( "/resource").create( "userimg.ssg", bb);
+			}else{
+				dstssg = decodeJSON( dstr.loadData());
+			}
+			if( !dstwork.isDirectory()) dstwork.mkdirs();
+			//	コピー元の画像を全てコピー(上書き無し)
+			local changed = false;
+			foreach( v in srcssg.cliplist){
+				local old = dstssg.cliplist.find( @( x) x.clipid == v.clipid);
+				if( old) continue;
+				local srcf = FileRef( srcwork, v.clipid);
+				local dstf = FileRef( dstwork, v.clipid);
+				srcf.copyTo( dstf);
+				dstssg.cliplist .. v;
+				changed = true;
+			}
+			//	変更があった場合は、dstssgを保存。userimg.ss.webpも作成する。
+			if( changed){
+				local d = SpriteSheetGeneratorData();
+				d.readJSON( dstssg);
+				d.scan( FileRef( dstr.file, ".."));
+				local imgbb = d.generateSpriteSheetWebp( 100);
+				::getResource( "/resource").create( "userimg.ss.webp", imgbb);
+				local t = d.writeJSON();
+				local bb = ByteBuffer(); encodeJSON( t, 5, bb); bb.pos = 0;
+				::getResource( "/resource").create( "userimg.ssg", bb);
+			}
+		}
+		//	
 		if( prm["copylibs"]){
 			local p0len = length( path0);
 			local replacepath( path){
@@ -479,13 +523,33 @@ class ResEditorUI extends EditorViewBase
 						chklink( v.rootdata);	//	再帰的なコピー
 					}
 				}
-				foreach( pid in chkpid){
+				foreach( pid in linkpid){
 					local p = ve.getStatic( pid), p0 = p;
 					if( length( p) && p0 != (p=replacepath( p))){	//	コピー対象パスがあり、置き換えが必要
 						ve.setStatic( pid, p);
 						local v = ::getResourceContent( p0);
 						if( addui( p, v)){
 							chklink( v.rootdata);	//	再帰的なコピー
+						}
+					}
+				}
+				if( copyimgs){
+					foreach( pid in imgpid){
+						local p = ve.getStatic( pid), p0 = p;
+						if( typeof( p) == SS_ARRAY){
+							p = clone p;
+							foreach( i, pi in p){
+								if( pi.startsWith( "/presetui/uiimg/")){
+									p[i] = "/resource/userimg/" .. pi.substring( length( "/presetui/uiimg/"));
+								}
+							}
+							ve.setStatic( pid, p);
+						}else
+						if( typeof( p) == SS_STRING){
+							if( p.startsWith( "/presetui/uiimg/")){
+								local p1 = "/resource/userimg/" .. p.substring( length( "/presetui/uiimg/"));
+								ve.setStatic( pid, p1);
+							}
 						}
 					}
 				}

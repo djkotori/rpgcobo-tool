@@ -537,6 +537,7 @@ const SK_MATRIX_PROJECTION	 = 2
 const SK_MATRIX_WV			 = 3
 const SK_MATRIX_WVP			 = 4
 const SK_MATRIX_P			 = 5
+const SK_MATRIX_LOCAL		 = 9
 
 //	component type
 const SK_FLOAT		 = 1

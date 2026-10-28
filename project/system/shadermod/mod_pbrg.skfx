@@ -129,7 +129,8 @@ fs unpackg
 		g.wvp = reconstructWVPtex( uztex, uv+0.00002, p1[0]);	//	0.0002 : nearest offset
 		g.col = vec4( f0.xyz, 1.0);
 		g.gsel = f0.w;	//	irankedo...
-		g.n = normalize( unpackn( u1));
+		g.n = unpackn( u1);
+		// g.n = normalize( unpackn( u1));	//	normalize iran?
 		g.mtype = u1>>29u;
 		g.rough = float( (u1>>23u)&63u) / 63.0;
 		g.uv = uv;

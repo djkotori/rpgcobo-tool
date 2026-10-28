@@ -43,12 +43,23 @@ class GLTFLoader
 {
 	file = null;				//	FileRef : glTFファイル。相対パスの解決に使用する。
 	gltftexcache = null;		//	{imageIdx_srgb : Texture}  1回のloadGLTF呼び出し内でのみ使う使い捨てキャッシュ
+
+	g = null;
+	objcache = null;			//	
 	
 	constructor(){
 		if( !::["GLTFModel"]){	//	gltfを全く使わないのもありなので、最初に使う段階でloadAddonする
 			module.loadAddon( "gltf");
 		}
 		gltftexcache = {};
+		objcache = {};
+	}
+
+	function getNode( ni){
+		if( objcache[ni]) return objcache[ni];
+		local node = g.getNode( ni);
+		objcache[ni] <- node;
+		return node;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -200,7 +211,7 @@ class GLTFLoader
 		m.visiblemask = DEFAULT_VISIBLEMASK;
 		m.mtype = 0;
 		local gm = g.getMaterial( matIdx);
-		printf( "gltf material[%d]: %S\n", matIdx, encodeJSON( gm, 5));
+		// printf( "gltf material[%d]: %S\n", matIdx, encodeJSON( gm, 5));
 		m.name = gm.name;
 		local bc = gm.basecolor;
 		local clamp255 = function( v){ v = v*255.0; return v<0?0:(v>255?255:v); };
@@ -253,82 +264,101 @@ class GLTFLoader
 			if( s){ tf.sx = s[0]; tf.sy = s[1]; tf.sz = s[2]; }
 			if( r){ tf.rx = r[0]; tf.ry = r[1]; tf.rz = r[2]; tf.rw = r[3]; }
 			tfmap[f.frame] <- tf;
-			if( f.frame == 0) printf( "frame %d local transform: %f %f %f    %f %f %f %f  %S\n", f.frame, tf.tx, tf.ty, tf.tz, tf.rx, tf.ry, tf.rz, tf.rw, (t&&1)|(s&&2)|(r&&4));
+			// if( f.frame == 0) printf( "frame %d local transform: %f %f %f    %f %f %f %f  %S\n", f.frame, tf.tx, tf.ty, tf.tz, tf.rx, tf.ry, tf.rz, tf.rw, (t&&1)|(s&&2)|(r&&4));
 		}
 		local tl = TransformTimeline.create( tfmap);
 		return tl;
 	}
 	
-	function getNodeLocalTransform( g, node){
+	function getNodeLocalTransform( node){
 		local t = node.translation, s = node.scale, r = node.rotation;
 		return Transform( t[0], t[1], t[2], s[0], s[1], s[2], r[0], r[1], r[2], r[3]);
 	}
 
-	function getNodeGlobalMatrix( g, node){
-		local tflayers = [getNodeLocalTransform( g, node)];
+	function getNodeGlobalMatrix( node){
+		local tflayers = [getNodeLocalTransform( node)];
 		while( node.parent >= 0){
 			node = g.getNode( node.parent);
-			tflayers[0] <- getNodeLocalTransform( g, node);
+			tflayers[0] <- getNodeLocalTransform( node);
 		}
 		return Matrix().integrate( tflayers);
 	}
 
-	//	skinIdxのボーン階層+指定アニメーション(anim=null時はバインドポーズのみ)からMotionDataを構築する。
-	//	bindposeと各フレームのトランスフォームはpmnodeのローカル座標にする。
-	function buildMotion( g, skinIdx, anim, pmnode){
-		local skin = g.getSkin( skinIdx);
-		local joints = skin.joints;
-		local bindpose = skin.bindpose;
-		local n = joints.len();
+	//	モーションを構成する全てのノードを取得する。ボーン、ボーンの親、その他アニメするノード
+	function getWholeMotionNodes(){
+		local jointmap = {};
+		local skinnum = g.skinCount();
+		for( local l = 0; l < skinnum; l ++){
+			local skin = g.getSkin( l);
+			local bpa = skin.bindpose;
+			foreach( ji, ni in skin.joints){
+				local o = ji*16;
+				local jnode = getNode( ni);
+				jointmap[ni] <- {
+					id = ni,
+					parentid = jnode.parent,
+					bindpose = ( Matrix( bpa.slice( o, o+16))),
+					node = jnode,
+				};
+			}
+		}
+		local nodemap = { ...jointmap};
+		foreach( j in jointmap){
+			while( j.parentid >= 0){
+				if( !nodemap[j.parentid]){
+					local node = getNode( j.parentid);
+					nodemap[j.parentid] <- {
+						id = j.parentid,
+						parentid = node.parent,
+						bindpose = null,
+						node = node,
+					};
+				}
+				j = nodemap[j.parentid];
+			}
+		}
+		local nodelist = Table.values( nodemap);
+		nodelist.sort( @( v){
+			local d = 0;
+			while( v.parentid >= 0){
+				d += 1;
+				v = nodemap[v.parentid];
+			}
+			return d * 1000 + v.id;
+		});
+		return nodelist;
+	}
 
-		local nodeToJoint = {};
-		foreach( ji, nodeIdx in joints) nodeToJoint[nodeIdx] <- ji;
-
+	function buildMotion( nodelist, anim){
 		local trackmap = {};
 		if( anim) foreach( tr in anim.tracks) trackmap[tr.node] <- tr;
-
-		//	
-		local pmmat = getNodeGlobalMatrix( g, pmnode), pminvmat = pmmat.invert34();
-		// printf( "PM %S global matrix\n", pmnode.name);
-		// pmmat.print();
-
-		local parts = array( n);
+		//
+		local parts = [];
 		local partsmap = {};
-		for( local ji = 0; ji < n; ji ++){
-			local nodeIdx = joints[ji];
-			local jnode = g.getNode( nodeIdx);
+		//	{ id, parentid, bindpose, node } ...
+		foreach( n in nodelist){
+			local jnode = n.node;
 			local bp = BoneParts();
-			bp.id = ji;
-
-			local pnode = jnode.parent, pj = -1;
-			while( pnode >= 0){
-				if( pnode in nodeToJoint){ pj = nodeToJoint[pnode]; break; }
-				pnode = g.getNode( pnode).parent;
-			}
-			bp.parentid = pj;
+			bp.id = n.id;
+			bp.parentid = n.parentid;
 			//	
-			local o = ji*16;
-			bp.bindpose = Matrix( bindpose.slice( o, o+16));
-			pminvmat.mult34( bp.bindpose, bp.bindpose);	//	メッシュノードのローカル座標に変換
+			bp.bindpose = n.bindpose || Matrix();
 			bp.invbindpose = bp.bindpose.invert34();
-			bp.length = 10.1;
+			bp.length = 0.1;
 			bp.name = jnode.name;
 			// printf( "joint %S bindpose\n", jnode.name);
 			// bp.bindpose.print();
-			
-			local track = trackmap[nodeIdx];
+			local track = trackmap[n.id];
 			// printf( "NODE..... %S   %S\n", encodeJSON( node), encodeJSON( track, 5));
 			local frames;
 			if( track){
 				frames = track.keys;
-			//	frames = [];	foreach( key in track.keys) frames .. { frame=key.frame, t=key.t, s=key.s, r=key.r };	//	コピーしてるだけ
 			}else{
 				frames = [ { frame=0, t=jnode.translation, s=jnode.scale, r=jnode.rotation } ];
 			}
-			local jt = getNodeLocalTransform( g, jnode)
+			local jt = getNodeLocalTransform( jnode);
 			bp.transline = writeTransformTimeline( frames, jt);
-
-			parts[ji] = bp;
+			parts .. bp;
 			partsmap[jnode.name] <- bp;
 		}
 		local mot = MotionData();
@@ -337,7 +367,7 @@ class GLTFLoader
 		mot.start = 0;
 		return mot;
 	}
-
+	
 	//	メッシュに紐づくシェイプキー(モーフターゲット)アニメーションをShapeStateTimelineとして構築する。
 	function buildShapeTimeline( shapetrack){
 		local w = ByteBuffer();
@@ -366,7 +396,7 @@ class GLTFLoader
 	//	gltfのジオメトリをPolygonMeshSourceに変換する。
 	function buildPolygonMeshSource( g, meshidx){
 		local meshtb = g.getMesh( meshidx);
-		printf( "g.getMesh %S\n %S\n", meshtb, encodeJSON( meshtb, 5));
+		// printf( "g.getMesh %S\n %S\n", meshtb, encodeJSON( meshtb, 5));
 		local prims = meshtb.primitives;
 		if( !prims.len()) throw Exception( "glTF mesh has no primitives");
 		
@@ -407,7 +437,7 @@ class GLTFLoader
 	*/
 	function loadGLTF( bb, f=null, meshIndex=0, animIndex=0){
 		this.file = f;
-		local g = GLTFModel.parse( bb);
+		g = GLTFModel.parse( bb);
 		local pmt = PolygonMeshTree();
 		pmt.textures = [];
 		pmt.materials = [];
@@ -444,10 +474,27 @@ class GLTFLoader
 			}
 			pmt.metainfo.animelist_org <- deepclone( pmt.animelist);
 		}
+		local motnodes = null;
+		if( animnum > 0 || g.skinCount() > 0){
+			motnodes = getWholeMotionNodes();
+			pmt.motionmap = {};
+			if( animnum <= 0) {
+				pmt.motion = buildMotion( motnodes, null);
+				pmt.motionmap = { ["stop"]=pmt.motion };
+			}else{
+				local motions = array( animnum);
+				for( local j = 0;j < animnum;j ++){
+					motions[j] = buildMotion( motnodes, animes[j]);
+					pmt.motionmap[animes[j].name] <- motions[j];
+				}
+				pmt.motion = motions[0];
+			}
+		}
+
 		//	ノード作成。ノードにスキンが設定されている場合、対応するメッシュにボーンを設定する。なので、一つのメッシュに複数のスキンは設定不能。cloneはできるか
 		local nodenum = g.nodeCount();
 		for( local l = 0;l < nodenum;l ++){
-			local nd = g.getNode( l);
+			local nd = getNode( l);
 			local mn = PolygonMeshNode();
 			mn.name = nd.name;
 			mn.meshid = nd.mesh;
@@ -455,25 +502,28 @@ class GLTFLoader
 			mn.bonerootid = nd.boneroot;
 			mn.id = l;
 			mn.parentid = nd.parent;
-			mn.tf = getNodeLocalTransform( g, nd);
+			mn.tf = getNodeLocalTransform( nd);
 			//	TODO: ノード自身のアニメ。
 			//	スキンアニメ作成。
 			if( nd.skin >= 0){
+				local skin = g.getSkin( nd.skin);
+				local joints = skin.joints;
+				local bindpose = skin.bindpose;
+				local n = joints.len();
+
+				local nodeToJoint = {};
+				foreach( ji, nodeIdx in joints) nodeToJoint[nodeIdx] <- ji;
+
 				local pms = pmt.meshes[mn.meshid];
-				local motions = array( animnum);
-				pms.motionmap = {};
-				for( local j = 0;j < animnum;j ++){
-					motions[j] = buildMotion( g, nd.skin, animes[j], nd);
-					pms.motionmap[animes[j].name] <- motions[j];
-				}
-				pms.motion = motions[0];
-				local wmapname = pms.wmapname = array( length( pms.motion.partsmap), null);
-				foreach( k, v in pms.motion.partsmap){
-					wmapname[v.id] = v.name;
+				local wmapname = pms.wmapname = [];
+				foreach( i, ji in joints){
+					local jnode = getNode( ji);
+					wmapname .. jnode.name;
 				}
 			}
 			pmt.nodes .. mn;
 		}
+		// printf( "getExtensionString:\n%S\n", encodeJSON( decodeJSON( g.getExtensionString()), 5) );
 		return pmt;
 	}
 }

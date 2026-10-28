@@ -580,7 +580,7 @@ class MapTools.tool_fblk extends MapTool
 	}
 
 	function startDuplicate( fb){
-		local blkflag = BLK_SOLID, rot = fb.rot, self = this, canvas = canvas;
+		local blkflag = BLK_SOLID | BLK_SOLIDFB, rot = fb.rot, self = this, canvas = canvas;
 		fb = FreeBlock.create({fbtype=fb.fbtype, fbparam=fb.fbparam});
 		selgz = null;
 		removeGuide( "gz");
@@ -597,14 +597,16 @@ class MapTools.tool_fblk extends MapTool
 			switch( e.id){
 			case MOUSE_MOVED:
 			case MOUSE_DRAGGED:
-				local hb = self.rayTestFB( e, blkflag, fb, rot);
-				self.placeFBPlace( fb, hb, rot);
+				local r = rot, hb = self.rayTestFB( e, blkflag, fb, r);
+				if( hb && ((1<<hb.f)&(2|4|8|16))) r = hb.f-1;
+				self.placeFBPlace( fb, hb, r);
 				break;
 			case MOUSE_RELEASED:
 			case MOUSE_CANCELLED:
-				local hb = self.rayTestFB( e, blkflag, fb, rot);
+				local r = rot, hb = self.rayTestFB( e, blkflag, fb, r);
 				if( hb){
-					local fbuid = self.placeFreeBlock( e, hb, fb, rot);
+					if( ((1<<hb.f)&(2|4|8|16))) r = hb.f-1;
+					local fbuid = self.placeFreeBlock( e, hb, fb, r);
 					local fb = editor.bw.getFreeBlock( fbuid);
 					self.placeFBGizmo( fb, -1);
 				}

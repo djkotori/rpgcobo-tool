@@ -137,18 +137,19 @@ class PMMaterialPanel
 		teclist = getTecs();
 	}
 	
-	function setPM( p){
+	function setPolygonMeshTree( p){
+		local mtls = editor.canvas.sk3d.meshtree.mtls;
 		local mates = [];
-		foreach( i,f in p.face){
-			mates .. { lbl = i..":"..f.m.name, idx = i};
+		foreach( i,m in mtls){
+			mates .. { lbl = `$i:$m.name`, idx = i};
 		}
 		mtlmenu.setMenu( mates);
 		selectMaterial( 0);
 	}
 	
 	function selectMaterial( i){
-		local pm = editor.canvas.pm3d.mesh;
-		selmtl = pm.face[i].m;
+		local mtls = editor.canvas.sk3d.meshtree.mtls;
+		selmtl = mtls[i];
 		assignProperties( selmtl);
 	}
 

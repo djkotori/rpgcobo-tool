@@ -15,7 +15,6 @@ class PMCanvas extends CanvasBehavior
 	
 	//	sk3d
 	sk3d = null;		//	SK3DObject : 
-	pm3d = null;		//	SK3DObject : 選択中のPolygonMeshが含まれる
 	bndsk = null;		//	SK3DObject : 
 	bonesk = null;		//	BoneGroup : 
 
@@ -57,28 +56,21 @@ class PMCanvas extends CanvasBehavior
 		sk3d.addChild( bndsk);
 		sk3d.addChild( bonesk);
 		scn.addObject( sk3d);
-		bonesk.clearBones();
-	}
-	
-	//	
-	function selectMesh( pm){
-		pm3d = sk3d.children.find( @( v) v.mesh == pm);
-		bonesk.clearBones();
-		bonesk.addBones( pm3d);
-		// bonesk.setPivot( pm3d.mat);
-		resetRigidBody();
-		//	
-		local r = Rect3D( pm3d.bnd).transform( pm3d.mat);
+
+		local r = sk3d.gbnd;
 		bndsk.pos( r.x, r.y, r.z);
 		bndsk.scale( r.r, r.s, r.t);
 		bndsk.matdirty = true;
-		// bndsk.setPivot( pm3d.mat);
+
+		bonesk.clearBones();
+		bonesk.addBones( sk3d);
+		resetRigidBody();
 	}
 
 	function resetRigidBody(){
-		pm3d.disablePhysicalBones();
-		pm3d.enablePhysicalBones();
-		bonesk.resetRigidBodies( pm3d);
+		sk3d.disablePhysicalBones();
+		sk3d.enablePhysicalBones();
+		bonesk.resetRigidBodies( sk3d);
 	}
 
 	//	毎フレーム呼ばれる

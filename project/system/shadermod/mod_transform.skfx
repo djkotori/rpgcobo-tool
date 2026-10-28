@@ -16,6 +16,7 @@ param transform
 	
 	uniform highp mat4 wvmat <id=WVMAT>;
 	uniform highp mat4 pmat <id=PMAT>;
+	uniform highp mat4 lmat <id=LOCALMAT>;
 	uniform mediump vec4 bone[BONENUM*3] <id=BONEMAT>;
 }
 
@@ -27,7 +28,7 @@ vs transform
 	}
 	
 	//	[0] : MVP mat, [1] : MVN, [2] : MVTAN+W
-	highp mat4 getTransformedVectorsPN( in highp vec3 p, in mediump vec3 n){
+	highp mat4 getTransformedVectorsPNT( in highp vec3 p, in mediump vec3 n, in mediump vec4 t){
 		highp mat4 m;
 		mediump mat3 wv3 = mat3( wvmat[0].xyz, wvmat[1].xyz, wvmat[2].xyz);
 		$( BONEWEIGHT){
@@ -47,19 +48,33 @@ vs transform
 			m[0] = (wvmat * vec4( dot( vx, p4), dot( vy, p4), dot( vz, p4), 1.0));
 			m[1] = normalize( wv3 * vec3( dot( vx.xyz, n), dot( vy.xyz, n), dot( vz.xyz, n))).xyzz;
 			$( UV5) {
-				m[2] = vec4( normalize( wv3 * vec3( dot( vx.xyz, in_tan.xyz), dot( vy.xyz, in_tan.xyz), dot( vz.xyz, in_tan.xyz))), in_tan.w);
+				m[2] = vec4( normalize( wv3 * vec3( dot( vx.xyz, t.xyz), dot( vy.xyz, t.xyz), dot( vz.xyz, t.xyz))), t.w);
 			}
 		} : {
 			m[0] = (wvmat * vec4( p.xyz, 1.0));
 			m[1] = normalize( wv3 * n).xyzz;
 			$( UV5) {
-				m[2] = vec4( normalize( wv3 * in_tan.xyz), in_tan.w);
+				m[2] = vec4( normalize( wv3 * t.xyz), t.w);
 			}
 		}
 		return m;
 	}
+
+	highp mat4 getTransformedVectorsPN( in highp vec3 p, in mediump vec3 n){
+		return getTransformedVectorsPNT( p, n, vec4( 1.0, 0.0, 0.0, 1.0));
+	}
 	
 	highp mat4 getTransformedVectors(){
-		return getTransformedVectorsPN( in_pos.xyz, in_n.xyz);
+		mediump mat3 lv3 = mat3( lmat[0].xyz, lmat[1].xyz, lmat[2].xyz);
+		$( UV5) {
+			highp vec3 p = (lmat * vec4( in_pos.xyz, 1.0)).xyz;
+			mediump vec3 n = lv3 * in_n.xyz;
+			mediump vec4 t = vec4( lv3 * in_tan.xyz, in_tan.w);
+			return getTransformedVectorsPNT( p, n, t);
+		} : {
+			highp vec3 p = (lmat * vec4( in_pos.xyz, 1.0)).xyz;
+			mediump vec3 n = lv3 * in_n.xyz;
+			return getTransformedVectorsPNT( p, n, vec4( 1.0, 0.0, 0.0, 1.0));
+		}
 	}
 }

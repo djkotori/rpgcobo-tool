@@ -178,24 +178,18 @@ class PMPartsPanel
 	partstree = null;		//	ListBehavior
 	proplist = null;		//	GPUIListView
 
-	pm = null;				//	Current mesh
-	
-	//	selection
-	// selparts = null;
-	// selrbdata = null;
-	// selshape = null;
-	// selcons = null;
-
-	sel = null;				//	{ pm, parts }
+	sel = null;				//	{ parts }
+	pmt = null;
 	
 	constructor( v, e){
 		view = v;
 		editor = e;
 		partstree = TreeBehavior( v.findChild( "partstree"));
 		partstree.listview.addEventListener( ITEM_EVENT, partstreeevent);
+		local self = this;
 		partstree.setviewfunc = @( la, v, i){
 			defaultsetview( la, v, i);
-			local tv = v.findChild( "type"), rb = i.pm.rbdataset[i.parts.name];
+			local tv = v.findChild( "type"), rb = self.pmt.rbdataset[i.parts.name];
 			if( rb){
 				tv.setVisible( true);
 				tv.setText( rb.dynamic ? "\ue037" : "\ue047");
@@ -210,8 +204,8 @@ class PMPartsPanel
 		proplist.ref = e;
 	}
 	
-	function setPM( p){
-		pm = p;
+	function setPolygonMeshTree( p){
+		pmt = p;
 		local pt = buildPartsTree( p, p.motion);
 		partstree.setItemTree( pt);
 		partstree.expandAll();
@@ -221,12 +215,11 @@ class PMPartsPanel
 	}
 
 	function _rbdata( sel){
-		return sel.pm.rbdataset[ sel.parts["parts"]["name"]] || null;
+		return pmt.rbdataset[ sel.parts["parts"]["name"]] || null;
 	}
 
 	function selectParts( pb){
 		sel = {
-			pm = pm;
 			parts = pb;
 		};
 		local rbdata = _rbdata( sel);
@@ -264,7 +257,6 @@ class PMPartsPanel
 		//
 		foreach( bp in mot.parts){
 			local pb = {
-				pm = pm;
 				icon = "\uea3b";
 				lbl = bp.name;
 				parts = bp;
@@ -312,7 +304,7 @@ class PMPartsPanel
 
 	function constraintList( val){
 		local selname = sel.parts["parts"]["name"];
-		local rbdataset = pm.rbdataset;
+		local rbdataset = pmt.rbdataset;
 		return partstree.itemtree.pblist.map( @( v){
 			local n = v.parts["name"], rbdata = rbdataset[n];
 			if( !rbdata) return undefined;
@@ -510,11 +502,11 @@ class PMPartsPanel
 	function setPhysicsOn( sel, b, rbdata){
 		local name = sel.parts["parts"]["name"];
 		if( !b){
-			delete sel.pm.rbdataset[name];
+			delete pmt.rbdataset[name];
 		}else
 		if( !_rbdata( sel)){
 			//	デフォルトのRigidBodyDataを設定。rbdataは参照を共有できるように外部から渡す
-			if( !sel.pm.rbdataset) sel.pm.rbdataset = { [name]=rbdata}; else sel.pm.rbdataset[name] <- rbdata;
+			if( !pmt.rbdataset) pmt.rbdataset = { [name]=rbdata}; else pmt.rbdataset[name] <- rbdata;
 			rbdata.partsname = name;
 			if( !rbdata.ref) rbdata.ref = { shape=null, cons=null }; else rbdata.ref.shape = rbdata.ref.cons = null;	//	refも共有
 			local shp = RigidBodyShapeData();
@@ -539,8 +531,7 @@ class PMPartsPanel
 
 	function _newrbconst( pb){
 		//	parent rigid body!
-		local rbdataset = pb.pm.rbdataset;
-		local mot = pb.pm.motion;
+		local rbdataset = pmt.rbdataset;
 		local p = pb.parent;
 		while( p){
 			if( rbdataset[p["parts"]["name"]]) break;
@@ -564,11 +555,9 @@ class PMPartsPanel
 			local _setval( val){
 				self.setPartsParam( _sel, pid, val);
 				self.editor.canvas.resetRigidBody();
-				if( _sel.pm == self.pm){
-					if( refresh & 1) self.assignProperties();
-					else self.proplist.setParameters( { [pid]=val, });
-					if( refresh & 2) self.partstree.refreshItems();
-				}
+				if( refresh & 1) self.assignProperties();
+				else self.proplist.setParameters( { [pid]=val, });
+				if( refresh & 2) self.partstree.refreshItems();
 			}
 			local redo = [@() _setval( cmd.val)];
 			local undo = [@() _setval( oldval)];

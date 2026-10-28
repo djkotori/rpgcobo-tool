@@ -99,7 +99,7 @@ class SpriteSheetEditor extends EditorViewBase
 	
 	function save(){
 		local t = data.writeJSON();
-		local s = encodeJSON( t,1);
+		local s = encodeJSON( t, 5);
 		local bb = ByteBuffer();
 		bb.putText( s);
 		bb.pos = 0;

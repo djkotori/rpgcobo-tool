@@ -19,6 +19,7 @@ with( Light)
 with AnimationLayer
 {
 	wfunc <- null;
+	motname <- null;
 	
 	function update( dt){
 		local b = updateAnime( dt);
@@ -84,6 +85,8 @@ local m_1 = Matrix();
 local tf = Transform();		//	final Transform ... pos,scale,rot,modtfを基準にmodifiersで最終的に計算する
 local v_zinv = Vector3D( 1.0, 1.0, -1.0);
 
+SK3DRenderNode.meshtree <- null;
+
 function SK3DRenderNode::render( cam, visiblemask){	//	camじゃなくてなんか良い引数を
 	if( mesh){
 		skSetMatrix( SK_WORLD, gmat);
@@ -92,6 +95,10 @@ function SK3DRenderNode::render( cam, visiblemask){	//	camじゃなくてなん�
 	}else
 	if( ptc){
 		skDrawParticleGroups( ptc.groups);
+	}else
+	if( meshtree){
+		skSetMatrix( SK_WORLD, gmat);
+		meshtree.render( visiblemask);
 	}
 }
 
@@ -120,7 +127,7 @@ class SK3DObject extends SK3DRenderNode
 	res = null;				//	related resouce
 //	mesh = null;			//	PolygonMesh
 //	ptc = null;				//	Particle
-	meshtree = null;		//	PolygonMeshTree
+// 	meshtree = null;		//	PolygonMeshTreeInstance
 	
 	//
 	alive = true;			//
@@ -262,34 +269,27 @@ class SK3DObject extends SK3DRenderNode
 	}
 
 	function setPolygonMeshTree( pmt){
-		pmt.ensureCache();
-		local mtls = pmt._mtllist.map( @( v) clone v);	//	マテリアルを全てclone
-		local pms = [];
-		local node3dmap = {};
-		//	全て1個下の階層に追加していく。ノードが一つの場合はthisに入れちゃいたい感じも。
-		foreach( n in pmt._sortednodes){
-			if( n.bonerootid >= 0){	//	ボーンそのものはSK3DObjectのノードにはならない
-				// printf( "BONE IGNORED!!!!!!!!!!!: %S %S %S %S\n", n.id, n.name, n.bonerootid, pmt.nodes[n.bonerootid].name);
-				continue;
+		meshtree = PolygonMeshTreeInstance();
+		meshtree.set( pmt);
+		if( pmt.motion){
+			motion = pmt.motion;
+			motionmap = pmt.motionmap;
+			createBones();
+			local bonemap = {};
+			foreach( b in bones){
+				bonemap[b.parts.name] <- b;
 			}
-			local n3d = SK3DObject();	//	メッシュが空でも作られる。。。
-			local pm = pmt._meshlist[n.meshid];
-			if( pm){
-				pm = pmt.meshes[n.meshid].cloneSharedMtl( pm, mtls);
-				pms .. pm;
-				n3d.setPolygonMesh( pm);
+			meshtree.bones = bones;
+			foreach( pm in meshtree.pms){
+				assignBonesToPolygonMesh( pm);
 			}
-			n3d.tflayers[0] <- n.tf;
-			local pn = node3dmap[n.parentid];
-			if( pn) n3d.tflayers[0] <- pn.mat;
-			node3dmap[n.id] <- n3d;
-			addChild( n3d);
-			addGroup( n3d);
-			// printf( "NODE ADDED: %S %S %S\n", length( node3dmap), n.id, n.name);
+			if( !animlayers) animlayers = AnimationLayers();
+			tanime( #{ st=0.0 });
+			animlayers.integrateBonePoses( bones, gmat, true);
 		}
-		// printf( "TOTAL NODES: %S\n", length( node3dmap));
-		meshtree = { pmt=pmt, mtls=mtls, pms=pms, node3dmap=node3dmap };
 		bnd.set( pmt.getBounds());
+		// updateSortOffset();
+		materials = null;
 	}
 	
 	function setPolygonMesh( m){
@@ -542,6 +542,7 @@ class SK3DObject extends SK3DRenderNode
 				foreach( f in go.mesh["face"]){ mt[f.m] <- 1; }
 				foreach( f in go.ptc["groups"]){ mt[f.m] <- 1; }
 			}
+			foreach( m in meshtree["mtls"]){ mt[m] <- 1; }
 			ma = Table.keys( mt);
 			if( cache) materials = ma;
 		}
@@ -664,9 +665,14 @@ class SK3DObject extends SK3DRenderNode
 		animlayers.integrateBonePoses( appendbones?appendbones:bones, gmat, mutepbone||(scn&&scn.disablesimulation));
 		
 		//	shapeline ... とりあえずフェードはオフで。。。
-		local layers = animlayers.layers, l0 = layers[0], sl = l0["shapeline"];
-		if( sl){
-			sl.evaluate2( mesh.shapetarget, l0.frametime);
+		if( mesh){
+			local layers = animlayers.layers, l0 = layers[0], sl = l0["shapeline"];
+			if( sl){
+				sl.evaluate2( mesh.shapetarget, l0.frametime);
+			}
+		}else
+		if( meshtree){
+			meshtree.updateMotion( this, dt);
 		}
 		
 		animating = true;
@@ -750,6 +756,7 @@ class SK3DObject extends SK3DRenderNode
 	function tanime( t, ft=0.0, lyr=0){
 		if( !animlayers) animlayers = AnimationLayers();
 		local al = AnimationLayer();
+		al.motname = t["mot"];
 		local mot = getMotion( t["mot"]);
 		if( mot) al.partsmap = mot.partsmap;
 		local sl = shapelinemap[ t["mot"]];
@@ -790,9 +797,6 @@ class SK3DObject extends SK3DRenderNode
 		}else{
 			layers[l0] = al;
 			layers[l1] = null;
-		}
-		foreach( n in meshtree["node3dmap"]){
-			n.tanime( t, ft, lyr);
 		}
 		return al;
 	}

@@ -72,19 +72,12 @@ class PMEditor extends EditorViewBase
 			local rsetid = getDefaultRSetID();
 			canvas.setRenderSettingID( rsetid);
 		}
-
-		selectMesh( meshAt( 0));
 	}
 
 	function meshAt( idx){
 		//	meshtreeには { pmt, mtls, pms, node3dmap } が入ってる。
 		local pm = canvas.sk3d.meshtree.pms[idx];
 		return pm;
-	}
-
-	function selectMesh( pm){
-		canvas.selectMesh( pm);
-		rightpanel.selectMesh( pm);
 	}
 
 	function getDefaultRSetID(){
@@ -204,7 +197,7 @@ class PMEditor extends EditorViewBase
 	}
 
 	function timeevent( e){
-		canvas.pm3d.anime( e.actioncmd, e.actioncmd, 1.0, 0, 0.006);
+		canvas.sk3d.anime( e.actioncmd, e.actioncmd, 1.0, 0, 0.006);
 	}
 
 	function savePMT(){
@@ -350,8 +343,6 @@ class PMRightPanel
 	animepanel = null;			//	PMAnimePanel
 	shapepanel = null;			//	PMShapePanel
 	
-	pmselect = null;			//	MenuBehavior
-	
 	constructor( v, e){
 		view = v;
 		body = v.findChild( "body");
@@ -365,28 +356,13 @@ class PMRightPanel
 		body.addChild( mtlpanel.view);
 		
 		tabs.listview.addEventListener( ACTION_EVENT, tabevent);
-
-		pmselect = MenuBehavior( v.findChild( "pmselect"));
-		pmselect.view.addEventListener( ACTION_EVENT, pmselectevent);
 	}
 
 	function setPolygonMeshTree( pmt){
-		pmselect.setMenu( pmt.meshes.map( @( m, i)+{ lbl=m.name, val=m, icon="\ue86b", }));
+		mtlpanel.setPolygonMeshTree( pmt);
 		animepanel.setPolygonMeshTree( pmt);
-	}
-
-	function selectMesh( pm){
-		mtlpanel.setPM( pm);
-		partspanel.setPM( pm);
-		shapepanel.setPM( pm);
-	}
-
-	function pmselectevent( e){
-		e.consume();
-		local ms = e.actioncmd.val;
-		local pm = editor.canvas.sk3d.meshtree.pms.find( @( pm) pm.ref == ms);
-		// printf( "PMMMMMMMMMMMMMMMMMMMMMMMMMMM %S %S %S\n", ms, encodeJSON( e.actioncmd), pm);
-		editor.selectMesh( pm);
+		partspanel.setPolygonMeshTree( pmt);
+		shapepanel.setPolygonMeshTree( pmt);
 	}
 
 	function tabevent( e){

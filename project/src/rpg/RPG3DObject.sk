@@ -423,6 +423,7 @@ class RPG3DObject extends SK3DObject
 		//	アニメーションをセット
 		if( al) al.animating = false;
 		al = AnimationLayer();
+		al.motname = t["mot"];
 		local mot = getMotion( t["mot"]);
 		if( mot) al.partsmap = mot.partsmap;
 		local sl = shapelinemap[ t["mot"]];

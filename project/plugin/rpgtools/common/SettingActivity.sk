@@ -152,24 +152,27 @@ preferenceprops .. {
 	ctg="build", pid="ANDROID", lbl="$T.build_android", type=HEADER
 }
 
+local formatpkg( val){
+	local pc = '.', a = [], cmnum=0;
+	foreach( c in val.toLowerCase()){
+		if( c>='0' && c<='9'){
+			if( pc == '.') c = 'x';
+		}else
+		if( c=='.'){
+			if( pc == '.' || (cmnum++)>=4) c = 'x';
+		}else{
+			if( c<'a' || c>'z') c = 'x';
+		}
+		a .. char( c);
+		pc = c;
+	}
+	return a.join();
+}
+
+
 preferenceprops .. { 
 	ctg="build", pf="android", pid="apkpackage", lbl="$T.lbl_apkpackage", type=STRING,
-	format=@( val) {
-		local pc = '.', a = [], cmnum=0;
-		foreach( c in val.toLowerCase()){
-			if( c>='0' && c<='9'){
-				if( pc == '.') c = 'x';
-			}else
-			if( c=='.'){
-				if( pc == '.' || (cmnum++)>=4) c = 'x';
-			}else{
-				if( c<'a' || c>'z') c = 'x';
-			}
-			a .. char( c);
-			pc = c;
-		}
-		return a.join();
-	},
+	format = formatpkg,
 	deflbl = "com.rpgcobo.{rpgid}",
 	defval = "", ...buildprops
 }
@@ -178,6 +181,12 @@ preferenceprops .. {
 	ctg="build", pid="IOS", lbl="$T.build_ios", type=HEADER
 }
 
+preferenceprops .. { 
+	ctg="build", pf="ios", pid="iospackage", lbl="$T.lbl_iospackage", type=STRING,
+	format = formatpkg,
+	deflbl = "com.rpgcobo.{rpgid}",
+	defval = "", ...buildprops
+}
 
 local visitfile( f, fn){
 	if( f.isDirectory()){

@@ -6,12 +6,10 @@ import ModifiersMask;
 local gathermots( pmt){
 	local a = [ { lbl="$T.lbl_notset", val=null}];
 	local motmap = {};
-	foreach( m in pmt.meshes){
-		foreach( i, v in m.motionmap){
-			if( !motmap[i]){
-				motmap[i] <- true;
-				a.push( { lbl=i, val=i});
-			}
+	foreach( i, pmt in pmt.motionmap){
+		if( !motmap[i]){
+			motmap[i] <- true;
+			a .. { lbl=i, val=i};
 		}
 	}
 	return a;
@@ -139,19 +137,11 @@ class PMAnimePanel
 //	
 class PMShapePanel
 {
-	// static baseprops = [
-	// 	{ pid = "name", lbl = "$T.lbl_name", type = STRING, },
-	// 	{ pid="G1", lbl="", type=HEADER, cnt="header0.ui"},
-	// ];
-
 	editor = null;
 	view = null;
 
 	keymenu = null;			//	MenuBehavior
 	proplist = null;		//	GPUIListView
-
-	pm = null;
-	selkey = null;			//	
 
 	wmap = null;			//	{ keyname, weight }
 
@@ -167,39 +157,30 @@ class PMShapePanel
 		keymenu = MenuBehavior( v.findChild( "mtlmenu"));
 	}
 	
-	function setPM( p){
-		pm = p;
-		local pms = pm["ref"];
-		if( pms["shapekeys"]){
-			wmap = {};
-			foreach( k, v in pms["shapekeys"]["keymap"]) wmap[k] <- 0.0;
-			printf( "wmap %S\n", encodeJSON( wmap));
-		}else{
-			wmap = null;
+	function setPolygonMeshTree( pmt){
+		wmap = {};
+		foreach( i,pms in pmt.meshes){
+			if( pms["shapekeys"]){
+				foreach( k, v in pms["shapekeys"]["keymap"]) wmap[`${i}.$k`] <- 0.0;
+			}
 		}
 		refresh();
 	}
 
 	function refresh(){
-		local pms = pm["ref"];
-		if( !pms["shapekeys"]){
-			keymenu.setMenu( [{lbl="$T.lbl_none", val=null}]);
-			proplist.bindProperties( []);
-			return;
+		local props = [];
+		foreach( i,pms in editor.pmt.meshes){
+			if( !pms["shapekeys"]) continue;
+			props .. { pid = "H", lbl = pms.name, type = HEADER };
+			local sk = pms["shapekeys"], keymap = sk.keymap;	//	keymapはインデックスを名前でマップしている
+			local keylist = Table.map( keymap, @( v, k) +{ lbl=k, val=v }).sort( @( v) v.val);
+			//	props
+			props ... keylist.map( @( v){
+				return {
+					pid = `${i}.${v.lbl}`, lbl = v.lbl, type = SCALAR, range=(0.0, 1.0), q=100, ui="bar", dynamic = true,
+				};
+			});
 		}
-		local _idx = selkey["val"] ?? null;
-		local sk = pms["shapekeys"], keymap = sk.keymap;	//	keymapはインデックスを名前でマップしている
-		local keylist = Table.map( keymap, @( v, k) +{ lbl=k, val=v }).sort( @( v) v.val);
-		keymenu.setMenu( [{lbl="$T.lbl_nosel", val=null}] ... keylist);
-		local item = keylist.find( @( v) v.val==_idx) || keymenu.menuitems[0];
-		selkey = item;
-		keymenu.selectItem( item);
-		//	props
-		local props = keylist.map( @( v){
-			return {
-				pid = v.lbl, lbl = v.lbl, type = SCALAR, range=(0.0, 1.0), q=100, ui="bar", dynamic = true,
-			};
-		});
 		proplist.bindProperties( props);
 		proplist.setParameters( wmap);
 	}
@@ -207,12 +188,22 @@ class PMShapePanel
 	function actionevent( e){
 	}
 
+	function getweights( mi){
+		mi = mi .. ".";
+		local m = {};
+		foreach( k,v in wmap){
+			if( k.startsWith( mi)) m[k.substring( length( mi))] <- v;
+		}
+		return m;
+	}
+
 	function propevent( e){
 		local cmd = e.actioncmd;
 		if( cmd["cmd"] != "prop") return;
 		local prop = cmd.prop, pid = prop.pid;
-		// printf( "!!!!!!!!!!!!!!!!!!!! %S %S\n", pid, cmd.val);
 		wmap[pid] <- cmd.val;
-		pm.shapetarget.assign( wmap);
+		local a = pid.split(".");
+		local pm = editor.canvas.sk3d.meshtree.pms[int(a[0])];
+		pm.shapetarget.assign( getweights( a[0]));
 	}
 }
