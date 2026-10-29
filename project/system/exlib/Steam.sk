@@ -37,7 +37,7 @@ with SteamAPI
 		steamid = getSteamID64( long());
 		//	Steamのコールバック処理用スレッドを起動する
 		steamthread = newthread( "Steam thread");
-		steamthread.start( run);
+		steamthread.start( run, this);
 	}
 
 	function run(){

@@ -188,6 +188,10 @@ preferenceprops .. {
 	defval = "", ...buildprops
 }
 
+preferenceprops .. {
+	ctg="build", pf="ios", pid="usegamecenter", lbl="$T.lbl_usegamecenter", type=BOOL, defval=false, ...buildprops
+}
+
 local visitfile( f, fn){
 	if( f.isDirectory()){
 		foreach( cf in f.getList()) visitfile( cf, fn);

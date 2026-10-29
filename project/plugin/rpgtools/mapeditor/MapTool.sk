@@ -626,7 +626,8 @@ class MapTool
 
 	//	FreeBlockの選択状態のガイドを配置する。
 	//	FreeBlockの実体ボクセルとギズモ。
-	function placeFBGizmo( fb, mask){
+	function placeFBGizmo( fb, mask){	//	fb | fbuid
+		if( typeof( fb) == SS_INTEGER) fb = editor.bw.getFreeBlock( fb);
 		local sk3d = guides["gz"];
 		local rr = fb.br, br = unrotateRect( rr, fb.rot);
 		local cx = br.x+br.w/2, cy = br.y+br.h/2, cz = br.z+br.d/2;	//	cxyz == fb.xyz
@@ -878,6 +879,7 @@ class MapTool
 					local fd = v.scale( absn).scale( 2.0);
 					d.set( fd.x|0, fd.y|0, fd.z|0);
 				}
+				gzfunc( gz0.gz, "drag", { part:part, e=e, trk:trk });
 				if( d <> d0){
 					gzfunc( gz0.gz, "move", { part:part, d:(d[0]-d0[0],d[1]-d0[1],d[2]-d0[2]), dot:dot, trk:trk });
 					d0.set( d[0], d[1], d[2]);

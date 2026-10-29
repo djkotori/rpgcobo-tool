@@ -1352,6 +1352,7 @@
 	"lbl_steambuild"					: {"ja":"Steam向けにビルド", "en":"Build to Steam"}
 	"lbl_apkpackage"					: {"ja":"APKパッケージ名", "en":"APK Package Name"}
 	"lbl_iospackage"					: {"ja":"iOSパッケージ名", "en":"iOS Package Name"}
+	"lbl_usegamecenter"					: {"ja":"GameCenterを使用", "en":"Use GameCenter"}
 	"lbl_usesw"							: {"ja":"サービスワーカーを使用", "en":"Use ServiceWorker"}
 	"lbl_debuggl"						: {"ja":"グラフィックをデバッグ", "en":"Debug Graphics"}
 

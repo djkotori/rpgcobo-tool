@@ -106,6 +106,7 @@ class MapTools.tool_fblk extends MapTool
 	}
 
 	function placeFBGizmo( fb, mask){
+		if( typeof( fb) == SS_INTEGER) fb = editor.bw.getFreeBlock( fb);
 		selgz = super.placeFBGizmo( fb, mask);
 		canvas.addFBSelection( fb.fbuid);
 		updateFBSelectionColor();
@@ -285,6 +286,8 @@ class MapTools.tool_fblk extends MapTool
 					if( hb["fbuid"]){
 						if( !canvas.selfbmap[hb.fbuid]) canvas.clearFBSelection();
 						if( hb.fbuid != selgz["ref"]["fbuid"]) _pickfb( hb);
+						removeGuide( "pen");
+						return editor.tool.dragFBStart( e, hb);	//	_pickfbでカレントのツールが切り替わってる可能性あり。。。
 					}
 				}else{
 					removeGuide( "gz"); selgz = null;
@@ -292,9 +295,12 @@ class MapTools.tool_fblk extends MapTool
 				}
 			}else{
 				hb = rayTest( e, BLK_SOLID | BLK_SOLIDFB | BLK_DECAL);
+				e.consume();
 				if( hb["fbuid"]){
 					if( !canvas.selfbmap[hb.fbuid]) canvas.clearFBSelection();
 					if( hb.fbuid != selgz["ref"]["fbuid"]) _pickfb( hb);
+					removeGuide( "pen");
+					return editor.tool.dragFBStart( e, hb);	//	_pickfbでカレントのツールが切り替わってる可能性あり。。。
 				}else{
 					removeGuide( "gz"); selgz = null;
 					//	階段ツール、屋根ツール以外はドラッグによる範囲選択に対応する！
@@ -308,7 +314,6 @@ class MapTools.tool_fblk extends MapTool
 						}
 					}
 				}
-				e.consume();
 			}
 			break;
 		}
@@ -381,10 +386,26 @@ class MapTools.tool_fblk extends MapTool
 		local self = this, editor = editor;
 		return @( gz, op, arg=null){
 			local bop = BlockOperation( editor.bw);
-			self.selblk.deselect();
+			// self.selblk.deselect();
 			local fb = gz.ref;
 			switch( op){
+			case "drag":
+				if( arg.part == 0){
+					local bp = #(0,0,0);
+					local blkflag = BLK_SOLID | BLK_SOLIDFB;
+					editor.bw.removeFreeBlock( fb.fbuid);		//	一時的に消さないとrayTestで自分に当たる。。。この対応だと再描画は入っちゃう
+					local rot = fb.rot, hb = self.rayTestFB( arg.e, blkflag, fb, rot);
+					editor.bw.placeFreeBlock( fb);
+					if( hb && (bp[0]!=hb.bx || bp[1]!=hb.by || bp[2]!=hb.bz)){
+						bp.set( hb.bx, hb.by, hb.bz);
+						if( (1<<hb.f)&(2|4|8|16)) rot = hb.f-1;
+						local pos = self.getFBPlacePos( fb, hb, rot);
+						bop.placeFreeBlock({fblk:fb, fbuid:fb.fbuid, pos:pos, rot:rot});
+					}
+				}
+				break;
 			case "move":
+				if( arg.part == 0) return;
 				local pos = (fb.x+arg.d[0],fb.y+arg.d[1],fb.z+arg.d[2]);
 				bop.placeFreeBlock({fblk:fb, fbuid:fb.fbuid, pos:pos});
 				break;
@@ -396,10 +417,58 @@ class MapTools.tool_fblk extends MapTool
 				bop.undoop .. @() self.restoreFBGizmo( synct);
 				bop.submit( editor, arg["trk"]||null);
 				gz.setFreeBlock( editor.bw.getFreeBlock( fb.fbuid));
-				//	ギズモ動かしたら選択消しちゃおう
-				// self.removeGuide( "fb"); self.selblk.deselect(); self.fblk = null;
 			}
 		}
+	}
+
+	//	
+	function dragFBStart( e0, hb0){
+		local fba = [];
+		foreach( fbuid, sk3d in canvas.selfbmap){
+			fba .. editor.bw.getFreeBlock( fbuid);
+		}
+		local p0 = Vector3D( hb0.fx, hb0.fy, hb0.fz);
+		local trk = "dragFB"..skGetTime();
+		local cam = canvas.camwork.cam;
+		local pl = chooseCameraPlane( cam.fw, p0);
+		//
+		local self = this, editor = editor;
+		local fn( e){
+			e.consume();
+			switch( e.id){
+			case MOUSE_DRAGGED:
+				local hb = self.planeTest( e, hb0);
+				local q = self.canvas.getRay( e.lx, e.ly), w = q[1]-q[0];
+				local t = pl.getIntersectTime( q[0], w);
+				if( t < 0.0) break;
+				local d = #(0,0,0), d0 = #(0,0,0);
+				local fd = w.scale( t).add( q[0]).sub( p0).scale( 2.0);
+				d.set( fd.x|0, fd.y|0, fd.z|0);
+				if( d <> d0){
+					local bop = BlockOperation( editor.bw);
+					local synct = {};
+					foreach( fb in fba){
+						local pos = (fb.x+d[0], fb.y+d[1], fb.z+d[2]);
+						bop.placeFreeBlock({fblk:fb, fbuid:fb.fbuid, pos:pos});
+						bop.redoop .. @(){ self.syncFBGizmo( synct); }
+						bop.undoop .. @(){ self.restoreFBGizmo( synct); }
+					}
+					local gzfbuid = self.selgz["ref"]["fbuid"];
+					printf( "u-m??????? %S %S\b", self.selgz, self.selgz["ref"]["fbuid"]);
+					bop.redoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, -1); }
+					bop.undoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, -1); }
+					bop.submit( editor, trk);
+					d0.set( d[0], d[1], d[2]);
+				}
+				break;
+			case MOUSE_RELEASED:
+			case MOUSE_MOVED:	//	普通はこれ来ない
+			case MOUSE_CANCELLED:
+				return null;
+			}
+			return fn;
+		};
+		return fn;
 	}
 	
 	//	

@@ -321,7 +321,7 @@ RPG-Cobo のアカウント状態を示す定数です。ACCOUNT_VALID時には�
 | PLC_FLOOR | 1 | 床の設置 |
 | PLC_WALL | 2 | 壁の設置 |
 | PLC_DOOR | 3 | ドアの設置 |
-| PLC_ARCH | 4 | アーチの設置 |
+| PLC_BRIDGE | 4 | ブリッジの設置 |
 
 ### enum FreeBlockCategoryID
 
