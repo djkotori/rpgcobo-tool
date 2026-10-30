@@ -175,6 +175,7 @@
 	"opt_autocond":{ "ja":"自動コンディション", "en":"Auto Condition"},
 	"opt_script":{ "ja":"スクリプト実行", "en":"Exec Script"},
 	"opt_voice":{ "ja":"ボイス再生", "en":"Play Voice"},
+	"opt_equipvox":{ "ja":"装備ボクセル変更", "en":"Change Equip Voxel"},
 	
 	"config_game":{ "ja":"ゲーム設定", "en":"Game Setting"},
 	"config_video":{ "ja":"ビデオ設定", "en":"Video Setting"},

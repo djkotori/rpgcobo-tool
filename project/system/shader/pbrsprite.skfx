@@ -515,7 +515,7 @@ fs ssao
 	void main(){
 		highp vec2 wvpp = v_uv.xy*2.0-1.0;	//	-1.0-1.0
 		highp vec2 cuv = v_uv.xy + bayer4( gl_FragCoord.xy) * uztexscale;
-		highp vec3 vpos = wvpos( wvpp.xy);
+		highp vec3 vpos = wvpos( wvpp.xy); vpos.z += 0.008;
 		highp float zfade = clamp( (-vpos.z-p0[1].x) * p0[1].y, 0.0, 1.0);
 		highp vec3 irt = mix( p0[0].xyz, vec3( 0.0, p0[0].y, 0.98), zfade);	//	0.98 <= tick=1.0
 		//	calc occlusion => pix

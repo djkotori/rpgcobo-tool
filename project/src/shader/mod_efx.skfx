@@ -60,6 +60,7 @@ fs outline_tex
 			texture2D( tex, uv+d*vec2( 0.0,-1.0)).w,
 			texture2D( tex, uv+d*vec2( 0.0, 1.0)).w
 		) - vec4( v0);
+		v1 = step( vec4( 0.1), v1);
 		return clamp( dot( v1, v1), 0.0, 1.0);
 	}
 }

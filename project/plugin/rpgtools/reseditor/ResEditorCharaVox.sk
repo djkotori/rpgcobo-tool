@@ -45,8 +45,8 @@ class ResEditorCharaVox extends ResEditor
 			palchange=@( palmod) ::skstudio.editor.paletteChanged( palmod)
 		}
 
-		{ pid="vox_itemr", lbl="$T.equip ($T.weapon)", type=RESID, restype=["equip_vox"], defval=null, nullable=true, get=@( prop, data) data[prop.pid]??null }
-		{ pid="vox_iteml", lbl="$T.equip ($T.shield)", type=RESID, restype=["equip_vox"], defval=null, nullable=true, get=@( prop, data) data[prop.pid]??null }
+		{ pid="item_R", lbl="$T.equip ($T.weapon)", type=RESID, restype=["equip_vox"], defval=null, nullable=true, get=@( prop, data) data[prop.pid]??null }
+		{ pid="item_L", lbl="$T.equip ($T.shield)", type=RESID, restype=["equip_vox"], defval=null, nullable=true, get=@( prop, data) data[prop.pid]??null }
 
 		{ pid="colshp",	lbl="$T.lbl_collision",	type=LIST, list=colshplist, defval=SK_SHAPE_CAPSULE },
 		{ pid="colsize", lbl="$T.lbl_size", type=VEC3, range=(0.01,1.5),q=100, defval=(0.4,0.8,0.4) },

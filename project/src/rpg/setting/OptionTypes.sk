@@ -405,33 +405,6 @@ RPGSystem.option .. {
 	//	no hooks
 };
 
-//	削除予定！！！！！！！！！！！！！！！！！！！！！！！！！！
-//	ジョブ習得。〇
-//	※このオプションはフック関数は無い。RPGPlayer.updateScoreMapで集計される
-//	これで習得したジョブは、ジョブ画面や転職UI?などで装着可能になる。
-RPGSystem.option .. {
-	category = 0,
-	key = "opt_getjob",
-	name = "$T.opt_getjob",
-	icon = icon_learn,
-	ownable = true,
-	hide = true,
-	info = @(){	//	this==opd
-		local data = rpgdata[jobid];
-		return data["name"] || "???";
-	},
-	props = [
-		{
-			pid = "jobid"
-			lbl = "$T.side_dbview_job"
-			type = DATAID
-			datatype=["job"]
-			defval = "J000"
-		}
-	],
-	//	no hooks
-};
-
 //	プレイ時だとMenuBehaviorは無い。。。
 local _finditem( ma, fn){
 	foreach( m in ma){
@@ -1718,5 +1691,28 @@ RPGSystem.option .. {
 	props = [
 		// orderprop,	//	orderいらんかも
 		...speaktypelist.map( @( v) +{ pid=v.id, lbl=v.lbl, type=STRING, defval="", }),
+	],
+};
+
+//	装備ボクセルの設定。見た目だけ
+RPGSystem.option .. {
+	category = 3,
+	key = "opt_equipvox",
+	name = "$T.opt_equipvox",
+	icon = icon_etc,
+	condrem = false,
+
+	toolinfo = @(){
+		local mdl = ::conf._resource.equip_vox[mdlid];
+		return "%S: %S" % ( mdlid, ::lang( mdl["name"] || "???"));
+	},
+
+	props = [
+		{ pid="mdlid", lbl="$T.lbl_model", type=RESID_PREVIEW, restype=["equip_vox"], defval="EV000", cnt="cnt6.ui" },
+		{ pid="part", lbl="$T.equipvox", type=LIST, list=[
+			{ lbl="$T.equipvox_item_R", val="item_R" },
+			{ lbl="$T.equipvox_item_L", val="item_L" },
+		] },
+		{ pid="prio", lbl="$T.lbl_priority", type=SCALAR, ui="bar", range=(0,100), defval=50 },
 	],
 };

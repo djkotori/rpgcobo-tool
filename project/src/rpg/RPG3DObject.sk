@@ -1407,6 +1407,8 @@ class RPG3DPicture extends RPG3DObject
 //	
 class RPG3DVoxChara extends RPG3DObject
 {
+	static eqpartids = ["item_R", "item_L"];
+
 	cv = null;				//	定義。
 	pmmap = null;			//	{name:PolygonMesh} : voxのパーツ名とモデルのマップ。
 	drawpmmap = null;		//	{boneid:PolygonMesh} : ボーン毎に選択されたモデル。renderで参照。
@@ -1418,6 +1420,9 @@ class RPG3DVoxChara extends RPG3DObject
 
 	bonetype = null;		//	leg2, box, ...
 
+	eqpartmap = null;		//	{"item_R":"VE000", ...}
+	eqvoxchk = null;
+	
 	static function getBoneType( motpath){
 		local s = motpath.substring( motpath.lastIndexOf( "/")+1);
 		local boi = s.lastIndexOf( "_");
@@ -1486,8 +1491,8 @@ class RPG3DVoxChara extends RPG3DObject
 		setPivot( #Vector3D( 0.0, 0.01, 0.0));	//	Z fightingしちゃうのを応急措置
 		bnd.set( 0, 1.0, 0, 0.8, 1.0, 0.8);		//	ちゃんと計算。。。
 		gbnd.set( bnd);
-		if( cv["vox_itemr"]) setEquipVox( cv["vox_itemr"], "item_R");
-		if( cv["vox_iteml"]) setEquipVox( cv["vox_iteml"], "item_L");
+		eqpartmap = {};
+		updateEquipVox();
 		//	b3body
 		local colsize = cv["colsize"]||#(0.4,0.8,0.4);
 		local shp = createShape( cv["colshp"]||SK_SHAPE_CAPSULE, colsize);
@@ -1588,6 +1593,11 @@ class RPG3DVoxChara extends RPG3DObject
 		foreach( m in getMaterials()){
 			m.misccol0 = (200<<24) | ((m.visiblemask&4096)*(255<<4));
 		}
+		//	装備ボクセルの更新チェックはオプションが変化した場合のみ行う。参照が違うかチェックするだけで良し
+		if( eqvoxchk != rpgobj["options"]){
+			updateEquipVox();
+			eqvoxchk = rpgobj["options"];
+		}
 		return r;
 	}
 
@@ -1607,6 +1617,17 @@ class RPG3DVoxChara extends RPG3DObject
 			local p = b.parts;
 			local pidx = Math.ifloor( motion.getCustomValue( p.name, ft));
 			drawpmmap[b.parts.id] <- pmmap[p.name..pidx] || pmmap[p.name.."0"];	//	どっちもない場合あり
+		}
+	}
+
+	//	rpgobjの装備オプションを反映してpmmapを更新する。毎フレーム呼ぶ
+	function updateEquipVox(){
+		foreach( eid in eqpartids){
+			local mdlid = (rpgobj?.getEquipVoxel( eid)) || cv[eid];
+			if( mdlid != eqpartmap[eid]){
+				setEquipVox( mdlid, eid);
+				eqpartmap[eid] <- mdlid;
+			}
 		}
 	}
 	

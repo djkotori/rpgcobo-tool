@@ -342,6 +342,30 @@ class RPGCharaBase extends RPGObject
 		return ::conf.skill[data["defskillid"]] || ::conf.skill["S000"];
 	}
 
+	//	item_R, item_Lに対応する装備のボクセルを返す。
+	//	opt_equipvox オプションを検索し、最大の優先度の装備ボクセルを返す。
+	function getEquipVoxel( part){
+		local mdlid, prio = -1;
+		//	装備のボクセル反映。ハードコードだな～
+		switch( part){
+		case "item_R": mdlid = getWeapon()["data"]["mdlid"]; break;
+		case "item_L": mdlid = getShield()["data"]["mdlid"]; break;
+		}
+		if( mdlid) prio = 1;
+		//	
+		foreach( opt in options){
+			local opd = opt.opd;
+			if( opd.opttype == "opt_equipvox"){
+				local e = opd.mdlid;
+				if( e && opd.prio > prio){
+					mdlid = e;
+					prio = opd.prio;
+				}
+			}
+		}
+		return mdlid;
+	}
+
 	///////////////////////////////////////////////////////////////////////////////////////
 	//	ステータス更新
 

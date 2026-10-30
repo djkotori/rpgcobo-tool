@@ -55,7 +55,7 @@ fs collapsefx
 {
 	vec2 random( vec2 uv){
 		uv = vec2( dot( uv, vec2(127.1,311.7) ), dot( uv, vec2(269.5,183.3) ) );
-		return -1.0 + 2.0 * fract( sin( uv) * 43758.5453123);
+		return sin( uv*0.5);
 	}
 
 	float noise(vec2 uv) {

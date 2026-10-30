@@ -400,6 +400,12 @@
 	"losefunc0"							: {"ja":"敗北マクロ(X002)", "en":"Defeat Macro(X002)"}
 	"losefunc1"							: {"ja":"回復して続行", "en":"Recover and Continue"}
 	"losefunc2"							: {"ja":"そのまま続行", "en":"Continue"}
+
+	//	装着部位
+	"equipvox"							: {"ja":"装着部位", "en":"Equip Part"}
+	"equipvox_item_R"					: {"ja":"右手装備", "en":"Right Hand"}
+	"equipvox_item_L"					: {"ja":"左手装備", "en":"Left Hand"}
+
 	
 	//	イベントコマンド
 	"cmd_category0"						: {"ja":"一般処理", "en":"General commands"}

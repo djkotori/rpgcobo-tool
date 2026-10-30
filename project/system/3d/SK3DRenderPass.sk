@@ -2032,10 +2032,11 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	function updateRenderHint( h, r){
 		gblurpass.enabled = h.pbr_qua >= 2;		//	標準以上
 		if( gblurpass["enabled"]){
-			g1tex2 = g1tex2 || r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_R32UI});
+			g1tex2 = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_R32UI});
 		}else{
 			g1tex2 = null;
 		}
+		gblurpass?.setupPass( r);	//	必要。。。
 		ssspass?.updateRenderHint( h, r);
 		ssaopass?.updateRenderHint( h, r);
 		pbrpostpass.updateRenderHint( h, r);

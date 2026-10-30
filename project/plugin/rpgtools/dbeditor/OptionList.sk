@@ -40,7 +40,7 @@ class OptionList
 		if( !opt){
 			return "Unknown option: %S" % opd.opttype;
 		}
-		local infofmt = opt["info"]||"---", info = "---";
+		local infofmt = opt["toolinfo"]||opt["info"]||"---", info = "---";
 		if( typeof( infofmt)==SS_CLOSURE){
 			info = ~( infofmt, opd);
 		}else{
