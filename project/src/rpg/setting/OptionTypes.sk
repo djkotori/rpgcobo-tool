@@ -1512,7 +1512,7 @@ RPGSystem.option .. {
 			pid = "req",
 			lbl = "$T.lbl_require"
 			type = LIST
-			list = @() RPGSystem.aipagereq._list.map( @( v)({ lbl=v.name, val=v.key, submenu=v["submenu"]}))
+			list = @() RPGSystem.aipagereq._list.map( @( v)({ ...v, lbl=fget( v, "lbl", v, v), icon=v["icon"], val=v.key}))
 			defval = null
 		}
 	],

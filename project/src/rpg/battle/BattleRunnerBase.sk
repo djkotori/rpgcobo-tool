@@ -144,6 +144,7 @@ class BattleRunnerBase
 	function addBattleMember( pc){	//	pc:RPGPlayer
 		pc.startBattle();
 		local rp3d = RPG3DObject.create3DObject( pc.data);
+		rp3d.synccondani = true;
 		local wmdlid = pc.getWeapon()["data"]["mdlid"];
 		local smdlid = pc.getShield()["data"]["mdlid"];
 		if( rp3d["setEquipVox"]){
@@ -170,6 +171,7 @@ class BattleRunnerBase
 	//	バトル用のエネミーの3Dオブジェクトを追加。メンバーとやることは変わらない
 	function addBattleEnemy( ec){	//	ec:RPGEnemy
 		local rp3d = RPG3DObject.create3DObject( ec.data);
+		rp3d.synccondani = true;
 		rp3d.rpgobj = ec;
 		rp3d.manuaction = ManualMoveAction( rp3d);		//	バトル用のマニュアルアクション
 		stage.scn.addObject( rp3d);

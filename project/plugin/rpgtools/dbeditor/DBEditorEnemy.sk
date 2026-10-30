@@ -256,7 +256,7 @@ class BattleAIEdit
 		local skl = RPGData.getData( i.skillid);
 		v.setValue( "skill", skl?`$skl.icon $i.skillid: $skl.name`:"$T.lbl_defskill");
 		local tgt = RPGSystem.aitarget[i.target];
-		v.setValue( "target", "対象: "..(tgt?lang(tgt.name):"?"));
+		v.setValue( "target", "$T.lbl_target⇒ "..(tgt?lang(tgt.name):"?"));
 		v.setValue( "rate", i.rate);
 		local tb = turnbitslist.find( @( v) v.val==i.turnbits);
 		v.setValue( "turnbits", tb?tb.lbl:("%03x",i.turnbits));

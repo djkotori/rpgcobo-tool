@@ -432,12 +432,7 @@ class RPGStage
 	//	
 	function changePlayer3D( dataid){
 		local old = player3d;
-		local pc = rpgstat.members.find( @( v) v && !v.isDead());
-		if( dataid){
-			pc ??= rpgstat.playermap[dataid];
-		}else{
-			pc ??= rpgstat.members.find( @( v) v && !v.isDead());
-		}
+		local pc = choosePlayer3D( dataid);
 		if( pc == old["rpgobj"]) return;	//	同じキャラなら何もしない
 		//
 		local vis = stat.statmap["playervisible"] ?? true;
@@ -461,6 +456,17 @@ class RPGStage
 			player3d.pos( old.pos);
 			player3d.setDir( old.dir);
 		}
+	}
+
+	function choosePlayer3D( dataid){
+		local pc = rpgstat.members.find( @( v) v && !v.isDead());
+		if( dataid){
+			pc ??= rpgstat.playermap[dataid];
+		}
+		if( !pc){
+			pc ??= rpgstat.members.find( @( v) v);
+		}
+		return pc;
 	}
 
 	//	ブロック座標系の位置をプレイヤーにセットする。
@@ -611,6 +617,7 @@ class RPGStage
 					::rpgvar.ENCOUNTER = 0.0;
 					raiseEncounter();
 				}
+				changePlayer3D( stat.statmap.playermodel);	//	死んだりして表示交代の場合あり
 			}
 		}
 	}

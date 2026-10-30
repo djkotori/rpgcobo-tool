@@ -215,6 +215,8 @@ class RPG3DObject extends SK3DObject
 	//	アニメ
 	animelist = null;			//	
 	animemap = null;			//	
+	standani = null;			//	AnimationLayer : "stand"アニメで再生したアニメ
+	synccondani = false;		//	"stand"アニメの状態同期フラグ。trueの場合、キャラの状態によってアニメを変化。
 
 	//	2d view
 	tgtview = null;				//	ターゲット選択SKView
@@ -387,6 +389,20 @@ class RPG3DObject extends SK3DObject
 		}
 	}
 
+	function updateMotion( dt, matchanged=false){
+		if( animlayers){
+			local al = animlayers.layers[0];
+			if( standani){
+				local ani = getStandAnime( null);
+				if( ani.id != standani.id || int( ani["part"]) != int( standani["part"])){
+					al = anime2( ani);
+					standani = ani;
+				}
+			}
+		}
+		return super.updateMotion( dt, matchanged);
+	}
+
 	/////////////////////////////////////////////////////////////////////////
 	//	演出指示
 	//	
@@ -399,7 +415,9 @@ class RPG3DObject extends SK3DObject
 
 	//	
 	function anime2( t){	//	anime( { id, spd, part, })	//	パラメータ引数
-		local aid = t.id, at = animemap[aid];
+		if( t["id"] == "stand"){ t = getStandAnime( t); standani = t; } else standani = null;
+		local aid = t.id;
+		local at = animemap[aid];
 		if( !at) return;	//	アニメIDが存在しない！
 		local layers = animlayers.layers, al = layers[0];
 		if( fget( al, "locked")) return;	//	ロック中はアニメを変更しない
@@ -433,6 +451,24 @@ class RPG3DObject extends SK3DObject
 		layers[0] = al;
 		layers[1] = null;
 		return al;
+	}
+
+	//	現在のrpgobjの状況によってアイドル時のアニメを取得。
+	function getStandAnime( t0){
+		if( event){
+			//	イベントで設定されたアイドルアニメ。最優先。
+			if( event["page"]["standani"]) return event["page"]["standani"];
+			if( event["data"]["standani"]) return event["data"]["standani"];
+		}
+		if( synccondani && rpgobj){
+			//	バトル時のみ。スキルやコンディションでのアニメ変更。
+			if( rpgobj["skill"]["aimani"]) return rpgobj.skill.aimani;	//	スキルセット済み
+			foreach( c in rpgobj["conds"]){
+				if( c.data["ani"]) return c.data.ani;
+			}
+			if( rpgobj.isPinch()) return #{id="sick"};
+		}
+		return t0 || #{id="stand"};	//	そのまま
 	}
 
 	function setAnimeLayer( al){
@@ -1381,7 +1417,6 @@ class RPG3DVoxChara extends RPG3DObject
 	focusobj = null;		//	RPG3DObject : 視線を向ける相手。headboneが有れば回転を調整する
 
 	bonetype = null;		//	leg2, box, ...
-	standani = null;		//	AnimationLayer : "stand"アニメで再生したアニメ
 
 	static function getBoneType( motpath){
 		local s = motpath.substring( motpath.lastIndexOf( "/")+1);
@@ -1560,14 +1595,8 @@ class RPG3DVoxChara extends RPG3DObject
 	function updateMotion( dt, matchanged=false){
 		local al = animlayers.layers[0];
 		local ft0 = Math.ifloor( al["frametime"]);
-		if( standani){
-			local ani = getStandAnime( null);
-			if( ani.id != standani.id || int( ani["part"]) != int( standani["part"])){
-				al = anime2( ani);
-				standani = ani;
-			}
-		}
 		super.updateMotion( dt, matchanged);
+		local al = animlayers.layers[0];
 		local ft1 = Math.ifloor( al["frametime"]);
 		if( ft0 != ft1) updatePartsVisibles();	//	フレームの整数が変化したらパーツ表示が変化
 	}
@@ -1583,29 +1612,9 @@ class RPG3DVoxChara extends RPG3DObject
 	
 	//	アニメーション変化時にはパーツ表示が変化
 	function anime2( t){
-		local aid = t.id;
-		if( aid == "stand"){ t = getStandAnime( t); standani = t; } else standani = null;
 		local al = super.anime2( t);
 		updatePartsVisibles();
 		return al;
-	}
-
-	//	現在のrpgobjの状況によってアイドル時のアニメを取得。
-	function getStandAnime( t0){
-		if( event){
-			//	イベントで設定されたアイドルアニメ。最優先。
-			if( event["page"]["standani"]) return event["page"]["standani"];
-			if( event["data"]["standani"]) return event["data"]["standani"];
-		}
-		if( rpgobj){
-			//	バトル時のみ。スキルやコンディションでのアニメ変更。
-			if( rpgobj["skill"]["aimani"]) return rpgobj.skill.aimani;	//	スキルセット済み
-			foreach( c in rpgobj["conds"]){
-				if( c.data["ani"]) return c.data.ani;
-			}
-			if( rpgobj.isPinch()) return #{id="sick"};
-		}
-		return t0 || #{id="stand"};	//	そのまま
 	}
 	
 	//	

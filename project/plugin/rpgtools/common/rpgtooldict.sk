@@ -1463,6 +1463,9 @@
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	UI
 
+	//	RPGViews
+	"lbl_synccondani"					: {"ja":"アニメを状態に同期", "en":"Sync Condition Anime"}
+
 	//	main menu => DictProps
 	//	info 
 	"ui_info_top"						: {"ja":"上部情報表示", "en":"Show Top Information"}

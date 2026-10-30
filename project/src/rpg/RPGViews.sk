@@ -27,14 +27,16 @@ local r2_0 = Rect2D(), r2_1 = Rect2D(), r3_1 = Rect3D();
 //	
 class CharaPreview extends SK3DView
 {
+	static synccondaniprop = { pid=6671, lbl="$T.lbl_synccondani", type=BOOL, };
+
 	icontype = "chrprev";
 	rp3d = null;			//	RPG3DObject
+	synccondani = true;		//	"stand"アニメの状態同期フラグ。trueの場合、キャラの状態によってアニメを変化。
 
 	rsetid = "pbr_draft";
 	
 	constructor( s = null, r = null){
 		super( s, r);
-		// renderer.bgpass.enabled = false;
 		setParam( CAMERADATA, SK3DCameraData());
 		//	ツール時は分かりやすいようにデフォルトキャラ表示を行う。
 		if( ::["SKStudio"]){
@@ -47,6 +49,7 @@ class CharaPreview extends SK3DView
 	function setModelData( data){
 		if( rp3d) scn.removeObject( rp3d);
 		rp3d = RPG3DObject.create3DObject( data);
+		rp3d.synccondani = synccondani;
 		rp3d.setDir( Math.PI);
 		scn.addObject( rp3d);
 		if( data["ani"]) rp3d.anime2( data.ani);
@@ -87,6 +90,37 @@ class CharaPreview extends SK3DView
 		// 	snd( hitsnd);
 		// }
 		rp3d.effect( act["hitefx"]);
+	}
+
+	function getProperties(){
+		return #[
+		( SKVP[VISIBLE]),
+		( SKVP[SIZE_STATIC]),
+		( SKVP[PIVOT]),
+		( SKVP[POSITION]),
+		( SKVP[SCALE]),
+		( SKVP[STRETCHALIGN]),
+		( SKVP[CLEARBG]),
+		( SKVP[BGCOLOR]),
+		( SKVP[CAMERADATA]),
+		( SKVP[ENABLED]),
+		synccondaniprop,
+		];
+	}
+
+	function getParam( pid){
+		switch( pid){
+		case 6671 : return synccondani;
+		}
+		return super.getParam( pid);
+	}
+	
+	function setParam( pid, p0, p1=null, w=0.0){
+		switch( pid){
+		case 6671 : synccondani = p0; if( rp3d) rp3d.synccondani = synccondani; break;
+		default:
+			super.setParam( pid, p0, p1, w);
+		}
 	}
 }
 
