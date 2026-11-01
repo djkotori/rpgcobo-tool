@@ -199,6 +199,18 @@ class ResourcePreviewList
 			e.consume();
 		}
 	}
+
+	function getViewAt( x, y){
+		local rowlen = length( listview.rows);
+		local v = Vector3D();
+		for( local l = 0;l < rowlen*collen;l ++){
+			local c = listview.rows[l/collen].findChild( "c"..(l%collen));
+			v( x, y, 0).transform( c.getInvMatrix());
+			if( v.x>=0 && v.y>=0 && v.x<c.bnd.w && v.y<c.bnd.h){
+				return c;
+			}
+		}
+	}
 }
 
 //	DBEditorやEventEditor系でリソースの表示を行うための
@@ -291,6 +303,14 @@ class ResourcePreviewCanvas
 				sk3d = RPG3DObject();
 				sk3d.setSource( pmt);
 				sk3d.setDir( Math.PI);
+				sk3d.pos( 0, -val["colsize"][1]*0.5, 0);
+				//	pivotとしてTransformを指定
+				local tr = Transform();
+				local hpb = val["hpb"];
+				local _p = Vector3D( val["pos"]), _r = Quaternion.fromHPB( hpb[0]*Math.DTOR, hpb[1]*Math.DTOR, hpb[2]*Math.DTOR);
+				tr.setSRT( _p, Vector3D( val["scale"]||1.0), _r);
+				sk3d.setPivot( tr);
+				//
 				local r = sk3d.gbnd;
 				local sc = 1.0/Math.sqrt( r.r*r.r+r.s*r.s+r.t*r.t);
 				sk3d.scale( sc);

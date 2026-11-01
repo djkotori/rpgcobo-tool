@@ -206,3 +206,105 @@ class PropertyEditPopup_OK extends PropertyEditPopup
 		}
 	}
 }
+
+
+
+
+class PropertyEditDialog extends UndoableDialog
+{
+	static POPUPUIPATH = "/skstudio/ui/dialog/proppopup.ui";
+	poplayout = 1;
+	minheight = 80.0;
+	
+	proplist = null;			//	PropertyListBehavior
+	
+	propdef = null;				//	
+	data = null;				//	
+
+	menus = null;				//	menu
+
+	//	指定したプロパティ設定でデータ選択ダイアログ開始する。
+	//	
+	static function run( cv, propdef, data, ref=null){
+		local p = this( ::loadSKView( POPUPUIPATH), propdef, data, ref||getcaller( 1));
+		cv = cv || ::getMousePos( 0);
+		p.show( null, cv);
+		return p.ret ? p.data : null;
+	}
+	
+	constructor( v, p, d, ref){
+		super( v);
+		propdef = p;
+		data = deepclone( d);
+		proplist = PropertyListBehavior( view.findChild( "proplist"), null, p["cnt"]||"cntv.ui");
+		proplist.listview.addEventListener( ACTION_EVENT, propevent);
+		proplist.ref = ref;
+		proplist.immediate = true;	//	テキストを即時入力
+		if( p["tipskey"]) proplist.tipskey = p.tipskey;
+		view.setValue( "title", propdef.name);
+		setupProperties();
+		local mv = view.findChild( "menubtn");
+		if( mv){
+			menus = fget( p, "menu", p);
+			if( !menus){
+				mv.setVisible( false);
+			}
+		}
+	}
+
+	function setupProperties(){
+		local props = fget( propdef, "props", propdef, data);
+		proplist.bindProperties( props);
+		setDefaultProperties( props, data);
+		proplist.setParameters( data);
+	}
+
+	function refresh(){
+	}
+
+	function actionevent( e){
+		switch( e.src["name"]){
+		case "menubtn":
+			local d = propdef.menufunc( e.actioncmd, deepclone( data));
+			if( d && d <> data){
+				data = d;
+				local props = fget( propdef, "props", propdef, data);
+				proplist.bindProperties( props);
+				proplist.setParameters( d);
+				updateViewSize();
+			}
+			break;
+		}
+		return super.actionevent( e);
+	}
+
+	function cancelEnabled(){	//	ESCXキーでキャンセル可能
+		return true;
+	}
+
+	function propevent( e){
+		e.consume();
+		local cmd = e.actioncmd;
+		if( cmd.cmd == "prop"){
+			setParamOp( cmd.prop, cmd.val);
+		}
+	}
+
+	function setParamOp( prop, val){
+		local self = this;
+		local data = this.data, oldval = ::getProperty( prop, data);
+		local makefn = @( v, d) @(){
+			::setProperty( prop, data, v);
+			if( d){ Table.clear( data) ... d; }
+			if( self.propdef["setprop"]) self.propdef.setprop( prop, data, v, self);
+			if( prop["refresh"]){
+				self.setupProperties();
+			}else{
+				self.proplist.setParam( prop.pid, v);
+			}
+		}
+		local redo = [makefn( val, null)];
+		local undo = [makefn( oldval, prop["refresh"] && deepclone( data))];
+		submitOp( redo, undo, null);	//	trk無し
+	}
+}

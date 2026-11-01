@@ -1044,35 +1044,14 @@ class MapTools.tool_sel extends MapTool
 	}
 }
 
-class NewAssetDialog extends Dialog
+class NewAssetDialog extends PropertyEditDialog
 {
-	assetid = null;			//	選択assetid
-	idmenu = null;
-	nameedit = null;
-	groupmenu = null;		//	建物、建物パーツ、地形パーツ、その他
-
 	bw = null;
 	canvas = null;			//	CanvasBehavior : プレビューを表示
 
-	constructor( v, aid, bw){
-		super( v);
-		assetid = aid;
-		this.bw = bw;
-		local idmenudata = [];
-		for( local l = 0;l < 10;l ++){
-			idmenudata .. { lbl=("MA%d00"%l), submenu=idsubmenu( l), }
-		}
-		idmenu = MenuBehavior( view.findChild( "idmenu"), idmenudata);
-		idmenu.selectItem({
-			lbl=aid, aid=aid, rlbl=null
-		});
-		nameedit = view.findChild( "nameedit");
-		nameedit.setText( "$T.lbl_asset %S" % aid);
-		
-		groupmenu = MenuBehavior( view.findChild( "groupmenu"), ::conf._resource.map_asset._meta.groups.map( @( v)({
-			lbl=v.name, icon=v.icon, id=v.id
-		})));
-		
+	constructor( v, p, d, ref){
+		super( v, p, d, ref);
+		this.bw = ref;
 		canvas = CanvasBehavior( view.findChild( "3DVIEW"), null);
 		canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
 		local bw3d = SK3DBlockWorld( bw);
@@ -1083,6 +1062,14 @@ class NewAssetDialog extends Dialog
 		canvas.scn.addObject( bw3d);
 	}
 
+	static function idmenu(){
+		local idmenudata = [];
+		for( local l = 0;l < 10;l ++){
+			idmenudata .. { lbl=("MA%d00"%l), submenu=idsubmenu( l), }
+		}
+		return idmenudata;
+	}
+
 	static function idsubmenu( i){
 		return @(){
 			local a = [];
@@ -1090,22 +1077,11 @@ class NewAssetDialog extends Dialog
 				local aid = "MA%03d" % (i*100+l);
 				local map = ::conf._resource.map_asset[aid];
 				a .. {
-					lbl=aid, aid=aid, rlbl=map["name"], disable=!!map
+					lbl=aid, val=aid, rlbl=map["name"], disable=!!map
 				}
 			}
 			return a;
 		}
-	}
-
-	function actionevent( e){
-		switch( e.src["name"]){
-		case "idmenu":
-			local aid = e.actioncmd.aid;
-			assetid = aid;
-			nameedit.setText( "$T.lbl_asset %S" % aid);
-			break;
-		}
-		super.actionevent( e);
 	}
 
 	static function run( bw){
@@ -1115,12 +1091,21 @@ class NewAssetDialog extends Dialog
 			aid = "MA%03d" % l;
 			if( !::conf._resource.map_asset[aid]){ break; }
 		}
+		local glist = ::conf._resource.map_asset._meta.groups.map( @( v)({ lbl=v.name, icon=v.icon, val=v.id }));
+		local propdef = {
+			name = "$T.lbl_tomapasset",
+			props = [
+				{ pid="aid", lbl="$T.side_res_map_asset ID", type=LIST, list=idmenu(), },
+				{ pid="name", lbl="$T.lbl_name", type=STRING, },
+				{ pid="group", lbl="$T.lbl_group", type=LIST, list=glist, },
+			]
+		};
+		local d = { aid=aid, name="MapAsset", group=glist[0]["val"] };
 		//
-		local dlg = this( srcdir.."/ui/newassetdialog.ui", aid, bw);
+		local dlg = this( srcdir.."/ui/newassetdialog.ui", propdef, d, bw);
 		dlg.show();
 		if( dlg.ret){
-			local aid = dlg.idmenu.selitem.aid;
-			return { aid=aid, name={ [::conf.setting.projlang]=dlg.nameedit.getText(), }, group=dlg.groupmenu.selitem.id };
+			return { ...dlg.data, name={ [::conf.setting.projlang]=dlg.data.name } };
 		}
 	}
 }

@@ -159,7 +159,7 @@ class GLTFLoader
 			if( emimg) texmap |= (5);	//	A = mparam[1](PID5)
 			local t3 = skGetTime();
 			local q = (img.width>=1024) ? 92 : 100;	//	非可逆圧縮でいいかな。。？ これが重い。。。
-			local imgdata = img.encodeWebp( q);
+			local imgdata = img.encodeWebpAsync( q).suspendget();
 			imgdata.pos = 0;
 			local ts = TextureSource();
 			local imginfo = g.getImage( tex0.index);
@@ -410,7 +410,7 @@ class GLTFLoader
 		foreach( prim in prims){
 			local fs = PolygonFaceSource();
 			fs.mode = prim.mode;
-			fs.matid = prim.material;
+			fs.matid = Math.max( 0, prim.material);	//	-1入ってる場合は強制的に0に。。
 			fs.idx = buildIndexBuffer( prim.idxtype, prim.idxdata, pms.vtx.len());
 			fs.visiblemask = -1;
 			fs.idxoffs = 0;
@@ -447,6 +447,16 @@ class GLTFLoader
 		//	マテリアル作成。pbrパラメータ画像の合成も行う。合成する場合は画像は埋め込まれる。
 		//	テクスチャはマテリアル生成時に追加される。
 		local mtlnum = g.materialCount();
+		if( !mtlnum){	//	マテリアル設定無いgltfある！
+			local m = MaterialSource();
+			m.name = "Default";
+			m.tec = "pbr.basic";
+			m.visiblemask = DEFAULT_VISIBLEMASK;
+			m.mtype = 0;
+			m.mparam = 0xff000000;
+			m.cullface = SK_CW;
+			pmt.materials .. m;
+		}else
 		for( local l = 0;l < mtlnum;l ++){
 			pmt.materials .. buildMaterial( g, pmt, l);
 		}

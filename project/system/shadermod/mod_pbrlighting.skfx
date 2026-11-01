@@ -58,7 +58,7 @@ fs pbrlighting
 		if( d >= R) return 0.0;
 		float s = d / R;
 		float s2 = pow2( s);
-		const float A = 1.0, F = 1.5;
+		const float A = 1.0, F = 2.5;
 		return A * pow2( 1.0-s2) / (1.0+F*s);
 	}
 

@@ -55,6 +55,8 @@ class ResEditorPolyModel extends ResEditor
 	function init( path){
 		super.init( path);
 		resdirpath = ::resroot.file.path .. "/resource/poly_mdl";
+
+		addEventListener( DROPTARGET_EVENT, dndevent);
 	}
 
 	function isValidData( d){
@@ -155,13 +157,13 @@ class ResEditorPolyModel extends ResEditor
 			local sndpath = skstudio.showFileOpen( { filter=["*.gltf","*.glb","*.vrm"], abspath=true, pathgroup="poly_mdl" });
 			if( sndpath){
 				local f = FileRef( sndpath);
-				showImportGLTF( f);
+				showImportGLTF( f, resid);
 			}
 			break;
 		}
 	}
 	
-	function showImportGLTF( f){
+	function showImportGLTF( f, mdlid){
 		local fn = f.name;
 		fn = fn.substring( 0, fn.lastIndexOf( ".")) .. ".pmt";
 		local pf = FileRef( ::resroot.file.path .. "/resource/poly_mdl/" .. fn);
@@ -170,14 +172,74 @@ class ResEditorPolyModel extends ResEditor
 		//	gltf => pmt 変換
 		local pmt = null;
 		try{
-			local loader = GLTFLoader();
-			pmt = loader.loadGLTF( f.load());
-			local bb = ObjectOutput.encode( pmt);
-			::getResource( "/resource/poly_mdl").create( fn, bb);
-			::skstudio.fileview.refreshDir( "/resource/poly_mdl");
+			local ret = PolyImportDialog.run( f, mdlid);
+			if( ret){
+				pmt = ret.pmt;
+				local bb = ObjectOutput.encode( pmt);
+				local fn = ret.name .. ".pmt";
+				local dir = ::getResource( "/resource/poly_mdl");
+				local r0 = dir.getResource( fn);
+				if( r0){
+					if( !Dialogs.confirm( {msg=tmpl( T.tmpl_import_override, {v=fn})})){
+						return;
+					}
+				}
+				local r = dir.create( fn, bb);
+				::skstudio.fileview.refreshDir( "/resource/poly_mdl");
+				if( ret["setitem"]) setPmtParamOp( r.path);
+			}
+
 		}catch( ex){
 			printexception( ex);
 			::rootview.postErrorEvent( {type="MessagePreview", error=ex, msg = "$T.error_import_mdl: " .. ex.message});
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////
+	//	dnd
+
+	function acceptDrag( e){
+		return false;
+	}
+	
+	function isDropable( f){
+		if( !f) return false;
+		local n = f.name; n = n.substring( n.lastIndexOf( ".")+1).toLowerCase();
+		return (#["gltf","glb","vrm",]).contains( n);
+	}
+
+	function acceptDrop( ds, x, y){
+		if( ds instanceof FileDragSource){
+			local a = ds.filelist;
+			foreach( f in a){
+				if( isDropable( f)) return true;
+			}
+		}
+		return false;
+	}
+
+	dropto = null;
+
+	function dndevent( e){
+		switch( e.id){
+		case TARGET_DRAG_ENTER:
+		case TARGET_DRAG_OVER:
+			local d = previewlist.getViewAt( e.x, e.y);
+			if( d != dropto){
+				// dropto?.setSelected( false);
+				// d?.setSelected( true);
+				dropto = d;
+			}
+			break;
+		case TARGET_DRAG_EXIT:
+			break;
+		case TARGET_DROP:
+			skMoveScreen( { flags=MoveScreenFlags.MOVESCREEN_FRONT });	//	ドロップ時にはウィンドウは奥にあるので手前に移動
+			// dropto?.setSelected( false);
+			local f = e.dragsrc["filelist"][0];
+			if( !isDropable( f)) break;
+			if( f) showImportGLTF( f, dropto["ref"][2]["mdlid"]);
+			break;
 		}
 	}
 }
@@ -186,26 +248,59 @@ class ResEditorPolyModel extends ResEditor
 //	※インポートオプションは今のところなし。名前だけ入力欄あり
 //	ダイアログ表示時点ですでにgltf->pmtへの変換が行われている。テクスチャは全て埋め込み。
 //	
-class ResEditorPolyModel.PolyImportDialog extends UndoableDialog
+class ResEditorPolyModel.PolyImportDialog extends PropertyEditDialog
 {
-	static props = [
-		{ pid="name", lbl="$T.lbl_filename", type=STRING, }
-	];
+	canvas = null;			//	CanvasBehavior : プレビューを表示
+	infile = null;			//	FileRef : gltf/glb
 
-	DIALOGUIPATH = srcdir .. "/ui/import3ddialog.ui"
-
-	preview = null;			//	CanvasBehavior
-	proplist = null;		//	PropertyListBehavior
-
-	infile = null;			//	FileRef
 	pmt = null;				//	コンバート後のpmt。
-	
 	data = null;			//	結果。Resourceとかpmtとかが入ってる
 
-	static function run( d){
-		local p = this( DIALOGUIPATH, d);
-		p.show( null);
-		return p.ret ? p.data : null;
+	function shown(){
+		local btn = view.findChild( "btn_ok");
+		btn.setEnabled( false);
+		
+		canvas = CanvasBehavior( view.findChild( "3DVIEW"), null);
+		canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
+		//
+		newthread().start( @(){
+			suspend();
+			local f = proplist.ref;
+			local loader = GLTFLoader();
+			pmt = loader.loadGLTF( f.load());
+			
+			local sk3d = SK3DObject();
+			sk3d.setSource( pmt);
+			sk3d.matdirty = true;
+			sk3d.updateMatrix( true);
+			canvas.scn.addObject( sk3d);
+			canvas.view.repaint();
+
+			btn.setEnabled( true);
+		}, this);
+	}
+
+	static function run( infile, mdlid){
+		local aid;
+		for( local l = 0;l < 1000;l ++){
+			aid = "MA%03d" % l;
+			if( !::conf._resource.map_asset[aid]){ break; }
+		}
+		local glist = ::conf._resource.map_asset._meta.groups.map( @( v)({ lbl=v.name, icon=v.icon, val=v.id }));
+		local propdef = {
+			name = "$T.lbl_import_3d",
+			props = [
+				{ pid="name", lbl="$T.lbl_name", type=STRING, },
+				... (mdlid && [{ pid="setitem", lbl=tmpl( T.tmpl_setto_v, {v=mdlid}), type=BOOL}]),
+			]
+		};
+		local d = { name=infile.name.split( ".")[0], setitem=!!mdlid};
+		//
+		local dlg = this( "/plugin/rpgtools/mapeditor/ui/newassetdialog.ui", propdef, d, infile);
+		dlg.show();
+		if( dlg.ret){
+			return { ...dlg.data, pmt=dlg.pmt };
+		}
 	}
 }
 
@@ -291,7 +386,7 @@ class ResEditorPolyModel.ResPreview
 		switch( e.src["name"]){
 		case "playbtn":
 			local v = animenu.selitem.val;
-			if( sk3d) sk3d.tanime( v);
+			if( sk3d && v) sk3d.tanime( v);
 			break;
 		case "stopbtn":
 			if( sk3d) sk3d.tanime( { st=0});
@@ -300,7 +395,7 @@ class ResEditorPolyModel.ResPreview
 			if( sk3d) skcol?.setVisible( pntchk.isSelected());
 		case "animenu":
 			local v = animenu.selitem.val;
-			if( sk3d) sk3d.tanime( v);
+			if( sk3d && v) sk3d.tanime( v);
 			break;
 		case "rbtn":
 		case "lbtn":
@@ -308,7 +403,7 @@ class ResEditorPolyModel.ResPreview
 			i = Math.clamp( i+(e.src.name=="rbtn"?1:-1), 0, length( animenu.menuitems)-1);
 			local v = animenu.menuitems[i];
 			animenu.selectItem( v);
-			if( sk3d) sk3d.tanime( v.val);
+			if( sk3d && v.val) sk3d.tanime( v.val);
 			break;
 		case "envmenu":
 			local rsetid = e.actioncmd["id"];

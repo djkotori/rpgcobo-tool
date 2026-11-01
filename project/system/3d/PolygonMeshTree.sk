@@ -177,7 +177,7 @@ class PolygonMeshTree extends Serializable
 	<ser_o> animelist = null;		//	[{id,mot,st,en,spd,loop,replay}]: アニメ名と再生情報のリスト
 	<ser_o> rbdataset = null;		//	table<partsname=RigidBodyData>
 	<ser_o> metainfo = null;		//	メタ情報。インポート時の設定など。
-	<ser_o> reserved2 = null;
+	<ser_o> shapestatlist = null;	//	[{id,}]: Shapeの状態リスト
 	<ser_o> reserved3 = null;
 	<ser_o> reserved4 = null;
 	
@@ -194,18 +194,17 @@ class PolygonMeshTree extends Serializable
 
 	function getBounds(){
 		local bnd = Rect3D( 0, 0, 0, -1000, -1000, -1000);
-		local m = Matrix();
-		foreach( n in nodes){
-			if( n.meshid >= 0){
-				local pms = _meshlist[n.meshid];
-				if( pms){
-					local a = [n.tf];
-					while( n.parentid >= 0){
-						n = nodes[n.parentid]; a[0] <- n.tf;
-					}
-					local r = Rect3D( pms.bnd).transform( m.integrate( a));
-					bnd.expand( r);
-				}
+		ensureCache();
+		local matmap = {};
+		foreach( n in _sortednodes){	//	※ボーンの子だとアニメーションでpm.pivotが変形する。。。
+			local m = n.tf.toMatrix();
+			local mm = matmap[n.parentid];
+			if( mm) mm.mult34( m, m);
+			matmap[n.id] <- m;
+			local pms = _meshlist[n.meshid];
+			if( pms){
+				local r = Rect3D( pms.bnd).transform( m);
+				bnd.expand( r);
 			}
 		}
 		return bnd;
@@ -214,8 +213,14 @@ class PolygonMeshTree extends Serializable
 	function getMotionIDList(){
 		local motmap = {};
 		local a = [];
-		foreach( m in meshes){
-			foreach( i, v in { ...m.motionmap, ...m.shapelinemap }){
+		foreach( i, m in motionmap){
+			if( !motmap[i]){
+				motmap[i] <- true;
+				a .. i;
+			}
+		}
+		foreach( pms in meshes){
+			foreach( i, v in { ...pms.shapelinemap }){
 				if( !motmap[i]){
 					motmap[i] <- true;
 					a .. i;
@@ -283,26 +288,19 @@ class PolygonMeshTreeInstance
 		pmt.ensureCache();
 		mtls = pmt._mtllist.map( @( v) clone v);	//	マテリアルを全てclone
 		pms = [];
-		foreach( n in pmt.nodes){
+		local matmap = {};
+		foreach( n in pmt._sortednodes){	//	※ボーンの子だとアニメーションでpm.pivotが変形する。。。
 			local pm = pmt._meshlist[n.meshid];
+			local m = n.tf.toMatrix();
+			local mm = matmap[n.parentid];
+			if( mm) mm.mult34( m, m);
+			matmap[n.id] <- m;
 			if( pm){
 				pm = pmt.meshes[n.meshid].cloneSharedMtl( pm, mtls);
-				pm.pivot = getNodePose( n.id, Matrix());
+				pm.pivot = m;
 				pms .. pm;
 			}
 		}
-	}
-
-	function getNodePose( nid, mat){
-		local a = [];
-		do{
-			local n = pmt.nodes[nid];
-			local b = bonemap[n.name];
-			if( b) a[0] <- b.mat;
-			else a[0] <- n.tf;
-			nid = n.parentid;
-		}while( nid >= 0);
-		return mat.integrate( a);
 	}
 
 	function updateMotion( sk3d, dt){
@@ -316,6 +314,7 @@ class PolygonMeshTreeInstance
 	function render( visiblemask=-1){
 		local m = #Matrix(), a = #[];
 		foreach( pm in pms){
+			// skPushMatrix( SK_MATRIX_WORLD); skMultMatrix( SK_MATRIX_WORLD, pm.pivot);
 			//	ボーン変形前のローカル変換を設定
 			skSetMatrix( SK_MATRIX_LOCAL, pm.pivot);
 			if( pm.shapetarget && pm.shapetarget.hash != pm.shapesource.hash){
@@ -323,6 +322,7 @@ class PolygonMeshTreeInstance
 				pm.shapesource << pm.shapetarget;
 			}
 			skDrawPolygonMesh( pm.vtx, pm.bones, pm.face, visiblemask);
+			// skPopMatrix( SK_MATRIX_WORLD);
 		}
 		skBindBonePoses( null);
 		skInitMatrix( SK_MATRIX_LOCAL);

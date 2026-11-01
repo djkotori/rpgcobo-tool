@@ -70,16 +70,29 @@ class PMAnimePanel
 	
 	//	アニメはpmt単位
 	function setPolygonMeshTree( pmt){
-		animelist.setListItems( pmt.animelist);
-		if( pmt.animelist[0]){
-			animelist.setSelectedItem( pmt.animelist[0]);
-			selectAnime( pmt.animelist[0]);
-		}
+		if( !pmt.animelist) pmt.animelist = [];	//	vrmなんかは無いやつもある。。。
+		refreshList();
 	}
 
-	function selectAnime( ani){
+	function refreshList(){
+		local i = animelist.curidx;
+		animelist.setListItems( editor.pmt.animelist);
+		i = Math.clamp( i, 0, length( editor.pmt.animelist) - 1);
+		animelist.setSelectedIndex( i);
+		selectAnime( editor.pmt.animelist[i]);
+	}
+
+	function selectAnime( ani, selectlist=false){
 		selani = ani;
-		assignProperties();
+		if( selectlist){
+			animelist.setSelectedItem( ani);
+		}
+		if( !ani){
+			proplist.listview.setVisible( false);
+		}else{
+			proplist.listview.setVisible( true);
+			assignProperties();
+		}
 	}
 
 	function assignProperties(){
@@ -96,8 +109,8 @@ class PMAnimePanel
 		if( cmd.cmd=="prop"){
 			local refresh = prop["refresh"]|0, data = selani;
 			local oldval = ::getProperty( prop, data), self = this;
-			local redo = [@(){ ::setProperty( prop, data, cmd.val); self.refresh(); }];
-			local undo = [@(){ ::setProperty( prop, data, oldval); self.refresh(); }];
+			local redo = [@(){ ::setProperty( prop, data, cmd.val); self.proplist.setParam( pid, cmd.val); self.animelist.refreshItems(); }];
+			local undo = [@(){ ::setProperty( prop, data, oldval); self.proplist.setParam( pid, oldval);self.animelist.refreshItems(); }];
 			editor.submitOp( redo, undo);
 		}
 	}
@@ -114,61 +127,162 @@ class PMAnimePanel
 		case ITEM_SORT:
 		{
 			local oldli = clone animelist.items, newli = ::applyItemSort( clone oldli, e), self = this;
-			local redo = [@(){ self.animelist.items.clear() ...newli; self.refresh();}];
+			local redo = [@(){ self.animelist.items.clear() ...newli; self.refresh(); }];
 			local undo = [@(){ self.animelist.items.clear() ...oldli; self.refresh(); }];
 			editor.submitOp( redo, undo);
 			break;
 		}
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
-				
-				
+				if( cmd){
+					animelist.setSelectedItem( cmd);
+					selectAnime( cmd);
+				}
+				showMenu( e, cmd);
 			}else{
 				editor.canvas.sk3d.tanime( selani);
 			}
 			break;
 		}
 	}
+
+	//	右クリックメニューを表示。タブ右のメニューボタンからもここが呼ばれる
+	function showMenu( e, item){
+		local cbdata = getClipboard( "pmtanime");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local pmt = editor.pmt;
+		local menudata = [
+			{ id="add", lbl="$T.lbl_add", icon="\ue146", },
+			"-",
+			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d", disable=!item },
+			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!cbdata },
+			"-",
+			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", disable=!item||length( animelist.items)<=1},
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "add":
+		{
+			local mot = pmt.getMotionIDList()[0] || null, id0 = "Anime";
+			local ani = { id=id0, mot=mot, st=0, en=10, spd=1000.0/30.0, loop=false, replay=true };
+			for( local l = 1;;l ++){
+				ani.id = `${id0}-${l}`;
+				if( !pmt.animelist.find( @( v) v.id == ani.id)) break;
+			}
+			addAnime( ani);
+			break;
+		}
+		case "copy":
+			putClipboard( "pmtanime", item);
+			break;
+		case "paste":
+		{
+			local ani = cbdata, id0 = ani.id.split("-")[0];
+			for( local l = 1;;l ++){
+				ani.id = `${id0}-${l}`;
+				if( !pmt.animelist.find( @( v) v.id == ani.id)) break;
+			}
+			addAnime( ani);
+			break;
+		}
+		case "delete":
+		{
+			local idx = pmt.animelist.indexOf( item);
+			local self = this;
+			local redo = [@(){ pmt.animelist.removeValue( item); self.refreshList(); }];
+			local undo = [@(){ pmt.animelist[idx] <- item; self.refreshList(); self.selectAnime( item, true); }];
+			editor.submitOp( redo, undo);
+			break;
+		}
+		}
+	}
+
+	function addAnime( ani){
+		local pmt = editor.pmt;
+		local self = this;
+		local redo = [@(){ pmt.animelist..ani; self.refreshList(); self.selectAnime( ani, true); }];
+		local undo = [@(){ pmt.animelist.pop(); self.refreshList(); }];
+		editor.submitOp( redo, undo);
+	}
 }
 
-
-
-//	保存とかできないでもいいよね。。。？？？
 //	
 class PMShapePanel
 {
 	editor = null;
 	view = null;
 
-	keymenu = null;			//	MenuBehavior
+	shapestatlist = null;		//	Shapeの状態リスト
 	proplist = null;		//	GPUIListView
-
-	wmap = null;			//	{ keyname, weight }
-
+	
+	selss = null;			//	{ id, keyname: weight }
 	
 	constructor( v, e){
 		view = v;
 		editor = e;
 		v.addEventListener( ACTION_EVENT, actionevent);
+		shapestatlist = ListBehavior( v.findChild( "partstree"));
+		shapestatlist.dndfunc = 3;
+		shapestatlist.listview.addEventListener( ITEM_EVENT, listevent);
+		shapestatlist.listview.addEventListener( ACTION_EVENT, listevent);
+		shapestatlist.setviewfunc = @( la, v, i){
+			defaultsetview( la, v, i);
+			v.findChild( "expand").setVisible( false);
+			v.findChild( "type").setVisible( false);
+			v.setValue( "lbl", i["id"]);
+			v.pickable = false;
+		}
 		proplist = PropertyListBehavior( v.findChild( "proplist"));
 		proplist.listview.addEventListener( ACTION_EVENT, propevent);
 		proplist.listview.addEventListener( ITEM_EVENT, propevent);
 		proplist.ref = e;
-		keymenu = MenuBehavior( v.findChild( "mtlmenu"));
+	}
+
+	function _newss( pmt, id0="Default"){
+		local ss = { id=id0};
+		foreach( i,pms in pmt.meshes){
+			if( pms["shapekeys"]){
+				foreach( k, v in pms["shapekeys"]["keymap"]) ss[`${i}.$k`] <- 0.0;
+			}
+		}
+		for( local l = 1;;l ++){
+			if( !pmt.shapestatlist.find( @( v) v.id == ss.id)) break;
+			ss.id = `${id0}-${l}`;
+		}
+		return ss;
 	}
 	
 	function setPolygonMeshTree( pmt){
-		wmap = {};
-		foreach( i,pms in pmt.meshes){
-			if( pms["shapekeys"]){
-				foreach( k, v in pms["shapekeys"]["keymap"]) wmap[`${i}.$k`] <- 0.0;
-			}
+		//	list
+		if( !length( pmt.shapestatlist)){
+			pmt.shapestatlist = [];
+			pmt.shapestatlist .. _newss( pmt);
+		}
+		refreshList();
+	}
+
+	function refreshList(){
+		local i = shapestatlist.curidx;
+		shapestatlist.setListItems( editor.pmt.shapestatlist);
+		i = Math.clamp( i, 0, length( editor.pmt.shapestatlist) - 1);
+		shapestatlist.setSelectedIndex( i);
+		selectShapeStat( editor.pmt.shapestatlist[i]);
+	}
+
+	function selectShapeStat( ss, selectlist=false){
+		selss = ss;
+		if( selectlist){
+			shapestatlist.setSelectedItem( ss);
 		}
 		refresh();
+		foreach( i, pm in editor.canvas.sk3d.meshtree.pms){
+			if( !pm.shapetarget) continue;
+			local wmap = getweights( ss, string( i));
+			pm.shapetarget.assign( wmap);
+		}
 	}
 
 	function refresh(){
-		local props = [];
+		local props = [{ pid="id", lbl="ID", type=STRING },];
 		foreach( i,pms in editor.pmt.meshes){
 			if( !pms["shapekeys"]) continue;
 			props .. { pid = "H", lbl = pms.name, type = HEADER };
@@ -182,28 +296,131 @@ class PMShapePanel
 			});
 		}
 		proplist.bindProperties( props);
-		proplist.setParameters( wmap);
+		proplist.setParameters( selss);
 	}
 
 	function actionevent( e){
 	}
 
-	function getweights( mi){
+	function getweights( ss, mi){
 		mi = mi .. ".";
 		local m = {};
-		foreach( k,v in wmap){
+		foreach( k,v in ss){
+			if( k == "id") continue;
 			if( k.startsWith( mi)) m[k.substring( length( mi))] <- v;
 		}
 		return m;
 	}
 
+	function updateshape( pid){
+		if( pid != "id"){
+			local a = pid.split(".");
+			local pm = editor.canvas.sk3d.meshtree.pms[int(a[0])];
+			pm.shapetarget.assign( getweights( selss, a[0]));
+		}
+	}
+
 	function propevent( e){
 		local cmd = e.actioncmd;
 		if( cmd["cmd"] != "prop") return;
-		local prop = cmd.prop, pid = prop.pid;
-		wmap[pid] <- cmd.val;
-		local a = pid.split(".");
-		local pm = editor.canvas.sk3d.meshtree.pms[int(a[0])];
-		pm.shapetarget.assign( getweights( a[0]));
+		local self = this, data = selss;
+		local prop = cmd.prop, pid = prop.pid, oldval = selss[pid]??0.0;
+		local redo = [@(){
+			::setProperty( prop, data, cmd.val);
+			if( data == self.selss){
+				self.proplist.setParam( pid, cmd.val);
+				self.updateshape( pid, data);
+			}
+			self.shapestatlist.refreshItems();
+		}];
+		local undo = [@(){
+			::setProperty( prop, data, oldval);
+			if( data == self.selss){
+				self.proplist.setParam( pid, oldval);
+				self.updateshape( pid, data);
+			}
+			self.shapestatlist.refreshItems();
+		}];
+		editor.submitOp( redo, undo, pid);
 	}
+
+	function listevent( e){
+		e.consume();
+		local cmd = e.actioncmd;
+		switch( e.id){
+		case ITEM_SELECTED:
+			if( cmd){
+				selectShapeStat( cmd);
+			}
+			break;
+		case ITEM_SORT:
+		{
+			local oldli = clone shapestatlist.items, newli = ::applyItemSort( clone oldli, e), self = this;
+			local redo = [@(){ self.shapestatlist.items.clear() ...newli; self.refresh();}];
+			local undo = [@(){ self.shapestatlist.items.clear() ...oldli; self.refresh(); }];
+			editor.submitOp( redo, undo);
+			break;
+		}
+		case ACTION_PERFORMED:
+			if( e.isMouseDown( BUTTON2_MASK)){
+				if( cmd){
+					shapestatlist.setSelectedItem( cmd);
+					selectShapeStat( cmd);
+				}
+				showMenu( e, cmd);
+			}else{
+			}
+			break;
+		}
+	}
+
+	//	右クリックメニューを表示。タブ右のメニューボタンからもここが呼ばれる
+	function showMenu( e, item){
+		local cbdata = getClipboard( "shapestat");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local menudata = [
+			{ id="add", lbl="$T.lbl_add", icon="\ue146", },
+			"-",
+			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d", disable=!item },
+			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!cbdata },
+			"-",
+			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", disable=!item||length( shapestatlist.items)<=1},
+		]
+		local ret = MenuPopup.run( menudata);
+		switch( ret["id"]){
+		case "add":
+			addShapeStat( _newss( editor.pmt, "ShapeState"));
+			break;
+		case "copy":
+			putClipboard( "shapestat", item);
+			break;
+		case "paste":
+		{
+			local ss = cbdata, pmt = editor.pmt, id0 = ss.id.split("-")[0];
+			for( local l = 1;;l ++){
+				ss.id = `${id0}-${l}`;
+				if( !pmt.shapestatlist.find( @( v) v.id == ss.id)) break;
+			}
+			addShapeStat( ss);
+			break;
+		}
+		case "delete":
+		{
+			local pmt = editor.pmt, idx = pmt.shapestatlist.indexOf( item);
+			local self = this;
+			local redo = [@(){ pmt.shapestatlist.removeValue( item); self.refreshList(); }];
+			local undo = [@(){ pmt.shapestatlist[idx] <- item; self.refreshList(); self.selectShapeStat( item, true); }];
+			editor.submitOp( redo, undo);
+			break;
+		}
+		}
+	}
+
+	function addShapeStat( ss){
+		local pmt = editor.pmt;
+		local self = this;
+		local redo = [@(){ pmt.shapestatlist..ss; self.refreshList(); self.selectShapeStat( ss, true); }];
+		local undo = [@(){ pmt.shapestatlist.pop(); self.refreshList(); }];
+		editor.submitOp( redo, undo);
+	}
+
 }

@@ -1155,6 +1155,7 @@
 	"pop_vox_copied"					: {"ja":"ボクセルファイルが複製されました。", "en":"The voxel file has been copied."}
 	"pop_mot_copied"					: {"ja":"モーションファイルが複製されました。", "en":"The motion files have been copied."}
 	"error_import_mdl"					: {"ja":"モデルのインポート中にエラーが発生しました", "en":"An error occurred while importing the model."}
+	"tmpl_import_override"				: {"ja":"$v は既に存在します。\n上書きしますか？", "en":"$v already exists.\nDo you want to overwrite it?"}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	マップサイドビュー
@@ -1198,7 +1199,7 @@
 	"lbl_placeinimap"					: {"ja":"ここを初期マップ位置に設定", "en":"Set here to the Initial map point"}
 	"lbl_placedoor"						: {"ja":"開くドアに変換", "en":"To Openable Door"}
 	"lbl_placeportaldoor"				: {"ja":"ポータルドアに変換", "en":"To Portal Door"}
-	"lbl_tomapasset"					: {"ja":"アセットに登録","en":"Register to Assets"}
+	"lbl_tomapasset"					: {"ja":"マップアセットに登録","en":"Register to Map Assets"}
 	"lbl_tocustomevent"					: {"ja":"カスタムイベントに変換", "en":"To Custom Event"}
 
 	"lbl_blocks"						: {"ja":"ブロック", "en":"Blocks"}

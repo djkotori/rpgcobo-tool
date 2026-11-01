@@ -1816,6 +1816,8 @@ class RPG3DMapAsset extends RPG3DObject
 	}
 }
 
+
+
 class RPG3DPolyModel extends RPG3DObject
 {
 	polymdl = null;
@@ -1824,6 +1826,7 @@ class RPG3DPolyModel extends RPG3DObject
 	function setPolyModel( x){
 		polymdl = x;
 		setSource( x.pmt);
+		
 		//	pivotとしてTransformを指定
 		local tr = Transform();
 		local hpb = x["hpb"];
@@ -1845,6 +1848,7 @@ class RPG3DPolyModel extends RPG3DObject
 		animemap = pmt._animap;
 
 		colmat = Matrix();
+		updateVisibleMask();
 	}
 
 	function update( dt, pmatdirty=true){
@@ -1854,6 +1858,11 @@ class RPG3DPolyModel extends RPG3DObject
 			colmat.set( iw,0,0,0, 0,iw,0,0, 0,0,iw,0, 0.2*w,w,w,1);
 		}
 		return super.update( dt, pmatdirty);
+	}
+
+	function updateVisibleMask(){
+		visiblemask = SK_VISIBLE_OPAQUE | SK_VISIBLE_SHADOW_CASTER | SK_VISIBLE_SHADOW_RECEIVER;
+		return false;
 	}
 
 	function setSelected( b){

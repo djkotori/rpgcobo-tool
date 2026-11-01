@@ -386,22 +386,22 @@ with SKView
 	//
 	//	Focus & Tab
 	//
-	function rotateFocus() {
+	function rotateFocus( dir=1) {
 		local tg = this["tabgroup"];
 		if( !tg) return null;
 		local c = this;
 		local p = parent;
 		local next = null;
 		while( p){
-			local i = p.children.indexOf( c)+1;
-			if( next = p.getNextTab( i, tg)) break;
+			local i = p.children.indexOf( c)+dir;
+			if( next = p.getNextTab( i, tg, dir)) break;
 			c = p;
 			p = p.parent;
 		}
 		if( !next){
 			local root = getModalRoot();
 			if( !root) root = getRoot();
-			if( root) next = root.getNextTab(-1,tg);
+			if( root) next = root.getNextTab( null, tg, dir);
 		}
 		if( next && next != this){
 			next.requestFocus( "rotateFocus");
@@ -411,16 +411,22 @@ with SKView
 		}
 	}
 
-	function getNextTab( ci, tabg){
-		if( ci < 0){
-			if( this["tabgroup"]==tabg&&isAvailable()) return this;
-			ci = 0;
-		}
+	function getNextTab( ci, tabg, dir){
 		local a = children;
+		if( ci == null){
+			if( this["tabgroup"]==tabg&&isAvailable()) return this;
+			ci = dir > 0?0:length(a)-1;
+		}
 		if( !a) return null;
 		local len = length( a), c;
-		for( local l = ci;l < len;l ++){
-			if( c=(a[l].getNextTab( -1, tabg)) ) return c;
+		if( dir > 0){
+			for( local l = ci;l < len;l ++){
+				if( c=(a[l].getNextTab( null, tabg, dir)) ) return c;
+			}
+		}else{
+			for( local l = ci;l >= 0;l --){
+				if( c=(a[l].getNextTab( null, tabg, dir)) ) return c;
+			}
 		}
 		return null;
 	}

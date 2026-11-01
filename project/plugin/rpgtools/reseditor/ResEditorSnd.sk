@@ -570,6 +570,7 @@ class ResEditorSnd extends EditorViewBase
 		case TARGET_DRAG_EXIT:
 			break;
 		case TARGET_DROP:
+			skMoveScreen( { flags=MoveScreenFlags.MOVESCREEN_FRONT });	//	ドロップ時にはウィンドウは奥にあるので手前に移動
 			local f = e.dragsrc.filelist[0];
 			showImportSound( f);
 			break;

@@ -23,7 +23,7 @@ class TabsBehavior
 			local row = ::loadSKView( TABUIPATH).findChild( "btn");	//	btn取り出しちゃう
 			row.removeFromParent();
 			row.setValue( "lbl", v["lbl"]||v);
-			row.ref = i;
+			row.ref = v["val"]??i;
 			local d = row.computeSizeDelta();
 			if( d.x > 0 || d.y > 0) row.stretchSize( row.bnd.w+d.x, row.bnd.h+d.y);
 			listview.addRow( row);
@@ -37,7 +37,7 @@ class TabsBehavior
 		if( typeof( i) == SS_CLOSURE){
 			i = tabitems.findi( i);
 		}
-		local tab = listview.rows[i];
+		local tab = listview.rows.find( @( v) v.ref == i);
 		seltab?.setSelected( false);
 		tab?.setSelected( true);
 		seltab = tab;

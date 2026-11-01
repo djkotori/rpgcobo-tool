@@ -354,7 +354,7 @@ class SKTextEditBase extends SKView
 		if (!editable) return;
 		switch( e.keycode ){
 		case VK_TAB :
-			rotateFocus();
+			rotateFocus( e.isShiftDown()?-1:1);
 			e.consume();
 			break;
 		case VK_DELETE :
