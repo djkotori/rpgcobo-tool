@@ -608,7 +608,7 @@ local settlementHeight = @( bio, dst){
 	}
 };
 foreach( t in ["village", "town", "castle"]){
-	local props = [ { ...sizeprop, defval=[160,160] } ];
+	local props = [ { ...sizeprop, range=t=="castle" ? (128,1024) : (64,1024), defval=[160,160] } ];
 	if( t == "castle") props .. { pid="mode", lbl="$T.mapgen_castletype", type=LIST, list=[
 		{ lbl="$T.lbl_random", val={} },
 		{ lbl="$T.mapgen_castleconcentric", val={castleMode=0} },
@@ -834,7 +834,7 @@ class MapGenerator
 		args .. "-dir" .. tmpdir .. "-out" .. outid .. "-seed" .. seed;
 		local parameters = clone gendata;
 		if( gendef["settlement"]){
-			settlementWallHeight = Math.iround( getrange( gendata["wallHeight"], 0));
+			settlementWallHeight = getargrange( "wallHeight", gendata["wallHeight"]);
 			parameters["wallHeight"] <- settlementWallHeight;
 		}
 		local numeric = gendef["settlement"] ? constructionAssetParameters() : null;
@@ -935,12 +935,23 @@ class MapGenerator
 			if( v["notarg"]) continue;	//	コマンドライン引数にしないプロパティ
 			switch( typeof( v)){
 			case SS_TABLE: parseopts( v, args, numeric); continue;	//	再帰的にparseoptsする。
-			case SS_ARRAY: f = getrange( v); break;	//	arrayの場合はrangeプロパティとして扱う。min,maxの範囲で乱数を返す。
+			case SS_ARRAY: f = getargrange( i, v); break;
 			default: f = v; break;
 			}
 			if( numeric) numeric[i] <- f;
 			else args.extend( ["-p", "%S=%S" % (i,f)]);
 		}
+	}
+
+	function getargrange( pid, range){
+		local prop = gendef.props.find( @( p) p.pid==pid);
+		if( prop && prop["q"]==1){
+			// Integer controls include both endpoints, even after UI float storage.
+			local lo=Math.iceil(Math.min(range[0],range[1]));
+			local hi=Math.ifloor(Math.max(range[0],range[1]));
+			return rnd( lo, hi+1);
+		}
+		return getrange( range);
 	}
 
 	//	オブジェクトを配置する。配置済みのオブジェクトはobjbmpに記録する。
@@ -1229,10 +1240,10 @@ class MapGenerator
 			if( r.kind=="castle_door") doors.push(placed);else if(r.kind=="castle_detail")details.push(placed);else fixtures.push(placed);
 		}
 		// Check the final world, including objects placed early in this pass.
-		local world=bw.collectFreeBlocks(IRect3D(0,0,0,bw.w,bw.h,bw.d),[]);
 		local expectedObjects=clone fixtures;expectedObjects.extend(doors);expectedObjects.extend(details);
 		foreach( expected in expectedObjects){
 			if( expected.objectType<0) continue;
+			local world=bw.collectFreeBlocks(IRect3D(expected.x,expected.y,expected.z,expected.width,expected.height,expected.depth),[]);
 			local found=false;
 			foreach( actual in world){
 				local b=actual.br;

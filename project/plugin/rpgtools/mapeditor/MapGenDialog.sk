@@ -102,8 +102,14 @@ class MapGenDialog extends UndoableDialog
 		proplist.listview.setEnabled( !value);
 		blocklist.setEnabled( !value);
 		piclist.setEnabled( !value);
-		view.findChild( "btn_apply").setEnabled( !value && !!selpic && !!bw3d);
-		view.findChild( "btn_copy").setEnabled( !value && !!selpic && !!bw3d);
+		view.findChild( "btn_apply").setEnabled( !value && !!bw3d);
+		view.findChild( "btn_copy").setEnabled( !value && !!bw3d);
+	}
+
+	function execMenu( menu){
+		// Keyboard undo/redo reaches this method without an action event.
+		if( busy) return true;
+		return super.execMenu( menu);
 	}
 
 	function close(){
@@ -344,7 +350,8 @@ class MapGenDialog extends UndoableDialog
 		mapgen.seed = seed;
 		mapgen.gendef = gendef;
 		mapgen.gendata = ObjectInput.decode( ObjectOutput.encode( gendata));
-		mapgen.blkmap = clone blkmap;
+		// Block edits apply to previews built after thumbnail generation too.
+		mapgen.blkmap = blkmap;
 		mapgen.tmpdir = dirname;
 		mapgen.generateSourceImage();
 		return { mapgen=mapgen, png=mapgen.src, bw=null, bw3d=null, bwcol=null };
