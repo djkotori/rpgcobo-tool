@@ -53,7 +53,7 @@ check(!controls.btn_apply.enabled&&!controls.btn_copy.enabled,"Empty preview ena
 
 // Keep native generation out of this test while exercising the actual candidate setup.
 local root=getroottable(),originalGenerator=root.MapGenerator;
-root.MapGenerator=@(){return {srcw:0,srcd:0,seed:0,gendef:null,gendata:null,blkmap:null,tmpdir:null,src:null,generateSourceImage=@(){}};};
+root.MapGenerator=@(){return {srcw:0,srcd:0,seed:0,gendef:null,gendata:null,blkmap:null,tmpdir:null,src:null,generateSourceImage=@(parameters){}};};
 local paletteDialog={type:"village",gendata:{size:[160,160]},blkmap:{[0]:7}};
 local candidate=MapGenDialog.execMapgen.bindenv(paletteDialog)("tmp",4242);
 root.MapGenerator=originalGenerator;
@@ -73,4 +73,26 @@ wallGenerator.gendef=::MapGenerators.find(@(v)v.val=="castle");
 wallGenerator.blkmap=wallGenerator.gendef.blkmap;
 local heights=wallGenerator.generateBlockHeightImage(biomes);
 check((heights[0]>>>16)==3&&(heights[1]>>>16)==9&&(heights[2]>>>16)==9,"Open castle lost its keep walls");
+wallGenerator.settlementWallHeight=1;
+wallGenerator.assetPlan={castleDefenseMask:[0,2,0],regions:[{kind:"keep",x0:2,x1:2,y0:0,y1:0},{kind:"castle_portal",objectHeight:8}]};
+heights=wallGenerator.generateBlockHeightImage(biomes);
+check((heights[1]>>>16)==4&&(heights[2]>>>16)==11,"Keep and curtain heights were not independent");
+local castlePalette=wallGenerator.gendef.blkmaplist;
+check(castlePalette.len()%3==0 && castlePalette[castlePalette.len()-1]==null,"Castle palette leaves stale controls");
+
+local vegetationImage=RGBAImage(20,20), vegetationBiomes=[];
+for( local i=0;i<400;i++){
+	vegetationImage[i]=3<<16;
+	vegetationBiomes.push(17);
+}
+local vegetationWorld=BlockWorld(20,32,20);
+local vegetation={
+	gendef:{settlement:true}, dst:vegetationImage, rnd:Random(4242,11),
+	assetPlan:{regions:[],biomes:vegetationBiomes,settlementSite:"oasis",countryWealth:1,seed:4242},
+	assetParameters:{naturalDecorationDensity:0}, saveDiagnostic=@(name,data){}
+};
+MapGenerator.decorateSettlement.bindenv(vegetation)(vegetationWorld);
+local palms=vegetationWorld.collectFreeBlocks(IRect3D(0,0,0,20,32,20),[]);
+check(palms.len()>0,"Oasis grove was empty at zero scatter density");
+foreach( palm in palms) check((palm.fbparam&0x3ff)==68,"Oasis grove contains a non-palm object");
 return {passed:true,integerValues:length(seen),continuousFraction:fraction,keyboardUndoRedo:true,retainedPreview:true,settlementSize:true,sharedPalette:true,openCastleWalls:true};
