@@ -227,7 +227,7 @@ flowchart TB
 
 Village・Town・Castleはいずれも `settlementCivicPlan=1` を渡す。井戸などの公共設備はネイティブオブジェクトから幅・奥行き・高さを取得し、`civicObject{type}_{variant}Width/Depth/Height` として渡す。Hの予約寸法とWの実配置寸法を一致させるための情報である。
 
-通常のUI範囲はseedに従って具体値へ変換する。gateCount、towerCount、keepRoomCount、outerFacilityCount、moatWidthは例外で、Min/Maxとして生成器へ渡し、城レイアウト候補内で値を決める。
+通常のUI範囲はseedに従って具体値へ変換する。`q=1` の整数項目は、UIが実数として保持した範囲でも両端を含む整数から抽選する。連続値の項目は従来どおり実数で抽選する。gateCount、towerCount、keepRoomCount、outerFacilityCount、moatWidthは例外で、Min/Maxとして生成器へ渡し、城レイアウト候補内で値を決める。サイズの下限はVillage/Townが64、Castleが128ブロックである。
 
 ```mermaid
 %% A: MapGenDialog.sk、MapGenerator.skのconstructionAssetParameters / generateSourceImage、main.cpp。
@@ -313,6 +313,7 @@ flowchart TB
     bridge["橋アセットは両端が陸地で全体が収まる場合に予約"]
     bridgeCleanup["対応する橋を確保できない旧BRIDGEをRIVERへ戻す"]
     growth[["G village_growth::Generateを呼ぶ"]]
+    wallAssets["wallHeightが正なら開拓境界で実寸のasset_wall区画を予約"]
     failure(["生成失敗を返す"])
 
     kind -->|"Village"| village --> site
@@ -322,7 +323,7 @@ flowchart TB
     mask -->|"いいえ"| large --> approaches
     approaches --> terrain --> identity --> assetList --> available
     available -->|"いいえ"| failure
-    available -->|"はい"| cleanup --> bridge --> bridgeCleanup --> growth
+    available -->|"はい"| cleanup --> bridge --> bridgeCleanup --> growth --> wallAssets
 
     classDef shared fill:#E1F3E4,stroke:#4D8F5E
     class site,skeleton,search,terrain,growth shared
@@ -341,6 +342,8 @@ flowchart TB
 実装：`VillageGrowth.h` の `Grow / Generate`、`SettlementCivic.h` の `Wealth / Program`。
 
 Generateは毎回元の地形をコピーする。前の候補で置いた道路や建物を、次の候補へ持ち越さない。候補の順番によって乱数系列を変え、3候補に1回は小さな建物を優先する。
+
+Tで確保した `asset_bridge` は各街候補にも保持する。広場・建物・公共設備は橋区画と周囲2セルを避け、中心領域をregionの先頭に保つことで、公共設備の親参照も維持する。採用候補の成長処理が終わった後、`ReserveSettlementWallAssets` が正のwallHeightに対して城壁アセットの実寸区画を予約する。道路や建物などを避けて境界に接する場所がなければ、その壁アセットは配置しない。橋・城壁は下地の予約であり、Wの建物アセット自動配置の対象には含めない。
 
 採点は `建物数×1000 − 建物中心から広場中心へのユークリッド距離合計×0.1`。首長邸も建物数と距離合計に含む。公共設備は建物数に含めず、採点で優劣を付ける前の必須条件として扱う。目標件数は必達条件ではないが、**必須の首長邸・公共設備をすべて確保し、1棟以上置くこと**がGrowの成功条件になる。接続検証はこの最高点選択の後、呼出元で実施する。
 
@@ -762,7 +765,9 @@ flowchart TB
 
 完成候補はまず接続検証を通す。公共設備の接続点と首長邸markerも検証対象になる。その後、首長邸を含む `asset_plot` の件数が多い候補を選び、同数ならSで計算した城郭のqualityScoreを比較する。これはGの街候補スコアとは別である。
 
-C6の室内処理は `CastleInterior.h` の `Decorate`。扉寸法と出入口の空間を確認し、玉座と謁見空間を先に確保する。各扉を室内の中心へ接続し、一般室4セル・公的な広間6セルを基本とする通路帯を予約してから用途別の家具を置く。配置前後に到達性と幅4の室内経路を確認し、通路や家具への接近が塞がれば、その城候補を除外する。
+C6の室内処理は `CastleInterior.h` の `Decorate`。扉寸法と出入口の空間を確認し、玉座と謁見空間を先に確保する。謁見空間と絨毯の開始位置は玉座の実際の奥行きから決め、玉座が奥行き3以外でも重ならないようにする。各扉を室内の中心へ接続し、一般室4セル・公的な広間6セルを基本とする通路帯を予約してから用途別の家具を置く。配置前後に到達性と幅4の室内経路を確認し、通路や家具への接近が塞がれば、その城候補を除外する。
+
+室内の完成後は、元の城郭の `castleDefenseMask=2` を外壁の位置として使い、実寸の壁アセット用区画を予約する。主城の壁や山を外周城壁と取り違えないため、タイルの種類だけでは判定しない。
 
 室内計画の占有マップでは、街の建物だけでなく `settlement_facility` の範囲も障害物として扱う。街の自然装飾も公共設備とその接続点を避けるため、Hで予約した場所が後段で使い回されない。
 
@@ -790,6 +795,7 @@ flowchart TB
     decoration["C5 ApplySettlementDecoration：城の裕福度で街を装飾"]
     merge["街のbiomesを配置範囲内へ統合し、region・markerの参照番号を補正"]
     interior["C6 castle_interior::Decorate：扉・玉座・通路・用途別家具を配置・検証"]
+    wallAssets["外壁の防御マスクに接するasset_wall区画を実寸で予約"]
     validate{"C7 公共設備・首長邸を含む接続点の2×2通行に合格"}
     better{"建物数が最多、または同数で城郭qualityScoreが高い"}
     save["完成した城と城下町を採用候補として保存"]
@@ -809,7 +815,7 @@ flowchart TB
     growth -->|"成功"| decoration --> merge --> interior
     growth -->|"失敗"| next
     interior -->|"失敗"| next
-    interior -->|"成功"| validate
+    interior -->|"成功"| wallAssets --> validate
     validate -->|"不合格"| next
     validate -->|"合格"| better
     better -->|"はい"| save --> next
@@ -833,7 +839,7 @@ flowchart TB
 
 実装：`CastleMapImageGenerator.cpp:640–2023`。Cから呼ぶ際は `candidateCount=1`、`nativeAssetTown=1`、`sharedKeepWalls=1`。
 
-型・裕福度・防衛力はレイアウト候補を変えても同じseed系列から決まり、別の型へ切り替えて成功させる探索は行わない。防衛力は裕福度と別に決める。エディターのwallHeightが0以下ならmain側で防衛力を0にする。
+型・裕福度・防衛力はレイアウト候補を変えても同じseed系列から決まり、別の型へ切り替えて成功させる探索は行わない。防衛力は裕福度と別に決める。wallHeightが0以下ならmain側とCastleSettlement側で防衛力を0にし、旧名の `outerDefense` も除く。これは外周の防御帯を無効にする指定であり、主城の壁は維持する。ネイティブ扉を作る際は、共有壁に2セルの開口と両端の角が収まる隣接関係だけを選び、収まらない関係はセルを書き換える前に除外する。
 
 城郭段階でも、Town用の `ApplyTownPaving` を再利用する。これはGの最後に行う都市モードの道路舗装とは別の処理。Sの仮施設や舗装の一部は、後段Cで実アセットの城下町へ置き換わる。
 
@@ -894,13 +900,15 @@ flowchart TB
 
 Pの接続検証は、2×2セルすべてがROAD・BRIDGE・TOWN_PAVEMENTのいずれかである場所を通り、対象markerへ到達できるかを調べる。Castleでは主城入口・建物入口・広場・空き地入口・城門側の接続に加え、`settlement_facility_access` と `settlement_mayor` も対象とする。Village/Townはmarkerを種類で限定しないため、追加された接続点も対象になる。室内の詳細検証はC6で行う。この段階の2×2判定は平面の道路タイルに基づき、3Dオブジェクトの形状全体を用いた判定ではない。
 
-Village/Townの起伏・水岸調整は公共設備の敷地と周囲2セルも保護する。共通の装飾計画は設備の周囲2セルと接続markerの周囲3セルを予約し、3D側の自然物配置でも設備の周囲を避ける。Castleは起伏・水岸の後処理を通らず、Cで装飾・室内計画まで済ませる。
+Village/Townの起伏・水岸調整は公共設備・橋・城壁の敷地と周囲2セルも保護する。共通の装飾計画は設備の周囲2セルと接続markerの周囲3セルを予約し、3D側の自然物配置でも設備の周囲を避ける。Castleは起伏・水岸の後処理を通らず、Cで装飾・室内計画まで済ませる。
+
+「自然物のランダム散布密度」はWで追加する自然物の散布率を調整する。0ならこの追加散布を止める。P/Cで計画した花・作物・公園の木や、FOREST地形などから作る樹木は別の処理なので、この値を0にしても残る。
 
 PNGとPlan JSONはstrict判定より前に書き出される。ファイルが存在しても、終了コード7ならエディターは生成失敗として扱う。画像サイズ、Planのseed、biomesの要素数も読み込み時に確認する。失敗があったバッチは成功件数と最初のエラーを通知し、再現用の入力・出力を一時フォルダーに残す。
 
-3D化はユーザーが候補を選んだ時に実行する。表示中の候補だけ3Dワールド・メッシュ・衝突判定を保持し、別候補へ切り替えた後に再選択すると、同じseedから高さ・装飾を再構築する。新しい3Dデータが完成するまで直前の表示と選択を保持し、例外時は不完全なキャッシュを公開しない。生成中・選択処理中は設定変更、候補選択、適用、コピー、ダイアログを閉じる操作を止める。再生成前には、削除されるサムネイルの選択参照を解除する。
+3D化はユーザーが候補を選んだ時に実行する。表示中の候補だけ3Dワールド・メッシュ・衝突判定を保持し、別候補へ切り替えた後に再選択すると、同じseedから高さ・装飾を再構築する。候補の生成設定はコピーして保存し、ブロック設定はダイアログと参照を共有するため、まだ3D化していない候補にも最新のブロック設定が反映される。新しい3Dデータが完成するまで直前の表示と選択を保持し、例外時は不完全なキャッシュを公開しない。生成中・選択処理中は設定変更、キーボードのUndo/Redo、候補選択、適用、コピー、ダイアログを閉じる操作を止める。再生成前には、削除されるサムネイルの選択参照を解除する。処理後に3D表示を保持していれば、サムネイルの選択参照がなくても適用・コピーを有効に戻す。
 
-公共設備の最終検証では設備ごとの区画内だけを検索する。森林全体を一括取得すると、多数の樹木を含む候補でネイティブ処理が異常終了する経路があったためである。選択候補のseedと3D化の進行段階は `tmp/mapgen/last_preview_stage.json` に保存する。
+公共設備と城の室内オブジェクトの最終検証では、各オブジェクトの区画内だけを検索する。森林全体を一括取得すると、多数の樹木を含む候補でネイティブ処理が異常終了する経路があったためである。選択候補のseedと3D化の進行段階は `tmp/mapgen/last_preview_stage.json` に保存する。
 
 3D側では全建物の寸法・扉・向き・重複・範囲・平坦性・高さを検証してから統合する。その後、城門 → 自然装飾 → 城の室内オブジェクト → 公共設備の順に配置する。公共設備を最後に置く `placeSettlementFacilities` は3種類に共通で、次を検証する。
 
@@ -1048,6 +1056,7 @@ PNGとPlan JSONが存在することと、生成に成功したことも別で�
 | townCityType | T、G | 都市属性を設定する。共通成長処理ではpaved_cityが全ROADを舗装する分岐に使われる |
 | wallHeight | A、G、C、W | 正なら集落境界壁を計画する。Castleで0以下なら防衛力も0へ設定。城下町側では常に0へ上書き |
 | terrainRelief | P、W | 道路や建物から離れた地面の隆起量に作用する。Castleの城下町はこの後処理を通らない |
+| naturalDecorationDensity | W | 自然物の追加ランダム散布率。0でも計画済みの装飾と地形由来の森林は残る |
 | countryWealth | G、H、P、S、C、W | 必須公共設備の段階と、2.0以上での首長邸を決める。自然装飾・城の構成にも作用し、防衛力とは独立。Castleは城の値を街へ渡す |
 | settlementCivicPlan | A、G、H、E、W | エディターは3種類とも1。生成器側で無効ならHを省略し、Wの公共設備配置も行わない |
 | asset{n}Residential / civicObject実寸法 | A、G、H、W | Aが内部パラメータとして渡す住宅判定と設備寸法。首長邸候補・設備敷地・3D寸法照合に使う |

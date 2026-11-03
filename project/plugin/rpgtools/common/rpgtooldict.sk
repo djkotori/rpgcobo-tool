@@ -8,7 +8,7 @@
 	"mapgen_wealth": {"ja":"裕福度", "en":"Wealth"},
 	"mapgen_northhousekeep": {"ja":"北向きの家を残す確率（%）", "en":"Keep North-facing Houses (%)"},
 	"mapgen_sidehousekeep": {"ja":"東西向きの家を残す確率（%）", "en":"Keep East/West-facing Houses (%)"},
-	"mapgen_naturedensity": {"ja":"自然装飾の密度（%・0で無効）", "en":"Natural Decoration Density (%; 0: None)"},
+	"mapgen_naturedensity": {"ja":"自然物のランダム散布密度（%）", "en":"Random Natural Scatter Density (%)"},
 	"mapgen_castletype": {"ja":"城の種類", "en":"Castle Type"},
 	"mapgen_castleconcentric": {"ja":"輪郭式の城", "en":"Concentric Castle"},
 	"mapgen_castlehill": {"ja":"山城", "en":"Hill Castle"},
