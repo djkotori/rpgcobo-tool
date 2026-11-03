@@ -25,6 +25,7 @@ class MapGenDialog extends UndoableDialog
 	blockmaplist = null;	//	[blockmap, ...]		conf.map._meta.blockmaplist
 
 	genthread = null;
+	busy = false;
 
 	//	LEFT
 	typemenu = null;	//	MenuBehavior
@@ -40,13 +41,19 @@ class MapGenDialog extends UndoableDialog
 	bw3d = null;		//	BlockWorld3D
 	bwcol = null;		//	b3Body<BlockColiderInterface>
 	selpic = null;		//	SKView : 選択されたpic
+	previewRef = null;
 
 	resbw = null;		//	結果のBlockWorld
 
 	static function run( editor, data){
 		local dlg = this( srcdir.."/ui/mapgendialog.ui", editor, data);
 		::skstudio.freezeEditorView( true);	//	editorの再描画を抑制して並列処理を高速化
-		dlg.show();
+		try{
+			dlg.show();
+		}catch( ex){
+			::skstudio.freezeEditorView( false);
+			throw ex;
+		}
 		::skstudio.freezeEditorView( false);
 		return dlg.resbw;
 	}
@@ -78,6 +85,7 @@ class MapGenDialog extends UndoableDialog
 		view.addUpdateFunc( updateFunc.bindenv( this));
 
 		view.findChild( "chk_rndseed").setSelected( true);
+		setBusy( false);
 	}
 
 	function updateFunc( dt){
@@ -86,6 +94,24 @@ class MapGenDialog extends UndoableDialog
 			bw3d.checkUpdateInCameraMesh( cam);
 		}
 		return true;
+	}
+
+	function setBusy( value){
+		busy = value;
+		foreach( name in ["btn_gen", "typemenu", "listmenu", "btn_close"]){
+			view.findChild( name).setEnabled( !value);
+		}
+		proplist.listview.setEnabled( !value);
+		blocklist.setEnabled( !value);
+		piclist.setEnabled( !value);
+		view.findChild( "btn_apply").setEnabled( !value && !!selpic && !!bw3d);
+		view.findChild( "btn_copy").setEnabled( !value && !!selpic && !!bw3d);
+	}
+
+	function close(){
+		// Do not destroy native controls while a generation coroutine uses them.
+		if( busy) return;
+		super.close();
 	}
 
 	function setType( t){
@@ -130,6 +156,7 @@ class MapGenDialog extends UndoableDialog
 	}
 	
 	function actionevent( e){
+		if( busy) return;
 		switch( e.src["name"]){
 		case "typemenu":
 			setType( e.actioncmd.val);
@@ -138,8 +165,18 @@ class MapGenDialog extends UndoableDialog
 			setTab( e.actioncmd);
 			break;
 		case "btn_gen":
+			setBusy( true);
 			genthread = newthread( "MapGen Thread");
-			genthread.start( doRunSerialMapgen, this);
+			genthread.start( @(){
+				try{
+					doRunSerialMapgen();
+				}catch( ex){
+					printexception( ex);
+					Popups.showError( ex.message);
+				}
+				genthread = null;
+				setBusy( false);
+			}, this);
 			break;
 		case "btn_apply":
 			if( bw3d){
@@ -261,6 +298,7 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function blockevent( e){
+		if( busy) return;
 		switch( e.id){
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -284,6 +322,7 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function picevent( e){
+		if( busy) return;
 		switch( e.id){
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -291,10 +330,21 @@ class MapGenDialog extends UndoableDialog
 			}else{
 				if( selpic != e.src){
 					local ref = e.src.parent.ref;
+					if( !ref || !ref["mapgen"]) return;
+					setBusy( true);
+					try{
+						selectMapgen( ref);
+					}catch( ex){
+						printexception( ex);
+						printf( "Map preview failed: type=%S seed=%S\n", ref.mapgen.gendef.val, ref.mapgen.seed);
+						Popups.showError( ex.message);
+						setBusy( false);
+						return;
+					}
 					selpic?.setSelected( false);
 					e.src.setSelected( true);
 					selpic = e.src;
-					selectMapgen( ref);
+					setBusy( false);
 				}
 			}
 			break;
@@ -357,6 +407,7 @@ class MapGenDialog extends UndoableDialog
 
 	//	
 	function propevent( e){
+		if( busy) return;
 		local cmd = e.actioncmd;
 		if( cmd["cmd"] == "prop"){
 			local pid = cmd.prop.pid, type = this.type, data = gendata;
@@ -386,8 +437,8 @@ class MapGenDialog extends UndoableDialog
 		mapgen.srcd = gendata["size"][1];
 		mapgen.seed = seed;
 		mapgen.gendef = gendef;
-		mapgen.gendata = gendata;
-		mapgen.blkmap = blkmap;
+		mapgen.gendata = ObjectInput.decode( ObjectOutput.encode( gendata));
+		mapgen.blkmap = clone blkmap;
 		mapgen.tmpdir = dirname;
 		mapgen.generateSourceImage();
 		return { mapgen=mapgen, png=mapgen.src, bw=null, bw3d=null, bwcol=null };
@@ -397,44 +448,97 @@ class MapGenDialog extends UndoableDialog
 	//	
 	function runSerialMapgen( seed){
 		local num = 10;
+		// Clear the selection before destroying its native view.
+		selpic?.setSelected( false);
+		selpic = null;
 		piclist.setRowCount( 0);
 		local dirname = "tmp/mapgen/"..seed;
 		FileRef( dirname).mkdirs(); sleep( 100);
+		local failures = [], count = 0;
 		for( local l = 0;l < num;l ++){
 			//	1回のマップ生成を実行。複数並列にやっても良いが。
-			local ret = execMapgen( dirname, seed+l);
+			local ret;
+			try{
+				ret = execMapgen( dirname, seed+l);
+			}catch( ex){
+				printexception( ex);
+				failures.push( ex.message);
+				continue;
+			}
 			//	
-			piclist.setRowCount( l+1);
-			local r = piclist.rows[l];
+			piclist.setRowCount( count+1);
+			local r = piclist.rows[count];
 			r.setValue( "pic", ret.png);
 			r.ref = ret;
+			count++;
 		}
-		FileRef( dirname).deleteAll(); sleep( 100);
+		if( failures.len()){
+			// Retain inputs/output for reproducing failed seeds.
+			throw Exception( "%S / %S maps generated. Failed inputs retained in %S.\n%S" % (count, num, dirname, failures[0]));
+		}
+		try{
+			FileRef( dirname).deleteAll();
+		}catch( ex){
+			// Cleanup failure must not invalidate successfully generated candidates.
+			printexception( ex);
+		}
 	}
 
 	//	pic.refを指定して呼び出す
 	//	
 	function selectMapgen( ref){
+		local firstPreview = !bw3d;
+		// Preview directories are deleted after the batch. Keep the selected
+		// plan for matching the visible foundations to their asset IDs.
+		if( ref.mapgen.assetPlan){
+			local bb = encodeJSON( ref.mapgen.assetPlan, 1|4, ByteBuffer());
+			bb.pos = 0;
+			FileRef( "tmp/mapgen/last_asset_plan.json").save( bb);
+			if( ref.mapgen.assetParameters){
+				local parameters = encodeJSON( ref.mapgen.assetParameters, 1|4, ByteBuffer());
+				parameters.pos = 0;
+				FileRef( "tmp/mapgen/last_asset_params.json").save( parameters);
+			}
+		}
 		local scn = canvas.scn, b3world = scn.getB3World();
-		if( bw3d) scn.removeObject( bw3d);
-		if( bwcol) b3world.removeBody( bwcol);
-		if( !ref.bw){
+		if( !ref.bw3d || !ref.bwcol){
 			ref.mapgen.generate();	//	ここで最終的な生成処理
-			ref.bw = ref.mapgen.toBlockWorld();
-			ref.bw3d = SK3DBlockWorld( ref.bw);
-			ref.bw3d.setVoxelTec( skFXFindTechnique( "vox.grid"));
-			local bci = BlockColiderInterface( ref.bw);
+			// Publish the cache only after every construction step succeeds.
+			local nextbw = ref.mapgen.toBlockWorld();
+			local next3d = SK3DBlockWorld( nextbw);
+			next3d.setVoxelTec( skFXFindTechnique( "vox.grid"));
+			local bci = BlockColiderInterface( nextbw);
 			bci.setFlagMask( BLK_SOLID|BLK_PLANT|BLK_BARRIOR|BLK_SOLIDFB);
 			local bcshp = b3Shape.createCustomConcave( bci);
-			ref.bwcol = b3Body( 0, bcshp, ref.bw3d.mat, G_STAGE, G_VIEW|G_CHARA|G_OBJECT);
-			ref.bwcol.ref = bci;
+			local nextcol = b3Body( 0, bcshp, next3d.mat, G_STAGE, G_VIEW|G_CHARA|G_OBJECT);
+			nextcol.ref = bci;
+			ref.bw = nextbw;
+			ref.bw3d = next3d;
+			ref.bwcol = nextcol;
 		}
+		if( bw3d) scn.removeObject( bw3d);
+		if( bwcol) b3world.removeBody( bwcol);
 		bw3d = ref.bw3d;
 		bw3d.updateMatrix( true);
 		scn.addObject( bw3d);
 		
 		bwcol = ref.bwcol;
 		b3world.addBody( bwcol);
+		// Keep native meshes/colliders for the visible candidate only. Retaining
+		// ten complete 3D worlds can exhaust memory when switching large maps.
+		if( previewRef && previewRef != ref){
+			previewRef.bwcol = null;
+			previewRef.bw3d = null;
+			previewRef.bw = null;
+		}
+		previewRef = ref;
+		if( firstPreview){
+			// Native blocks occupy half a world unit. Frame the map surface,
+			// rather than the empty 128-block-tall allocation or the origin.
+			local w = ref.bw.w, d = ref.bw.d;
+			canvas.camwork.moveTo( Vector3D( w*0.25,3.0,d*0.25),
+				Vector3D( 30*Math.DTOR,55*Math.DTOR,0), Math.max( w,d)*0.7,0);
+		}
 	}
 }
 
