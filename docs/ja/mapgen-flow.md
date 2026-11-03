@@ -87,7 +87,7 @@ Castleでは先に主城・城壁・門などを作る。その保護範囲を�
 
 | ループ | 何を比較するか | 初期設定 |
 |---|---|---|
-| A エディター | seedを変えた、ユーザーが選べる平面画像 | 10枚 |
+| A エディター | seedを変えた、ユーザーが選べる平面画像 | 10回試行し、成功した最大10枚 |
 | G 街の成長 | 同じ地形から道路・建物配置を変えた候補 | candidateCount=6 |
 | C 城全体 | 城郭と城下町を統合し、室内計画まで済んだ候補 | candidateCount=6 |
 
@@ -1087,4 +1087,4 @@ PNGとPlan JSONが存在することと、生成に成功したことも別で�
 | W | MapGenDialog.sk: selectMapgen、MapGenerator.sk: generate / toBlockWorld | 選択された計画の3D化と検証 |
 | W | MapGenerator.sk: placeSettlementFacilities | 公共設備の実配置・首長邸条件・最終ワールド検証と監査JSON |
 
-生成器側の `tests/SettlementCivicTests.cpp` と `tests/VerifySettlementCivic.cjs` には、裕福度の境界、必須設備、首長邸、中心からの距離、接続・実配置などの検証がある。これらのテストの判定と、Pで実行される道路タイルベースの検証は区別する。本更新では実装と文書を照合し、文書の構造を確認した。生成プログラムやエディターの実機テストは再実行していない。
+生成器側の `tests/SettlementCivicTests.cpp` と `tests/VerifySettlementCivic.cjs` には、裕福度の境界、必須設備、首長邸、中心からの距離、接続・実配置などの検証がある。これらのテストの判定と、Pで実行される道路タイルベースの検証は区別する。PR作成時にReleaseビルドとCTest全12件の成功を確認した。エディター側では村3候補の表示と配置データを検証し、森林のseed 27322326で公共設備検証中の異常終了を再現した後、区画単位の取得に修正して同じデータの3D化が2回成功した。森林の最終修正後の画面操作と、最新mainへ統合したチェックアウトでの実機テストは未実施。
