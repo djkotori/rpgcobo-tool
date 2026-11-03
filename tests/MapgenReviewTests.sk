@@ -79,6 +79,17 @@ heights=wallGenerator.generateBlockHeightImage(biomes);
 check((heights[1]>>>16)==4&&(heights[2]>>>16)==11,"Keep and curtain heights were not independent");
 local castlePalette=wallGenerator.gendef.blkmaplist;
 check(castlePalette.len()%3==0 && castlePalette[castlePalette.len()-1]==null,"Castle palette leaves stale controls");
+local tabState={selected:-1};
+tabState.busy<-true;
+tabState.setTab<-function(value){selected=value;};
+local tabAction=MapGenDialog.actionevent.bindenv(tabState);
+tabAction({src:{name:"LIST"},actioncmd:1});
+check(tabState.selected==1,"Busy tab highlight and panel fell out of sync");
+
+local squareDoor={x:1,y:0,z:0,rot:1,br:IRect3D(0,0,0,2,4,2),isClass=@(name) name=="door"};
+local squareAsset={w:12,h:8,d:12,collectFreeBlocks=@(bounds,output){return [squareDoor];}};
+local findDoor=MapGenerator.constructionAssetDoor.bindenv(squareAsset);
+check(findDoor(squareAsset).side==3,"Square door used the adjacent wall axis");
 
 local vegetationImage=RGBAImage(20,20), vegetationBiomes=[];
 for( local i=0;i<400;i++){
