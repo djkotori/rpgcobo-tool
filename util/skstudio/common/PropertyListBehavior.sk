@@ -2281,10 +2281,16 @@ class PropertyBehaviors.Range extends PropertyBehavior
 	}
 	
 	function setParam( v){
-		val = (
+		local rounded = (
 			(Math.round( v[0]*qua)|0) / float( qua),
 			(Math.round( v[1]*qua)|0) / float( qua)
 		);
+		local range = prop["range"];
+		if( range){
+			rounded[0] = Math.clamp( rounded[0], range[0], range[1]);
+			rounded[1] = Math.clamp( rounded[1], range[0], range[1]);
+		}
+		val = rounded;
 		numedit0.setText( val[0]);
 		numedit1.setText( val[1]);
 		updatebar();
@@ -2303,8 +2309,9 @@ class PropertyBehaviors.Range extends PropertyBehavior
 		local w = barimg.bnd.w, h = barimg.bnd.h;
 		local min = val[0], max = val[1];
 		local r = prop["range"] || #(0.0,1.0);
-		local p0 = (min-r[0])/(r[1]-r[0]);
-		local p1 = (max-r[0])/(r[1]-r[0]);
+		local span = r[1]-r[0];
+		local p0 = span>0 ? Math.saturate( (min-r[0])/span) : 0;
+		local p1 = span>0 ? Math.saturate( (max-r[0])/span) : 0;
 		sp.bnd.set( p0*w, 0, (p1-p0)*w, h);
 		barimg.repaint();
 	}
