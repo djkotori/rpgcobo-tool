@@ -26,6 +26,7 @@ class MapGenDialog extends UndoableDialog
 
 	genthread = null;
 	busy = false;
+	candidateDirectory = null;
 
 	//	LEFT
 	typemenu = null;	//	MenuBehavior
@@ -117,7 +118,18 @@ class MapGenDialog extends UndoableDialog
 	function close(){
 		// Do not destroy native controls while a generation coroutine uses them.
 		if( busy) return;
+		cleanCandidateDirectory();
 		super.close();
+	}
+
+	function cleanCandidateDirectory(){
+		if( !candidateDirectory) return;
+		try{
+			FileRef( candidateDirectory).deleteAll();
+		}catch( ex){
+			printexception( ex);
+		}
+		candidateDirectory = null;
 	}
 
 	function setType( t){
@@ -162,13 +174,14 @@ class MapGenDialog extends UndoableDialog
 	}
 	
 	function actionevent( e){
+		if( e.src["name"]=="LIST"){
+			setTab( e.actioncmd);
+			return;
+		}
 		if( busy) return;
 		switch( e.src["name"]){
 		case "typemenu":
 			setType( e.actioncmd.val);
-			break;
-		case "LIST":	//	tabsのこと。。。
-			setTab( e.actioncmd);
 			break;
 		case "btn_gen":
 			setBusy( true);
@@ -466,6 +479,7 @@ class MapGenDialog extends UndoableDialog
 		selpic?.setSelected( false);
 		selpic = null;
 		piclist.setRowCount( 0);
+		cleanCandidateDirectory();
 		local dirname = "tmp/mapgen/"..seed;
 		FileRef( dirname).mkdirs(); sleep( 100);
 		local failures = [], count = 0;
@@ -490,30 +504,17 @@ class MapGenDialog extends UndoableDialog
 			// Retain inputs/output for reproducing failed seeds.
 			throw Exception( "%S / %S maps generated. Failed inputs retained in %S.\n%S" % (count, num, dirname, failures[0]));
 		}
-		try{
-			FileRef( dirname).deleteAll();
-		}catch( ex){
-			// Cleanup failure must not invalidate successfully generated candidates.
-			printexception( ex);
-		}
+		candidateDirectory = dirname;
 	}
 
 	//	pic.refを指定して呼び出す
 	//	
 	function selectMapgen( ref){
 		local firstPreview = !bw3d;
-		// Preview directories are deleted after the batch. Keep the selected
-		// plan for matching the visible foundations to their asset IDs.
-		if( ref.mapgen.assetPlan){
-			ref.mapgen.saveDiagnostic( "last_asset_plan.json", ref.mapgen.assetPlan, 1|4);
-			if( ref.mapgen.assetParameters)
-				ref.mapgen.saveDiagnostic( "last_asset_params.json", ref.mapgen.assetParameters, 1|4);
-		}
 		local scn = canvas.scn, b3world = scn.getB3World();
 		if( !ref.bw3d || !ref.bwcol){
-			ref.mapgen.generate();	//	ここで最終的な生成処理
 			// Publish the cache only after every construction step succeeds.
-			local nextbw = ref.mapgen.toBlockWorld();
+			local nextbw = ref.mapgen.buildPreviewWorld();
 			local next3d = SK3DBlockWorld( nextbw);
 			next3d.setVoxelTec( skFXFindTechnique( "vox.grid"));
 			local bci = BlockColiderInterface( nextbw);

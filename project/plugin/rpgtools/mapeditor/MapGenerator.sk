@@ -598,6 +598,8 @@ local castleColors = [
 	// These IDs are not emitted by castle; retain unique palette entries.
 	_c(38,103,155), _c(100,103,113), _c(25,69,42), _c(139,142,145)
 ];
+local settlementPropVariants = {bench:5,cactus:72,palm:68,conifer:66,shade_tree:65,shrub:74,rock:17};
+
 local settlementHeight = @( bio, dst){
 	local blkmap = blkmap;
 	local basey = Math.iround( getrange( gendata["baseyprop"], 3));
@@ -740,6 +742,7 @@ class MapGenerator
 	objs = null;				//	樹木などオブジェクトのリスト。MapGenerationDataのobjsと同じ。
 	settlementWallHeight = 0;
 	assetPlan = null;
+	assetPlanPath = null;
 	assetParameters = null;
 
 	// Read the live map_asset.json resource through the same decoder as asset
@@ -753,6 +756,7 @@ class MapGenerator
 			for( local side = 0;side < 4;side++){
 				if( br.w > br.d && (side&1)) continue;
 				if( br.d > br.w && !(side&1)) continue;
+				if( br.d == br.w && (side&1)!=(fb.rot&1)) continue;
 				local s = distances[side] + fb.y*0.01;
 				if( s < score){
 					score = s;
@@ -836,6 +840,11 @@ class MapGenerator
 		parameters.assetCount <- count;
 		parameters.assetFoundation <- 1;
 		parameters.settlementCivicPlan <- 1;
+		foreach( role,variant in settlementPropVariants){
+			local br=FreeBlock.create({fbtype:role=="bench"?4:20,fbparam:variant}).br;
+			parameters["settlementProp_"..role.."_width"] <- br.w;
+			parameters["settlementProp_"..role.."_depth"] <- br.d;
+		}
 		// FreeBlock family IDs, distinct from the FB_* category bitmasks.
 		foreach(kind,variants in {[3]=[11,14,26],[4]=[5],[2]=[1]}) foreach(variant in variants){
 			local br=FreeBlock.create({fbtype:kind,fbparam:variant,pos:[0,0,0]}).br;
@@ -906,15 +915,9 @@ class MapGenerator
 		}
 		if( exitcode) throw Exception( "Map generation failed: type=%S seed=%S exit=%S\n%S" % (gendef.val, seed, exitcode, output.join("\n")));
 		if( gendef["settlement"]){
-			local planfile = FileRef( `$tmpdir/${outid}_plan.json`);
-			if( !planfile.exists()) throw Exception( "Map generation did not output the asset plan. See MapGenerator args in the log.");
-			assetPlan = decodeJSON( planfile.load());
-			if( !assetPlan || assetPlan["seed"] != seed || assetPlan["type"] != gendef.val ||
-				assetPlan["width"] != srcw || assetPlan["depth"] != srcd ||
-				!assetPlan["biomes"] || assetPlan.biomes.len() != srcw*srcd ||
-				!assetPlan["regions"]){
-				throw Exception( "Invalid map plan: type=%S seed=%S" % (gendef.val, seed));
-			}
+			assetPlanPath = `$tmpdir/${outid}_plan.json`;
+			if( !FileRef( assetPlanPath).exists())
+				throw Exception( "Map generation did not output the asset plan. See MapGenerator args in the log.");
 		}
 		local png = FileRef( `$tmpdir/${outid}.png`).load();
 		local image = skLoadImage( png);
@@ -922,6 +925,28 @@ class MapGenerator
 			throw Exception( "Invalid map image: type=%S seed=%S" % (gendef.val, seed));
 		}
 		return src = image;
+	}
+
+	function buildPreviewWorld(){
+		local world;
+		try{
+			if( assetPlanPath){
+				assetPlan = decodeJSON( FileRef( assetPlanPath).load());
+				if( !assetPlan || assetPlan["seed"]!=seed || assetPlan["type"]!=gendef.val ||
+					assetPlan["width"]!=srcw || assetPlan["depth"]!=srcd ||
+					!assetPlan["biomes"] || assetPlan.biomes.len()!=srcw*srcd || !assetPlan["regions"])
+					throw Exception( "Invalid map plan: type=%S seed=%S" % (gendef.val, seed));
+				saveDiagnostic( "last_asset_plan.json", assetPlan, 1|4);
+				saveDiagnostic( "last_asset_params.json", assetParameters, 1|4);
+			}
+			generate();
+			world = toBlockWorld();
+		}catch( ex){
+			assetPlan = null; dst = null; objs = null;
+			throw ex;
+		}
+		assetPlan = null; dst = null; objs = null;
+		return world;
 	}
 
 	//	マップ生成処理を開始する。入力パラメータが全て設定された状態で呼ぶ必要がある。
@@ -1127,6 +1152,13 @@ class MapGenerator
 	function placeConstructionAssets( bw){
 		if( !assetPlan) return;
 		local cache = {}, placements = [], facilityCounts={};
+		local plannedSides = {};
+		for( local i=0;i<(assetParameters["assetCount"] ?? 0);i++){
+			local key = "asset"..i;
+			if( (assetParameters[key.."Category"] ?? 0)!=0) continue;
+			local aid = "MA%03d" % assetParameters[key.."Id"];
+			plannedSides[aid..":"..assetParameters[key.."Rotation"]] <- assetParameters[key.."DoorSide"];
+		}
 		if( gendef.val=="castle") facilityCounts[2] <- 1; // The generated keep is the royal residence.
 		foreach( plot in assetPlan.regions){
 			if( plot.kind != "asset_plot") continue;
@@ -1149,6 +1181,11 @@ class MapGenerator
 			local bounds = IRect3D( 0,0,0,aw.w,aw.h,aw.d).transform( IMat().rotate( rot));
 			if( bounds.w != plot.x1-plot.x0+1 || bounds.d != plot.y1-plot.y0+1)
 				throw Exception( "Construction asset size changed. Generate the map again: " .. aid);
+			local opening = IRect3D( entrance.x,0,entrance.z,2,1,2).transform( IMat().rotate( rot));
+			local side = normal[2]>0 ? 0 : (normal[0]>0 ? 1 : (normal[2]<0 ? 2 : 3));
+			if( plot.doorX!=plot.x0+opening.x-bounds.x ||
+				plot.doorY!=plot.y1-1-(opening.z-bounds.z) || side!=plannedSides[aid..":"..rot])
+				throw Exception( "Construction asset entrance changed. Generate the map again: " .. aid);
 			if( x < 0 || z < 0 || x+bounds.w > bw.w || z+bounds.d > bw.d)
 				throw Exception( "Construction asset is outside the map: " .. aid);
 			local ground = dst[x + z*bw.w]>>>16;
@@ -1343,15 +1380,11 @@ class MapGenerator
 			if( region.kind!="asset_plot" && region.kind!="asset_wall" && region.kind!="asset_bridge" && region.kind!="village_open_space" && region.kind!="keep" && region.kind!="keep_expansion" && region.kind!="castle_activity" && region.kind!="settlement_facility") continue;
 			for( local yy=Math.max(0,region.y0-2);yy<=Math.min(d-1,region.y1+2);yy++) for( local xx=Math.max(0,region.x0-2);xx<=Math.min(w-1,region.x1+2);xx++) flowerCells.set(xx,d-1-yy,1);
 		}
-		local treeVariant = 66;
-		local tree = FreeBlock.create( {fbtype:20, fbparam:treeVariant});
 		local forest = assetPlan.settlementSite=="forest", oasis = assetPlan.settlementSite=="oasis";
-		local forestVariants = [65,66,67], terrainTreeBounds = {};
-		if( forest || oasis){
-			foreach( variant in (forest ? forestVariants : [68])){
-				local template = FreeBlock.create({fbtype:20,fbparam:variant});
-				terrainTreeBounds[variant] <- IRect3D(template.br);
-			}
+		local forestVariants = [65,66,67], treeBounds = {};
+		foreach( variant in [17,65,66,67,68,72]){
+			local template = FreeBlock.create({fbtype:20,fbparam:variant});
+			treeBounds[variant] <- IRect3D(template.br);
 		}
 		// Forests and palm groves are terrain, independent of scatter density.
 		// Pack complete crowns without the spacing used inside the settlement.
@@ -1361,7 +1394,7 @@ class MapGenerator
 				if( biomes[(d-1-z)*w+x]!=TOWN_TREES || occupied.get(x,z)) continue;
 				local y=dst[z*w+x]>>>16,clear=true;
 				local variant=forest ? rnd.choosea(forestVariants) : 68;
-				local br=terrainTreeBounds[variant];
+				local br=treeBounds[variant];
 				// Tree variants have different footprints. The loop's two-cell
 				// margin is not enough for a larger crown near the map edge.
 				if( x+br.w>w || z+br.d>d || y+br.h>=bw.h) continue;
@@ -1377,7 +1410,8 @@ class MapGenerator
 				}
 			}
 		}
-		local radius = Math.iceil( Math.max( tree.br.w, tree.br.d)/2.0);
+		local conifer = treeBounds[66];
+		local radius = Math.iceil( Math.max( conifer.w, conifer.d)/2.0);
 		for( local z=radius;z<d-radius;z++) for( local x=radius;x<w-radius;x++){
 			local b = biomes[(d-1-z)*w+x], y = dst[z*w+x]>>>16;
 			local dry=b==DESERT || assetPlan.settlementSite=="oasis";
@@ -1387,9 +1421,8 @@ class MapGenerator
 			if( !natural || flowerCells.get(x,z) || occupied.get(x,z)) continue;
 			if( assetPlan["shoreCuts"] && assetPlan.shoreCuts[(d-1-z)*w+x]>0) continue;
 			if( (dry || wooded || rocky) && rnd( 1.0)<density){
-				treeVariant=dry ? 72 : (rocky ? 17 : 66);
-				tree=FreeBlock.create({fbtype:20,fbparam:treeVariant});
-				local br=tree.br;
+				local treeVariant=dry ? 72 : (rocky ? 17 : 66);
+				local br=treeBounds[treeVariant];
 				local x0=x-br.w/2, z0=z-br.d/2;
 				if( x0<0 || z0<0 || x0+br.w>w || z0+br.d>d || y+br.h>=bw.h) continue;
 				local clear = true;
@@ -1419,7 +1452,7 @@ class MapGenerator
 		foreach( decoration in assetPlan.regions){
 			if( decoration.kind=="settlement_prop"){
 				local role=decoration.role, fbt=role=="bench" ? 4 : 20;
-				local variant=({bench:5,cactus:72,palm:68,conifer:66,shade_tree:65,shrub:74,rock:17})[role];
+				local variant=settlementPropVariants[role];
 				if( variant==null) continue;
 				local fb=FreeBlock.create( {fbtype:fbt,fbparam:variant}), br=fb.br;
 				local x=decoration.x0,z=d-1-decoration.y1,y=dst[z*w+x]>>>16;
