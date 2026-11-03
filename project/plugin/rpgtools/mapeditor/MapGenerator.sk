@@ -588,6 +588,9 @@ local settlementHeight = @( bio, dst){
 	local blkmap = blkmap;
 	local basey = Math.iround( getrange( gendata["baseyprop"], 3));
 	local wallheight = settlementWallHeight;
+	// An open castle still has the keep's masonry. The plan already omits
+	// the outer curtain when the requested wall height is zero.
+	if( gendef.val=="castle" && wallheight==0) wallheight=6;
 	return @( x, z, i){
 		local b = bio[i], y = basey;
 		switch( b){
