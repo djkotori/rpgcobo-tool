@@ -436,7 +436,7 @@ class MapGenDialog extends UndoableDialog
 
 	//	1回のmapgenを実行、結果の画像とbinを読み込む。
 	//	optはrangeをランダムで一意に決定したものが渡ってくる
-	function execMapgen( dirname, seed){
+	function execMapgen( dirname, seed, constructionParameters=null){
 		local mapgen = MapGenerator();
 		local gendef = ::MapGenerators.find( @( v) v.val==type);
 		mapgen.srcw = gendata["size"][0];
@@ -447,7 +447,7 @@ class MapGenDialog extends UndoableDialog
 		// Block edits apply to previews built after thumbnail generation too.
 		mapgen.blkmap = blkmap;
 		mapgen.tmpdir = dirname;
-		mapgen.generateSourceImage();
+		mapgen.generateSourceImage( constructionParameters);
 		return { mapgen=mapgen, png=mapgen.src, bw=null, bw3d=null, bwcol=null };
 	}
 
@@ -455,6 +455,13 @@ class MapGenDialog extends UndoableDialog
 	//	
 	function runSerialMapgen( seed){
 		local num = 10;
+		local gendef = ::MapGenerators.find( @( v) v.val==type);
+		local constructionParameters = null;
+		if( gendef["settlement"]){
+			local mapgen = MapGenerator();
+			mapgen.gendef = gendef;
+			constructionParameters = mapgen.constructionAssetParameters();
+		}
 		// Clear the selection before destroying its native view.
 		selpic?.setSelected( false);
 		selpic = null;
@@ -466,7 +473,7 @@ class MapGenDialog extends UndoableDialog
 			//	1回のマップ生成を実行。複数並列にやっても良いが。
 			local ret;
 			try{
-				ret = execMapgen( dirname, seed+l);
+				ret = execMapgen( dirname, seed+l, constructionParameters);
 			}catch( ex){
 				printexception( ex);
 				failures.push( ex.message);
@@ -498,14 +505,9 @@ class MapGenDialog extends UndoableDialog
 		// Preview directories are deleted after the batch. Keep the selected
 		// plan for matching the visible foundations to their asset IDs.
 		if( ref.mapgen.assetPlan){
-			local bb = encodeJSON( ref.mapgen.assetPlan, 1|4, ByteBuffer());
-			bb.pos = 0;
-			FileRef( "tmp/mapgen/last_asset_plan.json").save( bb);
-			if( ref.mapgen.assetParameters){
-				local parameters = encodeJSON( ref.mapgen.assetParameters, 1|4, ByteBuffer());
-				parameters.pos = 0;
-				FileRef( "tmp/mapgen/last_asset_params.json").save( parameters);
-			}
+			ref.mapgen.saveDiagnostic( "last_asset_plan.json", ref.mapgen.assetPlan, 1|4);
+			if( ref.mapgen.assetParameters)
+				ref.mapgen.saveDiagnostic( "last_asset_params.json", ref.mapgen.assetParameters, 1|4);
 		}
 		local scn = canvas.scn, b3world = scn.getB3World();
 		if( !ref.bw3d || !ref.bwcol){
