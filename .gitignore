@@ -37,12 +37,10 @@ x64
 #data
 *.blend1
 *.blend2
+/work/**/*.pm
+/work/**/*.mdl
+/work/**/*.mot
 /*.zip
-
-# Local game data, assets and source materials
-/project/data/
-/project/resource/
-/work/
 
 # me
 /*.ws
@@ -52,3 +50,4 @@ rpgcobo.ver
 #work
 /bat
 /private
+/work/deficon
