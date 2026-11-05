@@ -36,7 +36,14 @@ class DBEditorEnemy extends DBEditor
 		}
 	];
 	static baseprops2 = [
-		{ pid="mdlid", lbl="$T.lbl_model", type=RESID_PREVIEW, restype=["enemy_pic","chara_vox"], defval="EP000", size="big" },
+		{ pid="mdlid", lbl="$T.lbl_model", type=RESID_PREVIEW, restype=["enemy_pic", "poly_mdl","chara_vox"], defval="EP000", size="big",
+			filter=@( i, d){
+				switch( i[0]){
+				case 'P': return d["charause"];
+				}
+				return true;
+			}
+		},
 	];
 	
 	//	view

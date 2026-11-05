@@ -1914,7 +1914,7 @@ class SoundSelectPopup extends Popup
 
 	static function run( e, prop, sel=null){
 		local p = SoundSelectPopup( ::loadSKView( UIPATH), prop, sel);
-		p.show( null, e.src);
+		p.show( null, e["src"]||::getMousePos( 0));
 		p.stopsnd();
 		if( p.ret){
 			local sel = p.sndlist.getSelectedItems()[0];

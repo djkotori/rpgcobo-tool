@@ -554,10 +554,10 @@ class BlockOperation
 	//	特別ブロック操作
 	//	
 
-	function _plcfence( pos, b, offs){
+	function _plcfence( pos, b, flag){
 		local b1 = bw.blockat( pos);
 		if( !(::Block.isFullOcclude( b1) && (b1&31)!=(b&31))){
-			_plcblk( pos, b | (offs<<14));
+			_plcblk( pos, b | flag);
 		}
 	}
 	
@@ -568,24 +568,30 @@ class BlockOperation
 		local z0 = r.z, z1 = z0 + r.d - 1;
 		//	ブロック描画オフセット
 		local hb0 = p.hb0;
-		local offs = (hb0.bx+hb0.bz)&1;
-		//	x
-		for( local x = x0; x < x1; x ++) for( local y = y0; y <= y1; y ++){
-			_plcfence( pos.set( x, y, z0), blk, offs);
-			_plcfence( pos.set( x+1, y, z1), blk, offs);
+		local flag = ((hb0.bx+hb0.bz)&1) << 14;
+		if( x0==x1){
+			if( p.rot >= 2) flag |= 0x8000;
+			for( local z = z0; z <= z1; z ++) for( local y = y0; y <= y1; y ++){
+				_plcfence( pos.set( x0, y, z), blk, flag);
+			}
+		}else
+		if( z0==z1){
+			if( p.rot >= 2) flag |= 0x8000;
+			for( local x = x0; x <= x1; x ++) for( local y = y0; y <= y1; y ++){
+				_plcfence( pos.set( x, y, z0), blk, flag);
+			}
+		}else{
+			//	x
+			for( local x = x0; x < x1; x ++) for( local y = y0; y <= y1; y ++){
+				_plcfence( pos.set( x, y, z0), blk, flag);
+				_plcfence( pos.set( x+1, y, z1), blk, flag|0x8000);
+			}
+			//	z
+			for( local z = z0; z < z1; z ++) for( local y = y0; y <= y1; y ++){
+				_plcfence( pos.set( x0, y, z+1), blk, flag);
+				_plcfence( pos.set( x1, y, z), blk, flag|0x8000);
+			}
 		}
-		//	z
-		for( local z = z0; z < z1; z ++) for( local y = y0; y <= y1; y ++){
-			_plcfence( pos.set( x0, y, z+1), blk, offs);
-			_plcfence( pos.set( x1, y, z), blk, offs);
-		}
-		// for( local z = z0; z <= z1; z ++) for( local x = x0; x <= x1; x ++) for( local y = y0; y <= y1; y ++){
-		// 	if( z!=z0 && z!=z1 && x!=x0 && x!=x1) continue;
-		// 	local oldblk = bw.blockat( x, y, z);
-		// 	if( ::Block.isFullOcclude( oldblk) && (oldblk&31)!=bi) continue;	//	アタッチ不能なブロック。
-		// 	pos.set( x, y, z);
-		// 	_plcblk( pos, blk);
-		// }
 		return length( redoop);
 	}
 

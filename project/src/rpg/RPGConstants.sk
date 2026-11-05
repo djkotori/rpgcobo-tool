@@ -213,7 +213,8 @@ import AnimationPart;
 		{ lbl="$T.uivisible0", val = 0, },
 		{ lbl="$T.uivisible1", val = 1, },
 		{ lbl="$T.uivisible2", val = 2, },
-		{ lbl="$T.uivisible3", val = 3, },
+		{ lbl="$T.uivisible3", val = 3, icon="\ue8f4" },
+		{ lbl="$T.uivisible4", val = 4, icon="\ue5d3" },
 	]
 	uicloselist = [
 		{ lbl="$T.uiclose0", val = 0, },

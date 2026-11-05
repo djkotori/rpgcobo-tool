@@ -1849,6 +1849,7 @@ class RPG3DPolyModel extends RPG3DObject
 
 		colmat = Matrix();
 		updateVisibleMask();
+		setGSelectorID( 200);
 	}
 
 	function update( dt, pmatdirty=true){

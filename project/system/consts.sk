@@ -558,8 +558,9 @@ const SK_VBO_MEMORY		 = 2
 const SK_MIPMAP			 = 1
 const SK_MIPMAP_AUTOGEN	 = 2
 const SK_CUBE			 = 4
-const SK_RENDER_TARGET	 = 8
+const SK_TEXTURE_IMMUTABLE = 8
 const SK_WRITE_ONLY		 = 16
+const SK_TEXTURE_CUBEMAP = 64
 
 //	Primitive type
 const SK_POINTS			 = 1

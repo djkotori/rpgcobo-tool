@@ -55,7 +55,9 @@ dictprops .. { category = 1, key = "skill", lbl = {ja="スキル",en="Skill" } }
 dictprops .. { category = 1, key = "quest", lbl = {ja="クエスト",en="Quest" } };
 dictprops .. { category = 1, key = "craft", lbl = {ja="クラフト",en="Craft" } };
 dictprops .. { category = 1, key = "config", lbl = {ja="コンフィグ",en="Config" } };
+dictprops .. { category = 1, key = "etc", lbl = {ja="その他…",en="Etc…" } };
 dictprops .. { category = 1, key = "save", lbl = {ja="セーブ",en="Save" } };
+dictprops .. { category = 1, key = "load", lbl = {ja="ロード",en="Load" } };
 dictprops .. { category = 1, key = "savedata", lbl = {ja="セーブデータ",en="Save Data" } };
 dictprops .. { category = 1, key = "newgame", lbl = {ja="ニューゲーム",en="New Game" } };
 dictprops .. { category = 1, key = "loadgame", lbl = {ja="コンティニュー",en="Continue" } };

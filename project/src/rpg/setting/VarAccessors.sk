@@ -236,12 +236,12 @@ class SystemVarAccessor
 			}
 		},
 		{
-			key = "SYSTIME", name = "$T.lbl_systime", type = VAR_INT, readonly = true,
-			func = @( key, val=undefined){ return skGetTime(); }
-		},
-		{
 			key = "RND99", name = "$T.lbl_random(0-99)", type = VAR_INT, readonly = true,
 			func = @( key, val=undefined){ return ::rnd.nexti( 0, 100); }
+		},
+		{
+			key = "SYSTIME", name = "$T.lbl_systime", type = VAR_INT, readonly = true,
+			func = @( key, val=undefined){ return skGetTime(); }
 		},
 		makesvar({
 			key = "PTIME", name = "$T.playtime", type = VAR_INT, defval = 0,

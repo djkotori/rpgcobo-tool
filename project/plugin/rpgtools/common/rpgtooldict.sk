@@ -175,7 +175,8 @@
 	"uivisible1"						: {"ja":"空白", "en":"Space"}
 	"uivisible2"						: {"ja":"グレーアウト", "en":"Greyed out"}
 	"uivisible3"						: {"ja":"表示", "en":"Visible"}
-
+	"uivisible4"						: {"ja":"その他に表示", "en":"Show at Etc Menu"}
+	
 	//	UI操作タイプ
 	"uiop_show"							: {"ja":"表示", "en":"Show"}
 	"uiop_hide"							: {"ja":"消去", "en":"Hide"}
@@ -1249,6 +1250,8 @@
 	"lbl_mapprops"						: {"ja":"マップのプロパティ", "en":"Map Properties"}
 	"lbl_copyfrommap"					: {"ja":"別マップからコピー", "en":"Copy from another map"}
 	"pop_mapcopied"						: {"ja":"マップがコピーされました", "en":"Map was copied"}
+	"lbl_copy_settings"					: {"ja":"設定をJSON形式でコピー", "en":"Copy Settings as JSON"}
+	"lbl_paste_settings"				: {"ja":"設定をペースト", "en":"Paste Settings"}
 	
 	"penmode_paint"						: {"ja":"ペイント", "en":"Paint"}
 	"penmode_attach"					: {"ja":"アタッチ", "en":"Attach"}

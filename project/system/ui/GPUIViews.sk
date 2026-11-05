@@ -1026,10 +1026,11 @@ class GPUIScrollGroup extends GPUIGroup
 			}else{
 				m0.set( m.mousex, m.mousey);
 				local d = 0;
-				local dndy = Vector3D( m.mousex, m.mousey, 0.0).transform( w.getInvMatrix())[view.Y];
+				local pos = Vector3D( m.mousex, m.mousey, 0.0).transform( w.getInvMatrix());
+				local dndy = pos[view.Y], dndx = pos[view.X];
 				if( dndy < 32) d = 1;
 				if( dndy > w.bnd[view.H]-32) d -= 1;
-				if( d){
+				if( d && dndx >= -32 && dndx <= w.bnd[view.W]+32){
 					scrollUnit( d);
 				}
 			}

@@ -229,7 +229,7 @@ class MapTools.tool_pen extends MapTool
 		local box = makebox( hb0, hb0, atc);
 		//	コリジョンの退避
 		local colitf = canvas.bwcol.ref;
-		colitf.createCollisions( IRect3D( box).expand( 16));
+		colitf.createCollisions( IRect3D( box).expand( 128));
 		colitf.lock = true;
 		//	最初の描画
 		local trk = "rect"..skGetTime();
@@ -847,7 +847,7 @@ class MapTools.tool_fence extends MapTool
 	function optionevent( e){
 		e.consume();
 		switch( e.src["name"]){
-		case "mode0": case "mode1": case "mode2":
+		case "mode0": case "mode1": case "mode2": case "mode3":
 			setMode( e.src.name[4]-'0');
 			break;
 		case "hval":
@@ -894,11 +894,11 @@ class MapTools.tool_fence extends MapTool
 		case MOUSE_MOVED:
 		{
 			e.consume();
-			if( mode == 2){
+			if( mode >= 2){
 				local pens = getPenmap()["p01"], pen = pens[0];
 				local hb = rayTest( e, blkflag);
 				if( hb && !Block.isClass( hb.blk, "fence")) hb = null;
-				placeSelectPen( hb, pen, PEN_ERACE);
+				placeSelectPen( hb, pen, mode==2? PEN_PAINT : PEN_ERACE);
 			}else{
 				local hb = rayTest( e, blkflag);
 				if( hb && hb.f!=0) hb = null;
@@ -908,13 +908,17 @@ class MapTools.tool_fence extends MapTool
 		}
 		case MOUSE_PRESSED:
 		{
-			if( mode == 2){
+			if( mode >= 2){
 				local hb = rayTest( e, blkflag);
 				if( hb && !Block.isClass( hb.blk, "fence")) hb = null;
 				removeGuide( "pen");
 				if( hb){
+					local b = 0;
+					if( mode == 2){
+						b = (hb.blk&0xf000) | (blk & 0x3ff);	//	z反転などフラグを持ってくる
+					}
 					local bop = BlockOperation( editor.bw);
-					bop.floodfillBlock({ hb:hb, blk:0 });
+					bop.floodfillBlock({ hb:hb, blk:b });
 					if( bop.len()) bop.submit( editor);
 				}
 			}else{
@@ -952,10 +956,11 @@ class MapTools.tool_fence extends MapTool
 		local blk = blk, blkh = blkh;
 		local box = IRect3D();
 		local isline = mode==0;
+		local rot = getCameraRot();
 		
 		//	最初の描画
 		local trk = "fence"..skGetTime();
-		bop.attachFence({ box:makebox( hb0, hb0, 1), blk:blk, blkh:blkh, hb0:hb0 });
+		bop.attachFence({ box:makebox( hb0, hb0, 1), blk:blk, blkh:blkh, hb0:hb0, rot:rot });
 		bop.submit( editor, trk);
 		
 		//	開始時のtoolfunc
@@ -978,7 +983,7 @@ class MapTools.tool_fence extends MapTool
 					b.y = hb0.by+hb0.ny; b.h = 1;
 					if( b <> box){
 						self.editor.op.undo();
-						bop.attachFence({ box:b, blk:blk, blkh:blkh, hb0:hb0 });
+						bop.attachFence({ box:b, blk:blk, blkh:blkh, hb0:hb0, rot:rot });
 						bop.submit( self.editor, trk);
 						box.set( b);
 					}
