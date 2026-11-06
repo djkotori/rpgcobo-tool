@@ -120,7 +120,7 @@ function Sprite::setSubBounds( bnd){
 //	このテクスチャに別のテクスチャ等を描画する。カラー、デプスに対応。
 //	option指定で矩形やブレンド、filterも指定できるように。。。
 function Texture::draw( src, opt=null){
-	local sp = #Sprite(){ ss = skFXFindTechnique("sprite.copy").getShaderSource(0); miscmat = Matrix(); }
+	local sp = #Sprite(){ ss = skFXFindTechnique("sprite.copy").getShaderSource(0); miscmat0 = Matrix(); }
 	local w = width, h = height;	//	※mipmap考慮しないと、、、
 	local isdepth = (format==SK_DEPTH16||format==SK_DEPTH24||format==SK_DEPTH32);
 	if( src instanceof Texture){
@@ -128,17 +128,17 @@ function Texture::draw( src, opt=null){
 	}else
 	if( typeof( src) == SS_ARRAY){
 		sp.tex0 = null;
-		sp.miscmat[0] = src[0];
-		sp.miscmat[1] = src[1];
-		sp.miscmat[2] = src[2];
-		sp.miscmat[3] = src[3];
+		sp.miscmat0[0] = src[0];
+		sp.miscmat0[1] = src[1];
+		sp.miscmat0[2] = src[2];
+		sp.miscmat0[3] = src[3];
 	}else
 	if( typeof( src) == SS_INTEGER){
 		sp.tex0 = null;
-		sp.miscmat[0] = (src>>>24) / 255.0;
-		sp.miscmat[1] = ((src>>>16)&255) / 255.0;
-		sp.miscmat[2] = ((src>>>8)&255) / 255.0;
-		sp.miscmat[3] = (src&255) / 255.0;
+		sp.miscmat0[0] = (src>>>24) / 255.0;
+		sp.miscmat0[1] = ((src>>>16)&255) / 255.0;
+		sp.miscmat0[2] = ((src>>>8)&255) / 255.0;
+		sp.miscmat0[3] = (src&255) / 255.0;
 	}else{
 		throw Exception( "src is not drawable : "..src);
 	}

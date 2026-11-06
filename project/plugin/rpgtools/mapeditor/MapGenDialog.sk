@@ -76,6 +76,8 @@ class MapGenDialog extends UndoableDialog
 		tabs.selectTab( 0);
 		setTab( 0);
 		view.addUpdateFunc( updateFunc.bindenv( this));
+
+		view.findChild( "chk_rndseed").setSelected( true);
 	}
 
 	function updateFunc( dt){
@@ -137,11 +139,7 @@ class MapGenDialog extends UndoableDialog
 			break;
 		case "btn_gen":
 			genthread = newthread( "MapGen Thread");
-			genthread.start( @(){
-				e.src.setEnabled( false);
-				runSerialMapgen();
-				e.src.setEnabled( true);
-			}, this);
+			genthread.start( doRunSerialMapgen, this);
 			break;
 		case "btn_apply":
 			if( bw3d){
@@ -157,22 +155,67 @@ class MapGenDialog extends UndoableDialog
 			}
 			break;
 		case "listmenu":
-			if( seltab == 0){
-				showPropListMenu( e);
-			}else{
-				showBlockListMenu( e);
-			}
+			showPropListMenu( e);
 			break;
 		}
 		super.actionevent( e);
 	}
 
+	function doRunSerialMapgen(){
+		local seed = gendata["seed"] ?? rnd( 1, 10000000);
+		if( ("seed" in gendata) && view.findChild( "chk_rndseed").isSelected()){
+			//	プロパティのシードをランダムに設定。これはundo可
+			seed = rnd( 1, 10000000);
+			local self = this, oldseed = gendata["seed"];
+			local redo = [@(){
+				self.gendata["seed"] = seed;
+				self.proplist.setParam( "seed", seed);
+			}];
+			local undo = [@(){
+				self.gendata["seed"] = oldseed;
+				self.proplist.setParam( "seed", oldseed);
+			}];
+			submitOp( redo, undo, null);
+		}
+		local btn = view.findChild( "btn_gen");
+		btn.setEnabled( false);
+		runSerialMapgen( seed);
+		btn.setEnabled( true);
+	}
+
 	function showPropListMenu( e){
+		local cbdata = getClipboard( "mapgendata");
 		local ctxmenu = [
+			{ lbl="$T.lbl_copy_settings", id="copy", icon="\ue14d" },
+			{ lbl="$T.lbl_paste_settings", id="paste", icon="\ue14f", disable=!cbdata },
+			"-",
 			{ id="reset", lbl="$T.lbl_reset", icon="\uf053"},
 		];
 		local m = MenuPopup.run( ctxmenu, e.src);
 		switch( m["id"]){
+		case "copy":
+		{
+			putClipboard( "mapgendata", { type=type, gendata=gendata });
+			break;
+		}
+		case "paste":
+		{
+			local oldtype = type, oldgendata = gendata;
+			local self = this;
+			local type = cbdata["type"], gendata = cbdata["gendata"];
+			local redo = [@(){
+				self.setType( type);
+				self.gendata = gendata;
+				self.proplist.setParameters( gendata);
+			}];
+			local undo = [@(){
+				self.setType( oldtype);
+				self.gendata = oldgendata;
+				self.proplist.setParameters( oldgendata);
+			}];
+			submitOp( redo, undo, null);
+			break;
+		}
 		case "reset":
 		{
 			local olddata = gendata;
@@ -203,18 +246,11 @@ class MapGenDialog extends UndoableDialog
 		local ctxmenu = [
 			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d" },
 			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!cbdata },
-			"-",
-			{ id="size", val=8, lbl="8 x 8", icon="\ue5d0"},
-			{ id="size", val=16, lbl="16 x 16", icon="\ue5d0"},
-			{ id="size", val=32, lbl="32 x 32", icon="\ue5d0"},
-			"-",
-			{ id="invert", lbl="$T.lbl_invert", icon="\ue5d0"},
 		];
 		local ret = MenuPopup.run( ctxmenu, e.src);
 		switch( ret["id"]){
 		case "copy":
 		{
-			putClipboard( "blockmap", blockmap);
 			break;
 		}
 		case "paste":
@@ -251,7 +287,7 @@ class MapGenDialog extends UndoableDialog
 		switch( e.id){
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
-				showBlockListMenu( e);
+				showPicListMenu( e);
 			}else{
 				if( selpic != e.src){
 					local ref = e.src.parent.ref;
@@ -262,6 +298,60 @@ class MapGenDialog extends UndoableDialog
 				}
 			}
 			break;
+		}
+	}
+
+	function showPicListMenu( e){
+		local hasimage = skCheckClipboardType( ClipboardType.CLIPBOARD_IMAGE);
+		local ctxmenu = [
+			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d" },
+			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!hasimage },
+			"-",
+			{ id="regen", lbl="$T.lbl_regenerate", icon="\ue089"},
+		];
+		local session = e.src.parent.ref;
+		local ret = MenuPopup.run( ctxmenu, e.src);
+		switch( ret["id"]){
+		case "copy":
+		{
+			skPutClipboardData( session.png);
+			break;
+		}
+		case "paste":
+		{
+			local img = skGetClipboardData( ClipboardType.CLIPBOARD_IMAGE);
+			local sc = session.mapgen.gendef["halfimg"] ? 2 : 1;
+			if( !img || img.width < 32 || img.width > 1024/sc || img.height < 32 || img.height > 1024/sc) return;
+			local oldimg = session.png;
+			local l = piclist.rows.indexOf( e.src.parent), self = this;
+			local setpng( img){
+				session.png = img;
+				session.mapgen.srcw = img.width * sc;
+				session.mapgen.srcd = img.height * sc;
+				session.mapgen.src = img;
+				session.bw = null;
+				session.bwcol = null;
+				session.bw3d = null;
+				self.piclist.rows[l].setValue( "pic", img);
+				if( self.selpic == e.src){
+					self.selectMapgen( session);
+				}
+			};
+			local redo = [@(){ setpng( img) }];
+			local undo = [@(){ setpng( oldimg); }];
+			submitOp( redo, undo, null);
+			break;
+		}
+		case "regen":
+		{
+			session.bw = null;
+			session.bwcol = null;
+			session.bw3d = null;
+			if( selpic == e.src){
+				selectMapgen( session);
+			}
+			break;
+		}
 		}
 	}
 
@@ -305,8 +395,7 @@ class MapGenDialog extends UndoableDialog
 
 	//	10個のマップ生成を行う。生成完了まで次の「生成」ボタンは押せない。
 	//	
-	function runSerialMapgen(){
-		local seed = rnd( 1, 100000000);
+	function runSerialMapgen( seed){
 		local num = 10;
 		piclist.setRowCount( 0);
 		local dirname = "tmp/mapgen/"..seed;

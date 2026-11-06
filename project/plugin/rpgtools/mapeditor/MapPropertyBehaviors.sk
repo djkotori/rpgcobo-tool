@@ -8,9 +8,15 @@ class PropertyBehaviors.MapShot extends PropertyBehavior
 {
 	static proptype = 11001;
 	static uipath = srcdir .. "/ui/prop_mapshot.ui"
+
+	static menuitems = [
+		{ lbl="$T.lbl_mapgen", id="gen", icon="\ue5d5" },
+		"-",
+		{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d" },
+		{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=@() false },
+	]
 	
 	pic = null;				//	SKImageView : 
-	vals = null;			//	NumInputBehavior : 
 
 	mapshot = null;			//	
 	monimg = null;			//	
@@ -18,12 +24,6 @@ class PropertyBehaviors.MapShot extends PropertyBehavior
 	function init(){
 		pic = view.findChild( "pic");
 		pic.addEventListener( MOUSE_EVENT, picmouseevent);
-		vals = [];
-		for( local l = 0;l < 4;l ++){
-			local v = ::createNumInputBehavior( view.findChild( "val"..l));
-			vals .. v;
-			v.setRange( 0, 1024, 1);
-		}
 		monimg = SKImageView( ::getSprite( "/skstudio/img/ui/c8.png"));
 		monimg.setColor( 0x9999ffff);
 		monimg.setVisible( false);
@@ -36,9 +36,6 @@ class PropertyBehaviors.MapShot extends PropertyBehavior
 	
 	function setParam( v){
 		mapshot = deepclone( v);
-		foreach( i, v in mapshot.crop){
-			vals[i].setValue( v);
-		}
 		//	ここで更新するものかなーー、、
 		local tex = fget( prop, "maptex", prop, proplist);
 		if( tex){
@@ -84,6 +81,8 @@ class PropertyBehaviors.MapShot extends PropertyBehavior
 	}
 
 	function paramevent( e){
+		if( e.id != ACTION_PERFORMED) return;
+		//
 		switch( e.src["name"]){
 		case "mapgenbtn":
 			postActionEvent( true, "mapgen");
@@ -91,6 +90,33 @@ class PropertyBehaviors.MapShot extends PropertyBehavior
 		case "edit":
 			postActionEvent( true);
 			break;
+		}
+	}
+
+	function menuSelected( e, mi){
+		switch( mi["id"]){
+		case "gen":
+			postActionEvent( true, "mapgen");
+			break;
+		case "copy":
+		{
+			local tex = ::skstudio.editor.mapshottex;
+			local img = RGBAImage( tex.width, tex.height);
+			local old = skGetRenderTarget();
+			skSetRenderTarget( tex);
+			skReadPixels( 0, 0, img.width, img.height, img);
+			skSetRenderTarget( old);
+			skPutClipboardData( img);
+			break;
+		}
+		case "paste":
+		{
+			local img = skGetClipboardData( ClipboardType.CLIPBOARD_IMAGE);
+			if( img){
+				postActionEvent( true, "mapimg", img);
+			}
+			break;
+		}
 		}
 	}
 }

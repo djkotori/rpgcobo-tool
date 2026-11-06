@@ -441,6 +441,71 @@ class SK3DRenderPass
 		}
 		return null;
 	}
+
+
+	//////////////////////////////////////////////////////////////////////////////
+	//	ユーティリティ
+
+	//	球状テクスチャをキューブマップに変換する。6面に対する描画。
+	function equirectToCubemap( eqtex, cubetex, mipmap=true){
+		// Validate the actual OpenGL target, not sampler/state constants such as SK_CUBE.
+		if( !(eqtex instanceof Texture) || eqtex.width < 1 || eqtex.height < 1 || eqtex.target != 0x0DE1)
+			throw Exception( "equirectToCubemap requires a loaded 2D source texture");
+		if( !(cubetex instanceof Texture) || cubetex.target != 0x8513 ||
+			cubetex.width < 1 || cubetex.width != cubetex.height || eqtex == cubetex)
+			throw Exception( "equirectToCubemap requires a distinct square cubemap destination");
+		local sp = #Sprite(){ shadersrc = skFXFindTechnique( "sprite.eqtocube").getShaderSource(0); miscmat = Matrix(); blend = SK_OFF; }
+		// Column-major rotations from the +Z face, in OpenGL face order.
+		local facemat = #(
+			Matrix( 0,0,-1,0, 0,1,0,0, 1,0,0,0, 0,0,0,1), //	+x
+			Matrix( 0,0,1,0, 0,1,0,0, -1,0,0,0, 0,0,0,1), //	-x
+			Matrix( 1,0,0,0, 0,0,-1,0, 0,1,0,0, 0,0,0,1), //	+y
+			Matrix( 1,0,0,0, 0,0,1,0, 0,-1,0,0, 0,0,0,1), //	-y
+			Matrix( 1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1), //	+z
+			Matrix( -1,0,0,0, 0,1,0,0, 0,0,-1,0, 0,0,0,1), //	-z
+		);
+		local w = cubetex.width, h = cubetex.height;
+		sp.bnd.set( -1, -1, 2, 2);
+		sp.tex0 = eqtex;
+		skPushRenderStates();
+		local vp = #(0,0,0,0); skGetViewport( vp);
+		local rt = skGetRenderTarget();
+		skPushMatrix( SK_WORLD, SK_VIEW, SK_PROJECTION);
+		skInitMatrix( SK_WORLD);
+		skInitMatrix( SK_VIEW);
+		skInitMatrix( SK_PROJECTION);
+		skSetRenderState( SK_COLORMASK, -1);
+		skSetRenderState( SK_DEPTHMASK, SK_OFF);
+		skSetRenderState( SK_DEPTHTEST, SK_OFF);
+		skSetRenderState( SK_STENCILTEST, SK_OFF);
+		skSetRenderState( SK_FILLMODE, SK_FILL);
+		try{
+			for( local l = 0;l < 6;l ++){
+				cubetex.selectRenderFace( l, 0);
+				skSetRenderTarget( cubetex);
+				skSetViewport( 0, 0, w, h);
+				sp.miscmat = facemat[l];
+				skDrawSprite( sp);
+			}
+			if( mipmap){
+				// Submit the final queued sprite before mip generation; no GPU wait is needed.
+				skFlush();
+				cubetex.generateMipmap();
+			}
+		}catch( ex){
+			skSetRenderTarget( rt);
+			skSetViewport( vp);
+			skPopMatrix( SK_PROJECTION, SK_VIEW, SK_WORLD);
+			skPopRenderStates();
+			sp.tex0 = null;
+			throw ex;
+		}
+		skSetRenderTarget( rt);
+		skSetViewport( vp);
+		skPopMatrix( SK_PROJECTION, SK_VIEW, SK_WORLD);
+		skPopRenderStates();
+		sp.tex0 = null;
+	}
 }
 
 
@@ -626,10 +691,10 @@ class AtmosphereFog extends Fog
 class PbrFog extends Fog
 {
 	+color = Vector3D();
-	density = 1.0;
-	zoffs = 0.0;
-	yplane = 0.0;
-	yfalloff = 1.0;
+	density = 1.0;			//	基準面での密度 [1/m]。0で無効
+	zoffs = 0.0;			//	カメラからフォグ開始までの距離 [m]
+	yplane = 0.0;			//	基準面のワールドY座標（正のYが上）
+	yfalloff = 1.0;			//	上方への密度減衰 [1/m]。0で均一、1/yfalloffで密度が1/e
 
 	function setData( t){
 		local c = t.color;
@@ -637,21 +702,20 @@ class PbrFog extends Fog
 		density = t.density;
 		yplane = t.yplane;
 		yfalloff = t.yfalloff;
+		zoffs = t["zoffs"] ?? 0.0;
 	}
 
 	function computeParams( cam, ex){
-		// .x = density .y = -fallof*(camy-height) .z = density * exp(-fallof*(camy-height))
+		if( !(density >= 0.0) || !(yfalloff >= 0.0) || !(zoffs >= 0.0))
+			throw Exception( "PbrFog: density, yfalloff and zoffs must be nonnegative");
 		local im = cam.viewmat.invert34( #Matrix());
-		// printf( "camy? %S \n", im[13]); cam.viewmat.print();
-		local foff = -( yfalloff * (im[13] - yplane));
+		//	対数密度を渡し、基準面より下や高いカメラ位置でのexpのオーバーフローを防ぐ。
 		setParams(
-			// density, yplane, density * Math.exp( foff), yfalloff,
-			density, -yplane, density * Math.exp( foff), yfalloff,
+			density, density > 0.0 ? Math.log( density) : 0.0, im[13] - yplane, yfalloff,
 			color.x*ex, color.y*ex, color.z*ex, zoffs,
-			0,0,0,0,
+			im[1], im[5], im[9], 0.0,
 			0,0,0,0
 		);
-		// printf( "-------\n");	printf( "%S %S %S %S  %S %S %S\n", density, -yplane, density * Math.exp( foff), yfalloff, color.x*ex, color.y*ex, color.z*ex);
 	}
 }
 

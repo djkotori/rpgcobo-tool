@@ -1,0 +1,356 @@
+
+import PropertyType;
+
+local v_0 = Vector3D(), v_1 = Vector3D(), c_0 = (0,0,0,0), c_1 = (0,0,0,0), m_1 = Matrix();
+
+local ctov( c, v) v( c>>>24, (c>>16)&255, (c>>8)&255).scale( 1.0/255.0)
+local ctoa( c, a) a.set( (c>>>24)/255.0, ((c>>16)&255)/255.0, ((c>>8)&255)/255.0, (c&255)/255.0)
+
+local rgbetov( c, v){
+	local f = Math.exp2( 1.0, (c&255)-(128+8));
+	return v.set( c>>>24, (c>>>16)&255, (c>>>8)&255).scale( f/255.0);
+}
+
+local physicalSkyShared = { noise=null };
+
+::SK3DSkies <- {};
+
+//	パラメータによるHDRの空の生成。一次的には equirectangular を生成し、キューブマップに変換する。アニメーション可能。
+//	SK_R11G11B10Fテクスチャにレンダリング。IBLやバックグラウンドに使用。
+//	アニメーションによる頻繁な更新は不要。特にスマホなどでは数フレームかけてレンダリングすればよし。
+//	特にRPG-Coboは見下ろしカメラが基本なので、空の描画は頻繁に更新する必要はない。
+
+
+class SK3DSky
+{
+	static props = null;
+	
+	//	描画品質で決まるパラメータ。サブクラス毎に違う
+	width = 1024;					//	equirectangularの幅。高さはwidth/2。1024でもまあ見れる。1536ってのもあり。
+	cubesize = 256;					//	キューブマップのサイズ。IBL用なのでそんな大きくなくて良し
+	frmdiv = 4;						//	テクスチャ更新の分割数。1フレームで更新する場合は1、4フレームに分けて更新する場合は4など。
+
+	timer = 0.0;					//	経過時間。アニメーション用。
+	
+	m = null;						//	Material
+	vtx = null;						//	VertexBuffer ... 共通
+	idx = null;						//	IndexBuffer ... 共通
+
+	tex = null;						//	Texture : 生成結果のequirectangularテクスチャ
+
+	campos = null;					//	カメラ座標。雲の位置などが相対的に決まる。
+	sunvec = null;					//	太陽(月)の方向ベクトル。光源の方向を決定する。
+	suncolor = null;				//	太陽の色。1.0を超える。
+	
+	constructor(){
+		local _pm = SK3DRenderer.PassRegistory.ImagePassBase._getImageMesh();
+		vtx = _pm.vtx;
+		idx = _pm.face[0].idx;
+		campos = Vector3D();
+		sunvec = Vector3D( 0.5, -1.0, 0.5).normalize();
+		suncolor = Vector3D( 10.0, 10.0, 8.0);
+	}
+
+	function setPassSetting( ps){
+	}
+
+	//	全体をレンダリングする。
+	function render(){
+		renderRange( 0, 1);
+	}
+
+	//	指定された範囲のテクスチャをレンダリングする。i=インデックス、n=分割数。
+	function renderRange( i, n){
+		local rt = skSetRenderTarget( tex);
+		i = i % n;
+		local s = i*255/n, e = (i+1)*255/n;
+		m.misccol0 = ((e-s)<<24) | (s<<16) | 0xffff;
+		skSetViewport( 0, 0, tex.width, tex.height);
+		skBindVertexBuffer( vtx);
+		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);
+		skSetRenderTarget( rt);
+	}
+
+	//	生成されたequirectangularテクスチャを RGBAImage として取得する。※デバッグ用
+	//	RGBE hdr 形式に変換される。
+	function getImage(){
+		//	まずはRGBEに変換
+		local rgbetex = Texture();
+		rgbetex.create( tex.width, tex.height, SK_RGBA8, 0);
+		local sp = Sprite( tex); sp.bnd.set( -1, 1, 2, -2);	//	画面いっぱい。上下反転
+		sp.shadersrc = skFXFindTechnique( "sprite.torgbe").getShaderSource( 0);
+		local oldrt = skSetRenderTarget( rgbetex);
+		skSetViewport( 0, 0, rgbetex.width, rgbetex.height);
+		skPushMatrix( SK_WORLD, SK_VIEW, SK_PROJECTION);
+		skInitMatrix( SK_WORLD);
+		skInitMatrix( SK_VIEW);
+		skInitMatrix( SK_PROJECTION);
+		skClearScreen( #ClearParam( 1,0,0,1, 1));
+		skDrawSprite( sp);
+		skPopMatrix( SK_PROJECTION, SK_VIEW, SK_WORLD);
+		//	rgbetex テクスチャをダウンロード
+		skFlush( true);
+		skSetRenderTarget( oldrt);
+		skSetRenderTarget( rgbetex);
+		local img = RGBAImage( tex.width, tex.height);
+		skReadPixels( 0, 0, img.width, img.height, img);
+		//	終わり
+		skSetRenderTarget( oldrt);
+		return img;
+	}
+	
+	function create( ps){
+		local cls = SK3DSkies[ps.type];
+		if( !cls) return null;
+		local w = cls();
+		w.setPassSetting( ps);
+		return w;
+	}
+}
+
+//	
+class SK3DSkies.test extends SK3DSky
+{
+	static props = [
+		{ pid="rgbe0", lbl="RGBE0", type=RGB, },
+		{ pid="rgbe1", lbl="RGBE1", type=RGB, },
+		{ pid="intensity", lbl="Intensity", type=SCALAR, range=(0.0, 1000.0), },
+	];
+	static hide = true;
+	
+	rgb0 = 0xff0000ff;
+	rgb1 = 0x00ff00ff;
+	intensity = 1.0;
+	
+	function setPassSetting( ps){
+		m = ::SK3DRenderPass.createMaterial( "sky.test");
+		foreach( i, v in ps){
+			if( i in this) this[i] = v;
+		}
+		tex = Texture(); tex.create( width, width/2, SK_R11G11B10F, 0);
+	}
+
+	function renderRange( i, n){
+		local c0 = ctov( rgb0, v_0).scale( intensity);
+		local c1 = ctov( rgb1, v_1).scale( intensity);
+		m.miscmat0.set(
+			c0.x, c0.y, c0.z, 1.0,
+			c1.x, c1.y, c1.z, 1.0,
+			0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0
+		);
+		super.renderRange( i, n);
+	}
+}
+
+// World Y points down. sunvec points towards the sun; suncolor is linear irradiance.
+class SK3DSkies.physical extends SK3DSky
+{
+	width = 1536;
+	static name = {ja:"フィジカルスカイ", en:"Physical Sky"}
+
+	static props = [
+		{ pid="time", lbl={ja:"時刻",en:"Time"}, type=SCALAR, range=(0.0,24.0), defval=10.0, q=100, ui="bar"},
+		{ pid="azimuth", lbl={ja:"太陽の方位",en:"Sun azimuth"}, type=SCALAR, range=(-180.0,180.0), defval=40.0, q=1, ui="bar"},
+		{ pid="haze", lbl={ja:"霞",en:"Haze"}, type=SCALAR, range=(1.0,6.0), defval=1.5, q=100, ui="bar"},
+		{ pid="skyTone", lbl={ja:"空色 (深青～青緑)",en:"Sky tone (deep blue / cyan)"}, type=SCALAR, range=(-1.0,1.0), defval=-0.45, q=100, ui="bar"},
+		{ pid="coverage", lbl={ja:"雲の量",en:"Cloud coverage"}, type=SCALAR, range=(0.0,1.0), defval=0.2, q=100, ui="bar"},
+		{ pid="cloudDensity", lbl={ja:"雲の密度・厚さ",en:"Cloud density / thickness"}, type=SCALAR, range=(0.1,3.0), defval=1.0, q=100, ui="bar"},
+		{ pid="cloudScale", lbl={ja:"雲の大きさ",en:"Cloud scale"}, type=SCALAR, range=(0.1,5.0), defval=2.5, q=100, ui="bar"},
+		{ pid="cloudDetail", lbl={ja:"雲の細部",en:"Cloud detail"}, type=SCALAR, range=(0.0,2.0), defval=1.0, q=100, ui="bar"},
+		{ pid="cloudHeight", lbl={ja:"雲底の高さ (m)",en:"Cloud base (m)"}, type=SCALAR, range=(-1000.0,5000.0), defval=1500.0, q=1, ui="bar"},
+		{ pid="seed", lbl={ja:"雲の配置",en:"Cloud seed"}, type=SCALAR, range=(0,65535), defval=1, q=1, ui="bar"},
+		{ pid="ground", lbl={ja:"地面 (0:非表示 / 1:表示)",en:"Ground (0:off / 1:on)"}, type=BOOL, defval=true},
+		{ pid="groundColor", lbl={ja:"地面の色",en:"Ground color"}, type=RGB, defval=0x0A1707ff},
+	];
+
+	time = 12.0;
+	azimuth = 40.0;
+	haze = 1.5;
+	skyTone = -0.45;
+	coverage = 0.2;
+	cloudDensity = 1.0;
+	cloudScale = 2.5;
+	cloudDetail = 0.7;
+	cloudHeight = 1500.0;
+	seed = 1;
+	ground = true;
+	groundColor = 0x0A1707ff;
+
+	autoSun = true;
+	transmittanceTex = null;
+	atmosphereTex = null;
+	transmittanceMaterial = null;
+	atmosphereMaterial = null;
+	_lutHaze = -1.0;
+	_lutTone = 2.0;
+	_atmosphereP = null;
+	_atmosphereTone = 2.0;
+	_oldViewport = null;
+
+	static function tostring( v){
+		return lang( SK3DSkies.physical.name);
+	}
+
+	constructor(){
+		super();
+		_oldViewport = (0,0,0,0);
+		campos.y = -2.0;
+	}
+
+	function _createnoise3d(){
+		if (physicalSkyShared.noise) return physicalSkyShared.noise;
+		local rnd = Random(146187253), size = 256*256;
+		local field = ByteBuffer(size); field.size = size;
+		for (local i=0; i<size; ++i) field[i] = rnd.nexti(0,256);
+		local bb = ByteBuffer(size*2); bb.size = size*2;
+		for (local z=0; z<256; ++z) for (local y=0; y<2; ++y) for (local x=0; x<256; ++x) {
+			local index = (z*2+y)*256+x;
+			// Adjacent Y lattice planes share the same shifted 2D field.
+			bb[index] = field[((z+y*37)&255)*256+((x+y*17)&255)];
+		}
+		local noise = Texture();
+		noise.create3D(256,2,256,SK_R8,0,bb);
+		physicalSkyShared.noise = noise;
+		return noise;
+	}
+
+	function _validate(){
+		foreach (p in props) {
+			local v = this[p.pid];
+			if (p.type == RGB) {
+				if (typeof(v) != SS_INTEGER) throw Exception("Sky color must be an integer: "..p.pid);
+			}else{
+				if ((typeof(v) != SS_INTEGER && typeof(v) != SS_FLOAT) || !(v >= p.range[0] && v <= p.range[1]))
+					throw Exception("Sky parameter out of range: "..p.pid);
+			}
+		}
+		if (typeof(width) != SS_INTEGER || width < 128 || width > 4096 || (width&1))
+			throw Exception("Sky width must be an even integer in [128,4096]");
+		if (!(campos.y <= 0.0 && campos.y >= -90000.0))
+			throw Exception("Sky camera altitude must be in [0,90000] metres (negative world Y)");
+		if (!(Math.abs(campos.x) <= 1000000000.0 && Math.abs(campos.z) <= 1000000000.0))
+			throw Exception("Sky camera horizontal coordinates must be finite and within 1e9 metres");
+		_validateSun(sunvec,suncolor);
+	}
+
+	function _validateSun( direction, color){
+		local len = direction.length();
+		if (!(len > 0.0 && len-len == 0.0))
+			throw Exception("Sky sun direction must be finite and nonzero");
+		if (!(color.x >= 0.0 && color.x <= 1000000.0 &&
+			color.y >= 0.0 && color.y <= 1000000.0 &&
+			color.z >= 0.0 && color.z <= 1000000.0))
+			throw Exception("Sky sun irradiance must be finite and in [0,1000000]");
+	}
+
+	function setPassSetting( ps){
+		foreach (k,v in ps) {
+			if( k in this) this[k] = v;
+		}
+		// _validate();
+		m = ::SK3DRenderPass.createMaterial("sky.physical");
+		m.miscmat1 = Matrix();
+		transmittanceMaterial = ::SK3DRenderPass.createMaterial("sky.transmittance");
+		transmittanceMaterial.miscmat1 = Matrix();
+		atmosphereMaterial = ::SK3DRenderPass.createMaterial("sky.atmosphere");
+		atmosphereMaterial.miscmat1 = Matrix();
+		transmittanceTex = Texture(); transmittanceTex.create(256,64,SK_R11G11B10F,0);
+		atmosphereTex = Texture(); atmosphereTex.create(512,256,SK_R11G11B10F,0);
+		tex = Texture(); tex.create(width,width/2,SK_R11G11B10F,0);
+		m.tex0 = atmosphereMaterial.tex0 = transmittanceTex;
+		m.tex1 = _createnoise3d();
+		m.tex2 = atmosphereTex;
+		_lutHaze = -1.0;
+		_lutTone = 2.0;
+		_atmosphereP = null;
+		_atmosphereTone = 2.0;
+		_updateSun();
+	}
+
+	function setSun( direction, color){
+		_validateSun(direction,color);
+		sunvec.set(direction).normalize();
+		suncolor.set(color);
+		autoSun = false;
+	}
+
+	function useTimeSun(){
+		autoSun = true;
+		_updateSun();
+	}
+
+	function _updateSun(){
+		if (!autoSun) return;
+		local angle = (time-6.0)*Math.PI/12.0, a = azimuth*Math.DTOR;
+		local elevation = Math.sin(angle), horizontal = Math.cos(angle);
+		sunvec.set(horizontal,-elevation*Math.cos(a),-elevation*Math.sin(a)).normalize();
+		suncolor.set(180.0,180.0,180.0);
+	}
+
+	//
+	function _draw( material, target, i, n){
+		local oldrt = skGetRenderTarget();
+		skGetViewport(_oldViewport);
+		skSetRenderTarget(target);
+		i = i % n;
+		local s = i*255/n, e = (i+1)*255/n;
+		material.misccol0 = ((e-s)<<24) | (s<<16) | 0xffff;
+		skSetViewport( 0, 0, target.width, target.height);
+		skBindVertexBuffer(vtx);
+		skDrawIndexBuffer(material,SK_TRIANGLESTRIP,idx);
+		skSetRenderTarget(oldrt);
+		skSetViewport(_oldViewport);
+	}
+
+	function renderRange( i, n){
+		// _validate();
+		local seconds = timer * 10.0;	//	要パラメータ化？
+		_updateSun();
+		sunvec.normalize();
+		local c = ctov(groundColor,v_0);
+		c.set(
+			c.x <= 0.04045 ? c.x/12.92 : Math.pow((c.x+0.055)/1.055,2.4),
+			c.y <= 0.04045 ? c.y/12.92 : Math.pow((c.y+0.055)/1.055,2.4),
+			c.z <= 0.04045 ? c.z/12.92 : Math.pow((c.z+0.055)/1.055,2.4)
+		);
+		// Spread neighbouring seeds before deriving offsets in the continuous cloud field.
+		local rnd = Random(146187253 ^ (int(seed)*747796405));
+		local densityWeight = Math.saturate((cloudDensity-0.2)/2.8);
+		local thickness = 0.12+1.68*Math.pow(densityWeight,1.2);
+		local morphology = Math.saturate((cloudDensity-0.4)/1.4);
+		morphology = morphology*morphology*(3.0-2.0*morphology);
+		m.miscmat0.set(
+			sunvec.x,-sunvec.y,sunvec.z,haze,
+			suncolor.x,suncolor.y,suncolor.z,coverage,
+			campos.x*0.001,-campos.y*0.001,campos.z*0.001,cloudDensity,
+			cloudScale,cloudHeight*0.001,thickness,ground ? 1.0 : 0.0
+		);
+		m.miscmat1.set(
+			c.x,c.y,c.z,skyTone,
+			seconds*0.008,seconds*0.002,seconds*0.001,cloudDetail,
+			rnd.nextf(0.0,64.0),rnd.nextf(0.0,64.0),rnd.nextf(0.0,64.0),0.0,
+			morphology,0.0,0.0,0.0
+		);
+		transmittanceMaterial.miscmat0.set(m.miscmat0);
+		transmittanceMaterial.miscmat1.set(m.miscmat1);
+		atmosphereMaterial.miscmat0.set(m.miscmat0);
+		atmosphereMaterial.miscmat1.set(m.miscmat1);
+		if (_lutHaze != haze || _lutTone != skyTone) {
+			_draw(transmittanceMaterial,transmittanceTex, 0, 1);
+			_lutHaze = haze;
+			_lutTone = skyTone;
+		}
+		local atmosphereDirty = !_atmosphereP || _atmosphereTone != skyTone;
+		if (!atmosphereDirty) for (local i=0; i<16; ++i) {
+			if (_atmosphereP[i] != m.miscmat0[i]) { atmosphereDirty = true; break; }
+		}
+		if (atmosphereDirty) {
+			_draw(atmosphereMaterial,atmosphereTex, 0, 1);
+			if (!_atmosphereP) _atmosphereP = Matrix();
+			_atmosphereP.set(m.miscmat0);
+			_atmosphereTone = skyTone;
+		}
+		_draw(m,tex, i, n);
+	}
+}

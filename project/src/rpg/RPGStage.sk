@@ -738,7 +738,7 @@ class RPGStage
 
 	static function createBackground( bg){
 		local bgpass;
-		local bgt = ::bgtypelist.find( @( x) x.val==bg["type"]);
+		local bgt = ::bgtypelist().find( @( x) x.val==bg["type"]);
 		if( bgt["create"]){
 			bgpass = bgt.create( bg);
 		}

@@ -12,6 +12,7 @@ runsk("/system/3d/SK3DScene.sk");
 runsk("/system/3d/SK3DRenderer.sk");
 runsk("/system/3d/SK3DRenderPass.sk");
 runsk("/system/3d/SK3DWeather.sk");
+runsk("/system/3d/SK3DSky.sk");
 runsk("/system/3d/SK3DModifier.sk");
 runsk("/system/3d/RigidBodyData.sk");
 runsk("/system/3d/OcclusionCulling.sk");

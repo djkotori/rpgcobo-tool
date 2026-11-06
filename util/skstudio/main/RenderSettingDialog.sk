@@ -42,7 +42,7 @@ local ibltexprop = { pid="ibltex", lbl="$T.lbl_ibltex",	type=PATH };
 local iblcolorprop = { pid="iblcolor", lbl="$T.lbl_iblcolor",	type=RGB };
 local iblspecprop = { pid="iblspec", lbl="$T.lbl_iblspec",	type=SCALAR, range=(0,100000), q=1 };
 local ibldiffprop = { pid="ibldiff", lbl="$T.lbl_ibldiff",	type=SCALAR, range=(0,100000), q=1 };
-local ibldirprop = { pid="ibldir", lbl="$T.lbl_ibldir",	type=SCALAR, range=(-180,180), q=1 };
+local ibldirprop = { pid="ibldir", lbl="$T.lbl_ibldir",	type=SCALAR, range=(-180,180), q=1, ui="bar" };
 local bloomthrsprop = { pid="bloomthrs", lbl="$T.lbl_bloomthrs", type=SCALAR, range=(0.0,10.0), q=100 };
 local bloompowprop = { pid="bloompow", lbl="$T.lbl_bloompow",	type=SCALAR, range=(0.0,1.0), q=100 };
 local bloomblurprop = { pid="bloomblur", lbl="$T.lbl_bloomblur",	type=SCALAR, range=(0.0,10.0), q=100 };

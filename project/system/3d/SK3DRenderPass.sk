@@ -467,6 +467,7 @@ class reg.TextureBackgroundPass extends reg.ImagePassBase
 		m.depthtest = SK_LEQUAL;
 		m.miscmat0 = Matrix();
 		m.gsel = 2;
+		m.miscmat0.set( 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
 	}
 
 	function setTexture( tex){
@@ -497,6 +498,92 @@ class reg.TextureBackgroundPass extends reg.ImagePassBase
 	}
 }
 
+//	SK3DSkyをバックグラウンドに描画する。更に、設定によっては env.ibltex, env.sh を置き換える。(※shは不要。ibltexのミップマップで代用)
+//	レンダリング品質によって以下の動作が変わる
+//	生成解像度: 0-1=1024, 2=1536, 3-4=2048
+//	キューブ解像度: 0-1=128, 2-3=256, 4=512
+//	アニメフレーム間隔: 0:アニメなし 1:1/8フレーム 2:1/4フレーム 3-4:1/2フレーム
+//	※ skyはタイプによって全然負荷が変わるので、タイプごとに設定が変わる。
+//	
+//	
+class reg.GenSkyBackgroundPass extends reg.ImagePassBase
+{
+	m = null;
+
+	useibl = false;
+	ibltex = null;		//	IBL用のキューブマップテクスチャ。そのまま描画に使う。
+	iblsh = null;		//	SphericalHarmonics|null : ps内に含まれる場合はここに設定される
+
+	sky = null;			//	SK3DSkyオブジェクト
+
+	framecnt = 0;
+	dirty = true;
+
+	constructor(){
+		super( null);
+		local _pm = #_getImageMeshZ( 1.0);
+		vtx = _pm.vtx;
+		fidx = _pm.face[0].idx;
+		ridx = _pm.face[1].idx;
+		//	
+		m = createMaterial( "background.tex");
+		m.cullface = SK_OFF;
+		m.depthmask = 0;
+		m.depthtest = SK_LEQUAL;
+		m.miscmat0 = Matrix();
+		m.gsel = 2;
+		m.miscmat0.set( 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
+	}
+	
+	function setPassSetting( p){
+		super.setPassSetting( p);
+		sky = SK3DSky.create( p);
+		useibl = p["useibl"];
+	}
+
+	function setupPass( r){
+		if( useibl){
+			// if( !ibltex){
+			// 	ibltex = Texture();
+			// 	ibltex.create( cubew, cubew, SK_R11G11B10F, 64|8, 6);	//	SK_TEXTURE_CUBEMAP | SK_TEXTURE_IMMUTABLE
+			// }
+			// equirectToCubemap( sky.tex, ibltex);
+		}
+		m.tex0 = sky.tex;
+		dirty = true;
+	}
+
+	//	LightPreparePassの後に呼ばれる。
+	function preparePass( r){
+		local lpass =  r.mainpass["litprepass"];
+		if( useibl && lpass){
+			local m = lpass.glitmat;
+			m[12]=m[13]=m[14] = 1.0;	//	ibltex colorをリセット
+			r.env.ibltex = ibltex;		//	ibltexをセット。 shはいらん
+		}
+	}
+
+	//	
+	function performPass( r){
+		local lpass =  r.mainpass["litprepass"];
+		if( lpass){
+			local iblpow = lpass.glitmat[9];	//	IBLの輝度を取得
+			m.miscmat0.set( iblpow,iblpow,iblpow,1.0, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
+		}
+		sky.timer = r.env.timer0;
+		if( dirty){	//	全描画
+			sky.render();
+			dirty = false;
+		}else{
+			// sky.renderRange( ++framecnt, 8);
+		}
+		m.tex0 = sky.tex;
+		r.setRenderTarget( target, viewport);
+		local idx = r.currenttarget?ridx:fidx;
+		skBindVertexBuffer( vtx);
+		skDrawIndexBuffer( m, SK_TRIANGLESTRIP, idx);
+	}
+}
 
 //	ガウスフィルターパス。
 

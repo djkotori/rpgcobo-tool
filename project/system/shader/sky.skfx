@@ -1,0 +1,537 @@
+declare sky;
+
+module mod_math;
+
+param def
+{
+	attribute mediump vec4 in_pos <ID=POSITION>;
+	attribute mediump vec4 in_uv <id=UV1>;
+	
+	uniform highp mat4 P <id=MISC1MAT>;
+
+	uniform lowp vec4 rdiv <id=UNICOLOR1>;
+	
+	varying highp vec2 v_uv;
+	
+	fragout mediump vec4 fragcolor;
+}
+
+vs def
+{
+	void main(){
+		highp vec4 dpos = in_pos;
+		dpos.x = -1.0+(rdiv.y + (dpos.x*0.5+0.5)*rdiv.x)*2.0;
+		gl_Position = dpos;
+		v_uv = dpos.xy*0.5 + 0.5;
+	}
+}
+
+fs common
+{
+	const highp float SKY_PI = 3.141592653589793;
+
+	//	longitude spans 360 degrees; colatitude spans 180 degrees, north at v=0.
+	highp vec3 skyDirection(){
+		highp float longitude = (v_uv.x*2.0-1.0)*SKY_PI;
+		highp float colatitude = v_uv.y*SKY_PI;
+		return vec3( sin(longitude)*sin(colatitude), cos(colatitude), cos(longitude)*sin(colatitude));
+	}
+
+	highp vec2 directionUV( highp vec3 d){
+		return vec2( atan(d.x,d.z)/(2.0*SKY_PI)+0.5, acos(clamp(d.y,-1.0,1.0))/SKY_PI);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	
+//	test
+//	
+
+fs test
+{
+	void main(){
+		vec3 c0 = P[0].xyz;
+		vec3 c1 = P[1].xyz;
+		vec4 pix = vec4( mix( c0, c1, (skyDirection()*0.5+0.5).y), 1.0);
+		fragcolor = pix;
+	}
+}
+
+technique test
+{
+	apilevel = 30;
+
+	pass {
+		using common;
+
+		param = def;
+		vs = def;
+		fs = test;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+// Physical atmosphere and art-directed volumetric cumulus. Distances are in km.
+
+param physical
+{
+	// P: sun/haze, solar irradiance/coverage, camera km/density, scale/base km/thickness km/ground.
+	// Q: ground RGB/sky tone, wind km/evolution/detail, noise offset, morphology/reserved.
+	attribute highp vec4 in_pos <ID=POSITION>;
+	attribute highp vec4 in_uv <id=UV1>;
+	uniform highp mat4 P <id=MISC1MAT>;
+	uniform highp mat4 Q <id=MISC2MAT>;
+	uniform highp sampler2D transmittanceTex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=CLAMP, WRAP_T=CLAMP>;
+	uniform highp sampler3D noiseTex <id=COLORTEX2, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=WRAP, WRAP_T=WRAP, WRAP_R=WRAP>;
+	uniform highp sampler2D skyTex <id=COLORTEX3, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=WRAP, WRAP_T=CLAMP>;
+
+	uniform lowp vec4 rdiv <id=UNICOLOR1>;
+
+	varying highp vec2 v_uv;
+	fragout highp vec4 fragcolor;
+}
+
+fs physical_common
+{
+	const highp float EARTH_R = 6360.0;
+	const highp float ATMOSPHERE_H = 100.0;
+	const highp vec3 BETA_R = vec3( 0.005802, 0.013558, 0.033100);
+	const highp vec3 BETA_O = vec3( 0.000650, 0.001881, 0.000085);
+
+	highp vec3 rayleighCoefficient(){
+		// Restricted spectral variation, used in both scattering and extinction.
+		highp vec3 deep = vec3(0.35,0.55,1.05);
+		highp vec3 cyan = vec3(0.75,1.30,0.75);
+		return BETA_R*mix(vec3(1.0),Q[0].w < 0.0 ? deep : cyan,abs(Q[0].w));
+	}
+
+	highp vec3 atmosphereRadianceScale(){
+		// Artistic spectral exposure of scattered light, not of sunlight or cloud reflection.
+		highp vec3 endpoint = Q[0].w < 0.0 ? vec3(0.004,0.012,0.04) : vec3(0.12,0.8,0.42);
+		return exp(log(endpoint)*abs(Q[0].w));
+	}
+
+	highp vec3 scatteringExposure( highp vec3 exposure, highp vec3 illumination){
+		// Preserve atmospheric reddening instead of filtering warm sunlight through a blue tint.
+		highp float warm = (1.0-smoothstep(0.05,0.35,illumination.b/max(illumination.r,1e-6)))*
+			(1.0-smoothstep(0.7,1.0,illumination.g/max(illumination.r,1e-6)));
+		return mix(exposure,vec3(max(max(exposure.r,exposure.g),exposure.b)),warm);
+	}
+
+	highp float altitude( highp vec3 p){
+		return (dot(p.xz,p.xz)+(p.y-EARTH_R)*(p.y+EARTH_R))/(length(p)+EARTH_R);
+	}
+
+	highp vec2 sphereInterval( highp vec3 p, highp vec3 d, highp float radius){
+		highp float r = length( p);
+		highp float b = dot( p, d);
+		highp float disc = b*b + (radius-r)*(radius+r);
+		if (disc < 0.0) return vec2( -1.0);
+		highp float s = sqrt( disc);
+		// Avoid cancellation of the near root at metre-scale camera heights.
+		highp float q = -b-(b < 0.0 ? -s : s);
+		if (abs(q) < 1e-8) return vec2(-b);
+		highp float other = (r-radius)*(r+radius)/q;
+		return vec2(min(q,other),max(q,other));
+	}
+
+	highp vec3 airDensity( highp float h){
+		h = max( h, 0.0);
+		// Near-surface aerosols accumulate in a shallow boundary layer.
+		highp float boundary = 48.0*(P[0].w-1.0)*(P[0].w-1.0)/P[0].w*exp(-h/0.075);
+		return vec3( exp( -h/8.0), exp( -h/1.2)+boundary, max( 0.0, 1.0-abs(h-25.0)/15.0));
+	}
+
+	highp vec3 extinction( highp vec3 density){
+		return rayleighCoefficient()*density.x + vec3( 0.004440*P[0].w*density.y) + BETA_O*density.z;
+	}
+
+	highp vec3 sunTransmittance( highp vec3 p, highp vec3 sun){
+		highp float h = clamp( altitude(p), 0.0, ATMOSPHERE_H);
+		highp float mu = dot( normalize(p), sun);
+		highp float horizon = -sqrt(max(h*(2.0*EARTH_R+h),0.0))/(EARTH_R+h);
+		highp float visibility = smoothstep(-0.00465,0.00465,mu-horizon);
+		if (visibility <= 0.0) return vec3(0.0);
+		// The solar disc emerges gradually; do not interpolate the LUT's zero-valued ground rays.
+		mu = max(mu,horizon+0.00465);
+		highp vec2 uv = vec2( 0.5+0.5*sign(mu)*sqrt(abs(mu)), sqrt(h/ATMOSPHERE_H));
+		// LUT nodes are at texel centres, including both endpoints.
+		uv = (uv*vec2( 255.0, 63.0)+0.5)/vec2( 256.0, 64.0);
+		return textureLod( transmittanceTex, uv, 0.0).rgb*visibility;
+	}
+
+	highp float hgPhase( highp float mu, highp float g){
+		return (1.0-g*g)/(4.0*SKY_PI*pow( max(1.0+g*g-2.0*g*mu,0.001), 1.5));
+	}
+
+	highp vec3 cameraPosition(){
+		return vec3( 0.0, EARTH_R+max(P[2].y,0.0005), 0.0);
+	}
+
+	highp vec3 nightIllumination(){
+		// Full-moon-inspired exposure, not a lunar ephemeris or absolute photometric model.
+		highp float night = 1.0-smoothstep(-0.15,-0.02,normalize(P[0].xyz).y);
+		return P[1].xyz*vec3(0.55,0.7,1.0)*(night/180.0);
+	}
+
+	highp vec3 airSource( highp vec3 p, highp vec3 d, highp vec3 density, highp vec3 throughput,
+		out highp vec3 glare){
+		highp vec3 sun = normalize(P[0].xyz);
+		highp float mu = dot(d,sun);
+		highp vec3 sunlight = sunTransmittance(p,sun);
+		// Area-averaged cloud shadow on the air below the cloud deck.
+		highp float belowCloud = 1.0-smoothstep(P[3].y,P[3].y+P[3].z,altitude(p));
+		highp float cloudVisibility = mix(1.0,exp(-P[2].w*8.0*P[3].z*0.5/max(sun.y,0.1)),P[1].w);
+		sunlight *= mix(1.0,cloudVisibility,belowCloud);
+		highp float opticalDepth = -log(max(throughput.g,1e-6));
+		highp float hazeWeight = 1.0-exp(-2.0*opticalDepth*opticalDepth);
+		highp vec3 diffuse = (1.0-sunlight)*0.12*smoothstep(-0.12,0.15,sun.y);
+		highp float twilight = 1.0-smoothstep(0.02,0.18,sun.y);
+		if (twilight > 0.0) {
+			// Secondary light comes from the illuminated atmosphere, not white light in Earth's shadow.
+			highp vec3 upperSun = sunTransmittance(normalize(p)*(EARTH_R+max(altitude(p),6.0)),sun);
+			highp vec3 diffuseTint = upperSun/max(max(max(upperSun.r,upperSun.g),upperSun.b),1e-6);
+			diffuse = mix(diffuse,vec3(dot(diffuse,vec3(0.2126,0.7152,0.0722)))*diffuseTint,
+				twilight*hazeWeight);
+		}
+		highp vec3 rayleigh = rayleighCoefficient()*density.x;
+		highp vec3 mie = vec3(0.003996*P[0].w*density.y);
+		// Dense haze recovers brightness without losing the selected sky hue.
+		highp vec3 skyExposure = atmosphereRadianceScale();
+		highp vec3 hazeExposure = skyExposure/max(max(skyExposure.r,skyExposure.g),skyExposure.b);
+		highp vec3 mieExposure = mix(skyExposure,hazeExposure,hazeWeight);
+		highp vec3 directMie = P[1].xyz*mie*
+			mix(mieExposure,scatteringExposure(mieExposure,sunlight),hazeWeight)*sunlight;
+		glare = directMie*max(hgPhase(mu,0.8)-1.0/(4.0*SKY_PI),0.0);
+		return P[1].xyz*(rayleigh*
+			(mix(skyExposure,scatteringExposure(skyExposure,sunlight),hazeWeight)*sunlight*3.0*(1.0+mu*mu)/(16.0*SKY_PI)+
+			 mix(skyExposure,scatteringExposure(skyExposure,diffuse),hazeWeight)*diffuse/(4.0*SKY_PI)) +
+			mie*(mix(mieExposure,scatteringExposure(mieExposure,sunlight),hazeWeight)*sunlight*hgPhase(mu,0.8)+
+			 mix(mieExposure,scatteringExposure(mieExposure,diffuse),hazeWeight)*diffuse/(4.0*SKY_PI))) +
+			(rayleigh+mie)*nightIllumination()/(4.0*SKY_PI);
+	}
+
+	void airSegment( highp vec3 p, highp vec3 d, highp float distance,
+		inout highp vec3 radiance, inout highp vec3 throughput, inout highp vec3 glare){
+		highp vec3 density = airDensity(altitude(p+d*distance*0.5));
+		highp vec3 sigma = extinction(density);
+		highp vec3 segmentT = exp(-sigma*distance);
+		highp vec3 segmentGlare;
+		highp vec3 source = airSource(p+d*distance*0.5,d,density,throughput*sqrt(segmentT),segmentGlare);
+		highp vec3 weight = throughput*(1.0-segmentT)/max(sigma,vec3(1e-6));
+		radiance += weight*source;
+		glare += weight*segmentGlare;
+		throughput *= segmentT;
+	}
+
+	void airSegment( highp vec3 p, highp vec3 d, highp float distance,
+		inout highp vec3 radiance, inout highp vec3 throughput){
+		highp vec3 glare = vec3(0.0);
+		airSegment(p,d,distance,radiance,throughput,glare);
+	}
+
+	highp vec3 integrateAir( highp vec3 p, highp vec3 d, highp float distance,
+		out highp vec3 throughput, out highp vec3 glare){
+		throughput = vec3(1.0);
+		glare = vec3(0.0);
+		highp vec3 radiance = vec3(0.0);
+		for (int i=0; i<24; ++i) {
+			highp float a = float(i)/24.0, b = float(i+1)/24.0;
+			highp float ds = (b*b-a*a)*distance;
+			airSegment(p+d*(a*a*distance),d,ds,radiance,throughput,glare);
+		}
+		return max(radiance,vec3(0.0));
+	}
+
+	highp vec3 integrateAir( highp vec3 p, highp vec3 d, highp float distance, out highp vec3 throughput){
+		highp vec3 glare;
+		return integrateAir(p,d,distance,throughput,glare);
+	}
+
+	highp vec3 atmosphereDirection( highp vec2 uv){
+		highp float x = 1.0-uv.y*2.0;
+		highp float elevation = sign(x)*x*x*SKY_PI*0.5;
+		highp float longitude = (uv.x*2.0-1.0)*SKY_PI;
+		return vec3(sin(longitude)*cos(elevation),sin(elevation),cos(longitude)*cos(elevation));
+	}
+
+	highp vec2 atmosphereUV( highp vec3 d){
+		highp float elevation = asin(clamp(d.y,-1.0,1.0));
+		return vec2(directionUV(d).x,0.5-0.5*sign(elevation)*sqrt(abs(elevation)/(SKY_PI*0.5)));
+	}
+}
+
+fs transmittance
+{
+	void main(){
+		highp vec2 uv = clamp( (v_uv*vec2(256.0,64.0)-0.5)/vec2(255.0,63.0), 0.0, 1.0);
+		highp float h = max( uv.y*uv.y*ATMOSPHERE_H, 0.002);
+		highp float x = uv.x*2.0-1.0;
+		highp float mu = sign(x)*x*x;
+		highp vec3 p = vec3( 0.0, EARTH_R+h, 0.0);
+		highp vec3 d = vec3( sqrt(max(1.0-mu*mu,0.0)), mu, 0.0);
+		highp vec2 groundHit = sphereInterval( p, d, EARTH_R);
+		if (groundHit.x > 0.0) {
+			fragcolor = vec4( 0.0);
+			return;
+		}
+		highp float distance = max( sphereInterval(p,d,EARTH_R+ATMOSPHERE_H).y, 0.0);
+		highp vec3 opticalDepth = vec3( 0.0);
+		// Quadratic spacing resolves dense air near the origin, even at the horizon.
+		for (int i=0; i<40; ++i) {
+			highp float a = float(i)/40.0;
+			highp float b = float(i+1)/40.0;
+			highp float ds = (b*b-a*a)*distance;
+			highp float t = (a*a+b*b)*0.5*distance;
+			opticalDepth += extinction( airDensity(altitude(p+d*t)))*ds;
+		}
+		fragcolor = vec4( exp(-opticalDepth), 1.0);
+	}
+}
+
+fs atmosphere
+{
+	void main(){
+		highp vec3 d = atmosphereDirection( v_uv);
+		highp vec3 p = cameraPosition();
+		highp vec3 sun = normalize( P[0].xyz);
+		highp float distance = max( sphereInterval(p,d,EARTH_R+ATMOSPHERE_H).y, 0.0);
+		highp vec2 groundHit = sphereInterval( p, d, EARTH_R);
+		if (P[3].w > 0.5 && groundHit.x > 0.0) distance = min( distance, groundHit.x);
+		highp vec3 throughput;
+		fragcolor = vec4(integrateAir(p,d,distance,throughput),1.0);
+	}
+}
+
+fs cloud_common
+{
+	const highp float CLOUD_EXTINCTION = 8.0;
+	const highp float THIN_CLOUD_HORIZONTAL_SCALE = 1.0;
+	const highp float GROUND_FADE_START = 0.02;
+	const highp float GROUND_FADE_END = 0.2;
+
+	highp float noise3( highp vec3 p){
+		highp vec3 f = fract( p);
+		f = f*f*(3.0-2.0*f);
+		highp vec2 uv = (floor(p).xz+floor(p.y)*vec2(17.0,37.0)+f.xz+0.5)/256.0;
+		return textureLod(noiseTex,vec3(uv.x,(f.y+0.5)*0.5,uv.y),0.0).r;
+	}
+
+	highp float cloudNoise( highp vec3 p, highp float footprint){
+		return mix(noise3(p),0.5,smoothstep(0.35,1.3,footprint));
+	}
+
+	highp float cloudDensityFiltered( highp vec3 p, highp float footprint){
+		highp float height = altitude(p);
+		highp float h = (height-P[3].y)/P[3].z;
+		if (h <= 0.0 || h >= 1.0 || P[1].w <= 0.0) return 0.0;
+		highp vec2 offset = P[2].xz-Q[1].xy;
+		highp vec3 q = vec3((p.x+offset.x)/P[3].x,
+			(h-0.5)*mix(0.08,0.22,Q[3].x),(p.z+offset.y)/P[3].x);
+		q.x *= 0.8*mix(THIN_CLOUD_HORIZONTAL_SCALE,1.0,Q[3].x);
+		q.z *= 0.8;
+		q *= 2.5;
+		q += Q[2].xyz+vec3(0.0,Q[1].z,0.0);
+		highp float broad = cloudNoise(q*0.55,footprint*0.55)*0.65+
+			cloudNoise(q*1.65+vec3(13.1,7.3,5.7),footprint*1.65)*0.35;
+		highp float threshold = mix(0.68,0.22,P[1].w);
+		highp float envelope = smoothstep(threshold-0.12,threshold+0.08,broad);
+		if (envelope <= 0.0) return 0.0;
+		highp float detail = cloudNoise(q*4.7,footprint*4.7)*0.57+
+			cloudNoise(q*11.3+7.1,footprint*11.3)*0.28+cloudNoise(q*27.1,footprint*27.1)*0.15;
+		highp float detailAmount = Q[1].w*mix(0.65,1.0,Q[3].x);
+		highp float field = (broad-threshold)*2.8+(detail-0.5)*detailAmount*1.65;
+		// A soft parabolic layer keeps flat bases but lets the fractal field form the cloud tops.
+		highp float vertical = (h-0.42)/0.58;
+		field -= vertical*vertical*0.4;
+		float hdens = 1.0-abs(h*2.0-1.0);	//	smoothstep(0.0,0.08,h)
+		return max(field,0.0)*envelope*hdens*P[2].w*2.0;
+	}
+
+	highp float cloudJitter(){
+		highp ivec2 pixel = ivec2(gl_FragCoord.xy);
+		int x = pixel.x&3, y = pixel.y&3;
+		int bayer = ((x^y)&1)*8+(y&1)*4+((x^y)&2)+((y&2)>>1);
+		return (float(bayer)+0.5)/16.0;
+	}
+
+	highp vec2 cloudInterval( highp vec3 p, highp vec3 d){
+		highp vec2 outer = sphereInterval(p,d,EARTH_R+P[3].y+P[3].z);
+		if (outer.y <= 0.0) return vec2(0.0);
+		highp vec2 inner = sphereInterval(p,d,EARTH_R+P[3].y);
+		highp float start = max(0.0,outer.x), end = outer.y;
+		if (altitude(p) < P[3].y) start = max(start,inner.y);
+		else if (inner.x > 0.0) end = min(end,inner.x);
+		highp vec2 ground = sphereInterval(p,d,EARTH_R);
+		if (P[3].w > 0.5 && ground.x > 0.0) end = min(end,ground.x);
+		return vec2(start,max(start,end));
+	}
+
+	highp vec3 skySample( highp vec3 d){
+		return textureLod( skyTex, atmosphereUV(d), 0.0).rgb;
+	}
+
+	highp vec3 fadeGround( highp vec3 color, highp vec3 d, highp float distance){
+		highp float fade = smoothstep(GROUND_FADE_START,GROUND_FADE_END,distance);
+		if (fade <= 0.0) return color;
+		// Use the same azimuth at the sky horizon, not the ground-clipped LUT below it.
+		highp vec3 horizon = textureLod(skyTex,vec2(directionUV(d).x,0.5),0.0).rgb;
+		return mix(color,horizon,fade);
+	}
+
+	highp vec3 diffuseSky(){
+		// Cosine-weighted hemisphere quadrature, in irradiance/pi units.
+		return (skySample(vec3(0.0,1.0,0.0))*2.0 +
+			skySample(vec3(0.866,0.5,0.0)) + skySample(vec3(-0.866,0.5,0.0)) +
+			skySample(vec3(0.0,0.5,0.866)) + skySample(vec3(0.0,0.5,-0.866)))/6.0;
+	}
+}
+
+fs physical
+{
+	void main(){
+		highp vec3 d = skyDirection();
+		highp vec3 p = cameraPosition();
+		highp vec3 sun = normalize( P[0].xyz);
+		highp vec3 ambient = diffuseSky();
+		highp vec3 background = skySample( d);
+		highp vec3 direct = P[1].xyz*sunTransmittance(p,sun);
+		highp vec2 groundHit = sphereInterval( p, d, EARTH_R);
+		bool hitsGround = P[3].w > 0.5 && groundHit.x > 0.0;
+		highp float mu = dot( d, sun);
+		highp vec3 airT = vec3(1.0);
+		// Resolve the true finite path instead of interpolating across the ground/sky discontinuity.
+		if (hitsGround || abs(d.y) < 0.035) {
+			highp float distance = hitsGround ? groundHit.x : max(sphereInterval(p,d,EARTH_R+ATMOSPHERE_H).y,0.0);
+			background = integrateAir(p,d,distance,airT);
+		}
+		highp float angularFootprint = max(length(dFdx(d)),length(dFdy(d)));
+
+		if (hitsGround && P[3].w > 0.5) {
+			highp vec3 hit = p+d*groundHit.x;
+			highp vec3 normal = normalize( hit);
+			highp vec3 groundUV = vec3(hit.x+P[2].x,0.0,hit.z+P[2].z)+Q[2].xyz;
+			highp float footprint = groundHit.x*angularFootprint/max(abs(dot(normal,d)),0.001);
+			highp float variation = 0.65;
+			highp float frequency = 4.0, amplitude = 0.14;
+			for (int octave=0; octave<5; ++octave) {
+				highp float resolved = 1.0-smoothstep(0.25,1.0,footprint*frequency);
+				variation += (noise3(groundUV*frequency)-0.5)*amplitude*resolved;
+				frequency *= 4.0;
+				amplitude *= 1.05;
+			}
+			highp float sunCosine = max(dot(normal,sun),0.0);
+			highp vec3 deckIrradiance = P[1].xyz*
+				sunTransmittance(normal*(EARTH_R+P[3].y+P[3].z),sun)*sunCosine/SKY_PI;
+			highp vec3 irradiance = ambient+deckIrradiance+nightIllumination()/SKY_PI;
+			highp vec3 groundColor = Q[0].rgb*irradiance*variation;
+			background += groundColor*airT;
+			background = fadeGround(background,d,groundHit.x);
+		}
+		if (!hitsGround) {
+			// Finite, antialiased solar disc; only its photographic radiance is capped.
+			highp float radius = 0.00465;
+			highp float angle = acos(clamp(mu,-1.0,1.0));
+			highp float aa = max(fwidth(angle),0.00015);
+			highp float disc = 1.0-smoothstep(radius-aa,radius+aa,angle);
+			highp vec3 solar = direct/(SKY_PI*radius*radius);
+			solar *= min(1.0,100.0/max(max(solar.r,solar.g),max(solar.b,1e-6)));
+			background += solar*disc;
+		}
+
+		highp float transmittance = 1.0;
+		highp vec3 cloud = vec3( 0.0);
+		highp vec3 cloudGlare = vec3(0.0);
+		highp vec2 interval = cloudInterval(p,d);
+		highp float start = interval.x, end = interval.y;
+		if (hitsGround) end = min(end,groundHit.x);
+		if (P[1].w > 0.0 && end > start) {
+			const int steps = 24;
+			highp float ds = (end-start)/float(steps);
+			highp float phase = 0.8*hgPhase(mu,0.65)+0.2*hgPhase(mu,-0.25);
+			highp vec3 cloudAirT;
+			highp vec3 cloudAirGlare;
+			highp vec3 cloudAir = integrateAir(p,d,start,cloudAirT,cloudAirGlare);
+			highp vec3 endAirT = cloudAirT, endAir = cloudAir;
+			highp vec3 endAirGlare = cloudAirGlare;
+			for (int j=0; j<4; ++j)
+				airSegment(p+d*(start+(end-start)*float(j)*0.25),d,(end-start)*0.25,endAir,endAirT,endAirGlare);
+			highp vec3 layerSunlight = P[1].xyz*sunTransmittance(p+d*((start+end)*0.5),sun);
+			highp vec3 nightLight = nightIllumination();
+			// A shifted sample must not turn a sharp sunrise gradient into a Bayer lighting pattern.
+			highp float twilight = 1.0-smoothstep(0.04,0.08,abs(sun.y));
+			highp float jitter = mix(cloudJitter(),0.5,twilight);
+			for (int i=0; i<steps; ++i) {
+				highp float fraction = (float(i)+jitter*0.5)/float(steps);
+				highp vec3 samplePos = p+d*(start+fraction*(end-start));
+				highp float footprint = angularFootprint*(start+fraction*(end-start))*2.5/P[3].x;
+				highp float density = cloudDensityFiltered(samplePos,footprint);
+				if (density > 0.001) {
+					highp float h = clamp((altitude(samplePos)-P[3].y)/P[3].z,0.0,1.0);
+					highp float probeDistance = P[3].z*0.25+0.06;
+					highp float towardsSun = cloudDensityFiltered(samplePos+sun*probeDistance,footprint);
+					highp float facing = clamp(0.5+(density-towardsSun)*1.5,0.0,1.0);
+					// A local directional probe plus the remaining layer depth, not a nested ray march.
+					highp float tau = (density+towardsSun*2.0)/3.0*CLOUD_EXTINCTION*
+						P[3].z*(1.0-h)/max(abs(sun.y),0.2);
+					highp float multi = exp(-tau)*phase + 0.5*exp(-tau*0.5)*hgPhase(mu,0.325) + 0.25*exp(-tau*0.25)/(4.0*SKY_PI);
+					highp vec3 sunlight = layerSunlight;
+					if (twilight > 0.0) sunlight = mix(layerSunlight,
+						P[1].xyz*sunTransmittance(samplePos,sun),twilight);
+					highp vec3 source = (sunlight*multi*mix(0.45,1.3,facing) + ambient*mix(0.25,0.65,h) +
+						nightLight/(4.0*SKY_PI))*0.25;
+					// RPG exposure convention: cloud diffuse luminance stays below 1.
+					highp float luminance = dot(source,vec3(0.2126,0.7152,0.0722));
+					source *= 0.65/(0.65+luminance);
+					highp float segmentT = exp(-density*CLOUD_EXTINCTION*ds);
+					cloud += transmittance*(1.0-segmentT)*
+						(source*mix(cloudAirT,endAirT,fraction)+mix(cloudAir,endAir,fraction));
+					cloudGlare += transmittance*(1.0-segmentT)*mix(cloudAirGlare,endAirGlare,fraction);
+					transmittance *= segmentT;
+					if (transmittance < 0.005) break;
+				}
+			}
+		}
+		// Reuse view opacity to approximate the cloud shadow on foreground solar forward scattering.
+		highp vec3 color = background*transmittance+cloud-cloudGlare*(1.0-transmittance);
+		highp float peak = max(max(color.r,color.g),color.b);
+		color *= min(1.0,100.0/max(peak,1e-6));
+		fragcolor = vec4( max(color,vec3(0.0)), 1.0);
+	}
+}
+
+technique transmittance
+{
+	apilevel = 30;
+	pass {
+		using common, physical_common;
+		CULLFACE = OFF;
+		param = physical;
+		vs = def;
+		fs = transmittance;
+	}
+}
+
+technique atmosphere
+{
+	apilevel = 30;
+	pass {
+		using common, physical_common;
+		CULLFACE = OFF;
+		param = physical;
+		vs = def;
+		fs = atmosphere;
+	}
+}
+
+technique physical
+{
+	apilevel = 30;
+	pass {
+		using common, physical_common, cloud_common;
+		CULLFACE = OFF;
+		param = physical;
+		vs = def;
+		fs = physical;
+	}
+}

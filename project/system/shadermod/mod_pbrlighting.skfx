@@ -21,7 +21,7 @@ param pbrlighting
 	uniform highp vec4 shadow[12] <id=SHADOWPARAM>;	// [3+3*3]	(1-depth,1.0/zfar,1.0/raylen,coeffecient/zfar), (pa,pb,pc,pd), (near0, near1, near2, near3), uvz[0], uvz[1], uvz[2]
 
 	uniform highp vec4 fogp[6]<ID=FOGPARAMVEC>; 
-	uniform lowp vec4 upvec <id=UPVEC>;
+	uniform mediump vec4 upvec <id=UPVEC>;
 	
 	struct Light {
 		mediump vec3 col;
@@ -199,17 +199,18 @@ fs pbrlighting
 
 	vec3 Irradiance_SphericalHarmonics( in vec3 n) {
 		n = invvmat3 * n;	//	n = world normal
-		return max(
-			iblsh[0]
-			+ iblsh[1] * (n.y)
-			+ iblsh[2] * (n.z)
-			+ iblsh[3] * (n.x)
-			+ iblsh[4] * (n.y * n.x)
-			+ iblsh[5] * (n.y * n.z)
-			+ iblsh[6] * (3.0 * n.z * n.z - 1.0)
-			+ iblsh[7] * (n.z * n.x)
-			+ iblsh[8] * (n.x * n.x - n.y * n.y)
-		, 0.0);
+		// return max(
+		// 	iblsh[0]
+		// 	+ iblsh[1] * (n.y)
+		// 	+ iblsh[2] * (n.z)
+		// 	+ iblsh[3] * (n.x)
+		// 	+ iblsh[4] * (n.y * n.x)
+		// 	+ iblsh[5] * (n.y * n.z)
+		// 	+ iblsh[6] * (3.0 * n.z * n.z - 1.0)
+		// 	+ iblsh[7] * (n.z * n.x)
+		// 	+ iblsh[8] * (n.x * n.x - n.y * n.y)
+		// , 0.0);
+		return textureLod( ibltex, n, 6.0).xyz * (1.02 / 3.141592);
 	}
 	
 	vec3 prefilteredRadiance( in vec3 r, float prough) {
@@ -223,11 +224,11 @@ fs pbrlighting
 		// vec3 r = getStandardReflectedVector( g);
 		// vec3 difirr = Irradiance_SphericalHarmonics( g.n) * dirlit[2].z;
 		// dirlit[2] = (exponent,iblrate,shrate,__)
-		$( ENVTEX){
+		// $( ENVTEX){
 			Fr = E * prefilteredRadiance( r, g.rough) * dirlit[2].y;	//	perceptualRoughness
-		} : {
-			Fr = E * Irradiance_SphericalHarmonics( r) * dirlit[2].y;
-		}
+		// } : {
+			// Fr = E * Irradiance_SphericalHarmonics( r) * dirlit[2].y;
+		// }
 		Fd = g.difcol * difirr * (1.0 - E) * dirlit[3].xyz;
 		Fr *= g.energyCompensation * dirlit[3].xyz;	//	koko?
 	}
@@ -238,25 +239,27 @@ fs pbrlighting
 	void fog( inout vec3 col, highp vec3 wvp) {
 		//	FOG = 1:simple fog, 2:atmosphere scattering, 3:pbr fog(koredake!)
 		$( FOG == 3){
-			// note: d can be +inf with the skybox
 			highp float d = length( wvp);
-			// .x = density .y = -fallof*(camy-height) .z = density * exp(-fallof*(camy-height))
-			highp vec3 density = fogp[0].xyz;
-			highp float falloff = fogp[0].w;   // height falloff [1/m]
 			highp float fogstart = fogp[1].w;
-			// Compute the fog's optical path (unitless) at a distance of 1m at a given height.
-			highp float fogOpticalPathAtOneMeter = density.z;
-			highp float fh = falloff * (density.y - dot( vec4( wvp, 1.0), upvec));
-			if( abs( fh) < -0.00125) { // The function below is continuous at fh=0, so to avoid a divide-by-zero, we just clamp fh
-				fogOpticalPathAtOneMeter = (density.z - density.x * exp( fh)) / fh;
+			if( fogp[0].x <= 0.0 || d <= fogstart) return;
+			highp float falloff = fogp[0].w;
+			highp float fogOpticalPath;
+			if( falloff == 0.0){
+				fogOpticalPath = fogp[0].x * (d - fogstart);
+			}else{
+				// fogp[2].xyz converts a view-space displacement to world height (+Y).
+				highp float dh = dot( wvp, fogp[2].xyz);
+				highp float h0 = fogp[0].z + dh * (fogstart / d);
+				highp float h1 = fogp[0].z + dh;
+				highp float x = falloff * abs( dh * ((d - fogstart) / d));
+				// Integrate from the denser endpoint; the series avoids cancellation at the horizon.
+				highp float averageDensity = x < 0.01 ? 1.0 - x*0.5 + x*x*(1.0/6.0) : (1.0 - exp( -x)) / x;
+				highp float logOpticalPath = fogp[0].y - falloff * min( h0, h1) + log( (d - fogstart) * averageDensity);
+				// Optical depth 80 is already opaque; clamp before exp to avoid overflow.
+				fogOpticalPath = exp( clamp( logOpticalPath, -80.0, 4.382026635));
 			}
-			// Compute the integral of the fog density at a given height from fogStart to the fragment
-			highp float fogOpticalPath = fogOpticalPathAtOneMeter * max( d - fogstart, 0.0);
-			// Compute the transmittance [0,1] using the Beer-Lambert Law
-			highp float fogOpacity = (1.0 - exp( -fogOpticalPath));// * fexscale;
-			// compute fog color
-			highp vec3 fogcolor = fogp[1].xyz;
-			col = mix( col, fogcolor, fogOpacity);
+			highp float fogOpacity = 1.0 - exp( -fogOpticalPath);
+			col = mix( col, fogp[1].xyz, fogOpacity);
 		}
 	}
 	
@@ -334,7 +337,8 @@ fs pbrlighting
 		highp vec3 Fd, Fr;
 		// indirect lighting
 		{
-			evaluateStandardIBL( g, standardSpecularDFG( g), getStandardReflectedVector( g), Irradiance_SphericalHarmonics( g.n) * dirlit[2].z, Fd, Fr);
+			vec3 difirr = Irradiance_SphericalHarmonics( g.n) * dirlit[2].z;	//	diffuseIrradiance
+			evaluateStandardIBL( g, standardSpecularDFG( g), getStandardReflectedVector( g), difirr, Fd, Fr);
 			Fd = Fd*(sdw*ao) + g.col.xyz * (g.mparam.y*g.mparam.y * (8192.0 * dirlit[2].x));    //  emissive. standardのみ。8192は要調整
 			Fr = Fr*(sdw*ao);
 		}

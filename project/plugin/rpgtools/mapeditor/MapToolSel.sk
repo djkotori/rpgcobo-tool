@@ -63,8 +63,10 @@ class MapTools.tool_sel extends MapTool
 		{ pid="name", lbl="$T.lbl_name", type=STRING, defval="" },
 		{ pid="desc", lbl="$T.lbl_desc", type=STRING, multiline=4, defval="" },
 		{
-			pid="size", lbl="$T.lbl_size", type=CUSTOMBUTTON, tostring=@( v) sprintf( "(%d, %d)", v[0], v[2])
+			pid="size", lbl="$T.lbl_mapsize", type=CUSTOMBUTTON, tostring=@( v) sprintf( "(%d, %d)", v[0], v[2])
 		},	//	サイズ設定はダイアログ表示で行う
+		{ pid="mapshot", lbl="$T.lbl_mapshot", type=11001, maptex=@( pl) pl.ref.getMapShot() },
+		{ pid="vs", lbl="$T.cullface", type=LIST, list = cullfacelist, defval=23, cnt="cnt.ui" },
 		{
 			pid="camwork", lbl="$T.camwork", type=PROPERTYLIST,
 			propdef = {
@@ -107,8 +109,7 @@ class MapTools.tool_sel extends MapTool
 				tostring=@( v) sprintf( "HPB(%d %d %d) VP:%f FOV:%d", v.hpb[0], v.hpb[1], v.hpb[2], v.viewport, v.fovy)
 			}
 		},
-		{ pid="mapshot", lbl="$T.lbl_mapshot", type=11001, maptex=@( pl) pl.ref.getMapShot() },
-		{ pid="vs", lbl="$T.cullface", type=LIST, list = cullfacelist, defval=23 },
+		{ pid="ENEMY", lbl="$T.lbl_enemy", type=HEADER, cnt="header1.ui" }
 		{ pid="encount", lbl="$T.editor_map_menu_edit_encount", type=CUSTOMBUTTON,
 			tostring=@( v){
 				if( v[0]){
@@ -122,7 +123,7 @@ class MapTools.tool_sel extends MapTool
 	];
 
 	static baseprops_nodata = [
-		{ pid="size", lbl="$T.lbl_size", type=CUSTOMBUTTON, tostring=@( v) sprintf( "(%d, %d, %d)", v[0], v[1], v[2]), hval=true,
+		{ pid="size", lbl="$T.lbl_mapsize", type=CUSTOMBUTTON, tostring=@( v) sprintf( "(%d, %d, %d)", v[0], v[1], v[2]), hval=true,
 			get=@(prop,data){
 				local bw = ::skstudio.editor.bw; return ( bw.w, bw.h, bw.d);
 			}
@@ -243,9 +244,32 @@ class MapTools.tool_sel extends MapTool
 			}
 			break;
 		case "mapgen":
-			editor.updateMapShot();
-			proplist.setParam( "mapshot", editor.data.mapshot);
+		{
+			local ed = editor;
+			local oldtex = ed.mapshottex;
+			ed.updateMapShot();
+			local newtex = ed.mapshottex;
+			local self = this;
+			local redo = [@(){ ed.mapshottex = newtex; self.proplist.setParam( "mapshot", ed.data.mapshot); }]
+			local undo = [@(){ ed.mapshottex = oldtex; self.proplist.setParam( "mapshot", ed.data.mapshot); }];
+			editor.submitOp( redo, undo, null);
 			break;
+		}
+		case "mapimg":
+		{
+			local ed = editor;
+			local oldtex = ed.mapshottex, img = cmd.cmdarg;
+			if( img.width != oldtex.width || img.height != oldtex.height){
+				Popups.showError( "Image size not match");
+				break;
+			}
+			local newtex = Texture(); newtex.load( img); newtex.ref = true;
+			local self = this;
+			local redo = [@(){ ed.mapshottex = newtex; self.proplist.setParam( "mapshot", ed.data.mapshot); }]
+			local undo = [@(){ ed.mapshottex = oldtex; self.proplist.setParam( "mapshot", ed.data.mapshot); }];
+			editor.submitOp( redo, undo, null);
+			break;
+		}
 		case "prop":
 			if( !editor.data) break;
 			local prop = cmd.prop;

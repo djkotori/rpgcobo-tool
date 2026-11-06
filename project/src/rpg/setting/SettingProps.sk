@@ -321,6 +321,8 @@ local stageprops = RPGSystem.stageprops;
 
 stageprops .. { mapedit=true, pid="encntrate", lbl="$T.lbl_encntrate", type=SCALAR, ui="bar", range=(0.0,100.0), q=10, barrange=(0.0,100.0,1.0), defval=0.0 };
 
+stageprops .. { mapedit=true, pid="MAP_RENDER", lbl="$T.lbl_rendering", type=HEADER, cnt="header1.ui" }
+
 stageprops .. {
 	mapedit=true,
 	pid="rsetid",
@@ -345,7 +347,7 @@ stageprops .. {
 	}
 };
 
-::bgtypelist <- [
+::bgtypelist <- @() #([
 	{
 		lbl="$T.lbl_skybox", val="skybox", icon="\ue3c4",
 		props = @( v) [{ pid="blur", lbl="$T.lbl_blur", type=SCALAR, range=(0,10), defval=(v["blur"]||0), ui="bar" }]
@@ -384,29 +386,35 @@ stageprops .. {
 			return bgpass;
 		}
 	}
-	{
-		lbl="$T.lbl_texture", val="tex", icon="\ue3d3"
+	] ... ( Table.map( SK3DSkies, @( v, k) v["hide"]? undefined : {
+		lbl=v["name"]||k, val=k, icon="\ue3e9",
 		props = [
-			{ pid="tex", lbl="$T.lbl_texture", type=PATH, defval="", }
-			// { pid="uv", lbl="$T.lbl_uv", type=LIST, defval="", }	//	Cylinder, Equirectangular, Cube
-		]
+			...v.props,
+			{ pid="useibl", lbl="$T.lbl_useibl", type=BOOL, defval=false },
+			{ pid="ibldir", lbl="$T.lbl_ibldir", type=SCALAR, range=(-180,180), q=1, ui="bar" },
+		],
+		tostring = @( v){
+			local cls = SK3DSkies[v["type"]];
+			return cls ? cls.tostring(v) : "";
+		},
 		create = @( v){
-			local bgpass = SK3DRenderer.PassRegistory.TextureBackgroundPass();
-			local tex = ::getTexture( v["tex"]);
-			bgpass.setTexture( tex);
+			local bgpass = SK3DRenderer.PassRegistory.GenSkyBackgroundPass();
+			bgpass.setPassSetting( v);
 			return bgpass;
 		}
-	}
-];
+	}))
+);
 
 local bgpropdef(){
 	return {
 		name = "$T.lbl_bgimage"
+		copykey = "bgimage"
+
 		props = @( v){
 			local a = [
 				{ pid="type", lbl="$T.lbl_type", type=LIST, list = bgtypelist, refresh = true},
 			];
-			local bgt = bgtypelist.find( @( x) x.val==v["type"]);
+			local bgt = bgtypelist().find( @( x) x.val==v["type"]);
 			a ... fget( bgt, "props", bgt, v);
 			return a;
 		}
@@ -416,8 +424,20 @@ local bgpropdef(){
 				ed.canvas.setBackground( data);
 			}
 		}
+		edit = @( data){
+			local ed = ::skstudio.editor;
+			local skychk = ed.canvas.skychk.isSelected();
+			ed.canvas.skychk.setSelected( true);
+			ed.canvas.refreshLinkedWeather( data);
+			local ret = PropertyEditPopup.run( null, this, data);
+			if( !skychk){
+				ed.canvas.skychk.setSelected( skychk);
+				ed.canvas.refreshLinkedWeather( null);
+			}
+			return ret;
+		}
 		tostring = @( v){
-			local bgt = bgtypelist.find( @( x) x.val==v["type"]);
+			local bgt = bgtypelist().find( @( x) x.val==v["type"]);
 			local ts = fget( bgt, "tostring", bgt, v) ?? fget( bgt, "lbl", bgt, v);
 			return ts;
 		}
@@ -472,8 +492,8 @@ local weatherpropdef(){
 			ed.canvas.refreshLinkedWeather( data);
 			local ret = PropertyEditPopup.run( null, this, data);
 			if( !skychk){
-				ed.canvas.refreshLinkedWeather( null);
 				ed.canvas.skychk.setSelected( skychk);
+				ed.canvas.refreshLinkedWeather( null);
 			}
 			return ret;
 		}
@@ -494,6 +514,8 @@ stageprops .. {
 	}
 };
 
+stageprops .. { mapedit=true, pid="MAP_SOUND", lbl="$T.lbl_sound", type=HEADER, cnt="header1.ui" }
+
 stageprops .. {
 	mapedit=true, pid="bgmid", lbl="$T.lbl_bgm", type=RESID, restype = ["bgm"], defval=null
 }
@@ -507,6 +529,8 @@ stageprops .. {
 		stage.scn.sk3dsound.setReverbID( val);
 	}
 };
+
+stageprops .. { mapedit=true, pid="MAP_OTHER", lbl="$T.lbl_etcsetting", type=HEADER, cnt="header1.ui" }
 
 stageprops .. {
 	pid = "playervisible"

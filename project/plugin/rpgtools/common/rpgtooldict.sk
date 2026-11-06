@@ -1243,6 +1243,7 @@
 	"editor_map_tool_event"				: {"ja":"イベントツール", "en":"Event Tool"}
 
 	"lbl_mapgen"						: {"ja":"マップ自動生成", "en":"Generate Map"}
+	"lbl_mapimggen"						: {"ja":"マップ画像生成", "en":"Generate Image"}
 	"lbl_encountgroup"					: {"ja":"エンカウントグループ", "en":"Encounting Group"}
 	"lbl_battletest"					: {"ja":"バトルのテスト", "en":"Battle Test"}
 	"lbl_encountarea"					: {"ja":"エンカウントの範囲", "en":"Encounting Area"}
@@ -1275,6 +1276,7 @@
 	"lbl_map_setblock"					: {"ja":"ブロックを置き換える", "en":"Replace Block"}
 	"lbl_map_eracefblk"					: {"ja":"フリーブロックの削除", "en":"Erace FreeBlock"}
 	"lbl_map_savedselections"			: {"ja":"保存された選択範囲", "en":"Saved Selections"}
+	"lbl_mapsize"						: {"ja":"マップサイズ", "en":"Map Size"}
 	"lbl_mapshot"						: {"ja":"全体マップ", "en":"Map Shot"}
 	"lbl_mapshotmode"					: {"ja":"縮小マップの表示", "en":"Map Viewing Mode"}
 	"lbl_automapping"					: {"ja":"オートマッピング", "en":"Auto Mapping"}

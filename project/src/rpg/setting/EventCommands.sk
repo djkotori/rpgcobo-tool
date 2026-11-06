@@ -643,7 +643,7 @@ local settingprops( cmd, props, defmap){
 		{
 			lbl="$T.lbl_settingitem", pid="pid", refresh=1, type=LIST,
 			list = @(){
-				return props.map( @( v) ({ lbl=v.lbl, val=v.pid }));
+				return props.map( @( v) v.type==HEADER ? "-" : { lbl=v.lbl, val=v.pid });
 			},
 			set = @( prop, data, val){
 				data[prop.pid] <- val;

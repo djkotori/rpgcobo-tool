@@ -189,9 +189,8 @@ technique ptovz
 }
 
 
-
 //////////////////////////////////////////////////////////////////////
-//	
+//	simple copy
 
 param copy
 {
@@ -230,5 +229,104 @@ technique copy
 		param = copy;
 		vs = copy;
 		fs = copy;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+//	equirectangular to cubemap
+
+param eqtocube
+{
+	attribute highp vec4 in_pos <ID=POSITION>;
+	attribute highp vec4 in_uv <id=UV1>;
+	
+	uniform highp sampler2D coltex1 <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=WRAP, WRAP_T=CLAMP>;
+	uniform highp mat4 facemat <id=MISC1MAT>;
+	varying highp vec4 v_uv;
+	
+	fragout highp vec4 fragcolor;
+}
+
+vs eqtocube
+{
+	void main(){
+		gl_Position = in_pos;
+		v_uv = in_uv;
+	}
+}
+
+fs eqtocube
+{
+	const highp float PI = 3.14159265;
+	
+	highp vec2 uvconv( highp vec2 cubeuv){
+		highp vec3 n = normalize( (facemat * vec4( cubeuv*2.0-1.0, 1.0, 0.0)).xyz);
+		highp float theta = atan( n.x, n.z);
+		return vec2( theta / (2.0 * PI) + 0.5, acos( clamp( n.y, -1.0, 1.0)) / PI);
+	}
+
+	void main(){
+		highp vec2 equv = uvconv( v_uv.xy);
+		highp vec4 pix = texture2D( coltex1 , equv);
+		fragcolor = pix;
+	}
+}
+
+technique eqtocube
+{
+	pass {
+		CULLFACE = OFF;
+		
+		param = eqtocube;
+		vs = eqtocube;
+		fs = eqtocube;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+//	HDR RGB => RGBE
+
+param torgbe
+{
+	attribute highp vec4 in_pos <ID=POSITION>;
+	attribute highp vec4 in_uv <id=UV1>;
+	
+	uniform highp sampler2D coltex1 <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP>;
+	varying highp vec4 v_uv;
+	
+	fragout lowp vec4 fragcolor;
+}
+
+vs torgbe
+{
+	void main(){
+		gl_Position = in_pos;
+		v_uv = in_uv;
+	}
+}
+
+fs torgbe
+{
+	void main(){
+		highp vec3 hdr = texture2D( coltex1 , v_uv.xy).rgb;
+		highp float v = max( max( hdr.r, hdr.g), hdr.b);
+		if (v < 1e-32) {
+			fragcolor = vec4( 0.0);
+		} else {
+			highp float e = floor( log2( v)) + 1.0;
+			highp vec3 rgb = floor( hdr * exp2( -e) * 256.0);
+			fragcolor = vec4( rgb, e + 128.0) / 255.0;
+		}
+	}
+}
+
+technique torgbe
+{
+	pass {
+		CULLFACE = OFF;
+		
+		param = torgbe;
+		vs = torgbe;
+		fs = torgbe;
 	}
 }

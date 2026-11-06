@@ -59,11 +59,11 @@ fs tex
 {
 	void main(){
 		highp vec3 wn = normalize( v_wn);
-		highp float th = atan( wn.z, wn.x);
+		highp float th = atan( wn.x, wn.z);
 		highp float ph = acos( clamp( wn.y, -1.0, 1.0));
-		highp vec2 uv = vec2( (th+PI) / (2.0*PI), 1.0-ph / PI);
-		mediump vec4 pix = textureLod( coltex1, uv, 0.0);// * vec4( dirlit[2].yyy, 1.0);
-		pix.xyz = toLinear( pix.xyz);	//	texture = sRGB
+		highp vec2 uv = vec2( (th+PI) / (2.0*PI), ph / PI);
+		mediump vec4 pix = textureLod( coltex1, uv, 0.0) * P[0];
+		// pix.xyz = toLinear( pix.xyz);	//	texture = sRGB
 		FRAGOUT
 	}
 }

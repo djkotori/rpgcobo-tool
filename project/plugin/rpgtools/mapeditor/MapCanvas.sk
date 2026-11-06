@@ -161,6 +161,8 @@ class MapCanvas extends CanvasBehavior
 		if( skychk.isSelected()){
 			view.renderer.setWeather( wd);
 		}
+		view.renderer.bgpass = skychk.isSelected() ? skyboxbgpass : colorbgpass;
+		view.repaint();
 	}
 	
 	//	BlockWorldを設定しなおす。サイズ変更、初期化、voxインポートなど、同じBlockWorldを使い続けられない場合にも
