@@ -548,12 +548,12 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 				if( bio.countUsed( BRIDGE, x, z, 4, 1) == 4){
 					local rot = bio[x+(z-1)*w] == ROAD ? 2 : 0;
 					local objid = (rnd( 0.0, 1.0) < dor) ? PORTAL_OPEN : PORTAL_DOOR;
-					objs .. { objid=objid, x=x+2, z=z+(rot==2?1:0), rot=rot };	//	回転でずれるな～
+					objs .. { objid=objid, x=x+2, z=z+(rot==2?1:0), rot=rot, size=1 };	//	回転でずれるな～
 				}else
 				if( bio.countUsed( BRIDGE, x, z, 1, 4) == 4){
 					local rot = bio[x+1+z*w] == ROAD ? 1 : 3;
 					local objid = (rnd( 0.0, 1.0) < dor) ? PORTAL_OPEN : PORTAL_DOOR;
-					objs .. { objid=objid, x=x+(rot==3?1:0), z=z+2, rot=rot };	//	回転でずれるな～
+					objs .. { objid=objid, x=x+(rot==3?1:0), z=z+2, rot=rot, size=1 };	//	回転でずれるな～
 				}
 			}
 			return objs;
@@ -681,6 +681,8 @@ foreach( t in ["village", "town", "castle"]){
 		],defval={} };
 	}else{
 		props .. { pid="terrainRelief", lbl="$T.mapgen_relief", type=RANGE, cnt="cnt6.ui", range=(0,12), q=1, defval=[2.0,4.0] };
+		props .. { pid="terrainProtrusion", lbl="$T.mapgen_protrusion", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[0,100] };
+		props .. { pid="terrainSmoothness", lbl="$T.mapgen_smoothness", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[100,100] };
 		props .. { pid="villageMainRoadCount", lbl="$T.mapgen_mainroads", type=RANGE, cnt="cnt6.ui", range=(0,4), q=1, defval=t=="village" ? [1,4] : [2,4] };
 		props .. { pid="orientation", lbl="$T.mapgen_orientation", type=LIST, list=[
 			{ lbl="$T.lbl_random", val={} },
@@ -952,9 +954,13 @@ class MapGenerator
 	//	マップ生成処理を開始する。入力パラメータが全て設定された状態で呼ぶ必要がある。
 	function generate(){
 		if( !src) src = generateSourceImage();
+		if( gendef["settlement"] && !assetPlan)
+			throw Exception( "Settlement preview requires an asset plan: type=%S seed=%S" % (gendef.val, seed));
 		// Preview resources may be released and rebuilt after switching maps.
 		// Restart decoration/height randomness so a retry reproduces this seed.
 		rnd = Random( seed, 11);
+		// Legacy previews continued from the RNG state after sampling CLI options.
+		if( !gendef["settlement"]) parseopts( gendata, []);
 		local srcrev = flipY( src);
 		//	まずはbio画像を作る。biocolorを使って、srcの色からバイオームIDを取得する。
 		local bio = ImageColorGroups.toIndexImage( gendef.biocolor, srcrev, RGBAImage( srcrev.width, srcrev.height));
@@ -996,7 +1002,7 @@ class MapGenerator
 			if( v["notarg"]) continue;	//	コマンドライン引数にしないプロパティ
 			switch( typeof( v)){
 			case SS_TABLE: parseopts( v, args, numeric); continue;	//	再帰的にparseoptsする。
-			case SS_ARRAY: f = getargrange( i, v); break;
+			case SS_ARRAY: f = numeric ? getargrange( i, v) : getrange( v); break;
 			default: f = v; break;
 			}
 			if( numeric) numeric[i] <- f;
@@ -1171,8 +1177,9 @@ class MapGenerator
 			local entrance=constructionAssetDoor(aw);
 			if( !entrance) throw Exception("Construction asset exterior door changed: " .. aid);
 			local normal=IMat().rotate(rot).transform([(0,0,1),(1,0,0),(0,0,-1),(-1,0,0)][entrance.side]);
-			if( Math.max(aw.w,aw.d)>12 && normal[0]!=0)
-				throw Exception( "Only houses up to 12 blocks may face sideways: " .. aid);
+			local side = normal[2]>0 ? 0 : (normal[0]>0 ? 1 : (normal[2]<0 ? 2 : 3));
+			if( Math.max(aw.w,aw.d)>12 && side!=2)
+				throw Exception( "Buildings with a longest side over 12 blocks must face south: " .. aid);
 			local group=constructionAssetLimitGroup(constructionAssetName(asset));
 			if( group>0){
 				if( facilityCounts[group]) throw Exception("Duplicate unique settlement facility: " .. aid);
@@ -1182,7 +1189,6 @@ class MapGenerator
 			if( bounds.w != plot.x1-plot.x0+1 || bounds.d != plot.y1-plot.y0+1)
 				throw Exception( "Construction asset size changed. Generate the map again: " .. aid);
 			local opening = IRect3D( entrance.x,0,entrance.z,2,1,2).transform( IMat().rotate( rot));
-			local side = normal[2]>0 ? 0 : (normal[0]>0 ? 1 : (normal[2]<0 ? 2 : 3));
 			if( plot.doorX!=plot.x0+opening.x-bounds.x ||
 				plot.doorY!=plot.y1-1-(opening.z-bounds.z) || side!=plannedSides[aid..":"..rot])
 				throw Exception( "Construction asset entrance changed. Generate the map again: " .. aid);
