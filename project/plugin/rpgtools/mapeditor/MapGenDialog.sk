@@ -144,6 +144,15 @@ class MapGenDialog extends UndoableDialog
 		updateBlockList( gendef);
 	}
 
+	function updateTerrainShapeLabel(){
+		local row = proplist.propitems.find( @( item) item.prop.pid=="terrainProtrusion");
+		if( !row) return;
+		local site = (gendata["site"] ?? {})["settlementSite"];
+		local label = site==undefined ? "$T.mapgen_protrusion" :
+			(site==4 ? "$T.mapgen_river_width" : "$T.mapgen_terrain_extension");
+		row.cnt.setValue( "lbl", label);
+	}
+
 	function updateBlockList( gendef){
 		local defs = gendef.blkmaplist;
 		blocklist.setRowCount( (length( defs)+2)/3);
@@ -235,10 +244,12 @@ class MapGenDialog extends UndoableDialog
 			local redo = [@(){
 				self.gendata = newdata;
 				self.proplist.setParameters( newdata);
+				self.updateTerrainShapeLabel();
 			}];
 			local undo = [@(){
 				self.gendata = olddata;
 				self.proplist.setParameters( olddata);
+				self.updateTerrainShapeLabel();
 			}];
 			submitOp( redo, undo, null);
 			break;
@@ -344,10 +355,12 @@ class MapGenDialog extends UndoableDialog
 			local redo = [@(){
 				::setProperty( cmd.prop, data, val);
 				self.proplist.setParam( cmd.prop.pid, val);
+				if( pid=="site") self.updateTerrainShapeLabel();
 			}];
 			local undo = [@(){
 				::setProperty( cmd.prop, data, oldval);
 				self.proplist.setParam( cmd.prop.pid, oldval);
+				if( pid=="site") self.updateTerrainShapeLabel();
 			}];
 			submitOp( redo, undo, trk);
 		}
