@@ -40,9 +40,9 @@ local cullfacelist = [
 ]
 
 local camworks = [
-	{ lbl="Field Map", val={"fovy":30,"hpb":[0,38,0],"viewport":15.0,"yoffs":0.5} },
-	{ lbl="Indoor Map", val={"fovy":30,"hpb":[0,30,0],"viewport":13.0,"yoffs":1.0} },
-	{ lbl="Maze Map", val={"fovy":26,"hpb":[0,62,0],"viewport":13.5,"yoffs":0.7} },
+	{ lbl="Field Map", val={"fovy":32,"hpb":[0,35,0],"viewport":15.0,"yoffs":0.4} },
+	{ lbl="Indoor Map", val={"fovy":32,"hpb":[0,30,0],"viewport":14.0,"yoffs":1.0} },
+	{ lbl="Maze Map", val={"fovy":32,"hpb":[0,42,0],"viewport":13.5,"yoffs":0.7} },
 	{ lbl="World Map", val={"fovy":28,"hpb":[0,48,0],"viewport":17.0,"yoffs":0.5} },
 ];
 
@@ -66,7 +66,7 @@ class MapTools.tool_sel extends MapTool
 			pid="size", lbl="$T.lbl_mapsize", type=CUSTOMBUTTON, tostring=@( v) sprintf( "(%d, %d)", v[0], v[2])
 		},	//	サイズ設定はダイアログ表示で行う
 		{ pid="mapshot", lbl="$T.lbl_mapshot", type=11001, maptex=@( pl) pl.ref.getMapShot() },
-		{ pid="vs", lbl="$T.cullface", type=LIST, list = cullfacelist, defval=23, cnt="cnt.ui" },
+		// { pid="vs", lbl="$T.cullface", type=LIST, list = cullfacelist, defval=23, cnt="cnt.ui" },	//	unused
 		{
 			pid="camwork", lbl="$T.camwork", type=PROPERTYLIST,
 			propdef = {

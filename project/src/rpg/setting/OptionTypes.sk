@@ -1716,3 +1716,32 @@ RPGSystem.option .. {
 		{ pid="prio", lbl="$T.lbl_priority", type=SCALAR, ui="bar", range=(0,100), defval=50 },
 	],
 };
+
+//	アニメーションの設定。見た目だけ
+//	※man,woman,oldでマッピングが必要かな？
+RPGSystem.option .. {
+	category = 3,
+	key = "opt_mot",
+	name = "$T.opt_mot",
+	icon = icon_etc,
+	condrem = false,
+
+	// toolinfo = @(){
+	// 	local mdl = ::conf._resource.equip_vox[mdlid];
+	// 	return "%S: %S" % ( mdlid, ::lang( mdl["name"] || "???"));
+	// },
+
+	props = @(){
+		local a = [];
+		//	複数モーションのあるリソースをリストに追加
+		foreach( r in getResource( "/resource/mot").getList()){
+			local ma = r.getList().map( @( m) m.name.endsWith( ".mot") ? { lbl=m["name"], val=m.path, } : undefined);
+			if( length( ma) > 1){
+				ma[0] <- { lbl="$T.lbl_noefx", val=null };
+				a .. { pid=r.name, lbl=r.name, type=LIST, list=ma, defval=null, };
+			}
+		}
+		a .. { pid="prio", lbl="$T.lbl_priority", type=SCALAR, ui="bar", range=(0,100), defval=50 };
+		return a;
+	},
+};

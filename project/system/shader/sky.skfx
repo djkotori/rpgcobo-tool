@@ -174,6 +174,15 @@ fs physical_common
 		return P[1].xyz*vec3(0.55,0.7,1.0)*(night/180.0);
 	}
 
+	highp vec3 dawnScattering( highp vec3 radiance, highp vec3 sun){
+		// Eastward twilight has cooler sky and cloud scattering; the solar disc stays warm.
+		highp float dawn = smoothstep(0.0,0.3,sun.x)*smoothstep(-0.15,-0.04,sun.y)*
+			(1.0-smoothstep(0.04,0.18,sun.y));
+		highp float luminance = dot(radiance,vec3(0.2126,0.7152,0.0722));
+		highp vec3 cool = radiance*vec3(0.12,0.22,0.55)+luminance*vec3(0.04,0.10,0.28);
+		return mix(radiance,cool,dawn);
+	}
+
 	highp vec3 airSource( highp vec3 p, highp vec3 d, highp vec3 density, highp vec3 throughput,
 		out highp vec3 glare){
 		highp vec3 sun = normalize(P[0].xyz);
@@ -202,13 +211,13 @@ fs physical_common
 		highp vec3 mieExposure = mix(skyExposure,hazeExposure,hazeWeight);
 		highp vec3 directMie = P[1].xyz*mie*
 			mix(mieExposure,scatteringExposure(mieExposure,sunlight),hazeWeight)*sunlight;
-		glare = directMie*max(hgPhase(mu,0.8)-1.0/(4.0*SKY_PI),0.0);
-		return P[1].xyz*(rayleigh*
+		glare = dawnScattering(directMie*max(hgPhase(mu,0.8)-1.0/(4.0*SKY_PI),0.0),sun);
+		highp vec3 radiance = P[1].xyz*(rayleigh*
 			(mix(skyExposure,scatteringExposure(skyExposure,sunlight),hazeWeight)*sunlight*3.0*(1.0+mu*mu)/(16.0*SKY_PI)+
 			 mix(skyExposure,scatteringExposure(skyExposure,diffuse),hazeWeight)*diffuse/(4.0*SKY_PI)) +
 			mie*(mix(mieExposure,scatteringExposure(mieExposure,sunlight),hazeWeight)*sunlight*hgPhase(mu,0.8)+
-			 mix(mieExposure,scatteringExposure(mieExposure,diffuse),hazeWeight)*diffuse/(4.0*SKY_PI))) +
-			(rayleigh+mie)*nightIllumination()/(4.0*SKY_PI);
+			 mix(mieExposure,scatteringExposure(mieExposure,diffuse),hazeWeight)*diffuse/(4.0*SKY_PI)));
+		return dawnScattering(radiance,sun)+(rayleigh+mie)*nightIllumination()/(4.0*SKY_PI);
 	}
 
 	void airSegment( highp vec3 p, highp vec3 d, highp float distance,
@@ -478,7 +487,7 @@ fs physical
 					highp vec3 sunlight = layerSunlight;
 					if (twilight > 0.0) sunlight = mix(layerSunlight,
 						P[1].xyz*sunTransmittance(samplePos,sun),twilight);
-					highp vec3 source = (sunlight*multi*mix(0.45,1.3,facing) + ambient*mix(0.25,0.65,h) +
+					highp vec3 source = (dawnScattering(sunlight*multi*mix(0.45,1.3,facing),sun) + ambient*mix(0.25,0.65,h) +
 						nightLight/(4.0*SKY_PI))*0.25;
 					// RPG exposure convention: cloud diffuse luminance stays below 1.
 					highp float luminance = dot(source,vec3(0.2126,0.7152,0.0722));

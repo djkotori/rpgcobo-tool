@@ -491,7 +491,7 @@ local scorecmplist( props, p0, p1){
 	});
 }
 
-local getBestEquip( items){
+local getBestEquip( items, cureq){
 	items.sort( @( eq){	//	RPGItem オプション効果とかは加味しない
 		local best=0, sum=0, pows = eq.getPowers();
 		foreach( pid in equipmenu_showpids){
@@ -499,7 +499,7 @@ local getBestEquip( items){
 			best = Math.max( best, v);
 			sum += v;
 		}
-		return -(best * 100 + sum);
+		return -(best * 1000 + sum*2 + (eq==cureq?1:0));	//	同じスコアの場合、現在装備している方を優先
 	});
 	return items[0] || null;
 }
@@ -567,7 +567,7 @@ RPGSystem.ui ..
 			local excludes = 0;
 			foreach( slotidx, _ in p.equips){
 				local a = p.getEquipableItems( slotidx, list).filter( @( eq) !(excludes & eq["data"]["excludes"]));
-				local eq = getBestEquip( a);
+				local eq = getBestEquip( a, p.equips[slotidx]);
 				p.equips[slotidx] = eq;
 				excludes |= eq["data"]["excludes"];	//	bitsがどんどん増えていく
 				if( eq) list.removeValue( eq);

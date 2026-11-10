@@ -822,10 +822,7 @@ class SKTextEditBase extends SKView
 	function getParam( pid){
 		switch( pid){
 		case LABEL : return Emoji.decodeEmojiString( wtext);
-		case FONT : return {
-			fontname=fontattr.font.name, fontsize=fontattr.size, fontcolor=fontattr.color, fontflags=fontattr.flags,
-			strokecolor = fontattr.strokecolor, strokesize = fontattr.strokesize, strokex = fontattr.strokex, strokey = fontattr.strokey,
-		};	//	fontattr.advance, fontattr.linespace
+		case FONT : return ::SKLabelView.attrToStyleData( fontattr);
 		case TEXTCOLOR : return (textbox.colormask&0xff) | (fontattr.color&0xffffff00);
 		case WRAPTEXT : return textbox.wrapmode;
 		case TEXTALIGN : return textbox.align;
@@ -843,12 +840,7 @@ class SKTextEditBase extends SKView
 			break;
 		case FONT :
 			{
-				local c0 = fontattr.color;
-				local fa = FontAttribute( ::Fonts.get( p0.fontname), p0.fontsize, c0, p0.fontflags);
-				fa.strokecolor = p0["strokecolor"] || 0xff;
-				fa.strokesize = p0["strokesize"] || 0;
-				fa.strokex = p0["strokex"] || 0;
-				fa.strokey = p0["strokey"] || 0;
+				local fa = ::SKLabelView.attrFromStyleData( p0, fontattr.color);
 				setFontAttribute( fa);
 			}
 			break;

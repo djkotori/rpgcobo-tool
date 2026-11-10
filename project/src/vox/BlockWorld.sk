@@ -41,6 +41,7 @@ function cameradiff( c0, c1, fz=100.0){
 with BlockWorld
 {
 	bmp <- null;		//	Bitmap : barrior bitmap
+	ref <- null;		//	保存しない
 	
 	function writeObject( o){
 		o.putb( 0);
@@ -266,7 +267,7 @@ class SK3DBlockWorld extends SK3DObject
 				// printf( "QUEUE MESHGEN %S   %S %S %S   seq %S  ch??? %S %S\n", cpos, (cpos&4095), ((cpos>>>12)&255), (cpos>>>20), seq, ch, ch["seq"]);
 				if( !ch) ch = (vchunkmap[cpos] <- SK3DVoxelChunk( this, cpos));
 				ch.seq = seq;
-				local req = { bw:bw, id:cpos, br:cposToRect( cpos), border:1, hash:ch.hash, vs:vs, rembottom:rembottom };	//	生成用の情報を入れる
+				local req = { bw=bw, id=cpos, br=cposToRect( cpos), border=1, hash=ch.hash, vs=vs, rembottom=rembottom, flags=16 };	//	16=バックフェースカリング
 				local i = meshgenqueue.findi( @(v) v.id==cpos );
 				if( i >= 0) delete meshgenqueue[i];
 				meshgenqueue .. req;
@@ -449,18 +450,24 @@ class SK3DVoxelChunk extends SK3DRenderNode
 	cpos = 0;
 	mat = null;
 	seq = 0;
-	hash = null;		//	voxel➔meshの変換時をキャンセルさせるためにhashを。stringが良いかな
-	lights = null;		//	チャンク内のライト。
+	hash = null;			//	voxel➔meshの変換時をキャンセルさせるためにhashを。stringが良いかな
+	lights = null;			//	チャンク内のライト。
 
+	//	バックフェースカリング用情報
+	invgmat = null;
+	bfcoffs = null;			//	int[13*face] : Back Face Culling offset
+	
 	constructor( b, p){
 		skbw = b;
 		cpos = p;
 		mat = Matrix.fromTranslate( (p&4095)*4.0, ((p>>>12)&255)*4.0, (p>>>20)*4.0);
+		invgmat = Matrix();
 		visiblemask = 0;
 	}
 
 	function updateMatrix(){
 		skbw.gmat.mult34( mat, gmat);
+		gmat.invert34( invgmat);
 		if( mesh) gbnd.set( mesh.bnd); else gbnd.set( 0, 0, 0, -10000, -10000, -10000);
 		gbnd.transform( gmat);
 	}
@@ -476,8 +483,10 @@ class SK3DVoxelChunk extends SK3DRenderNode
 		purge();
 		mesh = vmd.createPolygonMesh( null, skbw.mtl);	//	共通のマテリアルでメッシュ生成
 		hash = vmd.hash;
+		bfcoffs = vmd.getBackFaceCullOffsets();
 		vmd.dispose();
 		skbw.gmat.mult34( mat, gmat);
+		gmat.invert34( invgmat);
 		gbnd.set( mesh.bnd).transform( gmat);
 		visiblemask = 0;
 		foreach( f in mesh.face){
@@ -504,5 +513,14 @@ class SK3DVoxelChunk extends SK3DRenderNode
 		local n = 0;
 		foreach( f in mesh["face"]){ n += f.len / 3; }
 		return n;
+	}
+
+	//	カメラとbndの情報を使ってIndexBufferの描画範囲を設定する。これで、不可視面とマークされた面の
+	//	Vertex shaderをほぼスキップできる。
+	function render( cam, visiblemask){
+		local cb = getBackFaceBits( mesh.bnd, invgmat, cam);
+		applyBackFaceCull( mesh.face, bfcoffs, cb);
+		skSetMatrix( SK_WORLD, gmat);
+		skDrawPolygonMesh( mesh.vtx, null, mesh.face, visiblemask);
 	}
 }

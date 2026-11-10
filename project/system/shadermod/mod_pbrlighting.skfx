@@ -244,9 +244,9 @@ fs pbrlighting
 			if( fogp[0].x <= 0.0 || d <= fogstart) return;
 			highp float falloff = fogp[0].w;
 			highp float fogOpticalPath;
-			if( falloff == 0.0){
-				fogOpticalPath = fogp[0].x * (d - fogstart);
-			}else{
+			// if( falloff == 0.0){
+			// 	fogOpticalPath = fogp[0].x * (d - fogstart);
+			// }else{
 				// fogp[2].xyz converts a view-space displacement to world height (+Y).
 				highp float dh = dot( wvp, fogp[2].xyz);
 				highp float h0 = fogp[0].z + dh * (fogstart / d);
@@ -257,7 +257,7 @@ fs pbrlighting
 				highp float logOpticalPath = fogp[0].y - falloff * min( h0, h1) + log( (d - fogstart) * averageDensity);
 				// Optical depth 80 is already opaque; clamp before exp to avoid overflow.
 				fogOpticalPath = exp( clamp( logOpticalPath, -80.0, 4.382026635));
-			}
+			// }
 			highp float fogOpacity = 1.0 - exp( -fogOpticalPath);
 			col = mix( col, fogp[1].xyz, fogOpacity);
 		}

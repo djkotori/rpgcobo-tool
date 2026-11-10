@@ -194,27 +194,50 @@ class MapSideView extends SKView
 		if( mapgid == 0) mapgid = -1;
 		local ret = NewMapDialog.run( mapgid);
 		printf( "showNewMap %S\n", encodeJSON( ret));
-		if( ret){			//	以下undo不可操作
-			local dir = ::getResource( "/data/mapdata").file;
+		if( !ret) return;
+		local dir = ::getResource( "/data/mapdata").file;
+		local dstbwf = FileRef( dir, ret.mid .. ".bw");
+		local dstwebpf = FileRef( dir, ret.mid .. ".webp");
+		//	以下undo不可操作
+		if( ret["tempmid"] == "mapgen"){
+			//	マップジェネレーター用の処理
+			local bw1 = MapGenDialog.run( this, null);
+			if( !bw1) return;
+			local data = deepclone( ::conf.map["M980"]);	//	フラットテンプレートのデータをコピー
+			data.name = `$T.lbl_map $ret.mid`;
+			//	ジェネレータで上書きするデータ。カメラワークとか操作方法とか
+			
+			//	マップショット
+			local tex = MapCanvas.captureMapShot( bw1);
+			local img = RGBAImage( tex.width, tex.height);
+			local old = skGetRenderTarget();
+			skSetRenderTarget( tex);
+			skReadPixels( 0, 0, img.width, img.height, img);
+			skSetRenderTarget( old);
+			local imgbb = img.encodeWebp( 75);
+			imgbb.pos = 0;
+			//	コピー操作！
+			::conf.map[ret.mid] <- data;
+			dstwebpf.save( imgbb);
+			dstbwf.save( ObjectOutput.encode( bw1));
+		}else{
 			local srcbwf = FileRef( dir, ret.tempmid .. ".bw");
 			local srcwebpf = FileRef( dir, ret.tempmid .. ".webp");
-			local dstbwf = FileRef( dir, ret.mid .. ".bw");
-			local dstwebpf = FileRef( dir, ret.mid .. ".webp");
 			local data = deepclone( ::conf.map[ret.tempmid]);
 			data.name = `$T.lbl_map $ret.mid`;
 			//	コピー操作！
 			::conf.map[ret.mid] <- data;
-			local g = ::conf.map._meta.groups.find( @( v) v.id==ret.mapgid);
-			g.maps .. ret.mid;
 			srcbwf.copyTo( dstbwf);
 			srcwebpf.copyTo( dstwebpf);
-			::getResource( "/.x/map").save();
-			::skstudio.fileview.refreshDir( "/data/mapdata");
-			::skstudio.fileview.refreshDir( "/.x/map");
-			updateGroupList();
-			setGroup( g);
-			setPage( pager.pagenum-1);
 		}
+		local g = ::conf.map._meta.groups.find( @( v) v.id==ret.mapgid);
+		g.maps .. ret.mid;
+		::getResource( "/.x/map").save();
+		::skstudio.fileview.refreshDir( "/data/mapdata");
+		::skstudio.fileview.refreshDir( "/.x/map");
+		updateGroupList();
+		setGroup( g);
+		setPage( pager.pagenum-1);
 	}
 	
 	function _makemap( mid, srcmid, name, mapgid){
@@ -532,20 +555,27 @@ class NewMapDialog extends Dialog
 		templist = view.findChild( "templist");
 		local maps = clone ::conf.map._meta.groups.find( @( v) v.id==-4).maps;	//	-3==template
 		maps.sort();
+		//	mapgenを挿入
+		maps[0] <- "mapgen";
 		local rownum = (length( maps)+3)/4, num = rownum*4;
 		templist.setRowCount( rownum);
 		for( local l = 0;l < num;l ++){
 			local mid = maps[l];
 			local c = templist.rows[l/4].findChild( "c"..(l%4));
 			c.setVisible( !!mid);
+			if( mid == "mapgen"){
+				c.setValue( "name", "$T.lbl_mapgen");
+				c.setValue( "size", "");
+				c.setValue( "pic", "/plugin/rpgtools/pm/mapgen.webp");
+			}else
 			if( mid){
-				c.ref = mid;
 				local d = ::conf.map[mid];
 				c.setValue( "name", d.name);
 				c.setValue( "size", sprintf( "%d x %d", d.size[0], d.size[2]));
 				c.setValue( "pic", "/data/mapdata/%S.webp"%mid);
-				if( !seltemp){ seltemp = c; c.setSelected( true); }
 			}
+			c.ref = mid;
+			if( !seltemp){ seltemp = c; c.setSelected( true); }
 		}
 		templist.addEventListener( ACTION_EVENT, tempevent);
 	}

@@ -1418,7 +1418,7 @@ class MapTools.tool_level extends MapTool
 	}
 
 	function showContextMenu( e){
-		local hb = rayTest( e, blkflag, true); if( hb.by < 0) hb = null;
+		local hb = rayTest( e, blkflag, true); if( hb && hb.by < 0) hb = null;
 		local ctxmenu = [
 			{ id="pick", lbl=("$T.lbl_pickheight: %S" % (hb?hb.by:"---")), icon="\ue259", disable=!hb },
 			"-",

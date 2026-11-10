@@ -90,16 +90,18 @@ technique srgb
 
 param strokefont
 {
-	uniform lowp vec4 subcolor <id=UNICOLOR1>;
+	// uniform lowp vec4 subcolor <id=UNICOLOR1>;
+	uniform mediump mat4 p1 <id=MISC1MAT>;
 }
 
 fs strokefont
 {
 	void main(){
-		lowp vec4 pix;
+		vec4 pix;
 		$(COLORTEX1) { 
-			lowp vec4 p = texture2D( coltex1 , v_uv.xy);
-			pix = p.x * v_col + p.y * subcolor;
+			vec4 p = texture2D( coltex1 , v_uv.xy);
+			float w = clamp( dot( v_uv.zw*2.0-1.0, p1[2].xy)*0.5 + 0.5, 0.0, 1.0) * p1[2].z;
+			pix = p.x * mix( v_col, p1[1], w) + p.y * p1[0];
 		} : { 
 			pix = v_col;
 		}
@@ -286,25 +288,6 @@ technique eqtocube
 //////////////////////////////////////////////////////////////////////
 //	HDR RGB => RGBE
 
-param torgbe
-{
-	attribute highp vec4 in_pos <ID=POSITION>;
-	attribute highp vec4 in_uv <id=UV1>;
-	
-	uniform highp sampler2D coltex1 <id=COLORTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP>;
-	varying highp vec4 v_uv;
-	
-	fragout lowp vec4 fragcolor;
-}
-
-vs torgbe
-{
-	void main(){
-		gl_Position = in_pos;
-		v_uv = in_uv;
-	}
-}
-
 fs torgbe
 {
 	void main(){
@@ -325,8 +308,107 @@ technique torgbe
 	pass {
 		CULLFACE = OFF;
 		
-		param = torgbe;
-		vs = torgbe;
+		param = hp;
+		vs = def;
 		fs = torgbe;
+	}
+}
+
+
+
+//////////////////////////////////////////////////////////////////////
+//	make diffuse SphericalHarmonics cubemap face (irradiance / PI)
+
+param buildsh
+{
+	attribute highp vec4 in_pos <ID=POSITION>;	//	clip-space rectangle
+
+	//	Linear HDR radiance; use level 0, not specular-prefiltered mipmaps.
+	uniform highp samplerCube coltex1 <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=CLAMP, WRAP_T=CLAMP, WRAP_R=CLAMP>;
+	uniform highp mat4 p1 <id=MISC1MAT>;	//	p1[0].x: face index (+x,-x,+y,-y,+z,-z)
+
+	varying highp vec3 v_n;
+
+	fragout highp vec4 fragcolor;
+
+	const highp mat3 rotmat[6] = mat3[6](
+		mat3( 0,0,-1, 0,1,0, 1,0,0),
+		mat3( 0,0,1, 0,1,0, -1,0,0),
+		mat3( 1,0,0, 0,0,-1, 0,1,0),
+		mat3( 1,0,0, 0,0,1, 0,-1,0),
+		mat3( 1,0,0, 0,1,0, 0,0,1),
+		mat3( -1,0,0, 0,1,0, 0,0,-1)
+	);
+}
+
+vs buildsh
+{
+	void main(){
+		int f = int( p1[0].x);
+		//	Normalize after interpolation so the two triangles share the same projection.
+		v_n = rotmat[f] * vec3( in_pos.x, -in_pos.y, 1.0);
+		gl_Position = vec4( in_pos.xy, 0.0, 1.0);
+	}
+}
+
+/*
+highp float shWindow(highp float band, highp float cutoff){
+    if( band >= cutoff) return 0.0;
+    highp float x = 3.14159265359 * band / cutoff;
+    highp float s = sin( x) / x;
+    return s * s * s * s;
+}
+
+// cutoff: cmgen の -w と同じ、正の数値
+highp float w1 = shWindow( 1.0, cutoff);
+highp float w2 = shWindow( 2.0, cutoff);
+
+highp float kernel =
+    1.0
+    + 2.0 * w1 * cosine
+    + 0.625 * w2 * (3.0 * cosine * cosine - 1.0);
+
+//	current setting
+cutoff = 3.751877 
+*/
+
+fs buildsh
+{
+	void main(){
+		highp vec3 pix = vec3( 0.0);
+		highp vec3 n = normalize( v_n);
+		highp float weightSum = 0.0;
+		int size = min( textureSize( coltex1, 0).x, 16);
+		for( int f = 0; f < 6; ++f){
+			for( int y = 0; y < size; ++y){
+				for( int x = 0; x < size; ++x){
+					highp vec2 uv = (vec2( float(x), float(y)) + 0.5) * (2.0 / float(size)) - 1.0;
+					highp vec3 d = normalize( rotmat[f] * vec3( uv.x, -uv.y, 1.0));
+					highp float r2 = 1.0 + dot( uv, uv);
+					highp float weight = 1.0 / (r2 * sqrt( r2));
+					highp float cosine = dot( n, d);
+					//	SH addition theorem: bands 0,1,2 with Lambert factors 1,2/3,1/4.
+					//	This is projection + evaluation of all nine real SH terms, including 1/PI.
+					// highp float kernel = 1.0 + 2.0 * cosine + 0.625 * (3.0 * cosine * cosine - 1.0);
+					highp float kernel = 1.0 + 2.0 * 0.61948796 * cosine + 0.625 * 0.12441843 * (3.0 * cosine * cosine - 1.0);
+					pix += textureLod( coltex1, d, 0.0).rgb * (weight * kernel);
+					weightSum += weight;
+				}
+			}
+		}
+		fragcolor = vec4( max( pix / weightSum, 0.0), 1.0);
+	}
+}
+
+technique buildsh
+{
+	apilevel = 30;
+
+	pass {
+		CULLFACE = OFF;
+
+		param = buildsh;
+		vs = buildsh;
+		fs = buildsh;
 	}
 }

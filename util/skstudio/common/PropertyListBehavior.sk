@@ -1379,6 +1379,10 @@ class PropertyBehaviors.TextStyle extends PropertyBehavior
 	strokex = null;
 	strokey = null;
 
+	gradcolor = null;
+	grada = null;
+	gradmenu = null;
+
 	function init(){
 		//	font list..........
 		local fs = ::Fonts.getFonts();
@@ -1406,6 +1410,12 @@ class PropertyBehaviors.TextStyle extends PropertyBehavior
 		strokex.setRange( -7, 7, 1);
 		strokey = createNumInputBehavior( view.findChild( "syval"));
 		strokey.setRange( -7, 7, 1);
+		//
+		gradcolor = ColorPickBehavior( view.findChild( "gradbox"));
+		grada = createNumInputBehavior( view.findChild( "galphaval"));
+		grada.setRange( 0, 255, 1);
+		local ga = #[{lbl="\ue14b", val=0}, {lbl="\ue5d8", val=1}, {lbl="\ue5c8", val=3}, {lbl="\ue5db", val=5}, {lbl="\ue5c4", val=7}];
+		gradmenu = MenuBehavior( view.findChild( "gdir"), ga);
 	}
 	
 	function getParam(){
@@ -1418,6 +1428,8 @@ class PropertyBehaviors.TextStyle extends PropertyBehavior
 			strokesize = strokesize.getValue() | 0,
 			strokex = strokex.getValue() | 0,
 			strokey = strokey.getValue() | 0,
+			gradcolor = (gradcolor.getColor()&0xffffff00) | (grada.getValue() | 0),
+			gradation = gradmenu.selitem["val"] | 0,
 		};
 	}
 
@@ -1434,10 +1446,15 @@ class PropertyBehaviors.TextStyle extends PropertyBehavior
 		strokesize.setValue( v["strokesize"] || 0);
 		strokex.setValue( v["strokex"] || 0);
 		strokey.setValue( v["strokey"] || 0);
+		local c = v["gradcolor"] || 0x777777ff;
+		gradcolor.setColor( c);
+		grada.setValue( c&255);
+		local d = v["gradation"] || 0;
+		gradmenu.selectItem( @( x) x.val==d);
 	}
 	
 	function paramevent( e){
-		if( e.id==VALUE_CHANGED) return;
+		if( e.id!=ACTION_PERFORMED) return;
 		postActionEvent( true);
 	}
 }

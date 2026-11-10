@@ -1421,15 +1421,10 @@ class RPG3DVoxChara extends RPG3DObject
 	bonetype = null;		//	leg2, box, ...
 
 	eqpartmap = null;		//	{"item_R":"VE000", ...}
-	eqvoxchk = null;
+	motpath = null;
+	optchk = null;
 	
-	static function getBoneType( motpath){
-		local s = motpath.substring( motpath.lastIndexOf( "/")+1);
-		local boi = s.lastIndexOf( "_");
-		if( boi >= 0) s = s.substring( 0, boi);
-		return s;
-	}
-	
+
 	function getSearchButtonLabel(){
 		return fget( event["page"], "searchtext", this, event["data"]) ?? ((bonetype=="leg2"||bonetype=="leg4") ? "$T.btn_talk" : "$T.btn_search");
 	}
@@ -1459,6 +1454,7 @@ class RPG3DVoxChara extends RPG3DObject
 		pidxmap = {};
 		//	motを読む
 		local motr = ::getResource( cv.mot);
+		motpath = motr.path;
 		motion = ::getMotionData( motr);
 		createBones();
 		bonetype = motr.pres.name;
@@ -1594,9 +1590,10 @@ class RPG3DVoxChara extends RPG3DObject
 			m.misccol0 = (200<<24) | ((m.visiblemask&4096)*(255<<4));
 		}
 		//	装備ボクセルの更新チェックはオプションが変化した場合のみ行う。参照が違うかチェックするだけで良し
-		if( eqvoxchk != rpgobj["options"]){
+		if( optchk != rpgobj["options"]){
+			optchk = rpgobj["options"];
 			updateEquipVox();
-			eqvoxchk = rpgobj["options"];
+			updateMotionPath();
 		}
 		return r;
 	}
@@ -1628,6 +1625,15 @@ class RPG3DVoxChara extends RPG3DObject
 				setEquipVox( mdlid, eid);
 				eqpartmap[eid] <- mdlid;
 			}
+		}
+	}
+
+	//	次に再生するアニメーションからモーションは変わる
+	function updateMotionPath(){
+		local p = rpgobj?.getMotionPath();
+		if( p && p != motpath){
+			motpath = p;
+			motion = ::getMotionData( ::getResource( motpath));
 		}
 	}
 	

@@ -222,7 +222,7 @@ class RPGStage
 			foreach( b in b3mapbnds) b3world.removeBody( b);
 		}else{
 			bw3d = SK3DBlockWorld( bw);
-			bw3d.setVisibleFaceMask( map.vs);
+			// bw3d.setVisibleFaceMask( map.vs);	//	unused
 			bw3d.setGSelectorID( 1);	//	ステージにセレクタIDを指定。ピクセル単位のオブジェクト識別に使用する
 			scn.addObject( bw3d);
 		}

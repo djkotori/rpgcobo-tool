@@ -178,7 +178,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 ------------------------------------------------------------------------------------------------
 
 Skybox Textures / CC0 1.0 Universal
-https://https://polyhaven.com/license
+https://polyhaven.com/license
 
 ------------------------------------------------------------------------------------------------
 

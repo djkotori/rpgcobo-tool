@@ -1120,7 +1120,7 @@ class reg.SSGIPass extends reg.ImagePassBase
 //	
 class reg.SSShadowPass extends reg.ImagePassBase
 {
-	static tecnames = ["pbrsprite.ssshadow_normal","pbrsprite.ssshadow_normal","pbrsprite.ssshadow_quality"];
+	static tecnames = ["pbrsprite.ssshadow_draft","pbrsprite.ssshadow_normal","pbrsprite.ssshadow_quality"];
 
 
 	m0 = null;	//	compute
@@ -1424,7 +1424,7 @@ class reg.LightPreparePass extends SK3DRenderPass
 		//	punctual lights
 		local znf = #(0,0);
 		skCullLights( (r.scn.lights, r.env.envlights), cam, litprmtex, litidxtex, ex, znf);	//	テクスチャへの転送はCPUから
-		enablesss = (ex>=0.02) && (znf[0]<znf[1]);
+		enablesss = (ex>=0.02) && (znf[0]<znf[1]) && (::renderhint["shadow_qua"]|0)>0;	//	最速設定ではSSS無し。。。
 		env.litprmtex = litprmtex;
 		env.litidxtex = litidxtex;
 		local zsc = -1.0 / (znf[1]-znf[0]);

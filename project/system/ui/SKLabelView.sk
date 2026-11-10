@@ -224,10 +224,7 @@ class SKLabelView extends SKView
 	function getParam( pid){
 		switch( pid){
 		case LABEL : return string( text);
-		case FONT : return {
-			fontname=fontattr.font.name, fontsize=fontattr.size, fontcolor=fontattr.color, fontflags=fontattr.flags,
-			strokecolor = fontattr.strokecolor, strokesize = fontattr.strokesize, strokex = fontattr.strokex, strokey = fontattr.strokey,
-		};	//	fontattr.advance, fontattr.linespace
+		case FONT : return attrToStyleData( fontattr);
 		case TEXTCOLOR : return (textbox.colormask&0xff) | (fontattr.color&0xffffff00);
 		case WRAPTEXT : return textbox.wrapmode;
 		case TEXTALIGN : return textbox.align;
@@ -247,12 +244,7 @@ class SKLabelView extends SKView
 			break;
 		case FONT :
 			{
-				local c0 = fontattr.color;
-				local fa = FontAttribute( ::Fonts.get( p0.fontname), p0.fontsize, c0, p0.fontflags);
-				fa.strokecolor = p0["strokecolor"] || 0xff;
-				fa.strokesize = p0["strokesize"] || 0;
-				fa.strokex = p0["strokex"] || 0;
-				fa.strokey = p0["strokey"] || 0;
+				local fa = attrFromStyleData( p0, fontattr.color);
 				setFontAttribute( fa);
 				updateInnerLayout();
 			}
@@ -302,6 +294,32 @@ class SKLabelView extends SKView
 		super.setSKViewEntityData( d);
 		_defer = false;
 		setTextBody( text);
+	}
+
+	//////	FontAttribute set/get
+
+	static function attrToStyleData( fontattr){
+		local t = {
+			fontname=fontattr.font.name, fontsize=fontattr.size, fontflags=fontattr.flags,
+		}
+		if( fontattr.strokecolor != 0xff) t.strokecolor <- fontattr.strokecolor;
+		if( fontattr.strokesize) t.strokesize <- fontattr.strokesize;
+		if( fontattr.strokex) t.strokex <- fontattr.strokex;
+		if( fontattr.strokey) t.strokey <- fontattr.strokey;
+		if( fontattr.gradcolor != 0x777777ff) t.gradcolor <- fontattr.gradcolor;
+		if( fontattr.gradation) t.gradation <- fontattr.gradation;
+		return t;
+	};
+
+	static function attrFromStyleData( t, c0){
+		local fa = FontAttribute( ::Fonts.get( t.fontname), t.fontsize, c0, t.fontflags);
+		fa.strokecolor = t["strokecolor"] ?? 0xff;
+		fa.strokesize = t["strokesize"] | 0;
+		fa.strokex = t["strokex"] | 0;
+		fa.strokey = t["strokey"] | 0;
+		fa.gradcolor = t["gradcolor"] ?? 0x777777ff;
+		fa.gradation = t["gradation"] | 0;
+		return fa;
 	}
 }
 

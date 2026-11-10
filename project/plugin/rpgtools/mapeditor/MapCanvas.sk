@@ -470,10 +470,10 @@ class MapCanvas extends CanvasBehavior
 	//	マップを上空からキャプチャする。
 	//	(w*4, d*4)のサイズで、
 	//	保存時は最大1024x1024のwebp。
-	function captureMapShot(){
+	static function captureMapShot( bw, bw3d=null){
 		local t0 = skGetTime();
-		local bw = editor.bw;
 		local w = bw.w * 4, h = bw.d * 4;
+		local scn = SK3DScene();
 		local renderer = SK3DRenderer( scn);
 		renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_mapedit"));	//	bloomオフでーーーー
 		renderer.bgpass.setColor( 0x000000ff);
@@ -485,9 +485,13 @@ class MapCanvas extends CanvasBehavior
 		renderer.setCamera( cam);
 		local t1 = skGetTime();
 		//	レンダリング準備
-		local objs = scn.objs; scn.objs = [bw3d];	//	シーン内をbw3dのみにしちゃう
-		_updatetec( false);
-		skcol.visible = false;
+		local oldtec = bw3d["voxtec"];
+		if( !bw3d){
+			bw3d = SK3DBlockWorld( bw);
+		}else{
+			bw3d.setVoxelTec( skFXFindTechnique( "vox.basic"));
+		}
+		scn.objs = [bw3d];
 		bw3d.generateAllMesh();
 		local t2 = skGetTime();
 		scn.updateScene( 16);
@@ -497,12 +501,9 @@ class MapCanvas extends CanvasBehavior
 		local a = (0, 0, w, h);
 		renderer.render( a);
 		skSetRenderTarget( old);
-		//	状態を復元
-		_updatetec( gridchk.isSelected());
-		skcol.visible = colchk.isSelected();
-		scn.objs = objs;
 		local t3 = skGetTime();
 		printf( "captureMapShot time %S %S %S total %S\n", t1-t0, t2-t1, t3-t2, t3-t0);
+		if( oldtec) bw3d.setVoxelTec( oldtec);
 		return dst;
 	}
 

@@ -333,7 +333,7 @@ class MapEditor extends EditorViewBase
 	//	全体マップ画像をアップデートする。※保存はメニューの保存時に。。。
 	//	
 	function updateMapShot(){
-		local tex = canvas.captureMapShot();
+		local tex = MapCanvas.captureMapShot( bw, canvas.bw3d);
 		tex.ref = true;
 		mapshottex = tex;
 	}
@@ -401,7 +401,7 @@ class MapEditor extends EditorViewBase
 			self.setBlockWorld( bw1);
 			if( self.data){
 				self.data.size = [bw1.w,bw1.h,bw1.d];
-				if( !newmapshot[0]) newmapshot[0] = self.canvas.captureMapShot();	//	redo時に再計算させないように。。。
+				if( !newmapshot[0]) newmapshot[0] = self.canvas.captureMapShot( bw, self.canvas.bw3d);	//	redo時に再計算させないように。。。
 				self.mapshottex = newmapshot[0];
 				self.mapshottex.ref = true;
 			}

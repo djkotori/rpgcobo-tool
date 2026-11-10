@@ -811,9 +811,10 @@ fs ssshadow
 			highp float scz = -(float( texture( uztex, suv+0.0002).x) * p0[0].z + p0[0].w);	//	reconstruct only z	//	highp vec3 scenePos = reconstructWVPtex( uztex, suv, p0[0]);
 			// 遮蔽判定（少しバイアスを入れて誤判定を減らす）
 			if( scz > samplePos.z+0.04 && scz < samplePos.z+2.0){
-				highp uint u1 = texture( gtex1, suv).x, u2 = texture( gtex2, suv).x;	//	自己発光チェック 2sample...
-				float shadow = float( (u1>>29u)==0u && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
-				float sldist = length( samplePos - lwvp);
+				// highp uint u1 = texture( gtex1, suv).x, u2 = texture( gtex2, suv).x;	//	自己発光チェック 2sample...
+				// float shadow = float( (u1>>29u)==0u && ((u2&0xff00u)>(4u<<8u)) ) * 1.0;	//	u1->mtype, u2->emit
+				float shadow = 0.0;
+				float sldist = length( samplePos.xy-lwvp.xy);	//	z距離は無視
 				shadow = clamp( shadow + (2.0-sldist*3.0), 0.0, 1.0);
 				//
 				float w = 1.0-atten; w *= w; w *= w;
@@ -838,6 +839,14 @@ fs ssshadow
 		}
 		fragcolor = vec4( shadow);
 	}
+}
+
+param ssshadow_draft
+{
+	const int STEPCNT = 7;
+	const float DT = 0.09;
+	const float DTT = 0.36;
+	const float THRS = 0.04;
 }
 
 param ssshadow_normal

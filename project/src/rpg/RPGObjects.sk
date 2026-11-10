@@ -365,6 +365,28 @@ class RPGCharaBase extends RPGObject
 		}
 		return mdlid;
 	}
+	
+	//	オプションで上書きされたモーションパスを返す
+	//	※基本的にボクセルキャラのみ
+	function getMotionPath(){
+		local mdl = data["mdl"] || ::rpgres[data["mdlid"]];
+		local motpath = mdl["mot"];
+		if( !motpath) return null;
+		local motdir = ::getResource( motpath)["pres"];
+		local prio = 1;
+		//	
+		foreach( opt in options){
+			local opd = opt.opd;
+			if( opd.opttype == "opt_mot" && opd.prio > prio){
+				local m = motdir.getResource( opd[motdir.name])["path"];
+				if( m){
+					motpath = m;
+					prio = opd.prio;
+				}
+			}
+		}
+		return motpath;
+	}
 
 	///////////////////////////////////////////////////////////////////////////////////////
 	//	ステータス更新
