@@ -133,6 +133,7 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function setType( t){
+		local previous = ::MapGenerators.find( @( v) v.val==type);
 		type = t;
 		typemenu.selectItem( @( v) v.val==t);
 		gendata = {};
@@ -143,7 +144,9 @@ class MapGenDialog extends UndoableDialog
 		proplist.setParameters( gendata);
 		//	blkmap
 		blkmap = clone gendef.blkmap;
-		updateBlockList( gendef);
+		// Reused rows can still show slots from the larger settlement palette.
+		local resetBlockList = gendef["settlement"] || (previous && previous["settlement"]);
+		updateBlockList( gendef, resetBlockList);
 	}
 
 	function updateTerrainShapeLabel(){
@@ -155,10 +158,13 @@ class MapGenDialog extends UndoableDialog
 		row.cnt.setValue( "lbl", label);
 	}
 
-	function updateBlockList( gendef){
+	function updateBlockList( gendef, resetBlockList){
 		local defs = gendef.blkmaplist;
-		blocklist.setRowCount( (length( defs)+2)/3);
-		foreach( i, def in defs){
+		local count = length( defs), rows = (count+2)/3;
+		local slots = resetBlockList ? rows*3 : count;
+		blocklist.setRowCount( rows);
+		for( local i=0;i<slots;i++){
+			local def = i<count ? defs[i] : null;
 			local r = blocklist.rows[i/3], c = i%3;
 			if( !c){
 				for( local l = 0;l < 3;l ++){
@@ -174,6 +180,7 @@ class MapGenDialog extends UndoableDialog
 				v.setVisible( false);
 			}
 		}
+		if( resetBlockList && rows) blocklist.gpui.scrollViewToVisible( blocklist.rows[0], 0);
 	}
 
 	function setTab( idx){
@@ -486,6 +493,7 @@ class MapGenDialog extends UndoableDialog
 		if( gendef["settlement"]){
 			local mapgen = MapGenerator();
 			mapgen.gendef = gendef;
+			mapgen.blkmap = blkmap;
 			constructionParameters = mapgen.constructionAssetParameters();
 		}
 		// Clear the selection before destroying its native view.
@@ -664,7 +672,7 @@ class MapGenDialog.BlockSetIcon
 				selb.setBlockPages( def.blkpages);
 				selb.selectBlock( item);
 			}else{
-				selb.setFreeBlockPages( def.fbpages);
+				selb.setFreeBlockPages( def.fbpages, 0, def["fits"]);
 				selb.selectFreeBlock( {fbtype=item&4095, fbparam:item>>>12});
 			}
 			selv.addEventListener( ACTION_EVENT, @( e){
