@@ -249,10 +249,8 @@ class MapGenDialog extends UndoableDialog
 			}];
 			submitOp( redo, undo, null);
 		}
-		local btn = view.findChild( "btn_gen");
-		btn.setEnabled( false);
+		//	ボタンの有効・無効は setBusy で管理する。
 		runSerialMapgen( seed);
-		btn.setEnabled( true);
 	}
 
 	function showPropListMenu( e){
@@ -279,11 +277,13 @@ class MapGenDialog extends UndoableDialog
 				self.setType( type);
 				self.gendata = gendata;
 				self.proplist.setParameters( gendata);
+				self.updateTerrainShapeLabel();
 			}];
 			local undo = [@(){
 				self.setType( oldtype);
 				self.gendata = oldgendata;
 				self.proplist.setParameters( oldgendata);
+				self.updateTerrainShapeLabel();
 			}];
 			submitOp( redo, undo, null);
 			break;
@@ -368,20 +368,10 @@ class MapGenDialog extends UndoableDialog
 				if( selpic != e.src){
 					local ref = e.src.parent.ref;
 					if( !ref || !ref["mapgen"]) return;
-					setBusy( true);
-					try{
-						selectMapgen( ref);
-					}catch( ex){
-						printexception( ex);
-						printf( "Map preview failed: type=%S seed=%S\n", ref.mapgen.gendef.val, ref.mapgen.seed);
-						Popups.showError( ex.message);
-						setBusy( false);
-						return;
-					}
+					if( !previewMapgen( ref)) return;
 					selpic?.setSelected( false);
 					e.src.setSelected( true);
 					selpic = e.src;
-					setBusy( false);
 				}
 			}
 			break;
@@ -389,14 +379,17 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function showPicListMenu( e){
-		local hasimage = skCheckClipboardType( ClipboardType.CLIPBOARD_IMAGE);
+		local session = e.src.parent.ref;
+		if( !session || !session["mapgen"]) return;
+		// \u96c6\u843d\u306f\u914d\u7f6e\u8a08\u753b\u3068\u753b\u50cf\u304c\u5bfe\u306b\u306a\u3063\u3066\u3044\u308b\u305f\u3081\u3001\u753b\u50cf\u3060\u3051\u306e\u5dee\u3057\u66ff\u3048\u306f\u3067\u304d\u306a\u3044\u3002
+		local settlement = session.mapgen.gendef["settlement"];
+		local hasimage = !settlement && skCheckClipboardType( ClipboardType.CLIPBOARD_IMAGE);
 		local ctxmenu = [
 			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d" },
 			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!hasimage },
 			"-",
 			{ id="regen", lbl="$T.lbl_regenerate", icon="\ue089"},
 		];
-		local session = e.src.parent.ref;
 		local ret = MenuPopup.run( ctxmenu, e.src);
 		switch( ret["id"]){
 		case "copy":
@@ -406,6 +399,7 @@ class MapGenDialog extends UndoableDialog
 		}
 		case "paste":
 		{
+			if( settlement) return;
 			local img = skGetClipboardData( ClipboardType.CLIPBOARD_IMAGE);
 			local sc = session.mapgen.gendef["halfimg"] ? 2 : 1;
 			if( !img || img.width < 32 || img.width > 1024/sc || img.height < 32 || img.height > 1024/sc) return;
@@ -421,7 +415,7 @@ class MapGenDialog extends UndoableDialog
 				session.bw3d = null;
 				self.piclist.rows[l].setValue( "pic", img);
 				if( self.selpic == e.src){
-					self.selectMapgen( session);
+					self.previewMapgen( session);
 				}
 			};
 			local redo = [@(){ setpng( img) }];
@@ -435,11 +429,27 @@ class MapGenDialog extends UndoableDialog
 			session.bwcol = null;
 			session.bw3d = null;
 			if( selpic == e.src){
-				selectMapgen( session);
+				previewMapgen( session);
 			}
 			break;
 		}
 		}
+	}
+
+	//	selectMapgen を実行し、失敗時はエラーを表示して直前の表示を保つ。成功すればtrueを返す。
+	function previewMapgen( ref){
+		setBusy( true);
+		try{
+			selectMapgen( ref);
+		}catch( ex){
+			printexception( ex);
+			printf( "Map preview failed: type=%S seed=%S\n", ref.mapgen.gendef.val, ref.mapgen.seed);
+			Popups.showError( ex.message);
+			setBusy( false);
+			return false;
+		}
+		setBusy( false);
+		return true;
 	}
 
 	//	
@@ -557,7 +567,8 @@ class MapGenDialog extends UndoableDialog
 		b3world.addBody( bwcol);
 		// Keep native meshes/colliders for the visible candidate only. Retaining
 		// ten complete 3D worlds can exhaust memory when switching large maps.
-		if( previewRef && previewRef != ref){
+		// World/Dungeon/Cave は従来どおり全候補の表示を保持する。
+		if( previewRef && previewRef != ref && previewRef.mapgen.gendef["settlement"]){
 			previewRef.bwcol = null;
 			previewRef.bw3d = null;
 			previewRef.bw = null;
