@@ -816,7 +816,7 @@ with SKView
 				skSetMatrix( SK_PROJECTION, Matrix.fromOrtho( 0, bndw, bndh, 0, -2000, 2000));	//	スプライト全体を更新
 				foreach( fx in fxlist){
 					if( fx.isEnabled()){
-						fx.prepare( swaptex, tex, orgtex);
+						fx.prepare( swaptex, tex, orgtex, buf.bnd);
 						foreach( i, fxpass in fx.pass){
 							local tmp = tex; tex = swaptex; swaptex = tmp;
 							fx.renderfx( fxpass, tex, i?swaptex:orgtex, buf.bnd, texw, texh);	//	swaptexをbndw, bndhの範囲で描画

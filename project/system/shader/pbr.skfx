@@ -350,9 +350,10 @@ fs gblur
 		nw += blurfunc( iuv-d.yx, r0, z0, n0, sumdot);
 		nw += blurfunc( iuv+d.yx*2, r0, z0, n0, sumdot);
 		highp float variance = 1.0 - sumdot / 5.0;
-		highp float r1 = sqrt( r0*r0 + variance*0.5);	//	roughToksvig
+		highp float r1 = sqrt( r0*r0 + variance*0.6);	//	roughToksvig
 		r1 = clamp( r1, 0.0, 1.0);
-		fragcolor = packn( normalize( nw.xyz/nw.w)) | (uint( r1*63.5)<<23u) | (u1&0xe0000000u);
+		fragcolor = packn( n0) | (uint( r1*63.5)<<23u) | (u1&0xe0000000u);
+		fragcolor = u1;
 	}
 }
 

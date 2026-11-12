@@ -38,7 +38,6 @@ class MapCanvas extends CanvasBehavior
 	sellbl = null;
 	sels = null;
 	gridchk = null;
-	cullchk = null;
 	colchk = null;
 	skychk = null;
 
@@ -67,7 +66,6 @@ class MapCanvas extends CanvasBehavior
 		infochk = head.findChild( "infochk");
 		infop = InfoPanel( e.findChild( "infop"), this);
 		colchk = head.findChild( "colchk");
-		cullchk = head.findChild( "cullchk");
 		skychk = head.findChild( "skychk");
 		view.addEventListener( DRAGSOURCE_EVENT, dndevent);
 		view.addEventListener( DROPTARGET_EVENT, dndevent);
@@ -260,7 +258,7 @@ class MapCanvas extends CanvasBehavior
 
 	//	SK3DView, CanvasBehaviorの更新メソッドは呼ばれない
 	function updateMapCanvasFunc( dt){
-		local active = /*!::dialogcnt && */(skGetAppActiveState() == AppActiveState.APPACTIVE_ACTIVE);
+		local active = /*!::dialogcnt && */(skGetAppActiveState() == AppActiveState.APPACTIVE_ACTIVE) || view.dorepaint;
 		if( active){
 			view.updateScene( dt);
 		}
@@ -413,9 +411,6 @@ class MapCanvas extends CanvasBehavior
 			break;
 		case "colchk":
 			skcol.visible = colchk.isSelected();
-			break;
-		case "cullchk":
-			bw3d.setVisibleFaceMask( cullchk.isSelected() ? editor.data.vs : 63);
 			break;
 		case "skychk":
 			local b = e.src.isSelected();

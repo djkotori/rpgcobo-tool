@@ -821,15 +821,16 @@ class SKViewCircleMaskFX extends SKViewFX
 		pass[0].miscmat = Matrix();
 	}
 	
-	function prepare( t0, t1, orgtex){
+	function prepare( t0, t1, orgtex, bnd){
+		local us = bnd.w*viewreso / t0.width, vs = bnd.h*viewreso / t0.height;
 		local m = pass[0].miscmat;
-		m[0] = cu;
-		m[1] = cv;
-		local asp = (t0.width+0.0) / t0.height;
+		m[0] = cu * us;
+		m[1] = cv * vs;
+		local asp = bnd.w / bnd.h;
 		local cdiv = 2.0 / Math.max( 0.001, Math.abs( csize));
 		if( asp > 1.0) cdiv /= asp;
-		m[2] = cdiv * asp;
-		m[3] = cdiv;
+		m[2] = cdiv * asp / us;
+		m[3] = cdiv / us;
 		m[4] = 1.0 / (cdiv*cblur+0.001);
 		m[5] = crev ? -1.0 : 1.0;
 	}

@@ -691,6 +691,7 @@ class RPGStage
 		local b3res = #b3Result( 8);
 		local ar = a.gbnd, br = b.gbnd, day = ar.s*0.8/3, dby = br.s*0.8/3;
 		local ap = Vector3D( ar.x, ar.y+ar.s*0.4, ar.z), bp = Vector3D( br.x, br.y+br.s*0.4, br.z);
+		if( ap.y > br.y-br.s && ap.y < br.y+br.s) bp.y = ap.y;
 		for( local l = 0;l < 4;l ++){
 			local b3res = b3world.rayTest( 1, ap, bp, -1, G_CHARA|G_EVENT|G_OBJECT|G_STAGE, b3res);	//	
 			if( !b3res.len() || b3res.bodyb==b.b3body) return true;	//	届いた

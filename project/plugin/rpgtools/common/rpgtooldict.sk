@@ -1252,6 +1252,8 @@
 	"lbl_blkchk"						: {"ja":"同一ブロック", "en":"Same Block"}
 	"lbl_waterchk"						: {"ja":"水を分離", "en":"Water Group"}
 	"lbl_repchk"						: {"ja":"ブロックを置き換える", "en":"Replace Blocks"}
+
+	"lbl_marker"						: {"ja":"マーカー", "en":"Marker"}
 	
 	//	マップエディター用メニュー
 	"editor_map_menu_edit_mapsize"		: {"ja":"マップのサイズ変更", "en":"Resize Map"}

@@ -32,7 +32,10 @@ class MenuBehavior
 
 	function setMenu( tb){
 		menuitems = tb;
-		if( syncmode){ selectItem( menuitems[0]);}
+		if( syncmode){
+			if( tb[0]) selectItem( tb[0]);
+			else MenuPopup.setviewfunc( null, view, #{lbl="",icon="",disable=true});
+		}
 	}
 
 	static function _finditem( ma, fn){

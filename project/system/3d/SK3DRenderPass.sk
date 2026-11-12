@@ -431,6 +431,7 @@ class reg.SkyboxBackgroundPass extends reg.ImagePassBase
 		m.depthtest = SK_LEQUAL;
 		m.miscmat0 = Matrix();
 		m.miscmat0[0] = 0;
+		m.miscmat1 = Matrix();
 		m.gsel = 2;
 	}
 
@@ -440,6 +441,7 @@ class reg.SkyboxBackgroundPass extends reg.ImagePassBase
 	
 	function performPass( r){
 		if( !(m.misccol0&0xff) && !r.currenttarget) return;
+		m.miscmat1.set( r.env.envmat3);	//	IBL回転加味したinv viewmatをそのまま
 		r.setRenderTarget( target, viewport);
 		local idx = r.currenttarget?ridx:fidx;
 		skBindVertexBuffer( vtx);
@@ -466,6 +468,7 @@ class reg.TextureBackgroundPass extends reg.ImagePassBase
 		m.depthmask = 0;
 		m.depthtest = SK_LEQUAL;
 		m.miscmat0 = Matrix();
+		m.miscmat1 = Matrix();
 		m.gsel = 2;
 		m.miscmat0.set( 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
 	}
@@ -491,6 +494,7 @@ class reg.TextureBackgroundPass extends reg.ImagePassBase
 	
 	function performPass( r){
 		if( !(m.misccol0&0xff) && !r.currenttarget) return;
+		m.miscmat1.set( r.env.envmat3);	//	IBL回転加味したinv viewmatをそのまま
 		r.setRenderTarget( target, viewport);
 		local idx = r.currenttarget?ridx:fidx;
 		skBindVertexBuffer( vtx);
@@ -531,6 +535,7 @@ class reg.GenSkyBackgroundPass extends reg.ImagePassBase
 		m.depthmask = 0;
 		m.depthtest = SK_LEQUAL;
 		m.miscmat0 = Matrix();
+		m.miscmat1 = Matrix();
 		m.gsel = 2;
 		m.miscmat0.set( 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
 	}
@@ -577,6 +582,10 @@ class reg.GenSkyBackgroundPass extends reg.ImagePassBase
 		}else{
 			// sky.renderRange( ++framecnt, 8);
 		}
+		//	
+		local iblmat = m.miscmat1;
+		local invvmat = r.env.envmat2;
+		iblmat.identity().rotate( v_1( ps["rot"]*-Math.DTOR, 0, 0)).mult34( invvmat, iblmat);
 		m.tex0 = sky.tex;
 		r.setRenderTarget( target, viewport);
 		local idx = r.currenttarget?ridx:fidx;
@@ -877,6 +886,7 @@ class reg.SSAOPass extends reg.ImagePassBase
 	m0 = null;	//	compute
 	m1 = null;	//	blur x/y
 	midtex = null;			//	途中テクスチャ
+	fsttex = null;			//	half時のテクスチャ
 	
 	//	Intensity = 1.0f			Range( 0, 1 )			-> aopow 
 	//	Radius = 2.0f										-> aoradius 
@@ -913,7 +923,8 @@ class reg.SSAOPass extends reg.ImagePassBase
 		aoreso = reso ? VP_FULL : VP_HALF;
 		local aotec, blurtec;
 		aotec = ( qua ) ? "pbrsprite.ssao_quality" : "pbrsprite.ssao_normal";
-		blurtec = ( reso == VP_HALF) ? "pbrsprite.ssaoupsample" : "pbrsprite.ssaoblur";
+		// blurtec = ( aoreso == VP_HALF) ? "pbrsprite.ssaoupsample" : "pbrsprite.ssaoblur";
+		blurtec = "pbrsprite.ssaoblur";
 		m0 = createMaterial( aotec);
 		m0.miscmat0 = Matrix();
 		m1 = createMaterial( blurtec);
@@ -924,6 +935,7 @@ class reg.SSAOPass extends reg.ImagePassBase
 		setSources( m0, r, ps["src"]);
 		local p = {w:aoreso,h:aoreso,fmt:SK_R8};
 		midtex = r.findTempTarget( 100+p.fmt+p.w, p);
+		fsttex = r.findTempTarget( 105+p.fmt+p.w, p);
 		target = r.findRenderTarget( "aotex");
 	}
 	
@@ -963,19 +975,20 @@ class reg.SSAOPass extends reg.ImagePassBase
 		local m = m1["miscmat0"];
 		wvpReconstructParam( r.camera, m, 4);
 		//	Cross-Bilateral Upsampling pass
-		if( aoreso == VP_HALF){
-			r.setRenderTarget( midtex, null);
+		// if( aoreso == VP_HALF){
+		// 	r.setRenderTarget( midtex, null);
+		// 	skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, idx);
+		// 	m1.tex0 = midtex;
+		// 	m[0] = 1.0/midtex.width;
+		// 	m[1] = 1.0/midtex.height;
+		// 	r.setRenderTarget( target, null);
+		// 	skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, idx);
+		// }else{	// Bilateral blur passes
+			local _tgt = aoreso == VP_HALF ? fsttex : target;
+			r.setRenderTarget( _tgt, null);
 			skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, idx);
-			m1.tex0 = midtex;
+			m1.tex0 = _tgt;
 			m[0] = 1.0/midtex.width;
-			m[1] = 1.0/midtex.height;
-			r.setRenderTarget( target, null);
-			skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, idx);
-		}else{	// Bilateral blur passes
-			r.setRenderTarget( target, null);
-			skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, idx);
-			m1.tex0 = target;
-			m[0] = 1.0/target.width;
 			m[1] = 0.0;
 			r.setRenderTarget( midtex, null);
 			skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, idx);
@@ -984,7 +997,7 @@ class reg.SSAOPass extends reg.ImagePassBase
 			m[1] = 1.0/target.height;
 			r.setRenderTarget( target, null);
 			skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, idx);
-		}
+		// }
 		r.env.aotex = target;
 	}
 
@@ -1126,6 +1139,7 @@ class reg.SSShadowPass extends reg.ImagePassBase
 	m0 = null;	//	compute
 	m1 = null;	//	blur x/y
 	midtex = null;			//	途中テクスチャ
+	fsttex = null;			//	最初テクスチャ
 	
 	function setPassSetting( p){
 		super.setPassSetting( p);
@@ -1133,13 +1147,15 @@ class reg.SSShadowPass extends reg.ImagePassBase
 		m0 = createMaterial( tecnames[q]);
 		m0.miscmat0 = Matrix();
 		m0.miscmat1 = Matrix();
-		m1 = createMaterial( "pbrsprite.sssupsample");
+		// m1 = createMaterial( "pbrsprite.sssupsample");
+		m1 = createMaterial( "pbrsprite.sssblur");
 		m1.miscmat0 = Matrix();
 	}
 	
 	function setupPass( r){
 		local p = {w:VP_HALF,h:VP_HALF,fmt:SK_RGBA8};
 		midtex = r.findTempTarget( 100+p.fmt+p.w, p);
+		fsttex = r.findTempTarget( 105+p.fmt+p.w, p);
 		target = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_RGBA8});
 	}
 	
@@ -1153,17 +1169,32 @@ class reg.SSShadowPass extends reg.ImagePassBase
 		//	SSAO compute pass
 		wvpReconstructParam( r.camera, m0.miscmat0, 0);
 		m0.miscmat1.set( r.camera.prjmat);
-		//	
+			
 		skBindVertexBuffer( vtx);
-		r.setRenderTarget( midtex, null, true);
-		skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, ridx);
+		// r.setRenderTarget( midtex, null, true);
+		// skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, ridx);
 		//	Cross-Bilateral Upsampling pass
-		m1.tex0 = midtex;
-		local m = m1.miscmat0;
-		m[0] = 1.0/midtex.width;
-		m[1] = 1.0/midtex.height;
+		// m1.tex0 = midtex;
+		// local m = m1.miscmat0;
+		// m[0] = 1.0/midtex.width;
+		// m[1] = 1.0/midtex.height;
+		// wvpReconstructParam( r.camera, m, 4);
+		// r.setRenderTarget( target, null, true);
+		// skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, ridx);
+		
+		local m = m1["miscmat0"];
+		r.setRenderTarget( fsttex, null, true);
+		skDrawIndexBuffer( m0, SK_TRIANGLESTRIP, ridx);
 		wvpReconstructParam( r.camera, m, 4);
-		r.setRenderTarget( target, null, true);
+		m1.tex0 = fsttex;
+		m[0] = 1.0/fsttex.width;
+		m[1] = 0.0;
+		r.setRenderTarget( midtex, null);
+		skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, ridx);
+		m1.tex0 = midtex;
+		m[0] = 0.0;
+		m[1] = 1.0/target.height;
+		r.setRenderTarget( target, null);
 		skDrawIndexBuffer( m1, SK_TRIANGLESTRIP, ridx);
 	}
 }
@@ -2091,7 +2122,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		transfb = r.createRenderTarget( {color0=hdcolortex, depth=ztex});
 		decalfb = r.createRenderTarget( {color0=sdcolortex, depth=ztex});
 		//	screen space
-		gblurpass.enabled = h.pbr_qua >= 2;		//	標準以上
+		gblurpass.enabled = false;// h.pbr_qua >= 2;		//	gblur ボツ。。。
 		if( gblurpass["enabled"]){
 			g1tex2 = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_R32UI});
 		}else{
@@ -2117,7 +2148,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	//	renderhintが更新されたのでそれを反映する。
 	//	初期化しなおしちゃうと画面効果なんかもリセットされてしまうので、個別に頑張る
 	function updateRenderHint( h, r){
-		gblurpass.enabled = h.pbr_qua >= 2;		//	標準以上
+		gblurpass.enabled = false;// h.pbr_qua >= 2;		//	gblur ボツ。。。
 		if( gblurpass["enabled"]){
 			g1tex2 = r.createRenderTarget( #{w:VP_FULL,h:VP_FULL,fmt:SK_R32UI});
 		}else{

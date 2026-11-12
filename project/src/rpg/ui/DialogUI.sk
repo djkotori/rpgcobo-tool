@@ -498,6 +498,7 @@ RPGSystem.ui ..
 		} : @( n){	//	スタック数、所持金のチェック
 			return rpgstat.countItems( itemid)+n <= stacknum && rpgstat.money >= pr1*n;
 		};
+		local numptr = ptr( 1);
 		local view = RPGMain.showView({
 			uipath = "dialog_buyitem.ui"
 			layer = "message"
@@ -508,8 +509,7 @@ RPGSystem.ui ..
 				"x4.lbl" = @() cando( 4) ? "×4" : #rtf( "[G]×4"),
 				"x10.lbl" = @() cando( 10) ? "×10" : #rtf( "[G]×10"),
 				price = @(){
-					local tv = ::gpui.gpuitarget["view"]["name"];
-					local pr = pr1 * int( tv?.substring( 1) || 1);
+					local pr = pr1 * (~numptr);
 					return "\uf25f" .. commanum( pr);
 				}
 			},
@@ -519,9 +519,12 @@ RPGSystem.ui ..
 	SELECT:
 		//	リスト選択
 		local sel = RPGMain.uiLoop( {
+			"select" : @( e){
+				if( e.src["name"]) numptr << int( e.src.name.substring( 1));
+			},
 			"action" : @( e){
-				return e.src.name;
-			}
+				if( e.src["name"]) return e.src.name;
+			},
 			"back" : @( e){
 				::playSound( "SE004");
 				return "none";

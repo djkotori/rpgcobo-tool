@@ -130,9 +130,11 @@ class ::RPGMinimap
 		local idir = -st.camdir;
 		if( mapg.rot.z != idir){
 			mapg.rot.z = idir;
+			icong.rot.z = idir;
 			dirg.rot.z = idir;
 			mapg.repaint();
 			dirg.repaint();
+			icong.repaint();
 		}
 		// view.visible = !length( menulayer.children);	//	メニューが表示されているときはミニマップを隠す
 		return true;

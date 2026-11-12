@@ -2187,9 +2187,10 @@ class PropertyBehaviors.Portal extends PropertyBehavior
 	
 	function setParam( v){
 		setMapID( v.mapid);
-		if( v["evid"]){
+		local evitem = v["evid"] && portalmenu.menuitems.find( @( p) p.evid==v.evid);
+		if( evitem){
 			checkmode( 0);
-			portalmenu.selectItem( @( p) p.evid==v.evid);
+			portalmenu.selectItem( evitem);
 		}else{
 			checkmode( 1);
 		}
@@ -2343,6 +2344,7 @@ class PropertyBehaviors.Portal.PortalMap extends SKView
 		local sp = pic.sp, pos;
 		if( v["evid"]){
 			local ev = map.event[v.evid] || map.marker[v.evid];
+			if( !ev["pos"]) return;
 			pos = (ev.pos[0]*0.5,ev.pos[1]*0.5,ev.pos[2]*0.5);
 		}else
 		if( v["pos"]){

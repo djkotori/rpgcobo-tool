@@ -488,18 +488,19 @@ class ResEditorMapVox extends EditorViewBase
 
 	function showItemContextMenu( e){
 		local d = selitem.data;
-		local hasvp1 = selitem.data["vp1"];
+		local hasvp0 = selitem.data["vp0"][0];
+		local hasvp1 = selitem.data["vp1"][0];
 		local cbdata = getClipboard( "mapvox");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
 		local menudata = [
-			{ id="edit", lbl="$T.lbl_editvox"..(d.vp0[0]?" - "..d.vp0[0]:""), icon="\ue745", disable=!d.vp0[0] },
-			hasvp1 ? { id="edit", lbl="$T.lbl_editvox - "..d.vp1[0], icon="\ue745" } : undefined,
+			hasvp0 ? { id="edit", lbl="$T.lbl_editvox - "..d.vp0[0], icon="\ue745", vp=d.vp0 } : undefined,
+			hasvp1 ? { id="edit", lbl="$T.lbl_editvox - "..d.vp1[0], icon="\ue745", vp=d.vp1 } : undefined,
 			"-",
 			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d" },
 			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!(cbdata && cbdata["catgid"] == selcatg.id)},
 		]
 		local ret = MenuPopup.run( menudata);
 		switch( ret["id"]){
-		case "edit": return editVox( d.vp0[0]);
+		case "edit": return editVox( ret["vp"][0]);
 		case "copy": return copy();
 		case "paste": return paste( cbdata);
 		}

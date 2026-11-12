@@ -323,7 +323,7 @@ fs pbrlighting
 	}
 	
 	void shading_standard( const G g, const Light li, inout vec3 ioFd, inout vec3 ioFr) {
-		highp vec3 h = normalize( g.vn + li.l);    //  li.hに入れられる？いやいらんか。ライト1つに1回しか計算しないし。
+		highp vec3 h = normalize( g.vn + li.l);
 		highp float NoV = g.NoV, NoL = clamp( li.NoL, 0.0, 1.0), NoH = clamp( dot( g.n, h), 0.0, 1.0), LoH = clamp( dot( li.l, h), 0.0, 1.0);
 		//	
 		vec3 lcol = li.col * (li.atten * NoL);
@@ -380,7 +380,7 @@ fs pbrlighting
 	}
 
 	void shading_subsurf( const G g, const Light li, inout vec3 ioFd, inout vec3 ioFr) {
-		highp vec3 h = normalize( g.vn + li.l);    //  li.hに入れられる？いやいらんか。ライト1つに1回しか計算しないし。
+		highp vec3 h = normalize( g.vn + li.l);
 		highp float NoV = g.NoV, NoL = clamp( li.NoL, 0.0, 1.0), NoH = clamp( dot( g.n, h), 0.0, 1.0), LoH = clamp( dot( li.l, h), 0.0, 1.0);
 		// NoL does not apply to transmitted light
 		vec3 Fr = vec3( 0.0);
@@ -407,7 +407,7 @@ fs pbrlighting
 
 	vec4 lighting_subsurf( const G g) {
 		highp float sdw = g.shadow;
-		highp float ao = g.mparam.x * g.ao;
+		highp float ao = g.ao;
 		highp vec3 Fd, Fr;
 		// indirect lighting
 		{

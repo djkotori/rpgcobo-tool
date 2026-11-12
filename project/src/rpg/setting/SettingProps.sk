@@ -391,7 +391,7 @@ stageprops .. {
 		props = [
 			...v.props,
 			{ pid="useibl", lbl="$T.lbl_useibl", type=BOOL, defval=false },
-			{ pid="ibldir", lbl="$T.lbl_ibldir", type=SCALAR, range=(-180,180), q=1, ui="bar" },
+			{ pid="rot", lbl="$T.lbl_rotation", type=SCALAR, range=(-180,180), q=1, ui="bar", defval=0 },
 		],
 		tostring = @( v){
 			local cls = SK3DSkies[v["type"]];

@@ -15,7 +15,7 @@ param def
 	uniform mediump mat4 P <id=MISC1MAT>;
 	uniform mediump mat4 dirlit <id=ENV1MAT>;
 	uniform highp mat4 invpmat <id=ENV2MAT>;
-	uniform mediump mat3 invvmat3 <id=ENV4MAT>;
+	uniform mediump mat4 invvmat3 <id=MISC2MAT>;	//	ENV4MAT -> MISC2MAT
 	uniform mediump mat4 colormat <id=COLORMAT>;
 	
 	varying mediump vec4 v_uv;
@@ -31,7 +31,7 @@ vs def
 		v_uv = in_uv;
 		v_wvpp = in_pos;
 		highp vec4 wvp = invpmat * vec4( v_wvpp, 1.0);// wvp.xyz /= wvp.w;
-		v_wn = invvmat3 * normalize( wvp.xyz * vec3( 1.0, -1.0, 1.0));
+		v_wn = mat3( invvmat3) * normalize( wvp.xyz * vec3( 1.0, -1.0, 1.0));
 		gl_Position = vec4( in_pos, 1.0);
 	}
 }

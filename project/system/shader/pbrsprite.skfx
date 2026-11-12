@@ -578,7 +578,7 @@ param ssao_draft
 
 param ssao_normal
 {
-	const int DIRCNT = 4;
+	const int DIRCNT = 3;
 	const int STEPCNT = 6;
 }
 
@@ -636,26 +636,26 @@ param ssaoblur
 
 fs ssaoblur
 {
-	const float R = 5.0;
+	const float R = 4.0;
 	const float SIGMA = R * 0.7;
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
 	const float SHARPEN = 10.0;
 
-	float wvz( highp vec2 uv){
-		mediump vec4 v = p0[1];
-		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
+	highp int iz( highp vec2 uv){
+		return int( texture( uztex, uv).x);
 	}
 
-	vec2 blurfunc( highp vec2 uv, const float r, const mediump float z0){
-		vec2 aoz = vec2( texture( aotex, uv).x, wvz( uv));
-		float ddiff = (aoz.y - z0) * SHARPEN;
+	vec2 blurfunc( highp vec2 uv, const float r, const highp int z0){
+		float ao = texture( aotex, uv).x;
+		highp int z = iz( uv);
+		float ddiff = float( z - z0) * p0[1].w * SHARPEN;
 		float w = exp2( -r*r*FALLOFF - ddiff*ddiff);
-		return vec2( aoz.x*w, w);
+		return vec2( ao*w, w);
 	}
 
 	void main(){
 		highp vec2 uv = v_uv.xy;
-		mediump float z0 = wvz( uv);
+		highp int z0 = iz( uv);
 		mediump vec2 aozsum = vec2( texture( aotex, uv).x, 1.0);
 		for( float r = 1.0; r < R; r ++){
 			aozsum += blurfunc( uv + p0[0].xy*r, r, z0);
@@ -704,23 +704,24 @@ fs ssaoupsample
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
 	const float SHARPEN = 10.0;
 
-	float wvz( mediump vec2 uv){
-		mediump vec4 v = p0[1];
-		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
+	highp int iz( mediump ivec2 iuv){
+		return int( texelFetch( uztex, iuv, 0).x);
 	}
 	
 	void main(){
+		mediump ivec2 iuv = ivec2( gl_FragCoord.xy), huv = iuv / 2;
+		mediump float sharpen = SHARPEN * p0[1].w;
 		mediump vec2 uv = v_uv.xy;
-		mediump float z0 = wvz( uv);
+		mediump int z0 = iz( iuv);
 		mediump vec2 texsc = p0[0].xy;
 		mediump float sumw = 0.0, sumao = 0.0;
 		for( int y=-R; y<=R; y ++){
 			for( int x=-R; x<=R; x ++){
 				mediump vec2 xy = vec2( x, y);
-				mediump float z = wvz( uv+xy*texsc);
-				mediump float ddiff = (z - z0) * SHARPEN;
+				mediump int z = iz( iuv+ivec2(x, y));
+				mediump float ddiff = float(z - z0) * sharpen;
 				float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
-				float ao = texture( aotex, uv+xy*texsc).r;
+				float ao = texelFetch( aotex, huv+ivec2(x, y), 0).r;
 				sumao += ao * w;
 				sumw += w;
 			}
@@ -843,10 +844,10 @@ fs ssshadow
 
 param ssshadow_draft
 {
-	const int STEPCNT = 7;
-	const float DT = 0.09;
-	const float DTT = 0.36;
-	const float THRS = 0.04;
+	const int STEPCNT = 5;
+	const float DT = 0.1;
+	const float DTT = 0.4;
+	const float THRS = 0.045;
 }
 
 param ssshadow_normal
@@ -891,6 +892,73 @@ technique ssshadow_quality
 	}
 }
 
+
+//////////////////////////////////////////////////////////////////////////////////////
+//	
+//	SSShadow Blur
+//	
+
+param sssblur
+{
+	attribute mediump vec4 in_pos <ID=POSITION>;
+	attribute mediump vec4 in_uv <id=UV1>;
+	
+	uniform lowp sampler2D ssstex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR>;
+	uniform highp usampler2D uztex <id=DEPTHTEX, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	
+	uniform highp mat4 p0 <id=MISC1MAT>;
+	
+	varying mediump vec4 v_uv;
+	
+	fragout mediump vec4 fragcolor;
+}
+
+fs sssblur
+{
+	const float R = 4.0;
+	const float SIGMA = R * 0.7;
+	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
+	const float SHARPEN = 4.0;
+
+	highp int iz( highp vec2 uv){
+		return int( texture( uztex, uv).x);
+	}
+
+	vec4 blurfunc( highp vec2 uv, const float r, const highp int z0, inout float wsum){
+		vec4 sss = texture( ssstex, uv);
+		highp int z = iz( uv);
+		float ddiff = float( z - z0) * p0[1].w * SHARPEN;
+		float w = exp2( -r*r*FALLOFF - ddiff*ddiff);
+		wsum += w;
+		return sss * w;
+	}
+
+	void main(){
+		highp vec2 uv = v_uv.xy;
+		highp int z0 = iz( uv);
+		float wsum = 1.0;
+		vec4 ssssum = texture( ssstex, uv);
+		for( float r = 1.0; r < R; r ++){
+			ssssum += blurfunc( uv + p0[0].xy*r, r, z0, wsum);
+		}
+		for( float r = 1.0; r < R; r ++){
+			ssssum += blurfunc( uv - p0[0].xy*r, r, z0, wsum);
+		}
+		fragcolor = ssssum / wsum;
+	}
+}
+
+technique sssblur
+{
+	apilevel = 30;
+
+	pass {
+		param = sssblur;
+		vs = def;
+		fs = sssblur;
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 //	
 //	SSShadow Cross-Bilateral Upsampling
@@ -917,22 +985,22 @@ fs sssupsample
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
 	const float SHARPEN = 2.0;
 	
-	highp float wvz( highp vec2 uv){
-		highp vec4 v = p0[1];
-		return float( texture( uztex, uv).x) * v.z + v.w;	//	vz = positive
+	highp int iz( highp vec2 uv){
+		return int( texture( uztex, uv).x);
 	}
 	
 	void main(){
 		highp vec2 uv = v_uv.xy;
-		highp float z0 = wvz( uv);
+		highp float sz = p0[1].w;
+		highp int z0 = iz( uv);
 		highp vec2 texsc = p0[0].xy;
 		mediump float sumw = 0.0001;
 		mediump vec4 sums = vec4( 0.0);
 		for( int y=-R; y<=R; y ++){
 			for( int x=-R; x<=R; x ++){
 				highp vec2 xy = vec2( x, y);
-				highp float z = wvz( uv+xy*texsc);
-				highp float ddiff = (z - z0) * SHARPEN;
+				highp int z = iz( uv+xy*texsc);
+				highp float ddiff = float(z - z0) * sz * SHARPEN;
 				mediump float w = exp2( -dot( xy, xy)*FALLOFF - ddiff*ddiff);
 				vec4 s = texture( ssstex, uv+xy*texsc);
 				sums += s * w;
