@@ -1036,7 +1036,7 @@ class SelectBlock
 	};
 
 	//	フリーブロックのカテゴリ配列を指定してページをセットアップ
-	function setFreeBlockPages( catgs, stat=0){
+	function setFreeBlockPages( catgs, stat=0, fits=null){
 		pagetype = 1;
 		pagesrc = catgs;
 		pages = array( length( catgs));
@@ -1048,6 +1048,7 @@ class SelectBlock
 				local pi = catgs.findi( @( catg) catg & v.catg);
 				if( pi >= 0){
 					local fb = _makefb( fbtype, vari, stat);
+					if( fits && !fits(fb)) continue;
 					pages[pi].list .. {
 						fblk : fb,
 					};

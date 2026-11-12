@@ -25,9 +25,6 @@ enum MapGenBiomeID
 	RIVER = 7,			//	通行不能
 	LAKE = 8,			//	通行不能
 	SEA = 9,			//	通行不能
-	//	ブロック定義バリエーション
-	MOUNTAIN_VAR = 13,		//	山のバリエーション
-	
 	//	RENAMED
 	FLOOR1 = 0,			//	標準的な床
 	FLOOR2 = 1,			//	ひび割れた床や、模様のある床などのバリエーション
@@ -35,8 +32,9 @@ enum MapGenBiomeID
 	INNERWALL = 4,		//	壁の内側。上からは真っ黒に見える。
 	LAKE1 = 7,			//	
 	LAKE2 = 8,			//	
-
-	//	TOWN
+	//	ブロック定義バリエーション
+	MOUNTAIN_VAR = 13,		//	山のバリエーション
+	// Settlement IDs share the numeric space with world-only variations.
 	TOWN_FLOOR = 10,
 	TOWN_WOOD_FLOOR = 11,
 	TOWN_STONE_FLOOR = 12,
@@ -45,6 +43,7 @@ enum MapGenBiomeID
 	TOWN_SEA = 15,
 	TOWN_CLIFF = 16,
 	TOWN_TREES = 17,
+	CASTLE_WALL_WALK = 18,
 };
 
 enum MapGenObjectID
@@ -560,104 +559,6 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			return objs;
 		}
 	}
-	////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//	town タイプ
-	{	
-		lbl="Town", val="town", 
-		halfimg = false,
-		//
-		props=[
-			{ ...sizeprop, defval=[128,128] },
-			seedprop,
-			//	画像生成パラメータ
-		],
-		//
-		biocolor=[
-			_c( 104, 146, 86),		//	PLAIN
-			_c( 196, 168, 103),		//	DESERT
-			_c( 54, 122, 65),		//	FOREST
-			_c( 124, 90, 67),		//	MOUNTAIN
-			_c( 77, 54, 49),		//	EXMOUNTAIN
-			_c( 154, 116, 76),		//	ROAD
-			_c( 218, 176, 74),		//	BRIDGE
-			_c( 60, 150, 210),		//	RIVER
-			_c( 40, 90, 180),		//	LAKE
-			_c( 22, 28, 38),		//	SEA
-			_c( 183, 151, 96),		//	TOWN_FLOOR
-			_c( 151, 105, 66),		//	TOWN_WOOD_FLOOR
-			_c( 157, 157, 148),		//	TOWN_STONE_FLOOR
-			_c( 83, 61, 43),		//	TOWN_FURNITURE
-			_c( 132, 126, 116),		//	TOWN_PAVEMENT
-			_c( 38, 103, 155),		//	TOWN_SEA
-			_c( 100, 103, 113),		//	TOWN_CLIFF
-			_c( 25, 69, 42),		//	TOWN_TREES
-		],
-		bioobjdensmap = {
-		},
-		objsizemap = {
-			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREE_S]: 3, [TREE_M]: 4, [TREE_L]: 5, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
-		},
-		//	ツールから置き換え可能。MapGenerator定義ごとにある
-		blkmap = {
-			[PLAIN]=2|(1<<5), [DESERT]=2|(7<<5), [FOREST]=2|(27<<5), 
-			[MOUNTAIN]=3|(1<<5), [EXMOUNTAIN]=2|(57<<5), [ROAD]=3|(8<<5), [BRIDGE]=3|(22<<5), 
-			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5), [SEA]=8|(0<<5), 
-			//
-			[TOWN_FLOOR]=2|(12<<5), [TOWN_WOOD_FLOOR]=3|(37<<5), [TOWN_STONE_FLOOR]=3|(1<<5),
-			[TOWN_FURNITURE]=3|(37<<5), [TOWN_PAVEMENT]=2|(3<<5), [TOWN_SEA]=8|(0<<5),
-			[TOWN_CLIFF]=2|(24<<5), [TOWN_TREES]=2|(7<<5),
-			//
-			[TREE_S]=20|(74<<12), [TREE_M]=20|(75<<12), [TREE_L]=20|(67<<12),
-			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5),
-		},
-		blkmaplist = [
-			{ id=TOWN_FLOOR, lbl="FLOOR", type="blk", blkpages=[2,3] },
-			{ id=TOWN_WOOD_FLOOR, lbl="WOOD_FLOOR", type="blk", blkpages=[2,3] },
-			{ id=TOWN_STONE_FLOOR, lbl="STONE_FLOOR", type="blk", blkpages=[2,3] },
-			{ id=TOWN_PAVEMENT, lbl="PAVEMENT", type="blk", blkpages=[2,3] },
-			{ id=TOWN_SEA, lbl="SEA", type="blk", blkpages=[8] },
-			{ id=TOWN_CLIFF, lbl="CLIFF", type="blk", blkpages=[2,3] },
-			{ id=TOWN_TREES, lbl="TREES", type="blk", blkpages=[2,3] },
-			null,null,
-			{ id=TREE_S, lbl="TREE_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
-			{ id=TREE_M, lbl="TREE_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
-			{ id=TREE_L, lbl="TREE_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
-			{ id=FLOWERS_A, lbl="FLOWERS_A", type="blk", blkpages=[11] },
-			{ id=FLOWERS_B, lbl="FLOWERS_B", type="blk", blkpages=[11] },
-			{ id=FLOWERS_C, lbl="FLOWERS_C", type="blk", blkpages=[11] },
-		],
-		biohmap = [
-			1.0,	//	PLAIN
-			1.0,	//	DESERT
-			1.0,	//	FOREST
-			1.8,	//	MOUNTAIN
-			2.4,	//	EXMOUNTAIN
-			1.0,	//	ROAD
-			1.0,	//	BRIDGE
-			0.0,	//	RIVER
-			0.0,	//	LAKE
-			0.0,	//	SEA
-			1.0,	//	TOWN_FLOOR
-			1.0,	//	TOWN_WOOD_FLOOR
-			1.0,	//	TOWN_STONE_FLOOR
-			1.0,	//	TOWN_FURNITURE
-			1.0,	//	TOWN_PAVEMENT
-			0.0,	//	TOWN_SEA
-			1.8,	//	TOWN_CLIFF
-			1.0,	//	TOWN_TREES
-		],
-		//	バイオーム画像からブロック、高さ画像を生成する。dst[i] = blk | (y<<16) の形式で返す。
-		blkheightfunc = @( bio, dst){
-			local w = bio.width, h = bio.height;
-			local basey = 3, hscale = 1, hnoise = getrange( gendata["heightnoise"], 1.0);
-			local biohmap = gendef.biohmap,blkmap = blkmap, rnd = rnd;
-			return @( x, z, i){
-				local b = bio[i], blk = blkmap[b], bh = biohmap[b];
-				local y = basey * hscale * bh;	//	ブロックのyはバイオームごとに基本固定の値になる。ノイズでの上下みたいなのは無し。
-				return blk | (y<<16);
-			}
-		}
-	},
 ];
 
 
@@ -668,6 +569,234 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 
 //	ソースの RGBAImage から BlockWorld を作るためのクラス。
 //	
+// Asset foundations: wood marks the exact asset extent, stone the two-block
+// setback. The companion Plan JSON records the selected asset IDs.
+local settlementBlocks = [
+	2|(1<<5), 2|(7<<5), 2|(27<<5), 3|(16<<5), 3|(35<<5),
+	2|(6<<5), 3|(22<<5), 8, 8, 3|(35<<5),
+	3|(9<<5), 3|(34<<5), 3|(17<<5), 3|(14<<5), 3|(17<<5),
+	8, 2|(24<<5), 2|(27<<5), 3|(17<<5)
+];
+local settlementLabels = [
+	"Ground", "Sand / Fields", "Garden", "Wall", "Inner Wall",
+	"Road", "Bridge / Entrance", "River", "Lake", "Outside / Inner Wall",
+	"Floor", "Wood Floor", "Stone Floor", "Furniture", "Pavement",
+	"Sea", "Cliff", "Trees", "Castle Wall Walk"
+];
+local townColors = [
+	_c(104,146,86), _c(196,168,103), _c(54,122,65), _c(124,90,67),
+	_c(77,54,49), _c(154,116,76), _c(218,176,74), _c(60,150,210),
+	_c(40,90,180), _c(22,28,38), _c(183,151,96), _c(151,105,66),
+	_c(157,157,148), _c(83,61,43), _c(132,126,116), _c(38,103,155),
+	_c(100,103,113), _c(25,69,42)
+];
+local castleColors = [
+	_c(128,137,116), _c(190,170,112), _c(76,116,72), _c(126,129,136),
+	_c(76,78,87), _c(150,128,94), _c(211,175,72), _c(46,126,198),
+	_c(36,78,155), _c(18,22,30), _c(172,153,113), _c(158,119,80),
+	_c(177,177,172), _c(89,61,45), _c(160,156,139),
+	// These IDs are not emitted by castle; retain unique palette entries.
+	_c(38,103,155), _c(100,103,113), _c(25,69,42), _c(139,142,145)
+];
+local paletteFreeBlock( value, rotation=0, pos=null){
+	return FreeBlock.create({fbtype:value&0xfff,fbparam:value>>>12,rot:rotation,pos:pos ? pos : [0,0,0]});
+}
+
+local paletteProp( id, lbl, kind, variant, pages, planKeys=null, fits=null){
+	return {id:id,lbl:lbl,type:"fblk",fbpages:pages,value:kind|(variant<<12),planKeys:planKeys,fits:fits};
+}
+
+local paletteBlock( id, lbl, value){
+	return {id:id,lbl:lbl,type:"blk",blkpages:[value&31],value:value};
+}
+
+local trees = [FB_TREE,FB_ROCK], furniture = [FB_INTERIOR,FB_EXTERIOR], lamps = [FB_INLAMP,FB_EXLAMP];
+local settlementPalette = [
+	paletteProp("settlementProp_shade_tree","Shade Tree",20,65,trees,["settlementProp_shade_tree"]),
+	paletteProp("settlementProp_conifer","Conifer",20,66,trees,["settlementProp_conifer"]),
+	paletteProp("forest_tree","Forest Tree",20,67,trees),
+	paletteProp("settlementProp_palm","Palm",20,68,trees,["settlementProp_palm"]),
+	paletteProp("settlementProp_cactus","Cactus",20,72,trees,["settlementProp_cactus"]),
+	paletteProp("settlementProp_shrub","Shrub",20,74,trees,["settlementProp_shrub"]),
+	paletteProp("settlementProp_rock","Rock",20,17,trees,["settlementProp_rock"]), null, null,
+	paletteBlock("flower_red","Red Flower",11),
+	paletteBlock("flower_yellow","Yellow Flower",11|(4<<5)),
+	paletteBlock("flower_white","White Flower",11|(1<<5)),
+	paletteBlock("coastal_blossom","Coast Flower",11|(11<<5)),
+	paletteBlock("lakeside_pink","Lake Pink",11|(7<<5)),
+	paletteBlock("lakeside_white","Lake White",11|(16<<5)),
+	paletteBlock("alpine_yellow","Alpine Yellow",11|(17<<5)),
+	paletteBlock("alpine_red","Alpine Red",11|(18<<5)),
+	paletteBlock("mushroom","Mushroom",11|(10<<5)),
+	paletteBlock("short_grass","Short Grass",11|(2<<5)),
+	paletteBlock("fern","Fern",11|(5<<5)),
+	paletteBlock("river_grass","Tall Grass",11|(6<<5)),
+	paletteBlock("leafy_crop","Leafy Crop",11|(2<<5)),
+	paletteBlock("tall_crop","Tall Crop",11|(6<<5)),
+	paletteBlock("herb_crop","Herb Crop",11|(5<<5)),
+	paletteProp("civicObject3_26","Well",3,26,[FB_EXTERIOR],["civicObject3_26"]),
+	paletteProp("settlementProp_bench","Bench",4,5,furniture,["settlementProp_bench","civicObject4_5","castleObject4_5"]),
+	paletteProp("civicObject2_1","Square Lamp",2,1,[FB_EXLAMP],["civicObject2_1"]),
+	paletteProp("civicObject3_11","Market Stall",3,11,[FB_EXTERIOR],["civicObject3_11"]),
+	paletteProp("civicObject3_14","Statue",3,14,[FB_EXTERIOR],["civicObject3_14"]), null
+];
+
+local castleProp( lbl, kind, variant, pages, fits=null){
+	local key = "castleObject"..kind.."_"..variant;
+	return paletteProp(key,lbl,kind,variant,pages,[key],fits);
+}
+
+local roomDoorFits = @( fb) fb.br.w>=2 && fb.br.w<=4 && fb.br.d<=2;
+local castlePalette = [
+	paletteProp("castleGate","Castle Gate",1,16,[FB_EXDOOR],["castleGate"],@( fb) fb.br.w==10 && fb.br.d<=2),
+	castleProp("Room Door",1,8,[FB_INDOOR,FB_EXDOOR],roomDoorFits),
+	castleProp("Royal Door",1,13,[FB_INDOOR,FB_EXDOOR],roomDoorFits),
+	paletteBlock("royal_carpet","Royal Carpet",9),
+	paletteBlock("ballroom_floor","Ballroom Floor",3|(34<<5)),
+	paletteBlock("training_dummy_wood","Dummy Wood",3|(34<<5)),
+	castleProp("Throne",4,31,furniture), castleProp("Chair",4,4,furniture), castleProp("Table",4,7,furniture),
+	castleProp("Bed",4,14,furniture), castleProp("Royal Bed",4,15,furniture), castleProp("Bookcase",4,9,furniture),
+	castleProp("Chest",4,11,furniture), castleProp("Barrel",4,21,furniture), castleProp("Bucket",4,41,furniture),
+	castleProp("Counter",4,10,furniture), castleProp("Stove",2,7,lamps), castleProp("Cooking Pot",4,23,furniture),
+	castleProp("Candle",2,4,lamps), castleProp("Piano",4,40,furniture), castleProp("Sword Rack",4,30,furniture),
+	castleProp("Shield Rack",4,28,furniture), castleProp("Book",4,33,furniture), castleProp("Documents",4,34,furniture),
+	castleProp("Tableware",4,35,furniture), null, null
+];
+
+local settlementHeight = @( bio, dst){
+	local blkmap = blkmap;
+	local basey = Math.iround( getrange( gendata["basey"], 3));
+	local wallheight = settlementWallHeight;
+	local keepHeight = Math.max( 6, wallheight), keepRegions = [];
+	local castle = gendef.val=="castle", plan = assetPlan;
+	if( castle && plan){
+		foreach( region in plan.regions){
+			if( region.kind=="keep" || region.kind=="keep_expansion") keepRegions.push( region);
+			else if( region.kind=="castle_portal") keepHeight = Math.max( keepHeight, region.objectHeight);
+			else if( region.kind=="castle_front_door")
+				keepHeight = Math.max( keepHeight, paletteFreeBlock(plannedPaletteValue("castleGate", "castleGate")).br.h+1);
+		}
+	}
+	return @( x, z, i){
+		local b = bio[i], y = basey;
+		switch( b){
+		case WALL: case INNERWALL: case SEA:
+			if( castle && b!=SEA){
+				local row = bio.height-1-z;
+				local curtain = plan && plan["castleDefenseMask"] && plan.castleDefenseMask[row*bio.width+x]==2;
+				if( !curtain && (!plan || keepRegions.find(@(r) x>=r.x0 && x<=r.x1 && row>=r.y0 && row<=r.y1))){
+					y += keepHeight;
+					break;
+				}
+			}
+			y += wallheight; break;
+		case CASTLE_WALL_WALK:
+			y += Math.max( 1, wallheight-1); break;
+		case TOWN_FURNITURE:
+			y += 2; break;
+		case TOWN_CLIFF:
+			y += 6; break;
+		case TOWN_TREES:
+			break;
+		case RIVER: case LAKE: case TOWN_SEA:
+			y = Math.max( 0, basey-1); break;
+		}
+		return blkmap[b] | (y<<16);
+	}
+};
+foreach( t in ["village", "town", "castle"]){
+	local props = [ { ...sizeprop, range=t=="castle" ? (128,1024) : (64,1024), defval=[160,160] }, seedprop ];
+	if( t == "castle") props .. { pid="mode", lbl="$T.mapgen_castletype", type=LIST, list=[
+		{ lbl="$T.lbl_random", val={} },
+		{ lbl="$T.mapgen_castleconcentric", val={castleMode=0} },
+		{ lbl="$T.mapgen_castlehill", val={castleMode=1} },
+		{ lbl="$T.mapgen_castleriver", val={castleMode=2} },
+		{ lbl="$T.mapgen_castlepalace", val={castleMode=3} },
+		{ lbl="$T.mapgen_castlefortress", val={castleMode=4} }
+	], defval={} };
+	foreach( prop in [
+		{ ...baseyprop, defval=[3,3] },
+		{ pid="wallHeight", lbl="$T.mapgen_wallheight", type=RANGE, cnt="cnt6.ui", range=(0,16), q=1, defval=t=="castle" ? [6,6] : [0,0] },
+		{ pid="assetPlotCount", lbl="$T.mapgen_buildings", type=RANGE, cnt="cnt6.ui", range=(1,128), q=1, defval=t=="village" ? [12,24] : [20,36] },
+		{ pid="assetRoadWidth", lbl=t!="castle" ? "$T.mapgen_basepathwidth" : "$T.mapgen_roadwidth", type=RANGE, cnt="cnt6.ui", range=(2,6), q=1, defval=[2,2] },
+		{ pid="candidateCount", lbl="$T.mapgen_candidates", type=RANGE, cnt="cnt6.ui", range=(1,12), q=1, defval=[6,6] }
+	]) props .. prop;
+	props .. { pid="countryWealth", lbl="$T.mapgen_wealth", type=RANGE, cnt="cnt6.ui", range=(0.7,2.5), q=20, defval=[0.7,2.5] };
+	props .. { pid="northFacingHouseKeepPercent", lbl="$T.mapgen_northhousekeep", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[10,10] };
+	props .. { pid="sideFacingHouseKeepPercent", lbl="$T.mapgen_sidehousekeep", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[75,75] };
+	props .. { pid="naturalDecorationDensity", lbl="$T.mapgen_naturedensity", type=RANGE, cnt="cnt6.ui", range=(0,100), q=10, defval=[1.0,3.0] };
+	if( t == "castle"){
+		props .. { pid="outerWallDefenseStrength", lbl="$T.mapgen_castledefense", type=RANGE, cnt="cnt6.ui", range=(0,2), q=20, defval=[0,2] };
+		props .. { pid="keepWidthRatio", lbl="$T.mapgen_castlewidthratio", type=RANGE, cnt="cnt6.ui", range=(0.25,0.55), q=20, defval=[0.3,0.45] };
+		props .. { pid="keepDepthRatio", lbl="$T.mapgen_castledepthratio", type=RANGE, cnt="cnt6.ui", range=(0.15,0.4), q=20, defval=[0.2,0.3] };
+		props .. { pid="gateCount", lbl="$T.mapgen_castlegates", type=RANGE, cnt="cnt6.ui", range=(1,3), q=1, defval=[1,3] };
+		props .. { pid="towerCount", lbl="$T.mapgen_castletowers", type=RANGE, cnt="cnt6.ui", range=(4,12), q=1, defval=[4,8] };
+		props .. { pid="keepRoomCount", lbl="$T.mapgen_castlerooms", type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
+		props .. { pid="outerFacilityCount", lbl="$T.mapgen_castlefacilities", type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
+		props .. { pid="outerFacilityDensity", lbl="$T.mapgen_castlefacilitydensity", type=RANGE, cnt="cnt6.ui", range=(0.5,3), q=10, defval=[1,3] };
+		props .. { pid="moatWidth", lbl="$T.mapgen_castlemoat", type=RANGE, cnt="cnt6.ui", range=(2,5), q=1, defval=[2,5] };
+		props .. { pid="wallThickness", lbl="$T.mapgen_castlewallthickness", type=RANGE, cnt="cnt6.ui", range=(1,3), q=1, defval=[1,3] };
+		props .. { pid="mainRoadWidth", lbl="$T.mapgen_castlemainwidth", type=RANGE, cnt="cnt6.ui", range=(3,5), q=1, defval=[3,5] };
+		props .. { pid="roadExtraEdgeRate", lbl="$T.mapgen_castleconnections", type=RANGE, cnt="cnt6.ui", range=(0,1), q=20, defval=[0.1,0.3] };
+		props .. { pid="castlePaving", lbl="$T.mapgen_castlepaving", type=LIST, list=[
+			{lbl="$T.lbl_random",val={}}, {lbl="$T.mapgen_pavinglow",val={pavingRatio=0.2}},
+			{lbl="$T.mapgen_pavingmedium",val={pavingRatio=0.5}}, {lbl="$T.mapgen_pavinghigh",val={pavingRatio=0.85}}
+		],defval={} };
+	}else{
+		props .. { pid="terrainRelief", lbl="$T.mapgen_relief", type=RANGE, cnt="cnt6.ui", range=(0,12), q=1, defval=[2.0,4.0] };
+		props .. { pid="terrainProtrusion", lbl="$T.mapgen_protrusion", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[0,100] };
+		props .. { pid="terrainSmoothness", lbl="$T.mapgen_smoothness", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[100,100] };
+		props .. { pid="villageMainRoadCount", lbl="$T.mapgen_mainroads", type=RANGE, cnt="cnt6.ui", range=(0,4), q=1, defval=t=="village" ? [1,4] : [2,4] };
+		props .. { pid="orientation", lbl="$T.mapgen_orientation", type=LIST, list=[
+			{ lbl="$T.lbl_random", val={} },
+			{ lbl="0°", val={siteRotation=0} }, { lbl="90°", val={siteRotation=1} },
+			{ lbl="180°", val={siteRotation=2} }, { lbl="270°", val={siteRotation=3} }
+		], defval={} };
+		props .. { pid="site", lbl="$T.mapgen_site", type=LIST, list=[
+			{ lbl="$T.lbl_random", val={} },
+			{ lbl="Plains", val={settlementSite=0} },
+			{ lbl="Coast", val={settlementSite=1} },
+			{ lbl="Mountain Valley", val={settlementSite=2} },
+			{ lbl="Forest", val={settlementSite=3} },
+			{ lbl="River", val={settlementSite=4} },
+			{ lbl="Lake", val={settlementSite=5} },
+			{ lbl="Oasis", val={settlementSite=6} }
+		], defval={} };
+		if( t == "town"){
+			props .. { pid="city", lbl="$T.mapgen_city", type=LIST, list=[
+				{ lbl="$T.lbl_random", val={} },
+				{ lbl="Medieval City", val={townCityType=0} },
+				{ lbl="Castle Town", val={townCityType=1} },
+				{ lbl="Paved City", val={townCityType=2} },
+				{ lbl="Walled City", val={townCityType=3} }
+			], defval={} };
+		}
+	}
+	local blkmap = {}, blkmaplist = [];
+	local colors = t == "castle" ? castleColors : townColors;
+	foreach( id, color in colors){
+		blkmap[id] <- settlementBlocks[id];
+		if( t=="castle" && (id==INNERWALL || id==SEA)) blkmap[id] = settlementBlocks[WALL];
+	}
+	// Each row keeps related terrain materials together.
+	foreach( id in [PLAIN,DESERT,FOREST, RIVER,LAKE,t=="castle"?null:TOWN_SEA,
+		ROAD,BRIDGE,TOWN_PAVEMENT, WALL,INNERWALL,t=="castle"?CASTLE_WALL_WALK:SEA,
+		TOWN_FLOOR,TOWN_WOOD_FLOOR,TOWN_STONE_FLOOR, TOWN_FURNITURE,t=="castle"?SEA:TOWN_CLIFF,t=="castle"?null:TOWN_TREES]){
+		blkmaplist .. (id==null ? null : {id:id,lbl:settlementLabels[id],type:"blk",
+			blkpages=(id==RIVER || id==LAKE || id==TOWN_SEA) ? [8] : [2,3]});
+	}
+	foreach( palette in (t=="castle" ? [castlePalette,settlementPalette] : [settlementPalette])) foreach( def in palette){
+		blkmaplist .. def;
+		if( def) blkmap[def.id] <- def.value;
+	}
+	::MapGenerators .. {
+		lbl=t=="town" ? "Town" : (t=="village" ? "Village" : "Castle"), val=t,
+		halfimg=false, settlement=true, props=props,
+		biocolor=colors, blkmap=blkmap, blkmaplist=blkmaplist,
+		bioobjdensmap={}, objsizemap={}, blkheightfunc=settlementHeight
+	};
+}
+
 class MapGenerator
 {
 	//	入力パラメータ
@@ -684,10 +813,134 @@ class MapGenerator
 	//	生成結果
 	dst = null;					//	RGBAImage: srcから生成するフルサイズのマップ画像。blk(8), hight(8), fblk(8)
 	objs = null;				//	樹木などオブジェクトのリスト。MapGenerationDataのobjsと同じ。
+	settlementWallHeight = 0;
+	assetPlan = null;
+	assetPlanPath = null;
+	assetParameters = null;
+
+	// Read the live map_asset.json resource through the same decoder as asset
+	// placement. Full BlockWorld extents include roofs and projecting details.
+	function constructionAssetDoor( bw){
+		local best = null, score = 1000000;
+		foreach( fb in bw.collectFreeBlocks( IRect3D( 0,0,0,bw.w,bw.h,bw.d), [])){
+			if( !fb.isClass( "door")) continue;
+			local br = fb.br;
+			local distances = [bw.d-1-fb.z, bw.w-1-fb.x, fb.z, fb.x];
+			for( local side = 0;side < 4;side++){
+				if( br.w > br.d && (side&1)) continue;
+				if( br.d > br.w && !(side&1)) continue;
+				if( br.d == br.w && (side&1)!=(fb.rot&1)) continue;
+				local s = distances[side] + fb.y*0.01;
+				if( s < score){
+					score = s;
+					best = { x=Math.clamp( int(br.x+br.w*0.5)-1, 0, bw.w-2), z=Math.clamp( int(br.z+br.d*0.5)-1, 0, bw.d-2), side=side };
+				}
+			}
+		}
+		// Deep interior doors do not identify a street-facing entrance.
+		return score < 4.5 ? best : null;
+	}
+
+	function constructionAssetName( asset){
+		local name=asset["name"],text="";
+		if( typeof(name)==SS_TABLE){ foreach( lang,label in name) text=text .. label .. " "; }
+		else if( name) text=name;
+		return text;
+	}
+	function constructionAssetLimitGroup( text){
+		foreach( word in ["教会","神殿","寺院","church","Church","temple","Temple"])
+			if( text.contains(word)) return 1;
+		foreach( word in ["城","宮殿","castle","Castle","palace","Palace"])
+			if( text.contains(word)) return 2;
+		return 0;
+	}
+	function constructionAssetParameters(){
+		local count = 0, buildingCount = 0, parameters = {};
+		local assets = ::conf._resource.map_asset;
+		foreach( aid in Table.keys( assets).sort()){
+			if( !aid.startsWith( "MA")) continue;
+			local asset = assets[aid], text = constructionAssetName(asset);
+			local category = -1;
+			foreach( word in ["家", "屋敷", "ショップ", "倉庫", "アパート", "教会", "宿", "店", "城", "house", "House", "shop", "Shop", "warehouse", "Warehouse", "apartment", "Apartment", "church", "Church", "castle", "Castle"]){
+				if( text.contains( word)){ category = 0; break; }
+			}
+			local limitGroup=constructionAssetLimitGroup(text);
+			local residential=false;
+			foreach(word in ["家","屋敷","house","House","manor","Manor","mansion","Mansion","residence","Residence"])
+				if(text.contains(word)) residential=true;
+			foreach(word in ["ショップ","倉庫","アパート","宿","店","shop","Shop","warehouse","Warehouse","apartment","Apartment"])
+				if(text.contains(word)) residential=false;
+			if(limitGroup>0) residential=false;
+			if( category<0 && limitGroup>0) category=0;
+			if( text.contains( "橋") || text.contains( "bridge") || text.contains( "Bridge")) category = 1;
+			if( text.contains( "城壁") || text.contains( "wall") || text.contains( "Wall")) category = 2;
+			if( category < 0 || !asset["bw64"]) continue;
+			local bw = objbw( aid), id = 0;
+			for( local i = 2;i < length( aid);i++) id = id*10 + aid[i]-'0';
+			local growing = category==0;
+			local door = growing ? constructionAssetDoor( bw) : null;
+			if( growing && !door){
+				printf( "Settlement skipped asset without an exterior door: %S\n", aid);
+				continue;
+			}
+			for( local rot = 0;rot < (growing ? 4 : 1);rot++){
+				local m = IMat().rotate( rot);
+				local bounds = IRect3D( 0,0,0,bw.w,bw.h,bw.d).transform( m);
+				local key = "asset" .. count;
+				parameters[key .. "Id"] <- id;
+				parameters[key .. "Width"] <- bounds.w;
+				parameters[key .. "Depth"] <- bounds.d;
+				parameters[key .. "Category"] <- category;
+				parameters[key .. "Residential"] <- residential?1:0;
+				parameters[key .. "Rotation"] <- rot;
+				parameters[key .. "LimitGroup"] <- limitGroup;
+				parameters[key .. "MaxCount"] <- limitGroup>0 ? 1 : 0;
+				if( door){
+					local opening = IRect3D( door.x,0,door.z,2,1,2).transform( m);
+					local normal = [(0,0,1),(1,0,0),(0,0,-1),(-1,0,0)][door.side];
+					local n = m.transform( normal);
+					parameters[key .. "DoorX"] <- opening.x-bounds.x;
+					parameters[key .. "DoorY"] <- bounds.d-2-(opening.z-bounds.z);
+					parameters[key .. "DoorSide"] <- n[2]>0 ? 0 : (n[0]>0 ? 1 : (n[2]<0 ? 2 : 3));
+				}
+				count++;
+				if( category==0) buildingCount++;
+			}
+		}
+		if( !count) throw Exception( "No construction assets found in map_asset.json");
+		if( !buildingCount)
+			throw Exception( "No settlement building assets have an identifiable exterior door. Check the skipped asset IDs in the log.");
+		parameters.assetCount <- count;
+		parameters.assetFoundation <- 1;
+		parameters.settlementCivicPlan <- 1;
+		local palette = blkmap ? blkmap : gendef.blkmap;
+		foreach( def in gendef.blkmaplist){
+			if( !def || !def["planKeys"]) continue;
+			local value = palette[def.id], br = paletteFreeBlock(value).br;
+			foreach( key in def.planKeys){
+				// Keep the planned model and its dimensions together for this batch.
+				parameters[key.."Block"] <- value;
+				if( key.startsWith("settlementProp_")){
+					parameters[key.."_width"] <- br.w;
+					parameters[key.."_depth"] <- br.d;
+				}else{
+					parameters[key.."Width"] <- br.w;
+					parameters[key.."Depth"] <- br.d;
+					parameters[key.."Height"] <- br.h;
+				}
+			}
+		}
+		return parameters;
+	}
+
+	function plannedPaletteValue( key, slot, fallback=null){
+		local palette = blkmap ? blkmap : gendef.blkmap;
+		return (assetParameters && assetParameters[key.."Block"]) || palette[slot] || fallback;
+	}
 	
 	//	mapimggen.exeをpopen実行して、src画像を生成する。
 	//	generate()の前に読んでおく。
-	function generateSourceImage(){
+	function generateSourceImage( constructionParameters=null){
 		rnd = Random( seed, 11);
 		local exe = FileRef( "tools/mapimggen.exe");
 		local outid = "%x" % seed;
@@ -696,19 +949,89 @@ class MapGenerator
 		local wdiv = gendef.halfimg ? 2 : 1;
 		args .. "-type" .. gendef.val .. "-w" .. (srcw/wdiv) .. "-d" .. (srcd/wdiv);
 		args .. "-dir" .. tmpdir .. "-out" .. outid .. "-seed" .. seed;
-		parseopts( gendata, args);
-		p.open( exe, args, 0x200);	//	0x200 = CREATE_NO_WINDOW
-		while( p.isrunning()){
-			suspend();
+		local parameters = clone gendata;
+		if( gendef["settlement"]){
+			settlementWallHeight = getargrange( "wallHeight", gendata["wallHeight"]);
+			parameters["wallHeight"] <- settlementWallHeight;
 		}
-		p.close();
+		local numeric = null;
+		if( gendef["settlement"])
+			numeric = constructionParameters ? clone constructionParameters : constructionAssetParameters();
+		parseopts( parameters, args, numeric);
+		if( gendef["settlement"]){
+			local paramfile = `$tmpdir/${outid}_params.json`;
+			assetParameters = numeric;
+			local bb = encodeJSON( numeric, 0, ByteBuffer());
+			bb.pos = 0;
+			FileRef( paramfile).save( bb);
+			args.extend( ["--plan", "--strict", "--params-file", paramfile]);
+		}
+		printf( "MapGenerator args: %S\n", encodeJSON( args));
+		local output = [], exitcode;
+		local readoutput = @(){
+			for( local line; line = p.readLine();){
+				printf( "MapGenerator output: %S\n", line);
+				if( output.len() < 32) output.push( line);
+			}
+		};
+		try{
+			p.open( exe, args, 0x300);	// Pipe output and hide the console.
+			while( p.isrunning()){
+				readoutput();
+				suspend();
+			}
+			readoutput();
+			exitcode = p.exitcode();
+			p.close();
+		}catch( ex){
+			if( p.isrunning()) p.kill();
+			p.close();
+			throw ex;
+		}
+		if( exitcode) throw Exception( "Map generation failed: type=%S seed=%S exit=%S\n%S" % (gendef.val, seed, exitcode, output.join("\n")));
+		if( gendef["settlement"]){
+			assetPlanPath = `$tmpdir/${outid}_plan.json`;
+			if( !FileRef( assetPlanPath).exists())
+				throw Exception( "Map generation did not output the asset plan. See MapGenerator args in the log.");
+		}
 		local png = FileRef( `$tmpdir/${outid}.png`).load();
-		return src = skLoadImage( png);
+		local image = skLoadImage( png);
+		if( !image || image.width != srcw/wdiv || image.height != srcd/wdiv){
+			throw Exception( "Invalid map image: type=%S seed=%S" % (gendef.val, seed));
+		}
+		return src = image;
+	}
+
+	function buildPreviewWorld(){
+		local world;
+		try{
+			if( assetPlanPath){
+				assetPlan = decodeJSON( FileRef( assetPlanPath).load());
+				if( !assetPlan || assetPlan["seed"]!=seed || assetPlan["type"]!=gendef.val ||
+					assetPlan["width"]!=srcw || assetPlan["depth"]!=srcd ||
+					!assetPlan["biomes"] || assetPlan.biomes.len()!=srcw*srcd || !assetPlan["regions"])
+					throw Exception( "Invalid map plan: type=%S seed=%S" % (gendef.val, seed));
+				saveDiagnostic( "last_asset_plan.json", assetPlan, 1|4);
+				saveDiagnostic( "last_asset_params.json", assetParameters, 1|4);
+			}
+			generate();
+			world = toBlockWorld();
+		}catch( ex){
+			assetPlan = null; dst = null; objs = null;
+			throw ex;
+		}
+		assetPlan = null; dst = null; objs = null;
+		return world;
 	}
 
 	//	マップ生成処理を開始する。入力パラメータが全て設定された状態で呼ぶ必要がある。
 	function generate(){
 		if( !src) src = generateSourceImage();
+		if( gendef["settlement"] && !assetPlan)
+			throw Exception( "Settlement preview requires an asset plan: type=%S seed=%S" % (gendef.val, seed));
+		// 集落のプレビューは解放後に同じseedで再構築するため、装飾・高さの乱数を初期化する。
+		// World/Dungeon/Cave は従来どおり、CLIオプション抽選後の乱数状態を引き継ぐ。
+		if( gendef["settlement"]) rnd = Random( seed, 11);
 		local srcrev = flipY( src);
 		//	まずはbio画像を作る。biocolorを使って、srcの色からバイオームIDを取得する。
 		local bio = ImageColorGroups.toIndexImage( gendef.biocolor, srcrev, RGBAImage( srcrev.width, srcrev.height));
@@ -737,23 +1060,44 @@ class MapGenerator
 		return rnd( r[0], r[1]);
 	}
 
-	function parseopts( tb, args){
+	function parseopts( tb, args, numeric=null){
 		foreach( i in Table.keys( tb).sort()){	//	キーでソートしてrndの再現性が出るようにする。
 			local v = tb[i], f;
+			// Count/width ranges describe a generation interval, not one sampled count.
+			if( numeric && typeof(v)==SS_ARRAY && (i=="gateCount" || i=="towerCount" || i=="keepRoomCount" || i=="outerFacilityCount" || i=="moatWidth")){
+				numeric[i.."Min"] <- Math.iround(Math.min(v[0],v[1]));
+				numeric[i.."Max"] <- Math.iround(Math.max(v[0],v[1]));
+				continue;
+			}
+			if( numeric && (i=="size" || i=="basey" || i=="seed")) continue;
 			if( v["notarg"]) continue;	//	コマンドライン引数にしないプロパティ
 			switch( typeof( v)){
-			case SS_TABLE: parseopts( v, args); continue;	//	再帰的にparseoptsする。
-			case SS_ARRAY: f = getrange( v); break;	//	arrayの場合はrangeプロパティとして扱う。min,maxの範囲で乱数を返す。
+			case SS_TABLE: parseopts( v, args, numeric); continue;	//	再帰的にparseoptsする。
+			case SS_ARRAY: f = numeric ? getargrange( i, v) : getrange( v); break;
 			default: f = v; break;
 			}
-			args .. "-p" .. ("%S=%S" % (i,f));
+			if( numeric) numeric[i] <- f;
+			else args.extend( ["-p", "%S=%S" % (i,f)]);
 		}
+	}
+
+	function getargrange( pid, range){
+		local prop = gendef.props.find( @( p) p.pid==pid);
+		if( prop && prop["q"]==1){
+			// Integer controls include both endpoints, even after UI float storage.
+			local lo=Math.iceil(Math.min(range[0],range[1]));
+			local hi=Math.ifloor(Math.max(range[0],range[1]));
+			return rnd( lo, hi+1);
+		}
+		return getrange( range);
 	}
 
 	//	オブジェクトを配置する。配置済みのオブジェクトはobjbmpに記録する。
 	//	
 	function generateObjects( bio){
 		local objs = [];
+		// Settlement PNGs already contain vegetation and furniture footprints.
+		if( gendef["settlement"]) return objs;
 		local w = bio.width, h = bio.height;
 		local d0 = [getrange( gendata["rockdens"]), getrange( gendata["treedens"]), getrange( gendata["flowerdens"]), getrange( gendata["treedens"])];
 		local objbmp = Bitmap( bio.width, bio.height);	//	配置済みのオブジェクトを記録する。1x1のオブジェクトは1x1、2x2のオブジェクトは2x2の領域に配置済みフラグを立てる。
@@ -856,7 +1200,17 @@ class MapGenerator
 		fn = fn( bio, dst);
 		for( local z = 0, i = 0;z < h;z ++){
 			for( local x = 0;x < w;x ++, i++){
-				dst[i] = fn( x, z, i);
+				local block = fn( x, z, i);
+				if( gendef["settlement"] && assetPlan && assetPlan["heightOffsets"] && assetPlan.heightOffsets.len() == w*h){
+					local offset = assetPlan.heightOffsets[(h-1-z)*w+x];
+					block += offset<<16;
+				}
+				if( gendef["settlement"] && assetPlan && assetPlan["shoreCuts"] && assetPlan.shoreCuts.len() == w*h){
+					local cut = assetPlan.shoreCuts[(h-1-z)*w+x];
+					local height = Math.max( 0,(block>>>16)-cut);
+					block = (block&0xffff)|(height<<16);
+				}
+				dst[i] = block;
 			}
 		}
 		return dst;
@@ -868,9 +1222,358 @@ class MapGenerator
 		local bb = uncompressZSTD( decodeBASE64( ba.bw64));
 		return ObjectInput.decode( bb);
 	}
+
+	// Plan coordinates start at the PNG's top left. BlockWorld uses the
+	// opposite Z direction. Place native asset bounds directly in each plot;
+	// plcoffs is a manual cursor offset, not an offset from the asset bounds.
+	function placeConstructionAssets( bw){
+		if( !assetPlan) return;
+		local cache = {}, placements = [], facilityCounts={};
+		local plannedSides = {};
+		for( local i=0;i<(assetParameters["assetCount"] ?? 0);i++){
+			local key = "asset"..i;
+			if( (assetParameters[key.."Category"] ?? 0)!=0) continue;
+			local aid = "MA%03d" % assetParameters[key.."Id"];
+			plannedSides[aid..":"..assetParameters[key.."Rotation"]] <- assetParameters[key.."DoorSide"];
+		}
+		if( gendef.val=="castle") facilityCounts[2] <- 1; // The generated keep is the royal residence.
+		foreach( plot in assetPlan.regions){
+			if( plot.kind != "asset_plot") continue;
+			local aid = plot.role;
+			local asset = ::conf._resource.map_asset[aid];
+			if( !asset || !asset["bw64"]) throw Exception( "Construction asset is missing: " .. aid);
+			local aw = cache[aid] ?? (cache[aid] <- objbw( aid));
+			local x = plot.x0, z = bw.d-1-plot.y1;
+			local rot = plot["rotation"] ?? 0;
+			local entrance=constructionAssetDoor(aw);
+			if( !entrance) throw Exception("Construction asset exterior door changed: " .. aid);
+			local normal=IMat().rotate(rot).transform([(0,0,1),(1,0,0),(0,0,-1),(-1,0,0)][entrance.side]);
+			local side = normal[2]>0 ? 0 : (normal[0]>0 ? 1 : (normal[2]<0 ? 2 : 3));
+			if( Math.max(aw.w,aw.d)>12 && side!=2)
+				throw Exception( "Buildings with a longest side over 12 blocks must face south: " .. aid);
+			local group=constructionAssetLimitGroup(constructionAssetName(asset));
+			if( group>0){
+				if( facilityCounts[group]) throw Exception("Duplicate unique settlement facility: " .. aid);
+				facilityCounts[group] <- 1;
+			}
+			local bounds = IRect3D( 0,0,0,aw.w,aw.h,aw.d).transform( IMat().rotate( rot));
+			if( bounds.w != plot.x1-plot.x0+1 || bounds.d != plot.y1-plot.y0+1)
+				throw Exception( "Construction asset size changed. Generate the map again: " .. aid);
+			local opening = IRect3D( entrance.x,0,entrance.z,2,1,2).transform( IMat().rotate( rot));
+			if( plot.doorX!=plot.x0+opening.x-bounds.x ||
+				plot.doorY!=plot.y1-1-(opening.z-bounds.z) || side!=plannedSides[aid..":"..rot])
+				throw Exception( "Construction asset entrance changed. Generate the map again: " .. aid);
+			if( x < 0 || z < 0 || x+bounds.w > bw.w || z+bounds.d > bw.d)
+				throw Exception( "Construction asset is outside the map: " .. aid);
+			local ground = dst[x + z*bw.w]>>>16;
+			for( local dz = 0;dz < bounds.d;dz++) for( local dx = 0;dx < bounds.w;dx++){
+				if( (dst[x+dx + (z+dz)*bw.w]>>>16) != ground)
+					throw Exception( "Construction asset requires level ground: " .. aid);
+			}
+			local y = ground+1;
+			if( y+aw.h > bw.h) throw Exception( "Construction asset is too tall for the map: " .. aid);
+			placements.push( { asset=aw, matrix=IMat( x-bounds.x,y,z-bounds.z).rotate( rot), air=asset["plcair"]?1:0 });
+		}
+		// Validate every placement first, then merge voxels and free blocks.
+		foreach( p in placements) bw.drawWorld( p.asset, p.matrix, p.air);
+	}
+
+	function placeCastleDoors( bw){
+		if( gendef.val!="castle" || !assetPlan) return;
+		local placed=[],fb=paletteFreeBlock(plannedPaletteValue("castleGate", "castleGate")),br=fb.br;
+		foreach( r in assetPlan.regions){
+			if( r.kind!="castle_front_door") continue;
+			if( r.x1-r.x0+1!=br.w || r.y1-r.y0+1<br.d)
+				throw Exception("Castle gate dimensions do not match the reserved opening");
+			local x=r.x0,z=bw.d-1-r.y1,ground=dst[x+z*bw.w]>>>16,y=ground+1;
+			if( y+br.h>=bw.h) throw Exception("Castle gate is too tall for the map");
+			// Clear the complete opening and frame the existing, unlocked gate.
+			bw.fillBlock(IRect3D(x,y,z,br.w,br.h,2),0);
+			local stone=blkmap[WALL];
+			bw.fillBlock(IRect3D(x-1,y,z,1,br.h+1,2),stone);
+			bw.fillBlock(IRect3D(x+br.w,y,z,1,br.h+1,2),stone);
+			bw.fillBlock(IRect3D(x-1,y+br.h,z,br.w+2,1,2),stone);
+			bw.placeFreeBlock(fb.fbtype,fb.fbparam,IPos(x-br.x,y-br.y,z-br.z,0),0);
+			local found=false;
+			foreach( actual in bw.collectFreeBlocks(IRect3D(x,y,z,br.w,br.h,2),[]))
+				if( actual.fbtype==fb.fbtype && (actual.fbparam&0x3ff)==(fb.fbparam&0x3ff)) found=true;
+			if( !found) throw Exception("Castle great gate was not placed");
+			placed.push({x:x,y:y,z:z,width:br.w,height:br.h,fbtype:fb.fbtype,fbparam:fb.fbparam&0x3ff});
+		}
+		saveDiagnostic("last_castle_doors.json",{seed:assetPlan.seed,doors:placed,wallBlock:blkmap[WALL],innerWallBlock:blkmap[INNERWALL]});
+	}
 	
 	//	generateを実行した後に、dstのバイオームチャンネルと高さチャンネル、オブジェクトリストからBlockWorldを作る。
 	//	
+	function placeCastleInterior( bw){
+		if( gendef.val!="castle" || !assetPlan) return;
+		local fixtures=[],doors=[],details=[],surfaces=[],rooms=[],portals=[],clearances=[];
+		foreach( r in assetPlan.regions){
+			if( r.kind=="room" || r.kind=="castle_activity") rooms.push({id:r.id,role:r.role,x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1});
+			if( r.kind=="castle_clearance") clearances.push({role:r.role,parentIndex:r.parentIndex,x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1});
+			if( r.kind=="castle_portal"){
+				local door=assetPlan.regions[r.parentIndex],dz=bw.d-1-door.y1;
+				local ground=dst[door.x0+dz*bw.w]>>>16,x=r.x0,z=bw.d-1-r.y1;
+				bw.fillBlock(IRect3D(x,ground+1,z,r.x1-r.x0+1,r.objectHeight,r.y1-r.y0+1),blkmap[WALL]);
+				portals.push({parentIndex:r.parentIndex,x:x,y:ground+1,z:z,width:r.x1-r.x0+1,depth:r.y1-r.y0+1,height:r.objectHeight,block:blkmap[WALL]});
+			}
+			if( r.kind!="castle_surface") continue;
+			for( local yy=r.y0;yy<=r.y1;yy++) for( local xx=r.x0;xx<=r.x1;xx++){
+				local z=bw.d-1-yy,ground=dst[xx+z*bw.w]>>>16;
+				if( r.role=="royal_carpet"){
+					// Carpet is a thin overlay; replacing the supporting floor
+					// embeds the mesh in the floor instead of laying it on top.
+					bw.placeBlock((xx,ground+1,z),blkmap["royal_carpet"],0);
+					if(!Block.isClass(bw.blockat(xx,ground+1,z),"carpet") || !(Block.getFlags(bw.blockat(xx,ground,z))&BLK_SOLID))
+						throw Exception("Royal carpet is missing its supporting floor");
+				}
+				else if( r.role=="ballroom_floor") bw.placeBlock((xx,ground,z),blkmap["ballroom_floor"],0);
+				else if( r.role=="drill_yard") bw.placeBlock((xx,ground,z),blkmap[ROAD],0);
+			}
+			surfaces.push({role:r.role,parentIndex:r.parentIndex,x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1});
+		}
+		foreach( r in assetPlan.regions){
+			if( r.kind!="castle_fixture" && r.kind!="castle_door" && r.kind!="castle_detail") continue;
+			local x=r.x0,z=bw.d-1-r.y1,ground=dst[x+z*bw.w]>>>16,y=ground+1;
+			if( r.kind=="castle_detail") y+=assetPlan.regions[r.parentIndex].objectHeight;
+			local width=r.x1-r.x0+1,depth=r.y1-r.y0+1,rot=r.rotation;
+			for( local dz=0;dz<depth;dz++) for( local dx=0;dx<width;dx++)
+				if( (dst[x+dx+(z+dz)*bw.w]>>>16)!=ground) throw Exception("Castle fixture ground is uneven: " .. r.role);
+			local actualBounds=null, objectType=r.objectType, objectVariant=r.objectVariant;
+			if( r.objectType==-2){
+				// Straw practice dummy: two legs, broad wooden arms and a straw head.
+				local wood=blkmap["training_dummy_wood"],straw=blkmap[DESERT];
+				bw.fillBlock(IRect3D(x+1,y,z,2,2,1),wood);
+				bw.fillBlock(IRect3D(x,y+2,z,4,1,1),wood);
+				bw.fillBlock(IRect3D(x+1,y+3,z,2,2,2),straw);
+				if( !bw.blockat(x,y+2,z) || !bw.blockat(x+1,y+4,z+1)) throw Exception("Training dummy was not built");
+				actualBounds=IRect3D(x,y,z,4,5,2);
+			}else{
+				local key="castleObject"..r.objectType.."_"..r.objectVariant;
+				local slot=key=="castleObject4_5" ? "settlementProp_bench" : key;
+				local value=plannedPaletteValue(key,slot,r.objectType|(r.objectVariant<<12));
+				local fb=paletteFreeBlock(value,rot);
+				objectType=fb.fbtype; objectVariant=fb.fbparam&0x3ff;
+				local bounds=IRect3D(fb.br);
+				if( (r.kind=="castle_door" ? (bounds.w>width || bounds.d>depth) : (bounds.w!=width || bounds.d!=depth)) || bounds.h!=r.objectHeight)
+					throw Exception("Castle fixture size changed: " .. r.role);
+				if( y+bounds.h+(r.kind=="castle_door"?1:0)>bw.h) throw Exception("Castle fixture is too tall: " .. r.role);
+				if( r.kind=="castle_door"){
+					bw.fillBlock(IRect3D(x,y,z,width,bounds.h,depth),0);
+					// A stone reveal and lintel join the thin wooden leaf to the
+					// full wall thickness. The jamb footprints are reserved in Plan.
+					local lintel=(rot&1) ? IRect3D(x-1,y+bounds.h,z,width+2,1,depth) : IRect3D(x,y+bounds.h,z-1,width,1,depth+2);
+					bw.fillBlock(lintel,blkmap[WALL]);
+					bw.fillBlock(IRect3D(x,ground,z,width,1,depth),blkmap[TOWN_STONE_FLOOR]);
+				}
+				else for( local dz=0;dz<depth;dz++) for( local dx=0;dx<width;dx++) for( local dy=0;dy<bounds.h;dy++){
+					local block=bw.blockat(x+dx,y+dy,z+dz);
+					if( block && ::Block.getFlags(block)&BLK_SOLID) throw Exception("Castle fixture is obstructed: " .. r.role);
+				}
+				local positioned=paletteFreeBlock(value,rot,[x-bounds.x,y-bounds.y,z-bounds.z]);
+				bw.placeFreeBlock(positioned);
+				foreach( placed in bw.collectFreeBlocks(IRect3D(x,y,z,width,bounds.h,depth),[])){
+					local b=placed.br;
+					if( placed.fbtype==objectType && (placed.fbparam&0x3ff)==objectVariant && b.x==x && b.z==z && b.y==y) actualBounds=b;
+				}
+				if( !actualBounds){
+					local observed=[];
+					foreach( actual in bw.collectFreeBlocks(IRect3D(x-4,y-4,z-4,width+8,bounds.h+8,depth+8),[])){
+						local b=actual.br;observed.push({type:actual.fbtype,variant:actual.fbparam,x:b.x,y:b.y,z:b.z,w:b.w,h:b.h,d:b.d});
+					}
+					saveDiagnostic("castle_fixture_failure.json",{role:r.role,rotation:rot,x:x,y:y,z:z,expected:[width,bounds.h,depth],localBounds:[bounds.x,bounds.y,bounds.z],observed:observed});
+					printf("Castle fixture mismatch %S rotation %d expected %S\n",r.role,rot,IRect3D(x,y,z,width,bounds.h,depth));
+					foreach( actual in bw.collectFreeBlocks(IRect3D(x-4,y-4,z-4,width+8,bounds.h+8,depth+8),[]))
+						printf("  actual type %d variant %d bounds %S\n",actual.fbtype,actual.fbparam,actual.br);
+					throw Exception("Castle fixture was not placed: " .. r.role);
+				}
+			}
+			local placed={role:r.role,parentIndex:r.parentIndex,linkedRegionId:r.linkedRegionId,rotation:rot,
+				objectType:objectType,objectVariant:objectVariant,x:actualBounds.x,y:actualBounds.y,z:actualBounds.z,
+				width:actualBounds.w,depth:actualBounds.d,height:actualBounds.h};
+			if( r.kind=="castle_door") doors.push(placed);else if(r.kind=="castle_detail")details.push(placed);else fixtures.push(placed);
+		}
+		// Check the final world, including objects placed early in this pass.
+		local expectedObjects=clone fixtures;expectedObjects.extend(doors);expectedObjects.extend(details);
+		foreach( expected in expectedObjects){
+			if( expected.objectType<0) continue;
+			local world=bw.collectFreeBlocks(IRect3D(expected.x,expected.y,expected.z,expected.width,expected.height,expected.depth),[]);
+			local found=false;
+			foreach( actual in world){
+				local b=actual.br;
+				if( actual.fbtype==expected.objectType && (actual.fbparam&0x3ff)==expected.objectVariant &&
+					b.x==expected.x && b.y==expected.y && b.z==expected.z && b.w==expected.width && b.d==expected.depth && b.h==expected.height){found=true;break;}
+			}
+			if( !found) throw Exception("Castle object missing from the final world: " .. expected.role);
+		}
+		foreach( p in portals) for(local dz=0;dz<p.depth;dz++) for(local dx=0;dx<p.width;dx++) for(local dy=0;dy<p.height;dy++)
+			if(bw.blockat(p.x+dx,p.y+dy,p.z+dz)!=p.block) throw Exception("Castle door jamb is missing from the final world");
+		saveDiagnostic("last_castle_interior.json",{seed:assetPlan.seed,castleType:assetPlan.archetype,finalWorldChecked:true,rooms:rooms,fixtures:fixtures,doors:doors,details:details,surfaces:surfaces,portals:portals,clearances:clearances});
+	}
+
+	function placeSettlementFacilities(bw){
+		if(!gendef["settlement"] || !assetPlan || !assetParameters["settlementCivicPlan"]) return;
+		local facilities=[],mayors=[],center=null;
+		foreach(r in assetPlan.regions){
+			if(r.kind=="village_center") center={x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1};
+			if(r.kind=="asset_plot" && r["residentProfile"]=="village_head"){
+				local aw=objbw(r.role),entry=constructionAssetDoor(aw);
+				local normal=IMat().rotate(r.rotation).transform([(0,0,1),(1,0,0),(0,0,-1),(-1,0,0)][entry.side]);
+				if(normal[0]!=0 || normal[2]>=0 || Math.max(aw.w,aw.d)<=12) throw Exception("Mayor residence must be a large south-facing house");
+				mayors.push({asset:r.role,x0:r.x0,y0:r.y0,x1:r.x1,y1:r.y1,rotation:r.rotation,doorX:r.doorX,doorY:r.doorY});
+			}
+			if(r.kind!="settlement_facility") continue;
+			local x=r.x0,z=bw.d-1-r.y1,ground=dst[x+z*bw.w]>>>16;
+			local key="civicObject"..r.objectType.."_"..r.objectVariant;
+			local slot=key=="civicObject4_5" ? "settlementProp_bench" : key;
+			local value=plannedPaletteValue(key,slot,r.objectType|(r.objectVariant<<12));
+			local fb=paletteFreeBlock(value,r.rotation),bounds=IRect3D(fb.br);
+			if(bounds.w!=r.x1-r.x0+1 || bounds.d!=r.y1-r.y0+1 || bounds.h!=r.objectHeight) throw Exception("Civic facility dimensions changed: " .. r.role);
+			if( ground+1+bounds.h>bw.h) throw Exception("Civic facility is too tall: " .. r.role);
+			for(local dz=0;dz<bounds.d;dz++)for(local dx=0;dx<bounds.w;dx++){
+				if((dst[x+dx+(z+dz)*bw.w]>>>16)!=ground) throw Exception("Civic facility ground is uneven: " .. r.role);
+				for(local dy=1;dy<=bounds.h;dy++) if(bw.blockat(x+dx,ground+dy,z+dz)) throw Exception("Civic facility is obstructed: " .. r.role);
+			}
+			bw.placeFreeBlock(paletteFreeBlock(value,r.rotation,[x-bounds.x,ground+1-bounds.y,z-bounds.z]));
+			facilities.push({role:r.role,objectType:fb.fbtype,objectVariant:fb.fbparam&0x3ff,rotation:r.rotation,x:x,y:ground+1,z:z,width:bounds.w,depth:bounds.d,height:bounds.h});
+		}
+		if(!center || !length(facilities) || length(mayors)!=(assetPlan.countryWealth>=2.0?1:0)) throw Exception("Settlement civic centre or mayor residence is incomplete");
+		foreach(p in facilities){
+			// Query only this reserved plot. Enumerating the whole forest also
+			// collects thousands of unrelated tree objects in the native engine.
+			local objects=bw.collectFreeBlocks(IRect3D(p.x,p.y,p.z,p.width,p.height,p.depth),[]);
+			local found=false;
+			foreach(actual in objects){local b=actual.br;
+				if(actual.fbtype==p.objectType && (actual.fbparam&0x3ff)==p.objectVariant && b.x==p.x && b.y==p.y && b.z==p.z && b.w==p.width && b.d==p.depth && b.h==p.height){found=true;break;}
+			}
+			if(!found)throw Exception("Civic facility missing from the final world: " .. p.role);
+		}
+		saveDiagnostic("last_settlement_civic.json",{seed:assetPlan.seed,type:assetPlan.type,wealth:assetPlan.countryWealth,center:center,mayors:mayors,facilities:facilities,finalWorldChecked:true});
+	}
+
+	function decorateSettlement( bw){
+		if( !gendef["settlement"] || !assetPlan) return;
+		local w = dst.width, d = dst.height, occupied = Bitmap( w,d);
+		local flowerCells=Bitmap( w,d);
+		foreach( decoration in assetPlan.regions){
+			if( decoration.kind=="settlement_flower" || decoration.kind=="settlement_plant" || decoration.kind=="settlement_crop" || decoration.kind=="settlement_prop" || (decoration.kind=="village_open_space" && decoration.role=="farm")){
+				for( local yy=decoration.y0;yy<=decoration.y1;yy++) for( local xx=decoration.x0;xx<=decoration.x1;xx++) flowerCells.set( xx,d-1-yy,1);
+			}
+		}
+		local biomes = assetPlan.biomes, trees = 0, grasses = 0;
+		local density=Math.clamp(assetParameters["naturalDecorationDensity"] ?? 3.5,0,100)/100.0;
+		local flowers = 0, cacti = 0, benches = 0, crops = 0, shrubs = 0;
+		foreach( region in assetPlan.regions){
+			if( region.kind!="asset_plot" && region.kind!="asset_wall" && region.kind!="asset_bridge" && region.kind!="village_open_space" && region.kind!="keep" && region.kind!="keep_expansion" && region.kind!="castle_activity" && region.kind!="settlement_facility") continue;
+			for( local yy=Math.max(0,region.y0-2);yy<=Math.min(d-1,region.y1+2);yy++) for( local xx=Math.max(0,region.x0-2);xx<=Math.min(w-1,region.x1+2);xx++) flowerCells.set(xx,d-1-yy,1);
+		}
+		local forest = assetPlan.settlementSite=="forest", oasis = assetPlan.settlementSite=="oasis";
+		local treeModels = {};
+		foreach( slot in ["settlementProp_rock","settlementProp_shade_tree","settlementProp_conifer","forest_tree","settlementProp_palm","settlementProp_cactus"])
+			treeModels[slot] <- paletteFreeBlock(blkmap[slot]);
+		local conifer = treeModels.settlementProp_conifer;
+		local forestModels = [treeModels.settlementProp_shade_tree,conifer,treeModels.forest_tree];
+		local palm = treeModels.settlementProp_palm, cactus = treeModels.settlementProp_cactus, rock = treeModels.settlementProp_rock;
+		local grassesPalette = [blkmap["short_grass"],blkmap["fern"],blkmap["river_grass"]];
+		// Forests and palm groves are terrain, independent of scatter density.
+		// Pack complete crowns without the spacing used inside the settlement.
+		local denseTrees=0;
+		if( forest || oasis){
+			for( local z=0;z<d-2;z++) for( local x=0;x<w-2;x++){
+				if( biomes[(d-1-z)*w+x]!=TOWN_TREES || occupied.get(x,z)) continue;
+				local y=dst[z*w+x]>>>16,clear=true;
+				local model=forest ? rnd.choosea(forestModels) : palm;
+				local br=model.br;
+				// Tree variants have different footprints. The loop's two-cell
+				// margin is not enough for a larger crown near the map edge.
+				if( x+br.w>w || z+br.d>d || y+br.h>=bw.h) continue;
+				for( local dz=0;dz<br.d && clear;dz++) for( local dx=0;dx<br.w && clear;dx++){
+					local i=(z+dz)*w+x+dx;
+					if( biomes[(d-1-z-dz)*w+x+dx]!=TOWN_TREES || occupied.get(x+dx,z+dz) || flowerCells.get(x+dx,z+dz) || (dst[i]>>>16)!=y) clear=false;
+					for( local dy=1;dy<=br.h && clear;dy++) if(bw.blockat(x+dx,y+dy,z+dz)) clear=false;
+				}
+				if( clear){
+					bw.placeFreeBlock(model.fbtype,model.fbparam,IPos(x-br.x,y+1-br.y,z-br.z,0),0);
+					for( local dz=0;dz<br.d;dz++) for( local dx=0;dx<br.w;dx++) occupied.set(x+dx,z+dz,1);
+					trees++;denseTrees++;
+				}
+			}
+		}
+		local radius = Math.iceil( Math.max( conifer.br.w, conifer.br.d)/2.0);
+		for( local z=radius;z<d-radius;z++) for( local x=radius;x<w-radius;x++){
+			local b = biomes[(d-1-z)*w+x], y = dst[z*w+x]>>>16;
+			local dry=b==DESERT || assetPlan.settlementSite=="oasis";
+			local wooded=b==FOREST || b==TOWN_TREES || assetPlan.settlementSite=="forest";
+			local rocky=b==TOWN_CLIFF;
+			local natural=b==PLAIN || b==DESERT || b==FOREST || (b==TOWN_TREES && !oasis) || rocky;
+			if( !natural || flowerCells.get(x,z) || occupied.get(x,z)) continue;
+			if( assetPlan["shoreCuts"] && assetPlan.shoreCuts[(d-1-z)*w+x]>0) continue;
+			if( (dry || wooded || rocky) && rnd( 1.0)<density){
+				local model=dry ? cactus : (rocky ? rock : conifer);
+				local br=model.br;
+				local x0=x-br.w/2, z0=z-br.d/2;
+				if( x0<0 || z0<0 || x0+br.w>w || z0+br.d>d || y+br.h>=bw.h) continue;
+				local clear = true;
+				for( local zz=z0;zz<z0+br.d && clear;zz++) for( local xx=x0;xx<x0+br.w;xx++){
+					if( biomes[(d-1-zz)*w+xx] != b || occupied.get(xx,zz) || flowerCells.get(xx,zz) || (dst[zz*w+xx]>>>16)!=y){ clear=false; break; }
+					for( local dy=1;dy<=br.h && clear;dy++) if(bw.blockat(xx,y+dy,zz)) clear=false;
+				}
+				if( clear){
+					bw.placeFreeBlock(model.fbtype,model.fbparam,IPos(x0-br.x,y+1-br.y,z0-br.z,0),0);
+					for( local zz=z0;zz<z0+br.d;zz++) for( local xx=x0;xx<x0+br.w;xx++) occupied.set(xx,zz,1);
+					if(dry)cacti++; else if(wooded)trees++; else shrubs++;
+				}
+			}else if( !dry && !wooded && !rocky && rnd( 1.0)<density){
+				if( !bw.blockat( x,y+1,z)){
+					bw.placeBlock( (x,y+1,z),rnd.choosea(grassesPalette),0);
+					grasses++;
+				}
+			}
+		}
+		foreach( lot in assetPlan.regions){
+			if( lot.kind!="village_open_space" || lot.role!="farm") continue;
+			for( local yy=lot.y0+2;yy<=lot.y1-2;yy++) for( local xx=lot.x0+2;xx<=lot.x1-2;xx++){
+				local z=d-1-yy, y=dst[z*w+xx]>>>16;
+				bw.placeBlock( (xx,y,z),blkmap[ROAD],0);
+			}
+		}
+		foreach( decoration in assetPlan.regions){
+			if( decoration.kind=="settlement_prop"){
+				local role=decoration.role, slot="settlementProp_"..role;
+				local value=plannedPaletteValue(slot,slot);
+				if( !value) continue;
+				local fb=paletteFreeBlock(value), br=fb.br;
+				local x=decoration.x0,z=d-1-decoration.y1,y=dst[z*w+x]>>>16;
+				local clear=br.w==decoration.x1-decoration.x0+1 && br.d==decoration.y1-decoration.y0+1 && y+br.h<bw.h;
+				for( local dz=0;dz<br.d && clear;dz++) for( local dx=0;dx<br.w && clear;dx++){
+					if( (dst[(z+dz)*w+x+dx]>>>16)!=y) clear=false;
+					for( local dy=1;dy<=br.h && clear;dy++) if( bw.blockat( x+dx,y+dy,z+dz)) clear=false;
+				}
+				if( clear){
+					bw.placeFreeBlock( fb.fbtype,fb.fbparam,IPos( x-br.x,y+1-br.y,z-br.z,0),0);
+					if( role=="bench") benches++; else if( role=="cactus") cacti++; else shrubs++;
+				}
+				continue;
+			}
+			if( decoration.kind=="settlement_crop"){
+				local crop=blkmap[decoration.role] ?? blkmap["leafy_crop"];
+				for( local yy=decoration.y0;yy<=decoration.y1;yy++) for( local x=decoration.x0;x<=decoration.x1;x++){
+					local z=d-1-yy,y=dst[z*w+x]>>>16;
+					bw.placeBlock( (x,y+1,z),blkmap[ROAD],0);
+					bw.placeBlock( (x,y+2,z),crop,0);crops++;
+				}
+				continue;
+			}
+			if( decoration.kind != "settlement_flower" && decoration.kind!="settlement_plant") continue;
+			local x=decoration.x0, z=d-1-decoration.y0, y=dst[z*w+x]>>>16;
+			if( bw.blockat( x,y+1,z)) continue;
+			local role=({coastal_white:"flower_white",waterside_grass:"river_grass"})[decoration.role] ?? decoration.role;
+			bw.placeBlock( (x,y+1,z),blkmap[role] ?? blkmap["short_grass"],0);
+			if( decoration.kind=="settlement_flower") flowers++; else shrubs++;
+		}
+		saveDiagnostic("last_asset_vegetation.json",{trees:trees,denseTrees:denseTrees,grasses:grasses,flowers:flowers,cacti:cacti,benches:benches,crops:crops,shrubs:shrubs,naturalDensity:density*100,wealth:assetPlan.countryWealth,seed:assetPlan.seed});
+	}
+
 	function toBlockWorld(){
 		local w = dst.width, d = dst.height, wd = w*d, rnd = rnd;
 		local bw = BlockWorld( w, 128, d);
@@ -932,6 +1635,29 @@ class MapGenerator
 				break;
 			}
 		}
+		// World/Dungeon/Cave は従来どおり、ここで処理を終える。
+		if( gendef["settlement"]){
+			savePreviewStage( "construction"); placeConstructionAssets( bw);
+			savePreviewStage( "castle_doors"); placeCastleDoors( bw);
+			savePreviewStage( "vegetation"); decorateSettlement( bw);
+			savePreviewStage( "castle_interior"); placeCastleInterior( bw);
+			savePreviewStage( "facilities"); placeSettlementFacilities( bw);
+			savePreviewStage( "complete");
+		}
 		return bw;
+	}
+
+	function savePreviewStage( stage){
+		saveDiagnostic( "last_preview_stage.json", {type:gendef.val,seed:seed,stage:stage});
+	}
+
+	function saveDiagnostic( filename, data, flags=0){
+		try{
+			local bb = encodeJSON( data, flags, ByteBuffer());
+			bb.pos = 0;
+			FileRef( "tmp/mapgen/"..filename).save( bb);
+		}catch( ex){
+			printexception( ex);
+		}
 	}
 }

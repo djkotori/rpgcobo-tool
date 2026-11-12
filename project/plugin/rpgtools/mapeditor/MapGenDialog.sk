@@ -25,6 +25,8 @@ class MapGenDialog extends UndoableDialog
 	blockmaplist = null;	//	[blockmap, ...]		conf.map._meta.blockmaplist
 
 	genthread = null;
+	busy = false;
+	candidateDirectory = null;
 
 	//	LEFT
 	typemenu = null;	//	MenuBehavior
@@ -40,13 +42,19 @@ class MapGenDialog extends UndoableDialog
 	bw3d = null;		//	BlockWorld3D
 	bwcol = null;		//	b3Body<BlockColiderInterface>
 	selpic = null;		//	SKView : 選択されたpic
+	previewRef = null;
 
 	resbw = null;		//	結果のBlockWorld
 
 	static function run( editor, data){
 		local dlg = this( srcdir.."/ui/mapgendialog.ui", editor, data);
 		::skstudio.freezeEditorView( true);	//	editorの再描画を抑制して並列処理を高速化
-		dlg.show();
+		try{
+			dlg.show();
+		}catch( ex){
+			::skstudio.freezeEditorView( false);
+			throw ex;
+		}
 		::skstudio.freezeEditorView( false);
 		return dlg.resbw;
 	}
@@ -78,6 +86,7 @@ class MapGenDialog extends UndoableDialog
 		view.addUpdateFunc( updateFunc.bindenv( this));
 
 		view.findChild( "chk_rndseed").setSelected( true);
+		setBusy( false);
 	}
 
 	function updateFunc( dt){
@@ -88,7 +97,43 @@ class MapGenDialog extends UndoableDialog
 		return true;
 	}
 
+	function setBusy( value){
+		busy = value;
+		foreach( name in ["btn_gen", "typemenu", "listmenu", "btn_close"]){
+			view.findChild( name).setEnabled( !value);
+		}
+		proplist.listview.setEnabled( !value);
+		blocklist.setEnabled( !value);
+		piclist.setEnabled( !value);
+		view.findChild( "btn_apply").setEnabled( !value && !!bw3d);
+		view.findChild( "btn_copy").setEnabled( !value && !!bw3d);
+	}
+
+	function execMenu( menu){
+		// Keyboard undo/redo reaches this method without an action event.
+		if( busy) return true;
+		return super.execMenu( menu);
+	}
+
+	function close(){
+		// Do not destroy native controls while a generation coroutine uses them.
+		if( busy) return;
+		cleanCandidateDirectory();
+		super.close();
+	}
+
+	function cleanCandidateDirectory(){
+		if( !candidateDirectory) return;
+		try{
+			FileRef( candidateDirectory).deleteAll();
+		}catch( ex){
+			printexception( ex);
+		}
+		candidateDirectory = null;
+	}
+
 	function setType( t){
+		local previous = ::MapGenerators.find( @( v) v.val==type);
 		type = t;
 		typemenu.selectItem( @( v) v.val==t);
 		gendata = {};
@@ -99,13 +144,27 @@ class MapGenDialog extends UndoableDialog
 		proplist.setParameters( gendata);
 		//	blkmap
 		blkmap = clone gendef.blkmap;
-		updateBlockList( gendef);
+		// Reused rows can still show slots from the larger settlement palette.
+		local resetBlockList = gendef["settlement"] || (previous && previous["settlement"]);
+		updateBlockList( gendef, resetBlockList);
 	}
 
-	function updateBlockList( gendef){
+	function updateTerrainShapeLabel(){
+		local row = proplist.propitems.find( @( item) item.prop.pid=="terrainProtrusion");
+		if( !row) return;
+		local site = (gendata["site"] ?? {})["settlementSite"];
+		local label = site==undefined ? "$T.mapgen_protrusion" :
+			(site==4 ? "$T.mapgen_river_width" : "$T.mapgen_terrain_extension");
+		row.cnt.setValue( "lbl", label);
+	}
+
+	function updateBlockList( gendef, resetBlockList){
 		local defs = gendef.blkmaplist;
-		blocklist.setRowCount( (length( defs)+2)/3);
-		foreach( i, def in defs){
+		local count = length( defs), rows = (count+2)/3;
+		local slots = resetBlockList ? rows*3 : count;
+		blocklist.setRowCount( rows);
+		for( local i=0;i<slots;i++){
+			local def = i<count ? defs[i] : null;
 			local r = blocklist.rows[i/3], c = i%3;
 			if( !c){
 				for( local l = 0;l < 3;l ++){
@@ -121,6 +180,7 @@ class MapGenDialog extends UndoableDialog
 				v.setVisible( false);
 			}
 		}
+		if( resetBlockList && rows) blocklist.gpui.scrollViewToVisible( blocklist.rows[0], 0);
 	}
 
 	function setTab( idx){
@@ -130,16 +190,28 @@ class MapGenDialog extends UndoableDialog
 	}
 	
 	function actionevent( e){
+		if( e.src["name"]=="LIST"){
+			setTab( e.actioncmd);
+			return;
+		}
+		if( busy) return;
 		switch( e.src["name"]){
 		case "typemenu":
 			setType( e.actioncmd.val);
 			break;
-		case "LIST":	//	tabsのこと。。。
-			setTab( e.actioncmd);
-			break;
 		case "btn_gen":
+			setBusy( true);
 			genthread = newthread( "MapGen Thread");
-			genthread.start( doRunSerialMapgen, this);
+			genthread.start( @(){
+				try{
+					doRunSerialMapgen();
+				}catch( ex){
+					printexception( ex);
+					Popups.showError( ex.message);
+				}
+				genthread = null;
+				setBusy( false);
+			}, this);
 			break;
 		case "btn_apply":
 			if( bw3d){
@@ -177,10 +249,8 @@ class MapGenDialog extends UndoableDialog
 			}];
 			submitOp( redo, undo, null);
 		}
-		local btn = view.findChild( "btn_gen");
-		btn.setEnabled( false);
+		//	ボタンの有効・無効は setBusy で管理する。
 		runSerialMapgen( seed);
-		btn.setEnabled( true);
 	}
 
 	function showPropListMenu( e){
@@ -207,11 +277,13 @@ class MapGenDialog extends UndoableDialog
 				self.setType( type);
 				self.gendata = gendata;
 				self.proplist.setParameters( gendata);
+				self.updateTerrainShapeLabel();
 			}];
 			local undo = [@(){
 				self.setType( oldtype);
 				self.gendata = oldgendata;
 				self.proplist.setParameters( oldgendata);
+				self.updateTerrainShapeLabel();
 			}];
 			submitOp( redo, undo, null);
 			break;
@@ -226,10 +298,12 @@ class MapGenDialog extends UndoableDialog
 			local redo = [@(){
 				self.gendata = newdata;
 				self.proplist.setParameters( newdata);
+				self.updateTerrainShapeLabel();
 			}];
 			local undo = [@(){
 				self.gendata = olddata;
 				self.proplist.setParameters( olddata);
+				self.updateTerrainShapeLabel();
 			}];
 			submitOp( redo, undo, null);
 			break;
@@ -261,6 +335,7 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function blockevent( e){
+		if( busy) return;
 		switch( e.id){
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -284,6 +359,7 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function picevent( e){
+		if( busy) return;
 		switch( e.id){
 		case ACTION_PERFORMED:
 			if( e.isMouseDown( BUTTON2_MASK)){
@@ -291,10 +367,11 @@ class MapGenDialog extends UndoableDialog
 			}else{
 				if( selpic != e.src){
 					local ref = e.src.parent.ref;
+					if( !ref || !ref["mapgen"]) return;
+					if( !previewMapgen( ref)) return;
 					selpic?.setSelected( false);
 					e.src.setSelected( true);
 					selpic = e.src;
-					selectMapgen( ref);
 				}
 			}
 			break;
@@ -302,14 +379,17 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function showPicListMenu( e){
-		local hasimage = skCheckClipboardType( ClipboardType.CLIPBOARD_IMAGE);
+		local session = e.src.parent.ref;
+		if( !session || !session["mapgen"]) return;
+		// \u96c6\u843d\u306f\u914d\u7f6e\u8a08\u753b\u3068\u753b\u50cf\u304c\u5bfe\u306b\u306a\u3063\u3066\u3044\u308b\u305f\u3081\u3001\u753b\u50cf\u3060\u3051\u306e\u5dee\u3057\u66ff\u3048\u306f\u3067\u304d\u306a\u3044\u3002
+		local settlement = session.mapgen.gendef["settlement"];
+		local hasimage = !settlement && skCheckClipboardType( ClipboardType.CLIPBOARD_IMAGE);
 		local ctxmenu = [
 			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d" },
 			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!hasimage },
 			"-",
 			{ id="regen", lbl="$T.lbl_regenerate", icon="\ue089"},
 		];
-		local session = e.src.parent.ref;
 		local ret = MenuPopup.run( ctxmenu, e.src);
 		switch( ret["id"]){
 		case "copy":
@@ -319,6 +399,7 @@ class MapGenDialog extends UndoableDialog
 		}
 		case "paste":
 		{
+			if( settlement) return;
 			local img = skGetClipboardData( ClipboardType.CLIPBOARD_IMAGE);
 			local sc = session.mapgen.gendef["halfimg"] ? 2 : 1;
 			if( !img || img.width < 32 || img.width > 1024/sc || img.height < 32 || img.height > 1024/sc) return;
@@ -334,7 +415,7 @@ class MapGenDialog extends UndoableDialog
 				session.bw3d = null;
 				self.piclist.rows[l].setValue( "pic", img);
 				if( self.selpic == e.src){
-					self.selectMapgen( session);
+					self.previewMapgen( session);
 				}
 			};
 			local redo = [@(){ setpng( img) }];
@@ -348,15 +429,32 @@ class MapGenDialog extends UndoableDialog
 			session.bwcol = null;
 			session.bw3d = null;
 			if( selpic == e.src){
-				selectMapgen( session);
+				previewMapgen( session);
 			}
 			break;
 		}
 		}
 	}
 
+	//	selectMapgen を実行し、失敗時はエラーを表示して直前の表示を保つ。成功すればtrueを返す。
+	function previewMapgen( ref){
+		setBusy( true);
+		try{
+			selectMapgen( ref);
+		}catch( ex){
+			printexception( ex);
+			printf( "Map preview failed: type=%S seed=%S\n", ref.mapgen.gendef.val, ref.mapgen.seed);
+			Popups.showError( ex.message);
+			setBusy( false);
+			return false;
+		}
+		setBusy( false);
+		return true;
+	}
+
 	//	
 	function propevent( e){
+		if( busy) return;
 		local cmd = e.actioncmd;
 		if( cmd["cmd"] == "prop"){
 			local pid = cmd.prop.pid, type = this.type, data = gendata;
@@ -368,10 +466,12 @@ class MapGenDialog extends UndoableDialog
 			local redo = [@(){
 				::setProperty( cmd.prop, data, val);
 				self.proplist.setParam( cmd.prop.pid, val);
+				if( pid=="site") self.updateTerrainShapeLabel();
 			}];
 			local undo = [@(){
 				::setProperty( cmd.prop, data, oldval);
 				self.proplist.setParam( cmd.prop.pid, oldval);
+				if( pid=="site") self.updateTerrainShapeLabel();
 			}];
 			submitOp( redo, undo, trk);
 		}
@@ -379,17 +479,18 @@ class MapGenDialog extends UndoableDialog
 
 	//	1回のmapgenを実行、結果の画像とbinを読み込む。
 	//	optはrangeをランダムで一意に決定したものが渡ってくる
-	function execMapgen( dirname, seed){
+	function execMapgen( dirname, seed, constructionParameters=null){
 		local mapgen = MapGenerator();
 		local gendef = ::MapGenerators.find( @( v) v.val==type);
 		mapgen.srcw = gendata["size"][0];
 		mapgen.srcd = gendata["size"][1];
 		mapgen.seed = seed;
 		mapgen.gendef = gendef;
-		mapgen.gendata = gendata;
+		mapgen.gendata = ObjectInput.decode( ObjectOutput.encode( gendata));
+		// Block edits apply to previews built after thumbnail generation too.
 		mapgen.blkmap = blkmap;
 		mapgen.tmpdir = dirname;
-		mapgen.generateSourceImage();
+		mapgen.generateSourceImage( constructionParameters);
 		return { mapgen=mapgen, png=mapgen.src, bw=null, bw3d=null, bwcol=null };
 	}
 
@@ -397,44 +498,89 @@ class MapGenDialog extends UndoableDialog
 	//	
 	function runSerialMapgen( seed){
 		local num = 10;
+		local gendef = ::MapGenerators.find( @( v) v.val==type);
+		local constructionParameters = null;
+		if( gendef["settlement"]){
+			local mapgen = MapGenerator();
+			mapgen.gendef = gendef;
+			mapgen.blkmap = blkmap;
+			constructionParameters = mapgen.constructionAssetParameters();
+		}
+		// Clear the selection before destroying its native view.
+		selpic?.setSelected( false);
+		selpic = null;
 		piclist.setRowCount( 0);
+		cleanCandidateDirectory();
 		local dirname = "tmp/mapgen/"..seed;
 		FileRef( dirname).mkdirs(); sleep( 100);
+		local failures = [], count = 0;
 		for( local l = 0;l < num;l ++){
 			//	1回のマップ生成を実行。複数並列にやっても良いが。
-			local ret = execMapgen( dirname, seed+l);
+			local ret;
+			try{
+				ret = execMapgen( dirname, seed+l, constructionParameters);
+			}catch( ex){
+				printexception( ex);
+				failures.push( ex.message);
+				continue;
+			}
 			//	
-			piclist.setRowCount( l+1);
-			local r = piclist.rows[l];
+			piclist.setRowCount( count+1);
+			local r = piclist.rows[count];
 			r.setValue( "pic", ret.png);
 			r.ref = ret;
+			count++;
 		}
-		FileRef( dirname).deleteAll(); sleep( 100);
+		if( failures.len()){
+			// Retain inputs/output for reproducing failed seeds.
+			throw Exception( "%S / %S maps generated. Failed inputs retained in %S.\n%S" % (count, num, dirname, failures[0]));
+		}
+		candidateDirectory = dirname;
 	}
 
 	//	pic.refを指定して呼び出す
 	//	
 	function selectMapgen( ref){
+		local firstPreview = !bw3d;
 		local scn = canvas.scn, b3world = scn.getB3World();
-		if( bw3d) scn.removeObject( bw3d);
-		if( bwcol) b3world.removeBody( bwcol);
-		if( !ref.bw){
-			ref.mapgen.generate();	//	ここで最終的な生成処理
-			ref.bw = ref.mapgen.toBlockWorld();
-			ref.bw3d = SK3DBlockWorld( ref.bw);
-			ref.bw3d.setVoxelTec( skFXFindTechnique( "vox.grid"));
-			local bci = BlockColiderInterface( ref.bw);
+		if( !ref.bw3d || !ref.bwcol){
+			// Publish the cache only after every construction step succeeds.
+			local nextbw = ref.mapgen.buildPreviewWorld();
+			local next3d = SK3DBlockWorld( nextbw);
+			next3d.setVoxelTec( skFXFindTechnique( "vox.grid"));
+			local bci = BlockColiderInterface( nextbw);
 			bci.setFlagMask( BLK_SOLID|BLK_PLANT|BLK_BARRIOR|BLK_SOLIDFB);
 			local bcshp = b3Shape.createCustomConcave( bci);
-			ref.bwcol = b3Body( 0, bcshp, ref.bw3d.mat, G_STAGE, G_VIEW|G_CHARA|G_OBJECT);
-			ref.bwcol.ref = bci;
+			local nextcol = b3Body( 0, bcshp, next3d.mat, G_STAGE, G_VIEW|G_CHARA|G_OBJECT);
+			nextcol.ref = bci;
+			ref.bw = nextbw;
+			ref.bw3d = next3d;
+			ref.bwcol = nextcol;
 		}
+		if( bw3d) scn.removeObject( bw3d);
+		if( bwcol) b3world.removeBody( bwcol);
 		bw3d = ref.bw3d;
 		bw3d.updateMatrix( true);
 		scn.addObject( bw3d);
 		
 		bwcol = ref.bwcol;
 		b3world.addBody( bwcol);
+		// Keep native meshes/colliders for the visible candidate only. Retaining
+		// ten complete 3D worlds can exhaust memory when switching large maps.
+		// World/Dungeon/Cave は従来どおり全候補の表示を保持する。
+		if( previewRef && previewRef != ref && previewRef.mapgen.gendef["settlement"]){
+			previewRef.bwcol = null;
+			previewRef.bw3d = null;
+			previewRef.bw = null;
+		}
+		previewRef = ref;
+		if( firstPreview){
+			// Native blocks occupy half a world unit. Frame the map surface,
+			// rather than the empty 128-block-tall allocation or the origin.
+			local w = ref.bw.w, d = ref.bw.d;
+			canvas.camwork.moveTo( Vector3D( w*0.25,3.0,d*0.25),
+				Vector3D( 30*Math.DTOR,55*Math.DTOR,0), Math.max( w,d)*0.7,0);
+		}
 	}
 }
 
@@ -537,7 +683,7 @@ class MapGenDialog.BlockSetIcon
 				selb.setBlockPages( def.blkpages);
 				selb.selectBlock( item);
 			}else{
-				selb.setFreeBlockPages( def.fbpages);
+				selb.setFreeBlockPages( def.fbpages, 0, def["fits"]);
 				selb.selectFreeBlock( {fbtype=item&4095, fbparam:item>>>12});
 			}
 			selv.addEventListener( ACTION_EVENT, @( e){
