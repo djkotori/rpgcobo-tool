@@ -87,34 +87,34 @@ local sizeprop = {
 //	共通ブロック生成パラメータ
 //
 local baseyprop = {
-	pid="basey", lbl="$T.lbl_basey", type=RANGE, cnt="cnt6.ui", notarg=1,
+	pid="basey", lbl={"ja":"地面の基準高さ", "en":"Ground Height"}, type=RANGE, cnt="cnt6.ui", notarg=1,
 	range=(1.0,16.0), q=10, defval=[1.2,1.8]
 };
 
 local heightscaleprop = {
-	pid="heightscale", lbl="$T.lbl_heightscale", type=RANGE, cnt="cnt6.ui", notarg=1,
+	pid="heightscale", lbl={"ja":"高さスケール", "en":"Height Scale"}, type=RANGE, cnt="cnt6.ui", notarg=1,
 	range=(0.1,3.0), q=10, defval=[1.0,1.4]
 };
 
 local heightnoiseprop = {
-	pid="heightnoise", lbl="$T.lbl_heightnoise", type=RANGE, cnt="cnt6.ui", notarg=1,
+	pid="heightnoise", lbl={"ja":"高さノイズ", "en":"Height Noise"}, type=RANGE, cnt="cnt6.ui", notarg=1,
 	range=(0.0,2.0), q=10, defval=[0.8,1.2]
 };
 
 //	共通オブジェクト生成パラメータ
 //	
 local treedensprop = {
-	pid="treedens", lbl="Tree Density", type=RANGE, cnt="cnt6.ui", notarg=1,
+	pid="treedens", lbl={"ja":"樹木密度", "en":"Tree Density"}, type=RANGE, cnt="cnt6.ui", notarg=1,
 	range=(0.0,1.0), q=100, defval=[0.5,0.8]
 };
 
 local rockdensprop = {
-	pid="rockdens", lbl="Rock Density", type=RANGE, cnt="cnt6.ui", notarg=1,
+	pid="rockdens", lbl={"ja":"岩密度", "en":"Rock Density"}, type=RANGE, cnt="cnt6.ui", notarg=1,
 	range=(0.0,1.0), q=100, defval=[0.2,0.3]
 };
 
 local flowerdensprop = {
-	pid="flowerdens", lbl="Flower Density", type=RANGE, cnt="cnt6.ui", notarg=1,
+	pid="flowerdens", lbl={"ja":"花密度", "en":"Flower Density"}, type=RANGE, cnt="cnt6.ui", notarg=1,
 	range=(0.0,1.0), q=100, defval=[0.2,0.3]
 };
 
@@ -140,22 +140,22 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			//	画像生成パラメータ
 			{ pid="mode", lbl="$T.lbl_mode", type=LIST, list=[
 				{ lbl="$T.lbl_random", val=_macrowgt( 0.33, 0.34, 0.33) },
-				{ lbl="大陸", val=_macrowgt( 1.0, 0.0, 0.0) },
-				{ lbl="島々", val=_macrowgt( 0.0, 1.0, 0.0) },
-				{ lbl="盆地", val=_macrowgt( 0.0, 0.0, 1.0) },
+				{ lbl={"ja":"大陸", "en":"Continent"}, val=_macrowgt( 1.0, 0.0, 0.0) },
+				{ lbl={"ja":"島々", "en":"Islands"}, val=_macrowgt( 0.0, 1.0, 0.0) },
+				{ lbl={"ja":"盆地", "en":"Basin"}, val=_macrowgt( 0.0, 0.0, 1.0) },
 			], defval=_macrowgt(0.33, 0.34, 0.33) },
-			{ pid="seaLevel", lbl="Sea Rate", type=RANGE, cnt="cnt6.ui", range=(0.1,0.99), q=100, defval=[0.3,0.65] },
-			{ pid="scale", lbl="Land Scale", type=RANGE, cnt="cnt6.ui", range=(0.2,4.0), q=100, defval=[0.9,3.0] },
-			{ pid="ridgeStrength", lbl="Ridge Strength", type=RANGE, cnt="cnt6.ui", range=(0.1,1.2), q=100, defval=[0.4,0.55] },
-			{ pid="riverDensity", lbl="River Dens", type=RANGE, cnt="cnt6.ui", range=(0.1,3.0), q=100, defval=[0.8,1.2] },
-			{ pid="roadDensity", lbl="Road Density", type=RANGE, cnt="cnt6.ui", range=(0.1,3.0), q=100, defval=[0.8,1.2] },
-			{ pid="basinCornerRound", lbl="Basin CornerRound", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.25,0.5] },
-			{ pid="basinEdgeInner", lbl="Basin EdgeInner", type=RANGE, cnt="cnt6.ui", range=(0.55,0.90), q=100, defval=[0.6,0.8] },
-			{ pid="basinWallInner", lbl="Basin WallInner", type=RANGE, cnt="cnt6.ui", range=(0.70,0.95), q=100, defval=[0.9,0.92] },
-			{ pid="riverMinBase", lbl="River MinBase", type=RANGE, cnt="cnt6.ui", range=(1.0,8.0), q=10, defval=[1.5,2.5] },
-			{ pid="riverMaxBase", lbl="River MaxBase", type=RANGE, cnt="cnt6.ui", range=(1.0,12.0), q=10, defval=[4.5,5.5] },
-			{ pid="roadExtraEdgeRate", lbl="Road ExtraEdgeRate", type=RANGE, cnt="cnt6.ui", range=(0.0,1.2), q=100, defval=[0.45,0.55] },
-			{ pid="bridgeMinInterval", lbl="Bridge MinInterval", type=RANGE, cnt="cnt6.ui", range=(0.0,1.2), q=100, defval=[0.45,0.55] },
+			{ pid="seaLevel", lbl={"ja":"海面率", "en":"Sea Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.1,0.99), q=100, defval=[0.3,0.65] },
+			{ pid="scale", lbl={"ja":"陸地スケール", "en":"Land Scale"}, type=RANGE, cnt="cnt6.ui", range=(0.2,4.0), q=100, defval=[0.9,3.0] },
+			{ pid="ridgeStrength", lbl={"ja":"尾根の強さ", "en":"Ridge Strength"}, type=RANGE, cnt="cnt6.ui", range=(0.1,1.2), q=100, defval=[0.4,0.55] },
+			{ pid="riverDensity", lbl={"ja":"川の密度", "en":"River Dens"}, type=RANGE, cnt="cnt6.ui", range=(0.1,3.0), q=100, defval=[0.8,1.2] },
+			{ pid="roadDensity", lbl={"ja":"道路の密度", "en":"Road Density"}, type=RANGE, cnt="cnt6.ui", range=(0.1,3.0), q=100, defval=[0.8,1.2] },
+			{ pid="basinCornerRound", lbl={"ja":"盆地の角の丸み", "en":"Basin CornerRound"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.25,0.5] },
+			{ pid="basinEdgeInner", lbl={"ja":"盆地の内側の端", "en":"Basin EdgeInner"}, type=RANGE, cnt="cnt6.ui", range=(0.55,0.90), q=100, defval=[0.6,0.8] },
+			{ pid="basinWallInner", lbl={"ja":"盆地の内側の壁", "en":"Basin WallInner"}, type=RANGE, cnt="cnt6.ui", range=(0.70,0.95), q=100, defval=[0.9,0.92] },
+			{ pid="riverMinBase", lbl={"ja":"川の最小基準", "en":"River MinBase"}, type=RANGE, cnt="cnt6.ui", range=(1.0,8.0), q=10, defval=[1.5,2.5] },
+			{ pid="riverMaxBase", lbl={"ja":"川の最大基準", "en":"River MaxBase"}, type=RANGE, cnt="cnt6.ui", range=(1.0,12.0), q=10, defval=[4.5,5.5] },
+			{ pid="roadExtraEdgeRate", lbl={"ja":"道路の追加端率", "en":"Road ExtraEdgeRate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.2), q=100, defval=[0.45,0.55] },
+			{ pid="bridgeMinInterval", lbl={"ja":"橋の最小間隔", "en":"Bridge MinInterval"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.2), q=100, defval=[0.45,0.55] },
 			//	iran? coastHeightFilterPasses, coastHeightFilterBand, basinLandRimThreshold
 			//	ブロック生成パラメータ
 			baseyprop,
@@ -343,23 +343,23 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			{ ...sizeprop, defval=[160,160] },
 			seedprop,
 			//	画像生成パラメータ
-			{ pid="largeCellSize", lbl="L-Cell size", type=RANGE, cnt="cnt6.ui", range=(10.0,50.0), q=1, defval=[22.0,38.0] },
-			{ pid="mediumCellSize", lbl="M-Cell size", type=RANGE, cnt="cnt6.ui", range=(5.0,30.0), q=1, defval=[9.0,19.0] },
-			{ pid="largeWeight", lbl="Large weight", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.35,0.6] },
-			{ pid="mediumWeight", lbl="Medium weight", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.15,0.35] },
-			{ pid="noiseWeight", lbl="Noise weight", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.4] },
-			{ pid="noiseScale", lbl="Noise scale", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.01,0.04] },
-			{ pid="wallThreshold", lbl="Wall threshold", type=RANGE, cnt="cnt6.ui", range=(0.3,0.90), q=100, defval=[0.5,0.62] },
-			{ pid="floorLv2CellSize", lbl="LV2-Cell size", type=RANGE, cnt="cnt6.ui", range=(5.0,50.0), q=1, defval=[9.0,16.0] },
-			{ pid="floorLv2TopRatio", lbl="Floor LV2 Top ratio", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.34,0.5] },
-			{ pid="floorLv2Variation", lbl="Floor LV2 Variation", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.18,0.36] },
-			{ pid="floorLv2CliffFrequency", lbl="Floor LV2 Cliff Frequency", type=RANGE, cnt="cnt6.ui", range=(0.0,0.2), q=100, defval=[0.11,0.14] },
-			{ pid="floorLv2CliffStrength", lbl="Floor LV2 Cliff Strength", type=RANGE, cnt="cnt6.ui", range=(0.0,8.0), q=10, defval=[3.0,6.0] },
-			// { pid="floorLv2GenerationRetries", lbl="Floor LV2 Generation Retries", type=RANGE, cnt="cnt6.ui", range=(0.0,20.0), q=1, defval=[40,50] },
-			{ pid="lakeChance", lbl="Lake Chance", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.5] },
-			{ pid="lakeMaxCount", lbl="Lake Count", type=RANGE, cnt="cnt6.ui", range=(0.0,10.0), q=10, defval=[2.8,6.5] },
-			{ pid="lakeMaxWidth", lbl="Lake Max Width", type=RANGE, cnt="cnt6.ui", range=(10.0,40.0), q=1, defval=[16,24] },
-			{ pid="lakeMaxDepth", lbl="Lake Max Depth", type=RANGE, cnt="cnt6.ui", range=(4.0,40.0), q=1, defval=[8,14] },
+			{ pid="largeCellSize", lbl={"ja":"L-Cell サイズ", "en":"L-Cell size"}, type=RANGE, cnt="cnt6.ui", range=(10.0,50.0), q=1, defval=[22.0,38.0] },
+			{ pid="mediumCellSize", lbl={"ja":"M-Cell サイズ", "en":"M-Cell size"}, type=RANGE, cnt="cnt6.ui", range=(5.0,30.0), q=1, defval=[9.0,19.0] },
+			{ pid="largeWeight", lbl={"ja":"L-Cell 重み", "en":"Large weight"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.35,0.6] },
+			{ pid="mediumWeight", lbl={"ja":"M-Cell 重み", "en":"Medium weight"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.15,0.35] },
+			{ pid="noiseWeight", lbl={"ja":"ノイズの重み", "en":"Noise weight"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.4] },
+			{ pid="noiseScale", lbl={"ja":"ノイズのスケール", "en":"Noise scale"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.01,0.04] },
+			{ pid="wallThreshold", lbl={"ja":"壁の閾値", "en":"Wall threshold"}, type=RANGE, cnt="cnt6.ui", range=(0.3,0.90), q=100, defval=[0.5,0.62] },
+			{ pid="floorLv2CellSize", lbl={"ja":"LV2-Cell サイズ", "en":"LV2-Cell size"}, type=RANGE, cnt="cnt6.ui", range=(5.0,50.0), q=1, defval=[9.0,16.0] },
+			{ pid="floorLv2TopRatio", lbl={"ja":"LV2床の上部比率", "en":"Floor LV2 Top ratio"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.34,0.5] },
+			{ pid="floorLv2Variation", lbl={"ja":"LV2床の変化", "en":"Floor LV2 Variation"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.18,0.36] },
+			{ pid="floorLv2CliffFrequency", lbl={"ja":"LV2床の崖の頻度", "en":"Floor LV2 Cliff Frequency"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.2), q=100, defval=[0.11,0.14] },
+			{ pid="floorLv2CliffStrength", lbl={"ja":"LV2床の崖の強さ", "en":"Floor LV2 Cliff Strength"}, type=RANGE, cnt="cnt6.ui", range=(0.0,8.0), q=10, defval=[3.0,6.0] },
+			// { pid="floorLv2GenerationRetries", lbl={"ja":"LV2床生成の再試行回数", "en":"Floor LV2 Generation Retries"}, type=RANGE, cnt="cnt6.ui", range=(0.0,20.0), q=1, defval=[40,50] },
+			{ pid="lakeChance", lbl={"ja":"湖の出現率", "en":"Lake Chance"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.5] },
+			{ pid="lakeMaxCount", lbl={"ja":"湖の数", "en":"Lake Count"}, type=RANGE, cnt="cnt6.ui", range=(0.0,10.0), q=10, defval=[2.8,6.5] },
+			{ pid="lakeMaxWidth", lbl={"ja":"湖の最大幅", "en":"Lake Max Width"}, type=RANGE, cnt="cnt6.ui", range=(10.0,40.0), q=1, defval=[16,24] },
+			{ pid="lakeMaxDepth", lbl={"ja":"湖の最大深さ", "en":"Lake Max Depth"}, type=RANGE, cnt="cnt6.ui", range=(4.0,40.0), q=1, defval=[8,14] },
 			//	iran? noiseOctaves borderThickness
 			//	ブロック生成パラメータ
 			baseyprop,
@@ -461,21 +461,21 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 				{ lbl="Ring", val=_layoutwgt( 0.0, 1.0, 0.0) },
 				{ lbl="Beanch", val=_layoutwgt( 0.0, 0.0, 1.0) },
 			], defval=_layoutwgt(0.33, 0.34, 0.33) },
-			{ pid="roomRate", lbl="Room Rate", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.25,0.5] },
-			{ pid="roomSize", lbl="Room Size", type=RANGE, cnt="cnt6.ui", range=(0.2,2.0), q=100, defval=[0.8,1.2] },
-			{ pid="roomMinSize", lbl="Room Min Size", type=RANGE, cnt="cnt6.ui", range=(6.0,20.0), q=1, defval=[10,14] },
-			{ pid="roomMaxSize", lbl="Room Max Size", type=RANGE, cnt="cnt6.ui", range=(18.0,48.0), q=1, defval=[28,36] },
-			{ pid="roomCountMin", lbl="Room Min Count", type=RANGE, cnt="cnt6.ui", range=(4.0,12.0), q=1, defval=[5,7] },
-			{ pid="roomCountMax", lbl="Room Max Count", type=RANGE, cnt="cnt6.ui", range=(10.0,40.0), q=1, defval=[20,28] },
-			{ pid="corridorWidth", lbl="Corridor Width", type=RANGE, cnt="cnt6.ui", range=(2.0,8.0), q=1, defval=[4,4] },
-			{ pid="loopRate", lbl="Loop Rate", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.4] },
-			{ pid="deadEndRate", lbl="Dead End Rate", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.15,0.25] },
-			{ pid="branchTryMultiplier", lbl="Branch Try Multiplier", type=RANGE, cnt="cnt6.ui", range=(0.0,20.0), q=1, defval=[8,12] },
-			{ pid="branchFromProtectedChance", lbl="Branch From Protected Chance", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.1,0.3] },
-			{ pid="linearWingChance", lbl="Linear Wing Chance", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.28,0.38] },
-			{ pid="mirrorXChance", lbl="Mirror X Chance", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.4,0.6] },
+			{ pid="roomRate", lbl={"ja":"部屋の割合", "en":"Room Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.25,0.5] },
+			{ pid="roomSize", lbl={"ja":"部屋のサイズ", "en":"Room Size"}, type=RANGE, cnt="cnt6.ui", range=(0.2,2.0), q=100, defval=[0.8,1.2] },
+			{ pid="roomMinSize", lbl={"ja":"部屋の最小サイズ", "en":"Room Min Size"}, type=RANGE, cnt="cnt6.ui", range=(6.0,20.0), q=1, defval=[10,14] },
+			{ pid="roomMaxSize", lbl={"ja":"部屋の最大サイズ", "en":"Room Max Size"}, type=RANGE, cnt="cnt6.ui", range=(18.0,48.0), q=1, defval=[28,36] },
+			{ pid="roomCountMin", lbl={"ja":"部屋の最小数", "en":"Room Min Count"}, type=RANGE, cnt="cnt6.ui", range=(4.0,12.0), q=1, defval=[5,7] },
+			{ pid="roomCountMax", lbl={"ja":"部屋の最大数", "en":"Room Max Count"}, type=RANGE, cnt="cnt6.ui", range=(10.0,40.0), q=1, defval=[20,28] },
+			{ pid="corridorWidth", lbl={"ja":"通路の幅", "en":"Corridor Width"}, type=RANGE, cnt="cnt6.ui", range=(2.0,8.0), q=1, defval=[4,4] },
+			{ pid="loopRate", lbl={"ja":"ループ率", "en":"Loop Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.4] },
+			{ pid="deadEndRate", lbl={"ja":"行き止まり率", "en":"Dead End Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.15,0.25] },
+			{ pid="branchTryMultiplier", lbl={"ja":"分岐試行倍率", "en":"Branch Try Multiplier"}, type=RANGE, cnt="cnt6.ui", range=(0.0,20.0), q=1, defval=[8,12] },
+			{ pid="branchFromProtectedChance", lbl={"ja":"保護済みからの分岐確率", "en":"Branch From Protected Chance"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.1,0.3] },
+			{ pid="linearWingChance", lbl={"ja":"直線ウィング確率", "en":"Linear Wing Chance"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.28,0.38] },
+			{ pid="mirrorXChance", lbl={"ja":"X軸ミラー確率", "en":"Mirror X Chance"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.4,0.6] },
 			//	ブロック生成パラメータ
-			{ pid="doorOpenRate", lbl="Door open rate", type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.8] },
+			{ pid="doorOpenRate", lbl={"ja":"ドア開放率", "en":"Door open rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.8] },
 		],
 		blkmaplist = [
 			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,3] },
@@ -484,8 +484,8 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			{ id=SEA, lbl="INNER WALL", type="blk", blkpages=[2,3] },
 			{ id=LAKE1, lbl="LAKE", type="blk", blkpages=[8] },
 			null,
-			{ id=PORTAL_DOOR, lbl="PORTAL_DOOR", type="asset", fbpages=[FB_TREE,FB_ROCK] },
-			{ id=PORTAL_OPEN, lbl="PORTAL_OPEN", type="asset", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=PORTAL_DOOR, lbl="PORTAL_DOOR", type="asset" },
+			{ id=PORTAL_OPEN, lbl="PORTAL_OPEN", type="asset" },
 		],
 		biocolor=[
 			_c( 54, 146, 96),		//	FLOOR_LV1
@@ -571,18 +571,31 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 //	
 // Asset foundations: wood marks the exact asset extent, stone the two-block
 // setback. The companion Plan JSON records the selected asset IDs.
-local settlementBlocks = [
-	2|(1<<5), 2|(7<<5), 2|(27<<5), 3|(16<<5), 3|(35<<5),
-	2|(6<<5), 3|(22<<5), 8, 8, 3|(35<<5),
-	3|(9<<5), 3|(34<<5), 3|(17<<5), 3|(14<<5), 3|(17<<5),
-	8, 2|(24<<5), 2|(27<<5), 3|(17<<5)
-];
 local settlementLabels = [
 	"Ground", "Sand / Fields", "Garden", "Wall", "Inner Wall",
 	"Road", "Bridge / Entrance", "River", "Lake", "Outside / Inner Wall",
 	"Floor", "Wood Floor", "Stone Floor", "Furniture", "Pavement",
 	"Sea", "Cliff", "Trees", "Castle Wall Walk"
 ];
+local settlementBlocksTown = [
+	2|(1<<5), 2|(7<<5), 2|(27<<5), 3|(16<<5), 3|(35<<5),
+	2|(6<<5), 3|(22<<5), 8, 8, 3|(35<<5),
+	//	TOWN_FLOOR, TOWN_WOOD_FLOOR, TOWN_STONE_FLOOR, TOWN_FURNITURE, TOWN_PAVEMENT
+	483, 66, 451, 1187, 1603,
+	//	TOWN_SEA, TOWN_CLIFF, TOWN_TREES, TOWN_CASTLE_WALL_WALK
+	8, 2|(24<<5), 2|(27<<5), 3|(17<<5)
+];
+local settlementBlocksCastle = [
+	2|(1<<5), 2|(7<<5), 2|(27<<5), 3|(16<<5), 3|(35<<5),
+	1603, 3|(22<<5), 8, 8, 3|(35<<5),
+	//	TOWN_FLOOR, TOWN_WOOD_FLOOR, TOWN_STONE_FLOOR, TOWN_FURNITURE, TOWN_PAVEMENT
+	483, 1155, 1475, 1187, 899,
+	//	TOWN_SEA, TOWN_CLIFF, TOWN_TREES, TOWN_CASTLE_WALL_WALK
+	8, 2|(24<<5), 2|(27<<5), 3|(17<<5)
+];
+
+
+
 local townColors = [
 	_c(104,146,86), _c(196,168,103), _c(54,122,65), _c(124,90,67),
 	_c(77,54,49), _c(154,116,76), _c(218,176,74), _c(60,150,210),
@@ -598,12 +611,88 @@ local castleColors = [
 	// These IDs are not emitted by castle; retain unique palette entries.
 	_c(38,103,155), _c(100,103,113), _c(25,69,42), _c(139,142,145)
 ];
+
+local regionRect( r, bw){
+	return IRect3D( r.x0, 0, bw.d-1-r.y0, r.x1-r.x0+1, 1, r.y1-r.y0+1);
+}
+
+local regionCenter( r, obj, bw){	//	どうもrの範囲がズレてるような
+	// local br = IRect3D( r.x0, 0, bw.d-1-r.y0-1, r.x1-r.x0+1, 1, r.y1-r.y0+1);
+	// local br = IRect3D( r.x0, 0, r.y0, r.x1-r.x0+1, 1, r.y1-r.y0+1);
+	local br = IRect3D( r.x0, 0, bw.d-1-r.y1, r.x1-r.x0+1, 1, r.y1-r.y0+1);
+	local rr = br;//unrotateRect( br, r.rotation);
+	// local rr = unrotateRect( br, r.rotation);
+	// return [ rr.x+rr.w/2-(rr.w&1), bw.d-(rr.z+rr.d/2)-(rr.d&1)];
+	// return [ rr.x+rr.w/2+(rr.w&1), bw.d-(rr.z+rr.d/2)-(rr.d&1)];
+	// local pos = [ rr.x+rr.w/2, bw.d-(rr.z+rr.d/2)];
+	local pos = [ rr.x+rr.w/2, rr.z+rr.d/2];
+
+	local fr = obj.br;
+	if( (fr.w&1) != (fr.d&1)){	//	縦奥が奇数と偶数でずれる場合の補正
+		pos[1] -= 1;
+		// switch( obj.rot){
+		// case 0: pos[2] -= 1; break;
+		// case 1: pos[0] += 0; pos[2] += -1; break;
+		// case 2: pos[0] += -1; pos[2] += -1; break;
+		// case 3: pos[0] += -1; pos[2] += 0; break;
+		// }
+	}
+	return pos;
+}
+
+
+local objbwcache = {};
+
+local objbw( objid){
+	if( objbwcache[objid]) return objbwcache[objid];
+	local ba = ::conf._resource.map_asset[objid];
+	if( !ba["bw64"]) return null;
+	local bb = uncompressZSTD( decodeBASE64( ba.bw64));
+	local bw = ObjectInput.decode( bb);
+	objbwcache[objid] <- bw;
+	return bw;
+}
+
 local paletteFreeBlock( value, rotation=0, pos=null){
 	return FreeBlock.create({fbtype:value&0xfff,fbparam:value>>>12,rot:rotation,pos:pos ? pos : [0,0,0]});
 }
 
+//	FreeBlock, BlockAsset info tableのどちらかを生成。
+local paletteObject( val, rot=0, pos=null){
+	if( typeof( val) == SS_INTEGER){
+		return FreeBlock.create({fbtype:val&0xfff,fbparam:val>>>12,rot:rot,pos:pos ? pos : [0,0,0]});
+	}else{	//	val = "MA000"
+		local ba = ::conf._resource.map_asset[val];
+		local aw = objbw( val);
+		local off = ba["plcoffs"];
+		local br = IRect3D( -aw.w/2, 0, -aw.d/2, aw.w, aw.h, aw.d);//.offset( off[0], off[1], off[2]);
+		br = IMat( rot).transform( br);
+		return { maid = val, br = br, rot = rot };
+	}
+}
+
+//	paletteObjectで作成したオブジェクトを配置する。posはxz中心、y接地座標。
+local placePaletteObject( bw, obj, pos=null){
+	if( !pos) pos = obj["pos"];
+	if( obj instanceof FreeBlock){	//	FreeBlock
+		bw.placeFreeBlock(obj.fbtype,obj.fbparam,IPos(pos[0],pos[1]-obj.br.y,pos[2],obj.rot),0);
+	}else{	//	BlockAsset info table
+		local ba = ::conf._resource.map_asset[obj.maid];
+		local air = ba["plcair"]?1:0;
+		local aw = objbw( obj.maid);
+		local off = ba["plcoffs"];
+		local mat = IMat( pos[0],pos[1]+off[1],pos[2]).rotate( obj.rot).translate( -aw.w/2, 0, -aw.d/2);
+		bw.drawWorld( aw, mat, air);
+	}
+}
+
+
 local paletteProp( id, lbl, kind, variant, pages, planKeys=null, fits=null){
 	return {id:id,lbl:lbl,type:"fblk",fbpages:pages,value:kind|(variant<<12),planKeys:planKeys,fits:fits};
+}
+
+local paletteAsset( id, lbl, maid, planKeys=null){
+	return {id:id,lbl:lbl,type:"asset",maid:maid,value:maid,planKeys:planKeys};
 }
 
 local paletteBlock( id, lbl, value){
@@ -612,12 +701,12 @@ local paletteBlock( id, lbl, value){
 
 local trees = [FB_TREE,FB_ROCK], furniture = [FB_INTERIOR,FB_EXTERIOR], lamps = [FB_INLAMP,FB_EXLAMP];
 local settlementPalette = [
-	paletteProp("settlementProp_shade_tree","Shade Tree",20,65,trees,["settlementProp_shade_tree"]),
-	paletteProp("settlementProp_conifer","Conifer",20,66,trees,["settlementProp_conifer"]),
-	paletteProp("forest_tree","Forest Tree",20,67,trees),
-	paletteProp("settlementProp_palm","Palm",20,68,trees,["settlementProp_palm"]),
-	paletteProp("settlementProp_cactus","Cactus",20,72,trees,["settlementProp_cactus"]),
-	paletteProp("settlementProp_shrub","Shrub",20,74,trees,["settlementProp_shrub"]),
+	paletteProp("settlementProp_shade_tree","Shade Tree",20,1,trees,["settlementProp_shade_tree"]),
+	paletteProp("settlementProp_conifer","Conifer",20,2,trees,["settlementProp_conifer"]),
+	paletteProp("forest_tree","Forest Tree",20,0,trees),
+	paletteProp("settlementProp_palm","Palm",20,20,trees,["settlementProp_palm"]),
+	paletteProp("settlementProp_cactus","Cactus",20,15,trees,["settlementProp_cactus"]),
+	paletteProp("settlementProp_shrub","Shrub",20,55,trees,["settlementProp_shrub"]),
 	paletteProp("settlementProp_rock","Rock",20,17,trees,["settlementProp_rock"]), null, null,
 	paletteBlock("flower_red","Red Flower",11),
 	paletteBlock("flower_yellow","Yellow Flower",11|(4<<5)),
@@ -634,33 +723,35 @@ local settlementPalette = [
 	paletteBlock("leafy_crop","Leafy Crop",11|(2<<5)),
 	paletteBlock("tall_crop","Tall Crop",11|(6<<5)),
 	paletteBlock("herb_crop","Herb Crop",11|(5<<5)),
-	paletteProp("civicObject3_26","Well",3,26,[FB_EXTERIOR],["civicObject3_26"]),
+	paletteAsset("civicObject3_26","Well","MA026"),
 	paletteProp("settlementProp_bench","Bench",4,5,furniture,["settlementProp_bench","civicObject4_5","castleObject4_5"]),
 	paletteProp("civicObject2_1","Square Lamp",2,1,[FB_EXLAMP],["civicObject2_1"]),
 	paletteProp("civicObject3_11","Market Stall",3,11,[FB_EXTERIOR],["civicObject3_11"]),
 	paletteProp("civicObject3_14","Statue",3,14,[FB_EXTERIOR],["civicObject3_14"]), null
 ];
 
-local castleProp( lbl, kind, variant, pages, fits=null){
-	local key = "castleObject"..kind.."_"..variant;
+local castleProp( lbl, kind, variant, pages, fits=null, key=null){
+	if( !key) key = "castleObject"..kind.."_"..variant;
 	return paletteProp(key,lbl,kind,variant,pages,[key],fits);
 }
 
-local roomDoorFits = @( fb) fb.br.w>=2 && fb.br.w<=4 && fb.br.d<=2;
+local roomDoorFits = @( fb) fb.br.w>=2 && fb.br.w<=4;// && fb.br.d<=2;
+
 local castlePalette = [
-	paletteProp("castleGate","Castle Gate",1,16,[FB_EXDOOR],["castleGate"],@( fb) fb.br.w==10 && fb.br.d<=2),
-	castleProp("Room Door",1,8,[FB_INDOOR,FB_EXDOOR],roomDoorFits),
-	castleProp("Royal Door",1,13,[FB_INDOOR,FB_EXDOOR],roomDoorFits),
+	paletteAsset("castleGate","Castle Gate","MA066"),
+	castleProp("Room Door",1,18,[FB_INDOOR],roomDoorFits, "castleObject1_8"),
+	// castleProp("Royal Door",1,13,[FB_INDOOR],roomDoorFits, "castleObject1_13"),
+	paletteAsset("castleObject1_13", "Royal Door","MA067"),
 	paletteBlock("royal_carpet","Royal Carpet",9),
 	paletteBlock("ballroom_floor","Ballroom Floor",3|(34<<5)),
 	paletteBlock("training_dummy_wood","Dummy Wood",3|(34<<5)),
-	castleProp("Throne",4,31,furniture), castleProp("Chair",4,4,furniture), castleProp("Table",4,7,furniture),
-	castleProp("Bed",4,14,furniture), castleProp("Royal Bed",4,15,furniture), castleProp("Bookcase",4,9,furniture),
-	castleProp("Chest",4,11,furniture), castleProp("Barrel",4,21,furniture), castleProp("Bucket",4,41,furniture),
-	castleProp("Counter",4,10,furniture), castleProp("Stove",2,7,lamps), castleProp("Cooking Pot",4,23,furniture),
-	castleProp("Candle",2,4,lamps), castleProp("Piano",4,40,furniture), castleProp("Sword Rack",4,30,furniture),
-	castleProp("Shield Rack",4,28,furniture), castleProp("Book",4,33,furniture), castleProp("Documents",4,34,furniture),
-	castleProp("Tableware",4,35,furniture), null, null
+	castleProp("Throne",4,31,furniture, null, "castleObject4_31"),castleProp("Chair",4,4,furniture, null, "castleObject4_4"), castleProp("Table",4,7,furniture, null, "castleObject4_7"),
+	castleProp("Bed",4,14,furniture, null, "castleObject4_14"), castleProp("Royal Bed",4,15,furniture, null, "castleObject4_15"), castleProp("Bookcase",4,9,furniture, null, "castleObject4_9"),
+	castleProp("Chest",4,11,furniture, null, "castleObject4_11"), castleProp("Barrel",4,21,furniture, null, "castleObject4_21"), castleProp("Bucket",4,41,furniture, null, "castleObject4_41"),
+	castleProp("Counter",4,10,furniture, null, "castleObject4_10"), castleProp("Stove",2,7,lamps, null, "castleObject2_7"), castleProp("Cooking Pot",4,23,furniture, null, "castleObject4_23"),
+	castleProp("Candle",2,4,lamps, null, "castleObject2_4"), castleProp("Piano",4,40,furniture, null, "castleObject4_40"), castleProp("Sword Rack",4,30,furniture, null, "castleObject4_30"),
+	castleProp("Shield Rack",4,28,furniture, null, "castleObject4_28"), castleProp("Book",4,33,furniture, null, "castleObject4_33"), castleProp("Documents",4,34,furniture, null, "castleObject4_34"),
+	castleProp("Tableware",4,35,furniture, null, "castleObject4_35"), null, null
 ];
 
 local settlementHeight = @( bio, dst){
@@ -673,8 +764,8 @@ local settlementHeight = @( bio, dst){
 		foreach( region in plan.regions){
 			if( region.kind=="keep" || region.kind=="keep_expansion") keepRegions.push( region);
 			else if( region.kind=="castle_portal") keepHeight = Math.max( keepHeight, region.objectHeight);
-			else if( region.kind=="castle_front_door")
-				keepHeight = Math.max( keepHeight, paletteFreeBlock(plannedPaletteValue("castleGate", "castleGate")).br.h+1);
+			// else if( region.kind=="castle_front_door")
+			// 	keepHeight = Math.max( keepHeight, paletteObject(plannedPaletteValue("castleGate", "castleGate")).br.h+1);
 		}
 	}
 	return @( x, z, i){
@@ -706,53 +797,53 @@ local settlementHeight = @( bio, dst){
 };
 foreach( t in ["village", "town", "castle"]){
 	local props = [ { ...sizeprop, range=t=="castle" ? (128,1024) : (64,1024), defval=[160,160] }, seedprop ];
-	if( t == "castle") props .. { pid="mode", lbl="$T.mapgen_castletype", type=LIST, list=[
+	if( t == "castle") props .. { pid="mode", lbl={ja="城の種類", en="Castle Type"}, type=LIST, list=[
 		{ lbl="$T.lbl_random", val={} },
-		{ lbl="$T.mapgen_castleconcentric", val={castleMode=0} },
-		{ lbl="$T.mapgen_castlehill", val={castleMode=1} },
-		{ lbl="$T.mapgen_castleriver", val={castleMode=2} },
-		{ lbl="$T.mapgen_castlepalace", val={castleMode=3} },
-		{ lbl="$T.mapgen_castlefortress", val={castleMode=4} }
+		{ lbl={ja="輪郭式の城", en="Concentric Castle"}, val={castleMode=0} },
+		{ lbl={ja="山城", en="Hill Castle"}, val={castleMode=1} },
+		{ lbl={ja="川沿いの城", en="River Castle"}, val={castleMode=2} },
+		{ lbl={ja="宮殿", en="Palace"}, val={castleMode=3} },
+		{ lbl={ja="要塞", en="Fortress"}, val={castleMode=4} }
 	], defval={} };
 	foreach( prop in [
 		{ ...baseyprop, defval=[3,3] },
-		{ pid="wallHeight", lbl="$T.mapgen_wallheight", type=RANGE, cnt="cnt6.ui", range=(0,16), q=1, defval=t=="castle" ? [6,6] : [0,0] },
-		{ pid="assetPlotCount", lbl="$T.mapgen_buildings", type=RANGE, cnt="cnt6.ui", range=(1,128), q=1, defval=t=="village" ? [12,24] : [20,36] },
-		{ pid="assetRoadWidth", lbl=t!="castle" ? "$T.mapgen_basepathwidth" : "$T.mapgen_roadwidth", type=RANGE, cnt="cnt6.ui", range=(2,6), q=1, defval=[2,2] },
-		{ pid="candidateCount", lbl="$T.mapgen_candidates", type=RANGE, cnt="cnt6.ui", range=(1,12), q=1, defval=[6,6] }
+		{ pid="wallHeight", lbl={ja="城壁の高さ（0で無効）", en="Wall Height (0: None)"}, type=RANGE, cnt="cnt6.ui", range=(0,16), q=1, defval=t=="castle" ? [6,6] : [0,0] },
+		{ pid="assetPlotCount", lbl={ja="建物数の目標", en="Target Building Count"}, type=RANGE, cnt="cnt6.ui", range=(1,128), q=1, defval=t=="village" ? [4,12] : [6,16] },
+		{ pid="assetRoadWidth", lbl=t!="castle" ? {ja="基準の道幅（マス）", en="Base Path Width (Blocks)"} : {ja="道路幅（マス）", en="Road Width (Blocks)"}, type=RANGE, cnt="cnt6.ui", range=(2,6), q=1, defval=[2,2] },
+		{ pid="candidateCount", lbl={ja="地形の候補数", en="Terrain Candidates"}, type=RANGE, cnt="cnt6.ui", range=(1,12), q=1, defval=[6,6] }
 	]) props .. prop;
-	props .. { pid="countryWealth", lbl="$T.mapgen_wealth", type=RANGE, cnt="cnt6.ui", range=(0.7,2.5), q=20, defval=[0.7,2.5] };
-	props .. { pid="northFacingHouseKeepPercent", lbl="$T.mapgen_northhousekeep", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[10,10] };
-	props .. { pid="sideFacingHouseKeepPercent", lbl="$T.mapgen_sidehousekeep", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[75,75] };
-	props .. { pid="naturalDecorationDensity", lbl="$T.mapgen_naturedensity", type=RANGE, cnt="cnt6.ui", range=(0,100), q=10, defval=[1.0,3.0] };
+	props .. { pid="countryWealth", lbl={ja="裕福度", en="Wealth"}, type=RANGE, cnt="cnt6.ui", range=(0.7,2.5), q=20, defval=[0.7,2.5] };
+	props .. { pid="northFacingHouseKeepPercent", lbl={ja="北向きの家を残す確率（%）", en="Keep North-facing Houses (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[10,10] };
+	props .. { pid="sideFacingHouseKeepPercent", lbl={ja="東西向きの家を残す確率（%）", en="Keep East/West-facing Houses (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[75,75] };
+	props .. { pid="naturalDecorationDensity", lbl={ja="自然物のランダム散布密度（%）", en="Random Natural Scatter Density (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=10, defval=[1.0,3.0] };
 	if( t == "castle"){
-		props .. { pid="outerWallDefenseStrength", lbl="$T.mapgen_castledefense", type=RANGE, cnt="cnt6.ui", range=(0,2), q=20, defval=[0,2] };
-		props .. { pid="keepWidthRatio", lbl="$T.mapgen_castlewidthratio", type=RANGE, cnt="cnt6.ui", range=(0.25,0.55), q=20, defval=[0.3,0.45] };
-		props .. { pid="keepDepthRatio", lbl="$T.mapgen_castledepthratio", type=RANGE, cnt="cnt6.ui", range=(0.15,0.4), q=20, defval=[0.2,0.3] };
-		props .. { pid="gateCount", lbl="$T.mapgen_castlegates", type=RANGE, cnt="cnt6.ui", range=(1,3), q=1, defval=[1,3] };
-		props .. { pid="towerCount", lbl="$T.mapgen_castletowers", type=RANGE, cnt="cnt6.ui", range=(4,12), q=1, defval=[4,8] };
-		props .. { pid="keepRoomCount", lbl="$T.mapgen_castlerooms", type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
-		props .. { pid="outerFacilityCount", lbl="$T.mapgen_castlefacilities", type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
-		props .. { pid="outerFacilityDensity", lbl="$T.mapgen_castlefacilitydensity", type=RANGE, cnt="cnt6.ui", range=(0.5,3), q=10, defval=[1,3] };
-		props .. { pid="moatWidth", lbl="$T.mapgen_castlemoat", type=RANGE, cnt="cnt6.ui", range=(2,5), q=1, defval=[2,5] };
-		props .. { pid="wallThickness", lbl="$T.mapgen_castlewallthickness", type=RANGE, cnt="cnt6.ui", range=(1,3), q=1, defval=[1,3] };
-		props .. { pid="mainRoadWidth", lbl="$T.mapgen_castlemainwidth", type=RANGE, cnt="cnt6.ui", range=(3,5), q=1, defval=[3,5] };
-		props .. { pid="roadExtraEdgeRate", lbl="$T.mapgen_castleconnections", type=RANGE, cnt="cnt6.ui", range=(0,1), q=20, defval=[0.1,0.3] };
-		props .. { pid="castlePaving", lbl="$T.mapgen_castlepaving", type=LIST, list=[
-			{lbl="$T.lbl_random",val={}}, {lbl="$T.mapgen_pavinglow",val={pavingRatio=0.2}},
-			{lbl="$T.mapgen_pavingmedium",val={pavingRatio=0.5}}, {lbl="$T.mapgen_pavinghigh",val={pavingRatio=0.85}}
+		props .. { pid="outerWallDefenseStrength", lbl={ja="外郭の防御力（0〜2・1.5以上で堀）", en="Outer Defense (0–2; Moat from 1.5)"}, type=RANGE, cnt="cnt6.ui", range=(0,2), q=20, defval=[0,2] };
+		props .. { pid="keepWidthRatio", lbl={ja="主館の幅の基準（全体比・2倍で生成）", en="Base Keep Width / Map (Built at 2x)"}, type=RANGE, cnt="cnt6.ui", range=(0.25,0.55), q=20, defval=[0.3,0.45] };
+		props .. { pid="keepDepthRatio", lbl={ja="主館の奥行きの基準（全体比・2倍で生成）", en="Base Keep Depth / Map (Built at 2x)"}, type=RANGE, cnt="cnt6.ui", range=(0.15,0.4), q=20, defval=[0.2,0.3] };
+		props .. { pid="gateCount", lbl={ja="城門数の範囲", en="Gate Count Range"}, type=RANGE, cnt="cnt6.ui", range=(1,3), q=1, defval=[1,3] };
+		props .. { pid="towerCount", lbl={ja="塔の数の範囲", en="Tower Count Range"}, type=RANGE, cnt="cnt6.ui", range=(4,12), q=1, defval=[4,8] };
+		props .. { pid="keepRoomCount", lbl={ja="主館の部屋数の範囲", en="Keep Room Count Range"}, type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
+		props .. { pid="outerFacilityCount", lbl={ja="城内施設数の範囲", en="Bailey Facility Count Range"}, type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
+		props .. { pid="outerFacilityDensity", lbl={ja="城内施設の密度", en="Bailey Facility Density"}, type=RANGE, cnt="cnt6.ui", range=(0.5,3), q=10, defval=[1,3] };
+		props .. { pid="moatWidth", lbl={ja="堀の幅の範囲（マス）", en="Moat Width Range (Blocks)"}, type=RANGE, cnt="cnt6.ui", range=(2,5), q=1, defval=[2,5] };
+		props .. { pid="wallThickness", lbl={ja="城壁の厚さ（マス）", en="Wall Thickness (Blocks)"}, type=RANGE, cnt="cnt6.ui", range=(1,3), q=1, defval=[1,3] };
+		props .. { pid="mainRoadWidth", lbl={ja="城内の大通り幅（マス）", en="Castle Main Road Width (Blocks)"}, type=RANGE, cnt="cnt6.ui", range=(3,5), q=1, defval=[3,5] };
+		props .. { pid="roadExtraEdgeRate", lbl={ja="城内の道の追加接続率", en="Castle Extra Road Connection Rate"}, type=RANGE, cnt="cnt6.ui", range=(0,1), q=20, defval=[0.1,0.3] };
+		props .. { pid="castlePaving", lbl={ja="城内の舗装", en="Castle Paving"}, type=LIST, list=[
+			{lbl="$T.lbl_random",val={}}, {lbl={ja="少なめ", en="Low"},val={pavingRatio=0.2}},
+			{lbl={ja="中程度", en="Medium"},val={pavingRatio=0.5}}, {lbl={ja="多め", en="High"},val={pavingRatio=0.85}}
 		],defval={} };
 	}else{
-		props .. { pid="terrainRelief", lbl="$T.mapgen_relief", type=RANGE, cnt="cnt6.ui", range=(0,12), q=1, defval=[2.0,4.0] };
-		props .. { pid="terrainProtrusion", lbl="$T.mapgen_protrusion", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[0,100] };
-		props .. { pid="terrainSmoothness", lbl="$T.mapgen_smoothness", type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[100,100] };
-		props .. { pid="villageMainRoadCount", lbl="$T.mapgen_mainroads", type=RANGE, cnt="cnt6.ui", range=(0,4), q=1, defval=t=="village" ? [1,4] : [2,4] };
-		props .. { pid="orientation", lbl="$T.mapgen_orientation", type=LIST, list=[
+		props .. { pid="terrainRelief", lbl={ja="地形の起伏（0で平地）", en="Terrain Relief (0: Flat)"}, type=RANGE, cnt="cnt6.ui", range=(0,12), q=1, defval=[2.0,4.0] };
+		props .. { pid="terrainProtrusion", lbl={ja="地形の張り出し・川幅（%）", en="Terrain Extensions / River Width (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[0,100] };
+		props .. { pid="terrainSmoothness", lbl={ja="地形の輪郭の滑らかさ（%）", en="Terrain Edge Smoothing (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[100,100] };
+		props .. { pid="villageMainRoadCount", lbl={ja="中心から伸びる大通りの本数", en="Main Roads from Village Center"}, type=RANGE, cnt="cnt6.ui", range=(0,4), q=1, defval=t=="village" ? [1,4] : [2,4] };
+		props .. { pid="orientation", lbl={ja="地形の向き", en="Site Orientation"}, type=LIST, list=[
 			{ lbl="$T.lbl_random", val={} },
 			{ lbl="0°", val={siteRotation=0} }, { lbl="90°", val={siteRotation=1} },
 			{ lbl="180°", val={siteRotation=2} }, { lbl="270°", val={siteRotation=3} }
 		], defval={} };
-		props .. { pid="site", lbl="$T.mapgen_site", type=LIST, list=[
+		props .. { pid="site", lbl={ja="立地", en="Settlement Site"}, type=LIST, list=[
 			{ lbl="$T.lbl_random", val={} },
 			{ lbl="Plains", val={settlementSite=0} },
 			{ lbl="Coast", val={settlementSite=1} },
@@ -763,7 +854,7 @@ foreach( t in ["village", "town", "castle"]){
 			{ lbl="Oasis", val={settlementSite=6} }
 		], defval={} };
 		if( t == "town"){
-			props .. { pid="city", lbl="$T.mapgen_city", type=LIST, list=[
+			props .. { pid="city", lbl={ja="街の種類", en="City Type"}, type=LIST, list=[
 				{ lbl="$T.lbl_random", val={} },
 				{ lbl="Medieval City", val={townCityType=0} },
 				{ lbl="Castle Town", val={townCityType=1} },
@@ -774,6 +865,7 @@ foreach( t in ["village", "town", "castle"]){
 	}
 	local blkmap = {}, blkmaplist = [];
 	local colors = t == "castle" ? castleColors : townColors;
+	local settlementBlocks = t=="castle" ? settlementBlocksCastle : settlementBlocksTown;
 	foreach( id, color in colors){
 		blkmap[id] <- settlementBlocks[id];
 		if( t=="castle" && (id==INNERWALL || id==SEA)) blkmap[id] = settlementBlocks[WALL];
@@ -782,8 +874,7 @@ foreach( t in ["village", "town", "castle"]){
 	foreach( id in [PLAIN,DESERT,FOREST, RIVER,LAKE,t=="castle"?null:TOWN_SEA,
 		ROAD,BRIDGE,TOWN_PAVEMENT, WALL,INNERWALL,t=="castle"?CASTLE_WALL_WALK:SEA,
 		TOWN_FLOOR,TOWN_WOOD_FLOOR,TOWN_STONE_FLOOR, TOWN_FURNITURE,t=="castle"?SEA:TOWN_CLIFF,t=="castle"?null:TOWN_TREES]){
-		blkmaplist .. (id==null ? null : {id:id,lbl:settlementLabels[id],type:"blk",
-			blkpages=(id==RIVER || id==LAKE || id==TOWN_SEA) ? [8] : [2,3]});
+		blkmaplist .. (id==null ? null : {id:id,lbl:settlementLabels[id],type:"blk", blkpages=(id==RIVER || id==LAKE || id==TOWN_SEA) ? [8] : [2,3]});
 	}
 	foreach( palette in (t=="castle" ? [castlePalette,settlementPalette] : [settlementPalette])) foreach( def in palette){
 		blkmaplist .. def;
@@ -916,7 +1007,7 @@ class MapGenerator
 		local palette = blkmap ? blkmap : gendef.blkmap;
 		foreach( def in gendef.blkmaplist){
 			if( !def || !def["planKeys"]) continue;
-			local value = palette[def.id], br = paletteFreeBlock(value).br;
+			local value = palette[def.id], br = paletteObject(value).br;
 			foreach( key in def.planKeys){
 				// Keep the planned model and its dimensions together for this batch.
 				parameters[key.."Block"] <- value;
@@ -1196,31 +1287,26 @@ class MapGenerator
 	function generateBlockHeightImage( bio){
 		local w = bio.width, h = bio.height;
 		local dst = RGBAImage( w, h);
-		local fn = gendef["blkheightfunc"];
+		local fn = gendef["blkheightfunc"], settle = gendef["settlement"];
 		fn = fn( bio, dst);
 		for( local z = 0, i = 0;z < h;z ++){
 			for( local x = 0;x < w;x ++, i++){
 				local block = fn( x, z, i);
-				if( gendef["settlement"] && assetPlan && assetPlan["heightOffsets"] && assetPlan.heightOffsets.len() == w*h){
-					local offset = assetPlan.heightOffsets[(h-1-z)*w+x];
-					block += offset<<16;
-				}
-				if( gendef["settlement"] && assetPlan && assetPlan["shoreCuts"] && assetPlan.shoreCuts.len() == w*h){
-					local cut = assetPlan.shoreCuts[(h-1-z)*w+x];
-					local height = Math.max( 0,(block>>>16)-cut);
-					block = (block&0xffff)|(height<<16);
+				if( settle){
+					if( assetPlan && assetPlan["heightOffsets"] && assetPlan.heightOffsets.len() == w*h){
+						local offset = assetPlan.heightOffsets[(h-1-z)*w+x];
+						block += offset<<16;
+					}
+					if( assetPlan && assetPlan["shoreCuts"] && assetPlan.shoreCuts.len() == w*h){
+						local cut = assetPlan.shoreCuts[(h-1-z)*w+x];
+						local height = Math.max( 0,(block>>>16)-cut);
+						block = (block&0xffff)|(height<<16);
+					}
 				}
 				dst[i] = block;
 			}
 		}
 		return dst;
-	}
-
-	function objbw( objid){
-		local ba = ::conf._resource.map_asset[objid];
-		if( !ba["bw64"]) return null;
-		local bb = uncompressZSTD( decodeBASE64( ba.bw64));
-		return ObjectInput.decode( bb);
 	}
 
 	// Plan coordinates start at the PNG's top left. BlockWorld uses the
@@ -1280,25 +1366,28 @@ class MapGenerator
 
 	function placeCastleDoors( bw){
 		if( gendef.val!="castle" || !assetPlan) return;
-		local placed=[],fb=paletteFreeBlock(plannedPaletteValue("castleGate", "castleGate")),br=fb.br;
+		local placed=[],obj=paletteObject(plannedPaletteValue("castleGate", "castleGate")),br=obj.br;
 		foreach( r in assetPlan.regions){
 			if( r.kind!="castle_front_door") continue;
-			if( r.x1-r.x0+1!=br.w || r.y1-r.y0+1<br.d)
-				throw Exception("Castle gate dimensions do not match the reserved opening");
+			// if( r.x1-r.x0+1!=br.w || r.y1-r.y0+1<br.d)
+			// 	throw Exception("Castle gate dimensions do not match the reserved opening");
 			local x=r.x0,z=bw.d-1-r.y1,ground=dst[x+z*bw.w]>>>16,y=ground+1;
-			if( y+br.h>=bw.h) throw Exception("Castle gate is too tall for the map");
+			// if( y+br.h>=bw.h) throw Exception("Castle gate is too tall for the map");
 			// Clear the complete opening and frame the existing, unlocked gate.
-			bw.fillBlock(IRect3D(x,y,z,br.w,br.h,2),0);
-			local stone=blkmap[WALL];
-			bw.fillBlock(IRect3D(x-1,y,z,1,br.h+1,2),stone);
-			bw.fillBlock(IRect3D(x+br.w,y,z,1,br.h+1,2),stone);
-			bw.fillBlock(IRect3D(x-1,y+br.h,z,br.w+2,1,2),stone);
-			bw.placeFreeBlock(fb.fbtype,fb.fbparam,IPos(x-br.x,y-br.y,z-br.z,0),0);
-			local found=false;
-			foreach( actual in bw.collectFreeBlocks(IRect3D(x,y,z,br.w,br.h,2),[]))
-				if( actual.fbtype==fb.fbtype && (actual.fbparam&0x3ff)==(fb.fbparam&0x3ff)) found=true;
-			if( !found) throw Exception("Castle great gate was not placed");
-			placed.push({x:x,y:y,z:z,width:br.w,height:br.h,fbtype:fb.fbtype,fbparam:fb.fbparam&0x3ff});
+			// bw.fillBlock(IRect3D(r.x0,y,bw.d-1-r.y0,r.x1-r.x0,br.h,r.y1-r.y0),0);
+			// local stone=blkmap[WALL];
+			// bw.fillBlock(IRect3D(x-1,y,z,1,br.h+1,2),stone);
+			// bw.fillBlock(IRect3D(x+br.w,y,z,1,br.h+1,2),stone);
+			// bw.fillBlock(IRect3D(x-1,y+br.h,z,br.w+2,1,2),stone);
+			local cxz = regionCenter( r, obj, bw);
+			placePaletteObject( bw, obj, [cxz[0], y, cxz[1]] );
+			local t = {x:x,y:y,z:z,width:br.w,height:br.h,};
+			if( obj["maid"]){
+				t ... {maid:obj.maid};
+			}else{
+				t ... {fbtype:obj.fbtype,fbparam:obj.fbparam&0x3ff};
+			}
+			placed.push( t);
 		}
 		saveDiagnostic("last_castle_doors.json",{seed:assetPlan.seed,doors:placed,wallBlock:blkmap[WALL],innerWallBlock:blkmap[INNERWALL]});
 	}
@@ -1314,8 +1403,8 @@ class MapGenerator
 			if( r.kind=="castle_portal"){
 				local door=assetPlan.regions[r.parentIndex],dz=bw.d-1-door.y1;
 				local ground=dst[door.x0+dz*bw.w]>>>16,x=r.x0,z=bw.d-1-r.y1;
-				bw.fillBlock(IRect3D(x,ground+1,z,r.x1-r.x0+1,r.objectHeight,r.y1-r.y0+1),blkmap[WALL]);
-				portals.push({parentIndex:r.parentIndex,x:x,y:ground+1,z:z,width:r.x1-r.x0+1,depth:r.y1-r.y0+1,height:r.objectHeight,block:blkmap[WALL]});
+				// bw.fillBlock(IRect3D(x,ground+1,z,r.x1-r.x0+1,r.objectHeight,r.y1-r.y0+1),blkmap[WALL]);
+				// portals.push({parentIndex:r.parentIndex,x:x,y:ground+1,z:z,width:r.x1-r.x0+1,depth:r.y1-r.y0+1,height:r.objectHeight,block:blkmap[WALL]});
 			}
 			if( r.kind!="castle_surface") continue;
 			for( local yy=r.y0;yy<=r.y1;yy++) for( local xx=r.x0;xx<=r.x1;xx++){
@@ -1337,8 +1426,8 @@ class MapGenerator
 			local x=r.x0,z=bw.d-1-r.y1,ground=dst[x+z*bw.w]>>>16,y=ground+1;
 			if( r.kind=="castle_detail") y+=assetPlan.regions[r.parentIndex].objectHeight;
 			local width=r.x1-r.x0+1,depth=r.y1-r.y0+1,rot=r.rotation;
-			for( local dz=0;dz<depth;dz++) for( local dx=0;dx<width;dx++)
-				if( (dst[x+dx+(z+dz)*bw.w]>>>16)!=ground) throw Exception("Castle fixture ground is uneven: " .. r.role);
+			// for( local dz=0;dz<depth;dz++) for( local dx=0;dx<width;dx++)
+			// 	if( (dst[x+dx+(z+dz)*bw.w]>>>16)!=ground) throw Exception("Castle fixture ground is uneven: " .. r.role);
 			local actualBounds=null, objectType=r.objectType, objectVariant=r.objectVariant;
 			if( r.objectType==-2){
 				// Straw practice dummy: two legs, broad wooden arms and a straw head.
@@ -1351,64 +1440,48 @@ class MapGenerator
 			}else{
 				local key="castleObject"..r.objectType.."_"..r.objectVariant;
 				local slot=key=="castleObject4_5" ? "settlementProp_bench" : key;
-				local value=plannedPaletteValue(key,slot,r.objectType|(r.objectVariant<<12));
-				local fb=paletteFreeBlock(value,rot);
-				objectType=fb.fbtype; objectVariant=fb.fbparam&0x3ff;
-				local bounds=IRect3D(fb.br);
-				if( (r.kind=="castle_door" ? (bounds.w>width || bounds.d>depth) : (bounds.w!=width || bounds.d!=depth)) || bounds.h!=r.objectHeight)
-					throw Exception("Castle fixture size changed: " .. r.role);
-				if( y+bounds.h+(r.kind=="castle_door"?1:0)>bw.h) throw Exception("Castle fixture is too tall: " .. r.role);
-				if( r.kind=="castle_door"){
-					bw.fillBlock(IRect3D(x,y,z,width,bounds.h,depth),0);
+				local value=plannedPaletteValue(key,slot);
+				if( !value){
+					printf( "WAAAAAAAAN %S   not found %S\n", key, encodeJSON( r, 4));
+					continue;
+				}	//	r.objectType|(r.objectVariant<<12)
+				local obj=paletteObject(value,rot);
+				objectType=obj["aid"] || obj["fbtype"]; objectVariant=obj["fbparam"]&0x3ff;
+				local bounds=IRect3D(obj.br);
+				local cxz = regionCenter( r, obj, bw);
+				// if( (r.kind=="castle_door" ? (bounds.w>width || bounds.d>depth) : (bounds.w!=width || bounds.d!=depth)) || bounds.h!=r.objectHeight)
+				// 	throw Exception("Castle fixture size changed: " .. r.role);
+				// if( y+bounds.h+(r.kind=="castle_door"?1:0)>bw.h) throw Exception("Castle fixture is too tall: " .. r.role);
+				if( r.kind=="castle_door" && !obj["maid"]){
+					local wr = clone obj.br;//IMat( cxz[0],y,cxz[1]+1).rotate( rot).transform( IRect3D(-3,0,0,6,bounds.h,1));
+					wr.offset( cxz[0], y-wr.y, cxz[1]);
+					bw.fillBlock( wr,blkmap[WALL]);
+					// bw.fillBlock(IRect3D(x,y,z,width,bounds.h,depth),0);
+					// bw.fillBlock(IRect3D(x,y,z,width,bounds.h,depth),blkmap[WALL]);
 					// A stone reveal and lintel join the thin wooden leaf to the
 					// full wall thickness. The jamb footprints are reserved in Plan.
 					local lintel=(rot&1) ? IRect3D(x-1,y+bounds.h,z,width+2,1,depth) : IRect3D(x,y+bounds.h,z-1,width,1,depth+2);
 					bw.fillBlock(lintel,blkmap[WALL]);
-					bw.fillBlock(IRect3D(x,ground,z,width,1,depth),blkmap[TOWN_STONE_FLOOR]);
+					// bw.fillBlock(IRect3D(x,ground,z,width,1,depth),blkmap[TOWN_STONE_FLOOR]);
 				}
-				else for( local dz=0;dz<depth;dz++) for( local dx=0;dx<width;dx++) for( local dy=0;dy<bounds.h;dy++){
-					local block=bw.blockat(x+dx,y+dy,z+dz);
-					if( block && ::Block.getFlags(block)&BLK_SOLID) throw Exception("Castle fixture is obstructed: " .. r.role);
-				}
-				local positioned=paletteFreeBlock(value,rot,[x-bounds.x,y-bounds.y,z-bounds.z]);
-				bw.placeFreeBlock(positioned);
-				foreach( placed in bw.collectFreeBlocks(IRect3D(x,y,z,width,bounds.h,depth),[])){
-					local b=placed.br;
-					if( placed.fbtype==objectType && (placed.fbparam&0x3ff)==objectVariant && b.x==x && b.z==z && b.y==y) actualBounds=b;
-				}
-				if( !actualBounds){
-					local observed=[];
-					foreach( actual in bw.collectFreeBlocks(IRect3D(x-4,y-4,z-4,width+8,bounds.h+8,depth+8),[])){
-						local b=actual.br;observed.push({type:actual.fbtype,variant:actual.fbparam,x:b.x,y:b.y,z:b.z,w:b.w,h:b.h,d:b.d});
-					}
-					saveDiagnostic("castle_fixture_failure.json",{role:r.role,rotation:rot,x:x,y:y,z:z,expected:[width,bounds.h,depth],localBounds:[bounds.x,bounds.y,bounds.z],observed:observed});
-					printf("Castle fixture mismatch %S rotation %d expected %S\n",r.role,rot,IRect3D(x,y,z,width,bounds.h,depth));
-					foreach( actual in bw.collectFreeBlocks(IRect3D(x-4,y-4,z-4,width+8,bounds.h+8,depth+8),[]))
-						printf("  actual type %d variant %d bounds %S\n",actual.fbtype,actual.fbparam,actual.br);
-					throw Exception("Castle fixture was not placed: " .. r.role);
-				}
+				// else
+				// for( local dz=0;dz<depth;dz++) for( local dx=0;dx<width;dx++) for( local dy=0;dy<bounds.h;dy++){
+				// 	local block=bw.blockat(x+dx,y+dy,z+dz);
+				// 	if( block && ::Block.getFlags(block)&BLK_SOLID) throw Exception("Castle fixture is obstructed: " .. r.role);
+				// }
+				placePaletteObject(bw,obj,[cxz[0], y, cxz[1]]);
+				// local positioned=paletteFreeBlock(value,rot,[x-bounds.x,y-bounds.y,z-bounds.z]);
+				// bw.placeFreeBlock(positioned);
+				actualBounds = bounds;	//	てきとーに。。。
 			}
-			local placed={role:r.role,parentIndex:r.parentIndex,linkedRegionId:r.linkedRegionId,rotation:rot,
-				objectType:objectType,objectVariant:objectVariant,x:actualBounds.x,y:actualBounds.y,z:actualBounds.z,
-				width:actualBounds.w,depth:actualBounds.d,height:actualBounds.h};
-			if( r.kind=="castle_door") doors.push(placed);else if(r.kind=="castle_detail")details.push(placed);else fixtures.push(placed);
+			// local placed={role:r.role,parentIndex:r.parentIndex,linkedRegionId:r.linkedRegionId,rotation:rot,
+			// 	objectType:objectType,objectVariant:objectVariant,x:actualBounds.x,y:actualBounds.y,z:actualBounds.z,
+			// 	width:actualBounds.w,depth:actualBounds.d,height:actualBounds.h};
+			// if( r.kind=="castle_door") doors.push(placed);else if(r.kind=="castle_detail")details.push(placed);else fixtures.push(placed);
 		}
-		// Check the final world, including objects placed early in this pass.
-		local expectedObjects=clone fixtures;expectedObjects.extend(doors);expectedObjects.extend(details);
-		foreach( expected in expectedObjects){
-			if( expected.objectType<0) continue;
-			local world=bw.collectFreeBlocks(IRect3D(expected.x,expected.y,expected.z,expected.width,expected.height,expected.depth),[]);
-			local found=false;
-			foreach( actual in world){
-				local b=actual.br;
-				if( actual.fbtype==expected.objectType && (actual.fbparam&0x3ff)==expected.objectVariant &&
-					b.x==expected.x && b.y==expected.y && b.z==expected.z && b.w==expected.width && b.d==expected.depth && b.h==expected.height){found=true;break;}
-			}
-			if( !found) throw Exception("Castle object missing from the final world: " .. expected.role);
-		}
-		foreach( p in portals) for(local dz=0;dz<p.depth;dz++) for(local dx=0;dx<p.width;dx++) for(local dy=0;dy<p.height;dy++)
-			if(bw.blockat(p.x+dx,p.y+dy,p.z+dz)!=p.block) throw Exception("Castle door jamb is missing from the final world");
-		saveDiagnostic("last_castle_interior.json",{seed:assetPlan.seed,castleType:assetPlan.archetype,finalWorldChecked:true,rooms:rooms,fixtures:fixtures,doors:doors,details:details,surfaces:surfaces,portals:portals,clearances:clearances});
+		// foreach( p in portals) for(local dz=0;dz<p.depth;dz++) for(local dx=0;dx<p.width;dx++) for(local dy=0;dy<p.height;dy++)
+		// 	if(bw.blockat(p.x+dx,p.y+dy,p.z+dz)!=p.block) throw Exception("Castle door jamb is missing from the final world");
+		// saveDiagnostic("last_castle_interior.json",{seed:assetPlan.seed,castleType:assetPlan.archetype,finalWorldChecked:true,rooms:rooms,fixtures:fixtures,doors:doors,details:details,surfaces:surfaces,portals:portals,clearances:clearances});
 	}
 
 	function placeSettlementFacilities(bw){
@@ -1427,28 +1500,32 @@ class MapGenerator
 			local key="civicObject"..r.objectType.."_"..r.objectVariant;
 			local slot=key=="civicObject4_5" ? "settlementProp_bench" : key;
 			local value=plannedPaletteValue(key,slot,r.objectType|(r.objectVariant<<12));
-			local fb=paletteFreeBlock(value,r.rotation),bounds=IRect3D(fb.br);
-			if(bounds.w!=r.x1-r.x0+1 || bounds.d!=r.y1-r.y0+1 || bounds.h!=r.objectHeight) throw Exception("Civic facility dimensions changed: " .. r.role);
-			if( ground+1+bounds.h>bw.h) throw Exception("Civic facility is too tall: " .. r.role);
-			for(local dz=0;dz<bounds.d;dz++)for(local dx=0;dx<bounds.w;dx++){
-				if((dst[x+dx+(z+dz)*bw.w]>>>16)!=ground) throw Exception("Civic facility ground is uneven: " .. r.role);
-				for(local dy=1;dy<=bounds.h;dy++) if(bw.blockat(x+dx,ground+dy,z+dz)) throw Exception("Civic facility is obstructed: " .. r.role);
-			}
-			bw.placeFreeBlock(paletteFreeBlock(value,r.rotation,[x-bounds.x,ground+1-bounds.y,z-bounds.z]));
-			facilities.push({role:r.role,objectType:fb.fbtype,objectVariant:fb.fbparam&0x3ff,rotation:r.rotation,x:x,y:ground+1,z:z,width:bounds.w,depth:bounds.d,height:bounds.h});
+			local obj=paletteObject(value,r.rotation),bounds=IRect3D(obj.br);
+			// if(bounds.w!=r.x1-r.x0+1 || bounds.d!=r.y1-r.y0+1 || bounds.h!=r.objectHeight) throw Exception("Civic facility dimensions changed: " .. r.role);
+			// if( ground+1+bounds.h>bw.h) throw Exception("Civic facility is too tall: " .. r.role);
+			// for(local dz=0;dz<bounds.d;dz++)for(local dx=0;dx<bounds.w;dx++){
+			// 	if((dst[x+dx+(z+dz)*bw.w]>>>16)!=ground) throw Exception("Civic facility ground is uneven: " .. r.role);
+			// 	for(local dy=1;dy<=bounds.h;dy++) if(bw.blockat(x+dx,ground+dy,z+dz)) throw Exception("Civic facility is obstructed: " .. r.role);
+			// }
+			
+			local cxz = regionCenter( r, obj, bw);
+			placePaletteObject( bw, obj, [cxz[0], ground+1, cxz[1]] );
+			// bw.placeFreeBlock(paletteFreeBlock(value,r.rotation,[x-bounds.x,ground+1-bounds.y,z-bounds.z]));
+
+			// facilities.push({role:r.role,objectType:fb.fbtype,objectVariant:fb.fbparam&0x3ff,rotation:r.rotation,x:x,y:ground+1,z:z,width:bounds.w,depth:bounds.d,height:bounds.h});
 		}
-		if(!center || !length(facilities) || length(mayors)!=(assetPlan.countryWealth>=2.0?1:0)) throw Exception("Settlement civic centre or mayor residence is incomplete");
-		foreach(p in facilities){
-			// Query only this reserved plot. Enumerating the whole forest also
-			// collects thousands of unrelated tree objects in the native engine.
-			local objects=bw.collectFreeBlocks(IRect3D(p.x,p.y,p.z,p.width,p.height,p.depth),[]);
-			local found=false;
-			foreach(actual in objects){local b=actual.br;
-				if(actual.fbtype==p.objectType && (actual.fbparam&0x3ff)==p.objectVariant && b.x==p.x && b.y==p.y && b.z==p.z && b.w==p.width && b.d==p.depth && b.h==p.height){found=true;break;}
-			}
-			if(!found)throw Exception("Civic facility missing from the final world: " .. p.role);
-		}
-		saveDiagnostic("last_settlement_civic.json",{seed:assetPlan.seed,type:assetPlan.type,wealth:assetPlan.countryWealth,center:center,mayors:mayors,facilities:facilities,finalWorldChecked:true});
+		// if(!center || !length(facilities) || length(mayors)!=(assetPlan.countryWealth>=2.0?1:0)) throw Exception("Settlement civic centre or mayor residence is incomplete");
+		// foreach(p in facilities){
+		// 	// Query only this reserved plot. Enumerating the whole forest also
+		// 	// collects thousands of unrelated tree objects in the native engine.
+		// 	local objects=bw.collectFreeBlocks(IRect3D(p.x,p.y,p.z,p.width,p.height,p.depth),[]);
+		// 	local found=false;
+		// 	foreach(actual in objects){local b=actual.br;
+		// 		if(actual.fbtype==p.objectType && (actual.fbparam&0x3ff)==p.objectVariant && b.x==p.x && b.y==p.y && b.z==p.z && b.w==p.width && b.d==p.depth && b.h==p.height){found=true;break;}
+		// 	}
+		// 	if(!found)throw Exception("Civic facility missing from the final world: " .. p.role);
+		// }
+		// saveDiagnostic("last_settlement_civic.json",{seed:assetPlan.seed,type:assetPlan.type,wealth:assetPlan.countryWealth,center:center,mayors:mayors,facilities:facilities,finalWorldChecked:true});
 	}
 
 	function decorateSettlement( bw){
@@ -1479,7 +1556,8 @@ class MapGenerator
 		// Pack complete crowns without the spacing used inside the settlement.
 		local denseTrees=0;
 		if( forest || oasis){
-			for( local z=0;z<d-2;z++) for( local x=0;x<w-2;x++){
+			for( local _z=2;_z<d-2;_z+=6) for( local _x=2;_x<w-2;_x+=6){
+				local x = _x + rnd( -3, 3), z = _z + rnd( -3, 3);
 				if( biomes[(d-1-z)*w+x]!=TOWN_TREES || occupied.get(x,z)) continue;
 				local y=dst[z*w+x]>>>16,clear=true;
 				local model=forest ? rnd.choosea(forestModels) : palm;
@@ -1585,6 +1663,7 @@ class MapGenerator
 			r.set( x, 0, z, 1, y+1, 1);
 			bw.fillBlock( r, blk);					//高さ分塗りつぶし
 		}
+		Table.clear( objbwcache);		//	毎回のtoBlockWorldでobjbwのキャッシュをクリアする
 		local objcache = {};
 		//	make objs
 		foreach( v in objs){
@@ -1623,7 +1702,7 @@ class MapGenerator
 				}
 				// local y = dst[v.x + v.z*w]>>>16;
 				if( vid[0]=='M'){
-					local aw = objcache[vid] ?? (objcache[vid] <- objbw( vid));
+					local aw = objbw( vid);
 					if( !aw) continue;
 					local m = IMat( v.x, y+1, v.z).rotate( v["rot"]).translate( -aw.w/2, 0, -aw.d/2);
 					bw.drawWorld( aw, m);

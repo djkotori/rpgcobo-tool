@@ -26,7 +26,6 @@ class MapGenDialog extends UndoableDialog
 
 	genthread = null;
 	busy = false;
-	candidateDirectory = null;
 
 	//	LEFT
 	typemenu = null;	//	MenuBehavior
@@ -116,20 +115,13 @@ class MapGenDialog extends UndoableDialog
 	}
 
 	function close(){
-		// Do not destroy native controls while a generation coroutine uses them.
 		if( busy) return;
-		cleanCandidateDirectory();
-		super.close();
-	}
-
-	function cleanCandidateDirectory(){
-		if( !candidateDirectory) return;
 		try{
-			FileRef( candidateDirectory).deleteAll();
+			FileRef( "tmp/mapgen").deleteAll();
 		}catch( ex){
 			printexception( ex);
 		}
-		candidateDirectory = null;
+		super.close();
 	}
 
 	function setType( t){
@@ -153,8 +145,7 @@ class MapGenDialog extends UndoableDialog
 		local row = proplist.propitems.find( @( item) item.prop.pid=="terrainProtrusion");
 		if( !row) return;
 		local site = (gendata["site"] ?? {})["settlementSite"];
-		local label = site==undefined ? "$T.mapgen_protrusion" :
-			(site==4 ? "$T.mapgen_river_width" : "$T.mapgen_terrain_extension");
+		local label = site==undefined ? ::lang( row.prop.lbl) : (site==4 ? "$T.mapgen_river_width" : "$T.mapgen_terrain_extension");
 		row.cnt.setValue( "lbl", label);
 	}
 
@@ -207,7 +198,7 @@ class MapGenDialog extends UndoableDialog
 					doRunSerialMapgen();
 				}catch( ex){
 					printexception( ex);
-					Popups.showError( ex.message);
+					::rootview.postErrorEvent( {type="MapGen", error=ex, msg = "$T.error_mapgen: " .. ex.message});
 				}
 				genthread = null;
 				setBusy( false);
@@ -316,19 +307,28 @@ class MapGenDialog extends UndoableDialog
 	//	map._meta.blockmaplistに保存。
 	//	
 	function showBlockListMenu( e){
-		local cbdata = getClipboard( "blockmap");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local bi = e.src.ref;
+		local cbtype = "blockmap_%S" % bi.def.type;
+		local cbdata = getClipboard( cbtype);	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
 		local ctxmenu = [
 			{ lbl="$T.menu_edit_copy", id="copy", icon="\ue14d" },
 			{ lbl="$T.menu_edit_paste", id="paste", icon="\ue14f", disable=!cbdata },
 		];
-		local ret = MenuPopup.run( ctxmenu, e.src);
+		local ret = MenuPopup.run( ctxmenu, null);
 		switch( ret["id"]){
 		case "copy":
 		{
+			local t = bi.def.type, v = bi.item;
+			putClipboard( cbtype, t=="block" ? { val=v} : { val=v, fbtype=v&0xfff, fbparam=(v>>>12)});
 			break;
 		}
 		case "paste":
 		{
+			local self = this;
+			local olditem = bi.item;
+			local redo = [@(){ bi.changeItem( cbdata["val"]); }];
+			local undo = [@(){ bi.changeItem( olditem); }];
+			submitOp( redo, undo, null);
 			break;
 		}
 		}
@@ -444,7 +444,7 @@ class MapGenDialog extends UndoableDialog
 		}catch( ex){
 			printexception( ex);
 			printf( "Map preview failed: type=%S seed=%S\n", ref.mapgen.gendef.val, ref.mapgen.seed);
-			Popups.showError( ex.message);
+			::rootview.postErrorEvent( {type="MapGen", error=ex, msg = "$T.error_mapgen: " .. ex.message});
 			setBusy( false);
 			return false;
 		}
@@ -497,7 +497,7 @@ class MapGenDialog extends UndoableDialog
 	//	10個のマップ生成を行う。生成完了まで次の「生成」ボタンは押せない。
 	//	
 	function runSerialMapgen( seed){
-		local num = 10;
+		local num = 1;
 		local gendef = ::MapGenerators.find( @( v) v.val==type);
 		local constructionParameters = null;
 		if( gendef["settlement"]){
@@ -510,7 +510,6 @@ class MapGenDialog extends UndoableDialog
 		selpic?.setSelected( false);
 		selpic = null;
 		piclist.setRowCount( 0);
-		cleanCandidateDirectory();
 		local dirname = "tmp/mapgen/"..seed;
 		FileRef( dirname).mkdirs(); sleep( 100);
 		local failures = [], count = 0;
@@ -535,7 +534,6 @@ class MapGenDialog extends UndoableDialog
 			// Retain inputs/output for reproducing failed seeds.
 			throw Exception( "%S / %S maps generated. Failed inputs retained in %S.\n%S" % (count, num, dirname, failures[0]));
 		}
-		candidateDirectory = dirname;
 	}
 
 	//	pic.refを指定して呼び出す
@@ -640,6 +638,20 @@ class MapGenDialog.BlockSetIcon
 	function setBlockItem( d, b){
 		def = d;
 		view.setValue( "lbl", d.lbl);
+		changeItem( b);
+	}
+
+	function actionevent( e){
+		switch( e.id){
+		case ACTION_PERFORMED:
+			if( e.isMouseDown( BUTTON1_MASK)){
+				showChoose( e);
+			}
+			break;
+		}
+	}
+
+	function changeItem( b){
 		item = b;
 		local icon = view.findChild( "icon");
 		if( def.type == "asset"){
@@ -657,16 +669,6 @@ class MapGenDialog.BlockSetIcon
 			}
 		}
 	}
-
-	function actionevent( e){
-		switch( e.id){
-		case ACTION_PERFORMED:
-			if( e.isMouseDown( BUTTON1_MASK)){
-				showChoose( e);
-			}
-			break;
-		}
-	}
 	
 	//	選択を表示
 	function showChoose( e){
@@ -677,6 +679,17 @@ class MapGenDialog.BlockSetIcon
 		local selv = popsc.findChild( "selblock");
 		if( def.type == "asset"){
 			local sela = SelectAsset( selv);
+			sela.setActive( true);
+			selv.addEventListener( ACTION_EVENT, @( e){
+				switch( e.id){
+				case ACTION_PERFORMED:
+					local cmd = e.actioncmd, aid = cmd["aid"];
+					self.view.postActionEvent( aid);
+					pop.close();
+					break;
+				}
+				e.consume();
+			});
 		}else{
 			local selb = SelectBlock( selv);
 			if( def.type == "blk"){

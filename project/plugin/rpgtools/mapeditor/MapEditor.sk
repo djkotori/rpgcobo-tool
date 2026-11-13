@@ -241,9 +241,20 @@ class MapEditor extends EditorViewBase
 				//	イベントの初期化はいらないかな？
 				local self = this, data = self.data;
 				local bw0 = bw;
-				local redo = [@(){ data.size.set( bw1.w, bw1.h, bw1.d); self.setBlockWorld( bw1); }];
-				local undo = [@(){ data.size.set( bw0.w, bw0.h, bw0.d); self.setBlockWorld( bw0); }];
+				local oldmapshot = mapshottex, newmapshot = canvas.captureMapShot( bw1);
+				local redo = [@(){
+					data.size.set( bw1.w, bw1.h, bw1.d);
+					self.setBlockWorld( bw1);
+					self.mapshottex = newmapshot;
+					self.mapshottex.ref = true;
+				}];
+				local undo = [@(){
+					data.size.set( bw0.w, bw0.h, bw0.d);
+					self.setBlockWorld( bw0);
+					self.mapshottex = oldmapshot;
+				}];
 				submitOp( redo, undo, null);
+				refresh();
 			}
 			return true;
 		}
@@ -380,7 +391,7 @@ class MapEditor extends EditorViewBase
 	function resizeMap( w, h, d, align, fill){
 		local self = this, w0 = bw.w, h0 = bw.h, d0 = bw.d;
 		local bw1 = bw.createResized( w, h, d, align, fill), bw0 = bw;
-		local oldmapshot = mapshottex, newmapshot = (null,);
+		local oldmapshot = mapshottex, newmapshot = canvas.captureMapShot( bw1);
 		//	イベント移動量
 		local dx=0, dy=0, dz=0;
 		switch( align%3){
@@ -401,8 +412,7 @@ class MapEditor extends EditorViewBase
 			self.setBlockWorld( bw1);
 			if( self.data){
 				self.data.size = [bw1.w,bw1.h,bw1.d];
-				if( !newmapshot[0]) newmapshot[0] = self.canvas.captureMapShot( bw, self.canvas.bw3d);	//	redo時に再計算させないように。。。
-				self.mapshottex = newmapshot[0];
+				self.mapshottex = newmapshot;
 				self.mapshottex.ref = true;
 			}
 		}];

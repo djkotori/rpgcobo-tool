@@ -587,6 +587,10 @@ class MapCanvas.InfoPanel
 			foreach( ch in bw3d.vchunklist){
 				// if( !ch.incamera) continue;
 				if( ch.mesh && cam.isInside( ch.gbnd)){
+					if( ch["mesh"]){
+						local cb = getBackFaceBits( ch.mesh.bnd, ch.invgmat, cam);
+						applyBackFaceCull( ch.mesh.face, ch.bfcoffs, cb);
+					}
 					verts += ch.vertlen();
 					tris += ch.trilen();
 				}
@@ -605,7 +609,10 @@ class MapCanvas.InfoPanel
 			local chseqs = bw.collectDrawChunks( #{});	//	camを渡さないと全て取得
 			foreach( cpos, seq in chseqs){
 				local ch = bw3d.vchunkmap[cpos];
-				if( ch){ statcache[cpos] <- { seq: seq, verts: ch.vertlen(), tris: ch.trilen() }; }
+				if( ch){
+					if( ch["mesh"]) applyBackFaceCull( ch.mesh.face, ch.bfcoffs, 0);
+					statcache[cpos] <- {seq: seq, verts: ch.vertlen(), tris: ch.trilen() };
+				}
 				local c = statcache[cpos];
 				if( c){ verts += c.verts; tris += c.tris; }
 			}
