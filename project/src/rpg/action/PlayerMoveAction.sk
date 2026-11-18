@@ -83,6 +83,11 @@ class PlayerMoveAction
 		updateActionBody( dt);
 	}
 
+	function isJumpable(){
+		local statmap = ::rpgstage.stat.statmap;
+		return statmap["jumph"]>0.0 && statmap["ctrmode"]==1;	//	ctrmode 0, 2はジャンプ不可
+	}
+
 	function processControl( st, dt){
 		local cid = st.cid, v = st.val;
 		switch( cid){
@@ -90,7 +95,7 @@ class PlayerMoveAction
 			cdir = v;
 			break;
 		case CTRL_JUMP:
-			if( v && landed && !crimbing){
+			if( v && landed && !crimbing && isJumpable()){
 				local vy = getJumpHeight();
 				if( vy){	// vy==0の時はジャンプ禁止
 					landed = false;

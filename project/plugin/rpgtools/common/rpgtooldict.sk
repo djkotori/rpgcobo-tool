@@ -204,7 +204,7 @@
 	//	プレイヤー操作モード
 	"ctrmode0"							: {"ja":"操作不能", "en":"Disabled"}
 	"ctrmode1"							: {"ja":"通常操作", "en":"Enabled"}
-	"ctrmode2"							: {"ja":"常にダッシュ", "en":"Always Dash"}
+	"ctrmode2"							: {"ja":"ジャンプ不能", "en":"Jump Disabled"}
 	"ctrmode3"							: {"ja":"常に歩き", "en":"Always Walk"}
 	
 	//	状態タイプ
@@ -875,7 +875,7 @@
 	"setting_inimap_open"				: {"ja":"このマップを開く", "en":"Open this Map"}
 	"setting_playervisible"				: {"ja":"プレイヤーの表示", "en":"Player Visible"}
 	"setting_playermodel"				: {"ja":"プレイヤーの表示モデル", "en":"Player Model"}
-	"setting_ctrmode"					: {"ja":"操作可能状態", "en":"Controllable State"}
+	"setting_ctrmode"					: {"ja":"コントロールモード", "en":"Controllable Mode"}
 	"setting_walkspd"					: {"ja":"歩行の速度", "en":"Walking Speed"}
 	"setting_jumph"						: {"ja":"ジャンプの高さ", "en":"Jump Height"}
 	"setting_menuopenable"				: {"ja":"メニュー開閉可能", "en":"Menu Open Enabled"}
@@ -1202,6 +1202,7 @@
 	"lbl_placeportaldoor"				: {"ja":"ポータルドアに変換", "en":"To Portal Door"}
 	"lbl_tomapasset"					: {"ja":"マップアセットに登録","en":"Register to Map Assets"}
 	"lbl_tocustomevent"					: {"ja":"カスタムイベントに変換", "en":"To Custom Event"}
+	"lbl_customedit"					: {"ja":"カスタムイベントを編集中…", "en":"Editing Custom Event..."}
 
 	"lbl_blocks"						: {"ja":"ブロック", "en":"Blocks"}
 	"lbl_lvstretch"						: {"ja":"地形伸ばし", "en":"LV Stretch"}

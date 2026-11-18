@@ -34,7 +34,8 @@ class MapTools.tool_pen extends MapTool
 	blk = 1;				//	選択されたブロック
 	fillplanechk = null;	//	
 
-	static blkflags = (BLK_SOLID|BLK_LIQUID|BLK_DECAL, BLK_SOLID|BLK_SOLIDFB, BLK_SOLID|BLK_LIQUID, BLK_SOLID|BLK_SOLIDFB, BLK_SOLID|BLK_LIQUID);
+	// static blkflags = (BLK_SOLID|BLK_LIQUID|BLK_DECAL, BLK_SOLID|BLK_SOLIDFB, BLK_SOLID|BLK_LIQUID, BLK_SOLID|BLK_SOLIDFB, BLK_SOLID|BLK_LIQUID);
+	static blkflags = (BLK_SOLID|BLK_LIQUID|BLK_DECAL, BLK_SOLID, BLK_SOLID|BLK_LIQUID, BLK_SOLID, BLK_SOLID|BLK_LIQUID);	//	BLK_SOLIDFBあると置きにくい。。
 	static isattach = (false, true, false, true, false);
 	static optioofrm = (0,0,0,-1,-2);
 	

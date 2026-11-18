@@ -36,6 +36,9 @@ enum BlockFlagID
 	
 	//	stats bits
 	BLK_STATE_ROT		= 1048576,	//	14-15bit
+
+	//	collision
+	BLK_TERRAIN_BOXCOL  = 1073741824;	//	1<<30
 }
 
 enum BlockPlacementID

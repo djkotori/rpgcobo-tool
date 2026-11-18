@@ -1823,17 +1823,16 @@ class reg.PBRPostPass extends SK3DRenderPass
 		if( b != bloomextpass.enabled) dirty = true;
 	}
 	
-	function setDOF( pow, blur){
+	function setDOF( range, blur){
 		local b = dofblurpass.enabled;
-		if( blur <= 0.001 || r <= 0.001){
+		if( blur <= 0.001){
 			dofblurpass.enabled = false;
 		}else{
 			dofblurpass.enabled = true;
-			//dofblurpass.setBlur( 2.2, 24, blur);
-			dofblurpass.ps.blur = blur;
+			dofblurpass.ps.dofrange <- range;
+			dofblurpass.ps.dofblur <- blur;
 		}
 		if( b != dofblurpass.enabled) dirty = true;
-		// printf( "SETDOF??????????????????? %S  %S\n", dofblurpass.enabled, blur);
 	}
 
 	function performPass( r){
