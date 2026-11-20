@@ -497,7 +497,7 @@ class MapGenDialog extends UndoableDialog
 	//	10個のマップ生成を行う。生成完了まで次の「生成」ボタンは押せない。
 	//	
 	function runSerialMapgen( seed){
-		local num = 1;
+		local num = 10;
 		local gendef = ::MapGenerators.find( @( v) v.val==type);
 		local constructionParameters = null;
 		if( gendef["settlement"]){
