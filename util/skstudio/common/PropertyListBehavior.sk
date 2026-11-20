@@ -179,7 +179,9 @@ class PropertyHeader
 		proplist = pl;
 		prop = p;
 		cnt = c;
-		cnt.setValue( "lbl", prop.lbl);
+		local s = prop.lbl;
+		if( prop["tips"] || prop["tipskey"]) s = ::rtf( s .. " [E][#526E79]\ue88e");
+		cnt.setValue( "lbl", s);
 		c.addEventListener( ACTION_EVENT, actionevent);
 		exp = cnt.findChild( "exp");
 		local mv = c.findChild( "menu");
@@ -247,7 +249,9 @@ class PropertyBehavior
 		cnt = c;
 		view = v;
 		cnt.ref = this;
-		cnt.setValue( "lbl", prop.lbl);
+		local s = prop.lbl;
+		if( prop["tips"] || prop["tipskey"]) s = ::rtf( s .. " [E][#526E79]\ue88e");
+		cnt.setValue( "lbl", s);
 		local tk = cnt.findChild( "tweenkey");
 		if( tk){
 			tk.setVisible( !!prop["anime"]);

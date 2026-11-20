@@ -178,6 +178,11 @@ class ConfigItemResource extends Resource
 		pres.save();
 		return true;
 	}
+
+	function tips(){
+		local pname = T["side_dbview_"..pres.name];		//	※マップアセットでちゃんととれない
+		return `[P]$pname: [T]${getResourceName()}`;
+	}
 }
 
 //	ゲーム設定からのサブ項目は、ほかのID連番リソースではなく個別の設定管理方法。
@@ -232,6 +237,11 @@ class GameConfigResource extends Resource
 			return true;
 		}
 		return false;
+	}
+
+	function tips(){
+		local pname = T["side_dbview_game"];
+		return `[P]$pname: [T]$itemname`;
 	}
 }
 
@@ -307,6 +317,10 @@ class GameResourceResource extends Resource
 			return true;
 		}
 		return false;
+	}
+
+	function tips(){
+		return `[P]$T.lbl_resource: [T]${getResourceName()}`;
 	}
 }
 

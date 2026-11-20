@@ -2,7 +2,7 @@ import VirtualKeyCode;
 import ModifiersMask;
 import MoveScreenFlags;
 
-local v_1 = Vector3D(), v_2 = Vector3D(), v_3 = Vector3D(), v_4 = Vector3D(), m_0 = Matrix(), p_0 = Plane();
+local v_1 = Vector3D(), v_2 = Vector3D(), v_3 = Vector3D(), v_4 = Vector3D(), m_0 = Matrix(), p_0 = Plane(), r_0 = Rect3D();
 
 //	移動時やイベント時のカメラワークを定義。平行プロジェクションは無し。
 //	カメラワーク間でトランジションが可能。
@@ -103,7 +103,7 @@ class RPGCameraworkStandard extends RPGCamerawork
 			gytime = 0;
 			gy = tgtloc.pos.y;
 		}
-		local ref = adjustMapBounds( stage);
+		local ref = adjustMapBounds2( stage);
 		to( toloc).add( ref);
 	}
 
@@ -119,7 +119,7 @@ class RPGCameraworkStandard extends RPGCamerawork
 		ref.add( _pushplane( loc0, v_1( 0, 0,  s).rotate( hpb).scale(1,0,1)));
 		return ref;
 	}
-	
+
 	function _pushplane( loc0, v){
 		local n = v_4( v).normalize();
 		foreach( p in mapplanes){
@@ -131,6 +131,26 @@ class RPGCameraworkStandard extends RPGCamerawork
 				return v;
 			}
 		}
+	}
+
+	function adjustMapBounds2( stage){
+		//	toloc座標系で外包bnd
+		local ref = v_2( 0.0), loc0 = v_3( toloc);
+		local bw = stage.bw, r = bw.w*0.25, s = bw.h*0.25, t = bw.d*0.25;
+		local m = m_0.identity().rotate( -hpb[0], -hpb[1], -hpb[2]).translate( -loc0.x, -loc0.y, -loc0.z);
+		local r = r_0.set( r, s, t, r, s, t).transform( m);	//	外包bnd
+		//	
+		local cam = stage.cam;
+		local sy = zoom*0.5, sx = sy * stage.cam.aspect * (0.9 * Math.cos( cam.fovy*Math.DTOR));
+		local sz = sx * stage.cam.aspect * 1.0 * 0.8, d;
+		if( (d=(r.x-r.r)+sx) > 0.0){
+			ref.x = d;
+		}
+		if(  sx > r.x+r.r) ref.x = (r.x+r.r)-sx;
+		if( -sy < r.y-r.s) ref.z = (r.y-r.s)+sy;
+		if(  sz > r.z+r.t) ref.z = (r.z+r.t)-sz;
+		ref.rotate( hpb[0], 0.0, 0.0);	//	カメラ回転を反映
+		return ref;
 	}
 	
 	//	ワープや場面切り替えでカメラを最新の位置に回復させるときに呼び出す。

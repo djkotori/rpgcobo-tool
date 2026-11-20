@@ -9,7 +9,7 @@ import GamepadButtonCode;
  */
 class TipsRunner
 {
-	static tipsjsonlist = ["/skstudio/tips.json"];
+	static tipsjsonlist = ["/skstudio/tipsdata.conf"];
 	static embedtipsmap = {};
 
 	uipathmap = null;			//	
@@ -50,9 +50,9 @@ class TipsRunner
 			if( tv != monview){
 				hideTips();
 			}else{
-				local ts0 = tipview.findChild( "lbl").getText();
+				local ts0 = tipview.ref;
 				local ts = fget( tv, "tips");
-				if( ts != ts0){
+				if( ts <> ts0){
 					hideTips();
 					showTips( ms, tv);
 				}
@@ -88,8 +88,21 @@ class TipsRunner
 			foreach( i, v in ka){
 				if( !v.isVisible()) continue;
 				if( v.ref instanceof PropertyBehavior){
-					k2 = v.ref.prop.lbl;
-					k2v = v;
+					//	ヘッダのラベル内にマウスがない場合はスキップ
+					local lv = v.findChild( "head.lbl");
+					if( !lv) continue;
+					local p = Vector3D( ms.mousex, ms.mousey, 0).transform( lv.getInvMatrix());
+					if( p.x<0 || p.x>=lv.bnd.w || p.y<0 || p.y>=lv.bnd.h) continue;
+					//
+					local prop = v.ref.prop;
+					local ts = fget( prop, "tips") || embedtipsmap[fget( prop, "tipskey")];
+					if( ts){	//	プロパティにtips情報がある場合はそれを使う
+						lv.tips = ts;
+						tv = lv;
+						ta.clear();
+						return tv;
+					}
+					k2 = prop.lbl;
 					break;
 				}
 				if( v instanceof GPUIButton){
@@ -118,10 +131,25 @@ class TipsRunner
 		local uipath = uipathmap[type];
 		local v = ::loadSKView( uipath);
 		local ts = fget( tv, "tips");
-		v.setValue( "lbl", ts);
+		local s = ::lang( ts);
+		if( s.contains( '$')){
+			local fn = ::compiletemplate_c( s); s = fn();
+		}
+		if( s.contains( '[')) s = ::rtf( s);	//	RichTextに対応
+		v.setValue( "lbl", s);
 		v.enabled = false;
-		local d = v.computeSizeDelta();
-		if( d.x > 0 || d.y > 0) v.stretchSize( v.bnd.w+d.x, v.bnd.h+d.y);
+		//	大きさ調整。。。
+		local minw = 64, dx = 0, dy = 0;
+		local lbl = v.findChild( "lbl"), tb = lbl.textbox, r = tb.bnd;
+		if( r.w != lbl.bnd.w){
+			local _w = Math.max( (r.w+0.99)|0, minw);
+			dx = _w - lbl.bnd.w;
+		}
+		if( lbl.bnd.h < r.h) dy = r.h - lbl.bnd.h;
+		if( dx|dy) v.stretchSize( v.bnd.w+dx, v.bnd.h+dy);
+		//
+		// local d = v.computeSizeDelta();
+		// if( d.x > 0 || d.y > 0) v.stretchSize( v.bnd.w+d.x, v.bnd.h+d.y);
 		//	
 		local root = ::rootview.findChild( "dlglayer") || ::rootview;
 		if( type == "tipsh"){
@@ -139,6 +167,7 @@ class TipsRunner
 		}
 		adjustBounds( v, tv, root);
 		tipview = v;
+		v.ref = ts;
 	}
 
 	//	viewがrootからはみ出さないように調整。

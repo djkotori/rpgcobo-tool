@@ -32,6 +32,7 @@ playerprops .. {
 	proptype = "static"
 	pid = "INILV"
 	lbl = "$T.INILV"			//	ツール上での表示名。$T使っちゃってるけどゲームでは使用不能。良いか。
+	tipskey = "charaprop.INILV"
 	
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = SCALAR
@@ -45,6 +46,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MAXLV"
 	lbl = "$T.LVCAP"			//	ツール上での表示名
+	tipskey = "charaprop.MAXLV"
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = SCALAR
@@ -58,6 +60,7 @@ playerprops .. {
 	proptype = "static"
 	pid = "expcurv"
 	lbl = "$T.expcurv"		//	ツール上での表示名
+	tipskey = "charaprop.expcurv"
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = EXPCURVE

@@ -636,10 +636,10 @@ param ssaoblur
 
 fs ssaoblur
 {
-	const float R = 4.0;
+	const float R = 3.0;
 	const float SIGMA = R * 0.7;
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
-	const float SHARPEN = 10.0;
+	const float SHARPEN = 4.0;
 
 	highp int iz( highp vec2 uv){
 		return int( texture( uztex, uv).x);
@@ -844,10 +844,10 @@ fs ssshadow
 
 param ssshadow_draft
 {
-	const int STEPCNT = 5;
-	const float DT = 0.1;
-	const float DTT = 0.4;
-	const float THRS = 0.045;
+	const int STEPCNT = 6;
+	const float DT = 0.09;
+	const float DTT = 0.38;
+	const float THRS = 0.04;
 }
 
 param ssshadow_normal
@@ -864,6 +864,19 @@ param ssshadow_quality
 	const float DT = 0.04;
 	const float DTT = 0.2;
 	const float THRS = 0.015;
+}
+
+technique ssshadow_draft
+{
+	apilevel = 30;
+	
+	pass {
+		using ssshadow_draft, bayer, reconstwvp;
+
+		param = ssshadow;
+		vs = def;
+		fs = ssshadow;
+	}
 }
 
 technique ssshadow_normal
@@ -915,10 +928,10 @@ param sssblur
 
 fs sssblur
 {
-	const float R = 4.0;
-	const float SIGMA = R * 0.7;
+	const float R = 5.0;
+	const float SIGMA = R * 0.75;
 	const float FALLOFF = 1.0 / (2.0*SIGMA*SIGMA);
-	const float SHARPEN = 4.0;
+	const float SHARPEN = 0.3;
 
 	highp int iz( highp vec2 uv){
 		return int( texture( uztex, uv).x);

@@ -19,10 +19,11 @@ local condprops = RPGSystem.condprops;
 condprops .. {
 	pid = "condtype",
 	lbl = "$T.condtype"
+	tipskey = "condprop.condtype"
 	type = LIST,
 	list = [
-		{ lbl:"$T.condtype0", val=0 },
-		{ lbl:"$T.condtype1", val=1 },
+		{ lbl:"$T.condtype0", icon="\ueacf", val=0 },
+		{ lbl:"$T.condtype1", icon="\uead0", val=1 },
 	],
 	defval = 0,
 };
@@ -30,6 +31,7 @@ condprops .. {
 condprops .. {
 	pid = "resistg",
 	lbl = "$T.type_resistg"
+	tipskey = "condprop.resistg"
 	type = LIST,
 	list = @() typelist( "resistg"),
 	defval = 0,
@@ -38,11 +40,12 @@ condprops .. {
 condprops .. {
 	pid = "deadtype",
 	lbl = "$T.deadtype"
+	tipskey = "condprop.deadtype"
 	type = LIST,
 	list = [
 		{ lbl:"$T.deadtype0", val=0 },
 		{ lbl:"$T.deadtype1", val=1 },
-		{ lbl:"$T.deadtype2", val=2 },
+		{ lbl:"$T.deadtype2", icon="\uf800", val=2 },
 	]
 	defval = 0
 };
@@ -50,13 +53,15 @@ condprops .. {
 condprops .. {
 	pid = "uncommandable"
 	lbl = "$T.lbl_uncommandable"
+	tipskey = "condprop.uncommandable"
 	type = BOOL,
 	defval = false
 };
 
 condprops .. {
 	pid = "MAXLV"
-	lbl = "$T.MAXLV"
+	lbl = "$T.lbl_condlv"
+	tipskey = "condprop.MAXLV"
 	type = LIST,
 	list = [
 		{ lbl:"$T.lbl_none", val=0 },

@@ -35,6 +35,8 @@ class RichText
 			//
 			['P'] = { color=0xbfffffff, flags=2 },
 			['G'] = { color=0x808080ff, },
+			['T'] = { color=0xddddddff, },
+			['A'] = { color=0xA3D900ff, size=-2, },
 			//
 			['D'] = { color=0xFF7A4Dff, },
 			['U'] = { color=0xbfffffff, },
@@ -153,6 +155,7 @@ class RichText
 					attr.strokecolor = "stroke" in st ? st.stroke : attr0.strokecolor;
 					attr.flags = "flags" in st ? st.flags : attr0.flags;
 					attr.linespace = "linespace" in st ? st.linespace : attr0.linespace;
+					attr.size += st["size"]|0;
 					tb.setAttribute( attr, pos);
 				}
 				break;

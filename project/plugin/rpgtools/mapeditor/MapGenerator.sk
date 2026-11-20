@@ -72,6 +72,10 @@ enum MapGenObjectID
 	//	ダンジョン用
 	PORTAL_DOOR = 32,		//	ドアのあるポータル
 	PORTAL_OPEN = 33,		//	開いたポータル
+	//	橋
+	BRIDGE_SS = 37,		//	ワールドマップで架かるごく小さい橋
+	BRIDGE_S = 38,		//	5ブロックまで
+	BRIDGE_M = 39,		//	8ブロックまで
 };
 
 import MapGenBiomeID;
@@ -204,7 +208,7 @@ local pens = [
 			{ id=EXMOUNTAIN, lbl="EXMOUNTAIN", type="blk", blkpages=[2,5,3] },
 			{ id=ROAD, lbl="ROAD", type="blk", blkpages=[2,5,3] },
 			{ id=SNOWROAD, lbl="SNOWROAD", type="blk", blkpages=[2,5,3] },
-			{ id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,5,3] },
+			// { id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,5,3] },
 			null, null,
 			//
 			{ id=RIVER, lbl="RIVER", type="blk", blkpages=[8] },
@@ -222,6 +226,7 @@ local pens = [
 			{ id=PALM, lbl="PALM", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=SNOWTREES_M, lbl="SNOWTREES_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=SNOWTREES_L, lbl="SNOWTREES_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=BRIDGE_SS, lbl="BRIDGE_SS", type="fblk", fbpages=[FB_EXTERIOR] },
 			{ id=FLOWERS_A, lbl="FLOWERS_A", type="blk", blkpages=[11] },
 			{ id=FLOWERS_B, lbl="FLOWERS_B", type="blk", blkpages=[11] },
 			{ id=FLOWERS_C, lbl="FLOWERS_C", type="blk", blkpages=[11] },
@@ -277,11 +282,12 @@ local pens = [
 			[TREES_S]=20|(82<<12), [TREES_M]=20|(83<<12), [TREES_L]=20|(84<<12), [TREE_S]=20|(75<<12),
 			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5), 
 			[CACTUS]=20|(80<<12), [PALM]=20|(76<<12), [SNOWTREES_M]=20|(85<<12), [SNOWTREES_L]=20|(86<<12),
+			[BRIDGE_SS]=3|(57<<12),
 		},
 		//	zoom時の境界処理。川や道路の境界を滑らかにする。川はボールド処理を施す。
 		zoomfunc = @(){
 			local rnd = rnd;
-			local wbits = (1<<SEA)|(1<<LAKE)|(1<<RIVER);
+			local wbits = (1<<SEA)|(1<<LAKE)|(1<<RIVER)|(1<<BRIDGE);
 			return @( win, b4){
 				local c = win[4];
 				b4.fill( c);
@@ -310,11 +316,15 @@ local pens = [
 					local f = win[1], l = win[3], b = win[7], r = win[5];
 					//	RIVER
 					if( win.countUsed( RIVER)){
-						local x = rnd( 0, 0xffff);
-						if( f==RIVER && (x&0x7)) b4[0] = b4[3] = RIVER;
-						if( l==RIVER && (x&0x70)) b4[0] = b4[1] = RIVER;
-						if( b==RIVER && (x&0x700)) b4[1] = b4[2] = RIVER;
-						if( r==RIVER && (x&0x7000)) b4[2] = b4[3] = RIVER;
+						local x = rnd( 0, 0xffff), n = 0;
+						if( f==BRIDGE || (f==RIVER && (x&0x7))){ b4[0] = b4[3] = RIVER; ++n; }
+						if( l==BRIDGE || (l==RIVER && (x&0x70))){ b4[0] = b4[1] = RIVER; ++n; }
+						if( b==BRIDGE || (b==RIVER && (x&0x700))){ b4[1] = b4[2] = RIVER; ++n; }
+						if( r==BRIDGE || (r==RIVER && (x&0x7000))){ b4[2] = b4[3] = RIVER; ++n; }
+						if( n > 1){
+							// printf( "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn %S %S\n", n, encodeJSON( b4));
+							b4.fill( RIVER);
+						}
 					}else
 					if( win.countUsed( COAST)){
 						local x = rnd( 0, 0xffff);
@@ -345,7 +355,7 @@ local pens = [
 		//	バイオーム画像からブロック、高さ画像を生成する。dst[i] = blk | (y<<16) の形式で返す。
 		blkheightfunc = @( bio, dst){
 			local w = bio.width, h = bio.height;
-			local basey = getrange( gendata["basey"], 2.5), hscale = getrange( gendata["heightscale"], 1.0), hnoise = getrange( gendata["heightnoise"], 1.0);
+			local basey = getrange( "basey", 2.5), hscale = getrange( "heightscale", 1.0), hnoise = getrange( "heightnoise", 1.0);
 			local biohmap = gendef.biohmap, blkmap = blkmap, rnd = rnd;
 			local wbits = (1<<SEA)|(1<<LAKE)|(1<<RIVER);
 			return @( x, z, i){
@@ -389,11 +399,35 @@ local pens = [
 						blk = blkmap[SNOWROAD];
 					}
 					break;
+				case BRIDGE:	//	橋はオブジェクトで配置
+					blk = blkmap[RIVER];
+					y = basey * hscale * biohmap[RIVER];
+					break;
 				}
 				y = Math.iround( y);
 				return blk | (y<<16);
 			}
 		}
+
+		objgenfunc = @( bio, objbmp, bio0){
+			local blkmap = blkmap, rnd = rnd;
+			local objs = [];
+			//	橋の配置。1/2バイオームで実行
+			{
+				local basey = getrange( "basey", 2.5) * getrange( "heightscale", 1.0);
+				local w = bio0.width, d = bio0.height;
+				local sz = 4, hs = sz/2;
+				local trees = [TREE_M, TREE_L];
+				for( local z=8;z<d-16;z++) for( local x=8;x<w-16;x++){
+					if( bio0[z*w+x]!=BRIDGE) continue;
+					local objid = BRIDGE_SS;
+					local rot = (bio0[z*w+x-1]==ROAD&&bio0[z*w+x+1]==ROAD) ? 1 : 0;
+					objs .. { objid=objid, x=x*2+1, z=z*2+1-rot, rot=rot, y=basey};
+					objbmp.draw( pens[sz], x-hs, z-hs);
+				}
+			}
+			return objs;
+		},
 
 		objreprace = @( v, bio, tx, tz){
 			switch( v.objid){
@@ -475,6 +509,7 @@ local pens = [
 			{ id=EXMOUNTAIN, lbl="CLIFF", type="blk", blkpages=[2,5,3] },
 			{ id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,5,3] },
 			null,
+			{ id=BRIDGE_M, lbl="BRIDGE_M", type="asset", },
 			{ id=ROCK_S, lbl="ROCK_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=ROCK_M, lbl="ROCK_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=ROCK_L, lbl="ROCK_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
@@ -516,6 +551,7 @@ local pens = [
 			[MOUNTAIN]=5|(12<<5), [EXMOUNTAIN]=2|(0<<5), [ROAD]=2|(1<<5), [BRIDGE]=3|(22<<5), 
 			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5),
 			//
+			[BRIDGE_M]="MA027",
 			[ROCK_S]=20|(17<<12), [ROCK_M]=20|(18<<12), [ROCK_L]=20|(19<<12), 
 			[TREE_S]=20|(1<<12), [TREE_M]=20|(2<<12), [TREE_L]=20|(4<<12),
 			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5), 
@@ -628,7 +664,7 @@ local pens = [
 						}
 						break;
 					case COAST:	//	INNERROAD
-						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<COAST)|(1<<FOREST);
+						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<COAST)|(1<<FOREST)|(1<<RIVER)|(1<<BRIDGE);
 						if( !((1<<f) & mask)) b4[0] = b4[3] = f;
 						if( !((1<<l) & mask)) b4[0] = b4[1] = l;
 						if( !((1<<b) & mask)) b4[1] = b4[2] = b;
@@ -641,7 +677,7 @@ local pens = [
 		//	バイオーム画像からブロック、高さ画像を生成する。dst[i] = blk | (y<<16) の形式で返す。
 		blkheightfunc = @( bio, dst){
 			local w = bio.width, h = bio.height;
-			local basey = 2, hscale = 1, hnoise = getrange( gendata["heightnoise"], 1.0);
+			local basey = 2, hscale = 1, hnoise = getrange( "heightnoise", 1.0);
 			local blkmap = blkmap, rnd = rnd;
 			return @( x, z, i){
 				local b = bio[i], blk = blkmap[b];
@@ -659,24 +695,49 @@ local pens = [
 					local n = bio.countUsed( EXMOUNTAIN, x-1, z-1, 3, 3);
 					if( n > 8) blk = blkmap[MOUNTAIN];
 					break;
+				case BRIDGE:	//	橋はアセットで配置するので川に変換
+					blk = blkmap[RIVER];
 				case RIVER: y -= 1; break;
 				}
 				return blk | (y<<16);
 			}
 		},
-		objgenfunc = @( bio, objbmp){
-			local w = bio.width, d = bio.height;
+		objgenfunc = @( bio, objbmp, bio0){
 			local blkmap = blkmap, rnd = rnd;
 			local objs = [];
-			local sz = 4, hs = sz/2;
-			local trees = [TREE_M, TREE_L];
-			for( local _z=2,r=0;_z<d-2;_z+=8,r++) for( local _x=2;_x<w-2;_x+=8){
-				local x = _x + (r&1)*3, z = _z;
-				if( bio[z*w+x]!=FOREST) continue;
-				if( objbmp.countSet( x-hs, z-hs, sz, sz)) continue;
-				local objid = rnd.choosea(trees);
-				objs .. { objid=objid, x=x, z=z, rot=rnd( 0, 4), };
-				objbmp.draw( pens[sz], x-hs, z-hs);
+			//	木の配置
+			{
+				local w = bio.width, d = bio.height;
+				local sz = 4, hs = sz/2;
+				local trees = [TREE_M, TREE_L];
+				for( local _z=2,r=0;_z<d-2;_z+=8,r++) for( local _x=2;_x<w-2;_x+=8){
+					local x = _x + (r&1)*3, z = _z;
+					if( bio[z*w+x]!=FOREST) continue;
+					if( objbmp.countSet( x-hs, z-hs, sz, sz)) continue;
+					local objid = rnd.choosea(trees);
+					objs .. { objid=objid, x=x, z=z, rot=rnd( 0, 4), };
+					objbmp.draw( pens[sz], x-hs, z-hs);
+				}
+			}
+			//	橋の配置。これは bio0 を参照して行う
+			{
+				local w = bio0.width, d = bio0.height;
+				local bmp = Bitmap( w, d, 0);
+				for( local z=1;z<d-1;z++) for( local x=1;x<w-1;x++){
+					if( bio0[z*w+x]!=BRIDGE) continue;
+					if( bmp.get( x, z)) continue;
+					//	橋の矩形チェック。まあ3x2固定だけど。左下からやってるので右上に伸ばす
+					local x0 = x, x1 = x, z0 = z, z1 = z;
+					for( ;x1 < w-1; x1++) if( bio0[z*w+x1+1]!=BRIDGE) break;
+					for( ;z1 < d-1; z1++) if( bio0[z1*w+x+w]!=BRIDGE) break;
+					//	向き指定。0|1
+					local rot = 1;
+					if( bio0[z*w+x0-1]==RIVER || bio0[z*w+x1+1]==RIVER) rot = 0;
+					//	橋を真ん中に追加。
+					local cx = (x0 + x1 + 1) * 4 / 2, cz = (z0 + z1 + 1) * 4 / 2;
+					objs .. { objid=BRIDGE_M, x=cx, z=cz, y=2, rot=rot, };
+					bmp.draw( Bitmap(x1-x0+1, z1-z0+1, 1), x0, z0);	//	bmp塗るのに作る・・
+				}
 			}
 			return objs;
 		}
@@ -757,7 +818,7 @@ local pens = [
 		//	バイオーム画像からブロック、高さ画像を生成する。dst[i] = blk | (y<<16) の形式で返す。
 		blkheightfunc = @( bio, dst){
 			local w = bio.width, h = bio.height;
-			local basey = 3, hscale = 1, hnoise = getrange( gendata["heightnoise"], 1.0);
+			local basey = 3, hscale = 1, hnoise = getrange( "heightnoise", 1.0);
 			local blkmap = blkmap, rnd = rnd;
 			return @( x, z, i){
 				local b = bio[i], blk = blkmap[b];
@@ -886,7 +947,7 @@ local pens = [
 			local w = bio.width, h = bio.height;
 			local blkmap = blkmap, rnd = rnd;
 			local wh = w*h;
-			local objs = [], dor = getrange( gendata["doorOpenRate"], 0.5);
+			local objs = [], dor = getrange( "doorOpenRate", 0.5);
 			for( local l = 0;l < wh; l ++){
 				local b = bio[l];
 				if( b != BRIDGE) continue;
@@ -1105,7 +1166,7 @@ local castlePalette = [
 
 local settlementHeight = @( bio, dst){
 	local blkmap = blkmap;
-	local basey = Math.iround( getrange( gendata["basey"], 3));
+	local basey = Math.iround( getrange( "basey", 3));
 	local wallheight = settlementWallHeight;
 	local keepHeight = Math.max( 6, wallheight), keepRegions = [];
 	local castle = gendef.val=="castle", plan = assetPlan;
@@ -1144,7 +1205,7 @@ local settlementHeight = @( bio, dst){
 		return blkmap[b] | (y<<16);
 	}
 };
-foreach( t in ["town", "village", "castle"]){
+foreach( t in ["castle", "town", "village", ]){
 	local props = [ { ...sizeprop, range=t=="castle" ? (128,1024) : (64,1024), defval=[160,160] }, seedprop ];
 	if( t == "castle"){
 		props .. { pid="mode", lbl={ja="城の種類", en="Castle Type"}, type=LIST, list=[
@@ -1252,8 +1313,14 @@ foreach( t in ["town", "village", "castle"]){
 		"village" : {"ja":"村", "en":"Village"},
 		"castle" : {"ja":"城", "en":"Castle"}
 	}
+	local stageparamsmap = {
+		"castle" : {
+			camwork = presetcamlist()[3].val,
+		},
+	}
+	
 	::MapGenerators .. {
-		lbl=lblmap[t], val=t,
+		lbl=lblmap[t], val=t, stageparams=stageparamsmap[t],
 		settlement=true, props=props,
 		biocolor=colors, blkmap=blkmap, blkmaplist=blkmaplist,
 		bioobjdensmap={}, objsizemap={}, blkheightfunc=settlementHeight
@@ -1273,6 +1340,7 @@ class MapGenerator
 	//	ステート
 	src = null;					//	RGBAImage: 1/2サイズの普通のカラー画像。mapimggen.exeで生成する。
 	rnd = null;					//	Random: 乱数生成器
+	rangemap = null;			//	getrangeを保存
 	//	生成結果
 	dst = null;					//	RGBAImage: srcから生成するフルサイズのマップ画像。blk(8), hight(8), fblk(8)
 	objs = null;				//	樹木などオブジェクトのリスト。MapGenerationDataのobjsと同じ。
@@ -1280,6 +1348,7 @@ class MapGenerator
 	assetPlan = null;
 	assetPlanPath = null;
 	assetParameters = null;
+
 
 	// Read the live map_asset.json resource through the same decoder as asset
 	// placement. Full BlockWorld extents include roofs and projecting details.
@@ -1406,6 +1475,7 @@ class MapGenerator
 	//	generate()の前に読んでおく。
 	function generateSourceImage( constructionParameters=null){
 		rnd = Random( seed, 11);
+		rangemap = {};
 		local exe = FileRef( "tools/mapimggen.exe");
 		local outid = "%x" % seed;
 		local p = popen_s();
@@ -1498,15 +1568,16 @@ class MapGenerator
 		if( gendef["settlement"]) rnd = Random( seed, 11);
 		local srcrev = flipY( src);
 		//	まずはbio画像を作る。biocolorを使って、srcの色からバイオームIDを取得する。
-		local bio = ImageColorGroups.toIndexImage( gendef.biocolor, srcrev, RGBAImage( srcrev.width, srcrev.height));
+		local bio0 = ImageColorGroups.toIndexImage( gendef.biocolor, srcrev, RGBAImage( srcrev.width, srcrev.height));
+		local bio = bio0;
 		//	imgscale指定の場合は、bioを倍サイズ化する。この時に、川や道路の境界を滑らかにする処理が入る。
 		if( gendef["imgscale"] && gendef["imgscale"] > 1){
 			bio = zoomBiomeImage( bio);
 		}
 		//	次にフリーブロックを配置していく
-		objs = generateObjects( bio);
+		objs = generateObjects( bio, bio0);
 		//	バイオームからブロック、高さを決定する。
-		dst = generateBlockHeightImage( bio);
+		dst = generateBlockHeightImage( bio, bio0);
 	}
 
 	function flipY( img){
@@ -1519,9 +1590,11 @@ class MapGenerator
 		return dst;
 	}
 
-	function getrange( r, defval=0.0){
+	function getrange( pid, defval=0.0){
+		if( pid in rangemap) return rangemap[pid];
+		local r = gendata[pid];
 		if( !r) return defval;
-		return rnd( r[0], r[1]);
+		return rangemap[pid] <- rnd( r[0], r[1]);
 	}
 
 	function parseopts( tb, args, numeric=null){
@@ -1537,7 +1610,7 @@ class MapGenerator
 			if( v["notarg"]) continue;	//	コマンドライン引数にしないプロパティ
 			switch( typeof( v)){
 			case SS_TABLE: parseopts( v, args, numeric); continue;	//	再帰的にparseoptsする。
-			case SS_ARRAY: f = numeric ? getargrange( i, v) : getrange( v); break;
+			case SS_ARRAY: f = numeric ? getargrange( i, v) : getrange( i); break;
 			case SS_BOOL: continue;		//	dame
 			default: f = v; break;
 			}
@@ -1554,24 +1627,24 @@ class MapGenerator
 			local hi=Math.ifloor(Math.max(range[0],range[1]));
 			return rnd( lo, hi+1);
 		}
-		return getrange( range);
+		return getrange( pid);
 	}
 
 	//	オブジェクトを配置する。配置済みのオブジェクトはobjbmpに記録する。
 	//	
-	function generateObjects( bio){
+	function generateObjects( bio, bio0){
 		local objs = [];
 		// Settlement PNGs already contain vegetation and furniture footprints.
 		if( gendef["settlement"]) return objs;
 		local w = bio.width, h = bio.height;
-		local d0 = [getrange( gendata["rockdens"]), getrange( gendata["treedens"]), getrange( gendata["flowerdens"]), getrange( gendata["treedens"])];
+		local d0 = [getrange( "rockdens"), getrange( "treedens"), getrange( "flowerdens"), getrange( "treedens")];
 		local objbmp = Bitmap( bio.width, bio.height);	//	配置済みのオブジェクトを記録する。1x1のオブジェクトは1x1、2x2のオブジェクトは2x2の領域に配置済みフラグを立てる。
 		local bioobjdensmap = gendef.bioobjdensmap;
 		local objreprace = gendef["objreprace"] || @(){};
 		//////// タイプ毎処理
 		local fn = gendef["objgenfunc"];
 		if( fn){
-			objs ... fn( bio, objbmp);
+			objs ... fn( bio, objbmp, bio0);
 		}
 		//////// 共通処理
 		//	
@@ -2062,7 +2135,7 @@ class MapGenerator
 				break;
 			}
 			default:	//	通常はフリーブロックを置くだけ。vidはfbtype|(fbparam<<12)
-				local y = dst[v.x + v.z*w]>>>16, size = v["size"]||0;
+				local y = v["y"] ?? (dst[v.x + v.z*w]>>>16), size = v["size"]||0;
 				if( size >= 2){	//	大きなオブジェクトの場合は周囲の地形に合わせて高さを調整する。
 					local r = size/2;
 					for( local l = 0;l < 4;l ++){
@@ -2075,7 +2148,9 @@ class MapGenerator
 				if( vid[0]=='M'){
 					local aw = objbw( vid);
 					if( !aw) continue;
-					local m = IMat( v.x, y+1, v.z).rotate( v["rot"]).translate( -aw.w/2, 0, -aw.d/2);
+					local ba = ::conf._resource.map_asset[vid];
+					local off = ba["plcoffs"];
+					local m = IMat( v.x, y+1+off[1], v.z).rotate( v["rot"]).translate( -aw.w/2, 0, -aw.d/2);
 					bw.drawWorld( aw, m);
 				}else
 				if( vid){

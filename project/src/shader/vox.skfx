@@ -57,7 +57,7 @@ vs vox
 		highp mat4 transmat = getTransformedVectorsPN( in_pos.xyz*VOX_SCALE, n);
 		gl_Position = pmat * transmat[0];
 		v_wvpp = gl_Position;
-		v_lp = in_pos.xyz - n*0.01;
+		v_lp = in_pos.xyz;
 		v_wvp = transmat[0].xyz;
 		v_n = transmat[1].xyz;
 	}
@@ -137,9 +137,10 @@ fs vox
 		}
 		$(COLORMAT) pix = colormat * pix;
 		G g;
-		vec3 wv = v_wvpp.xyz / v_wvpp.w;
-		vec3 vv = -normalize( v_wvp.xyz);
-		g.n = normalize( v_n + vv*dot(wv, wv)*0.12);
+		// vec3 wv = v_wvpp.xyz / v_wvpp.w;
+		// vec3 vv = -normalize( v_wvp.xyz);
+		// g.n = normalize( v_n + vv*dot(wv, wv)*0.12);
+		g.n = v_n;
 		$(COLORTEX1){
 			mediump mat4 m = mat4(
 				texelFetch( mtltex, ivec2( 0, mi), 0), 
@@ -148,7 +149,7 @@ fs vox
 				texelFetch( mtltex, ivec2( 3, mi), 0)
 			);
 			$(COLORTEX2){
-				mediump vec3 uvr = mod( v_lp.zxy*2.0, m[3].xyz*255.0) + m[2].xyz*255.0;
+				mediump vec3 uvr = mod( (v_lp-v_n*0.01).zxy*2.0, m[3].xyz*255.0) + m[2].xyz*255.0;
 				mediump float pc = texture( ptntex, uvr*ptntexscale).x*8.0+0.21569;
 				mediump float sc = mix( 1.0, pc, m[2].w*2.0);	// m[2].w*	color scale. m[3].w => contrast
 				pix.xyz = clamp( pix.xyz*sc, 0.0, 1.0);

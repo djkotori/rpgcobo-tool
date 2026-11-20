@@ -372,7 +372,11 @@ class MapTool
 						maxd = d;
 					}
 				}
-				if( maxd >= 0) hb.setFace( 1+maxd);
+				if( maxd >= 0){
+					local fb = FreeBlock.create({fbtype:hb.fbtype, fbparam:hb.fbparam});
+					hb.setFace( 1+maxd);
+					hb.by += fb.br.h/2;
+				}
 			}else
 			if( hb.f!=5){	//	壁に対してはWALLと同様だが、
 			}

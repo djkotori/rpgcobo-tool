@@ -52,7 +52,7 @@ class ResourceSideView extends SKView
 					type = type,
 					lbl = "$T.side_res_"..type,
 					icon = GameResourceResource.resiconmap[type],
-					tips = "AODWJOFJAWOWJAOFJAWOWJFOWAJOFJOWJA"
+					tips = "$T.side_res_tips_"..type,
 					res = ::getResource( "/.x/" ..type);
 				};
 			}

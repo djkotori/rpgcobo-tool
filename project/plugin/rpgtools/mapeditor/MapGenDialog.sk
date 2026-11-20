@@ -43,6 +43,7 @@ class MapGenDialog extends UndoableDialog
 	bwcol = null;		//	b3Body<BlockColiderInterface>
 	selpic = null;		//	SKView : 選択されたpic
 	previewRef = null;
+	envmenu = null;
 
 	resbw = null;		//	結果のBlockWorld
 
@@ -77,9 +78,17 @@ class MapGenDialog extends UndoableDialog
 		piclist = view.findChild( "piclist");
 		piclist.addEventListener( ACTION_EVENT, picevent);
 		piclist.setRowCount( 0);
+		
+		local envlist = ::RenderSettings.data.map( @( v){
+			if( v.renderpass != 2) return undefined;
+			return { lbl=v.name, id=v.id, icon="\ue430", data=v }	//	deferredのみ
+		});
 
+		envmenu = MenuBehavior( view.findChild( "envmenu"), envlist);
+		envmenu.selectItem( @( v) v["id"]=="pbr_mapedit");
+		
 		canvas = CanvasBehavior( view.findChild( "canvas"), null);
-		canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_fw"));
+		canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_mapedit"));
 
 		setType( ::MapGenerators[0].val);
 		tabs.selectTab( 0);
@@ -226,6 +235,10 @@ class MapGenDialog extends UndoableDialog
 			break;
 		case "listmenu":
 			showPropListMenu( e);
+			break;
+		case "envmenu":
+			local item = envmenu.selitem;
+			if( item) canvas.view.renderer.setEnvironment( ::RenderSettings.getEnvironment( item["id"]));
 			break;
 		}
 		super.actionevent( e);

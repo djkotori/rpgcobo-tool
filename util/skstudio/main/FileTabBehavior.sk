@@ -216,6 +216,7 @@ class FileTabBehavior.FileTab
 			local w = Math.min( w1, vw0 + (lbl.textbox.bnd.w-lw0));
 			v.stretchSize( w, lbl.bnd.h);
 		}
+		v.tips = fget( r, "tips") || path;
 	}
 
 	function setSelected( b){

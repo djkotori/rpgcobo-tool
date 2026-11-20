@@ -15,6 +15,8 @@ local battletypelist = [
 	{ val=0, lbl="$T.setting_battletype0", },
 	{ val=1, lbl="$T.setting_battletype1", disable=true },	//	未実装・・・
 	{ val=2, lbl="$T.setting_battletype2", },
+	{ val=3, lbl="$T.setting_battletype3", },
+	{ val=4, lbl="$T.setting_battletype4", },
 ];
 
 //////// basic - 基本システム
@@ -23,6 +25,7 @@ settingprops .. {
 	part = "basic",
 	pid = "battletype",
 	lbl = "$T.setting_battletype"
+	tipskey = "settingprop.battletype"
 	type = LIST,
 	list = battletypelist,
 	defval = 0,
@@ -32,6 +35,7 @@ settingprops .. {
 	part = "basic",
 	pid = "maxmembers",
 	lbl = "$T.setting_maxmembers",
+	tipskey = "settingprop.maxmembers"
 	type = SCALAR
 	range = (1,6)
 	defval = 4,
@@ -42,6 +46,7 @@ settingprops .. {
 	part = "basic",
 	pid = "maxlv",
 	lbl = "$T.MAXLV",
+	tipskey = "settingprop.maxlv"
 	type = SCALAR
 	range = (1,999)
 	defval = 99,
@@ -52,6 +57,7 @@ settingprops .. {
 	proptype = "status",
 	pid = "walkspd",
 	lbl = "$T.setting_walkspd",
+	tipskey = "settingprop.walkspd"
 	type = SCALAR,
 	ui = "bar",
 	range = (0.0,10.0),
@@ -64,6 +70,7 @@ settingprops .. {
 	proptype = "status",
 	pid = "jumph",
 	lbl = "$T.setting_jumph",
+	tipskey = "settingprop.jumph"
 	type = SCALAR,
 	ui = "bar",
 	range = (0.0,10.0),
@@ -75,6 +82,7 @@ settingprops .. {
 	part = "basic",
 	pid = "jxptype",
 	lbl = "$T.setting_jxptype",
+	tipskey = "settingprop.jxptype"
 	type = LIST,
 	list = [
 		{ lbl="$T.setting_jxptype_auto", val=0, }

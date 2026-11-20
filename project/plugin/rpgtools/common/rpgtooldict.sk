@@ -732,7 +732,7 @@
 	"side_dbview_tips_game"				: {"ja":"ゲーム全体のルールや初期設定を編集します", "en":"Edit the rules and initial settings of the whole game"}
 	"side_dbview_tips_player"			: {"ja":"ゲームで操作するキャラの能力や見た目を編集します", "en":"Edit the ability and appearance of the characters to be operated in the game"}
 	"side_dbview_tips_chara"			: {"ja":"マップに配置するキャラの主に見た目を編集します", "en":"Edit the appearance mainly of the character placed on the map"}
-	"side_dbview_tips_job"				: {"ja":"プレイヤーに設定する職業を編集します。\n能力や技などを付与できます", "en":"Edit the occupation to set for the player.\nYou can grant abilities and skills"}
+	"side_dbview_tips_job"				: {"ja":"プレイヤーに設定する職業を編集します。能力や技などを付与できます", "en":"Edit the occupation to set for the player.\nYou can grant abilities and skills"}
 	"side_dbview_tips_skill"			: {"ja":"プレイヤーやエネミーの使う魔法や技を編集します", "en":"Edit the magic and techniques used by players and Enemy"}
 	"side_dbview_tips_enemy"			: {"ja":"敵キャラの能力や見た目を編集します", "en":"Edit the ability and appearance of the enemy character"}
 	"side_dbview_tips_cond"				: {"ja":"眠りや混乱のような状態異常を編集します", "en":"Edit abnormalities such as sleep and confusion"}
@@ -740,7 +740,7 @@
 	"side_dbview_tips_weapon"			: {"ja":"プレイヤーが装備する武器の能力や見た目を編集します", "en":"Edit the abilities and appearance of the weapons equipped by the player"}
 	"side_dbview_tips_armor"			: {"ja":"プレイヤーが装備する防具の能力を編集します", "en":"Edit the armor abilities equipped by the player"}
 	"side_dbview_tips_quest"			: {"ja":"ゲームで受けるクエストを編集します", "en":"Edit the quests to be received in the game"}
-	"side_dbview_tips_macro"			: {"ja":"（上級者用）ゲームのどこからでも呼び出せたり\n常時実行できるマクロイベントを編集します", "en":"(ADVANCED) Edit macro events that can be called from anywhere in the game"}
+	"side_dbview_tips_macro"			: {"ja":"（上級者用）ゲームのどこからでも呼び出せたり常時実行できるマクロイベントを編集します", "en":"(ADVANCED) Edit macro events that can be called from anywhere in the game"}
 	
 	"side_dbview_game_setting"			: {"ja":"システム設定", "en":"System Setting"}
 	"side_dbview_game_type"				: {"ja":"各種タイプ", "en":"Various types"}
@@ -864,6 +864,8 @@
 	"setting_battletype0"				: {"ja":"ターン制", "en":"Turn-based"}
 	"setting_battletype1"				: {"ja":"行動順制", "en":"Action order-based"}
 	"setting_battletype2"				: {"ja":"リアルタイム", "en":"Real time"}
+	"setting_battletype3"				: {"ja":"フロントビュー(ターン)", "en":"Front View(Turn)"}
+	"setting_battletype4"				: {"ja":"フロントビュー(行動順)", "en":"Front View(Order)"}
 	"setting_maxmembers"				: {"ja":"最大パーティ人数", "en":"Maximum Members"}
 	"setting_jxptype"					: {"ja":"ジョブポイント加算", "en":"Job Point addition"}
 	"setting_hotelheal"					: {"ja":"宿屋の回復", "en":"Healing of the inn"}
@@ -1070,7 +1072,19 @@
 	"side_res_uimap"					: {"ja":"UI", "en":"UI"}
 	"side_res_chara_etc"				: {"ja":"キャラ一般", "en":"Chara Etc"}
 
-	
+	"side_res_tips_chara_vox"			: {"ja":"ステージ中に登場する3Dキャラモデルを編集します", "en":"Edit the 3D character model that appears during the stage."}
+	"side_res_tips_equip_vox"			: {"ja":"主にバトル中に表示されるキャラの装備モデルを編集します", "en":"Edit the character's equipment model that mainly appears during battle."}
+	"side_res_tips_poly_mdl"			: {"ja":"外部の3Dツールで作成した3Dモデルを編集します", "en":"Edit the 3D model created with external 3D tools."}
+	"side_res_tips_event_pic"			: {"ja":"イベントコマンドで表示する2D画像を編集します", "en":"Edit the 2D images displayed by event commands."}
+	"side_res_tips_enemy_pic"			: {"ja":"エネミー用の2D画像を編集します", "en":"Edit the 2D images for enemies."}
+	"side_res_tips_efx"					: {"ja":"バトルやマップ上の演出として表示されるエフェクトを編集します", "en":"Edit the effects displayed as battle or map performances."}
+	"side_res_tips_map_vox"				: {"ja":"マップの素材となるブロックやオブジェクトを編集します", "en":"Edit the blocks and objects that make up the map."}
+	"side_res_tips_map_asset"			: {"ja":"マップ上に配置する建物や地形のパーツを編集します", "en":"Edit the building and terrain parts placed on the map."}
+	"side_res_tips_bgm"					: {"ja":"BGMを編集します", "en":"Edit the BGM."}
+	"side_res_tips_snd"					: {"ja":"効果音を編集します", "en":"Edit the sound effects."}
+	"side_res_tips_voice"				: {"ja":"キャラのセリフや行動に対応するボイスを編集します", "en":"Edit the voice corresponding to the character's lines and actions."}
+	"side_res_tips_icon"				: {"ja":"アイテムや属性などのアイコンを編集します", "en":"Edit the icons for items and attributes, etc."}
+	"side_res_tips_uimap"				: {"ja":"ゲームで使用されるUI(ゲーム画面)を編集します", "en":"Edit the UI(game screen) used in the game."}
 
 	"lbl_voxel"							: {"ja":"ボクセル", "en":"Voxel"}
 	"lbl_editvox"						: {"ja":"ボクセルを編集", "en":"Edit Voxel"}
