@@ -174,7 +174,7 @@ class MapTool
 			local m = e.getMouseState();
 			if( m.entered != canvas.view) return null;
 		}
-		canvas.bwcol.ref.setFlagMask( blkflag);
+		canvas.bwcol.ref.setFlagMask( blkflag | BLK_TERRAIN_BOXCOL);
 		local qw = canvas.getRay( e.lx, e.ly), q = qw[0], w = qw[1]-qw[0];
 		local hb = _raytest( q, w, hitgnd);
 		return hb;
@@ -783,7 +783,6 @@ class MapTool
 	}
 
 	function rayTestGZ( e){
-		// canvas.bwcol.ref.setFlagMask( blkflag);
 		local q = canvas.getRay( e.lx, e.ly);
 		local b3res = scn.b3world.rayTest( 1, q[0], q[1], -1, G_GIZMO);	//	closest
 		foreach( br in b3res){

@@ -582,6 +582,41 @@ stageprops .. {
 	defval = true,
 };
 
+stageprops .. {
+	mapedit=true, pid = "ctrmode",
+	lbl = "$T.setting_ctrmode",
+	type = LIST,
+	list = [
+		{ lbl="$T.ctrmode0", icon="\uf230", val=0 },
+		{ lbl="$T.ctrmode1", icon="\ue86c", val=1 },
+		{ lbl="$T.ctrmode2", icon="\uf19f", val=2 },
+		// { lbl="$T.ctrmode3", val=3 },
+	]
+	defval = 1,
+};
+
+stageprops .. {
+	mapedit=true, pid="canenter_water", lbl="$T.setting_canenter_water", type=BOOL//1, cnt="cnt5.ui",
+	defval = false,
+	
+	func = @( stage, val){
+		local bci = stage.bwcol.ref, t = stage.stat.statmap;
+		local b = 1 | (t["canenter_water"]?0:2) | (t["canenter_hole"]?0:4);
+		bci.setFinMode( b);		//	barrior | water | hole
+	}
+}
+
+stageprops .. {
+	mapedit=true, pid="canenter_hole", lbl="$T.setting_canenter_hole", type=BOOL//1, cnt="cnt5.ui",
+	defval = false,
+	
+	func = @( stage, val){
+		local bci = stage.bwcol.ref, t = stage.stat.statmap;
+		local b = 1 | (t["canenter_water"]?0:2) | (t["canenter_hole"]?0:4);
+		bci.setFinMode( b);		//	barrior | water | hole
+	}
+}
+
 local destprop = { pid="dest", lbl = "$T.cmd_mapmove_dest", type=PORTAL, cnt="cnt6v.ui" };
 local exitmappropdef = {
 	name = "$T.setting_exitmap"
@@ -619,28 +654,6 @@ stageprops .. {
 	type = BOOL,
 	defval = true,
 };
-
-stageprops .. {
-	mapedit=true, pid="canenter_water", lbl="$T.setting_canenter_water", type=BOOL//1, cnt="cnt5.ui",
-	defval = false,
-	
-	func = @( stage, val){
-		local bci = stage.bwcol.ref, t = stage.stat.statmap;
-		local b = 1 | (t["canenter_water"]?0:2) | (t["canenter_hole"]?0:4);
-		bci.setFinMode( b);		//	barrior | water | hole
-	}
-}
-
-stageprops .. {
-	mapedit=true, pid="canenter_hole", lbl="$T.setting_canenter_hole", type=BOOL//1, cnt="cnt5.ui",
-	defval = false,
-	
-	func = @( stage, val){
-		local bci = stage.bwcol.ref, t = stage.stat.statmap;
-		local b = 1 | (t["canenter_water"]?0:2) | (t["canenter_hole"]?0:4);
-		bci.setFinMode( b);		//	barrior | water | hole
-	}
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 //	コンフィグ設定

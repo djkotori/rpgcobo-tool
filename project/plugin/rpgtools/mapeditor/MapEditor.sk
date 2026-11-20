@@ -242,16 +242,23 @@ class MapEditor extends EditorViewBase
 				local self = this, data = self.data;
 				local bw0 = bw;
 				local oldmapshot = mapshottex, newmapshot = canvas.captureMapShot( bw1);
+				local prms = deepclone( bw1.ref), oldprms;
+				if( prms){
+					oldprms = {};
+					foreach( k, v in prms){ oldprms[k] <- data[k]; }
+				}
 				local redo = [@(){
 					data.size.set( bw1.w, bw1.h, bw1.d);
 					self.setBlockWorld( bw1);
 					self.mapshottex = newmapshot;
 					self.mapshottex.ref = true;
+					foreach( k, v in prms){ data[k] <- v; }
 				}];
 				local undo = [@(){
 					data.size.set( bw0.w, bw0.h, bw0.d);
 					self.setBlockWorld( bw0);
 					self.mapshottex = oldmapshot;
+					foreach( k, v in oldprms){ data[k] <- v; }
 				}];
 				submitOp( redo, undo, null);
 				refresh();

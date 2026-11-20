@@ -1,6 +1,6 @@
 {
 	"MapEditor::head-colchk":{"en":"Show Collisions","ja":"コリジョンの表示"},
-	"MapEditor::head-cullchk":{"en":"Check for culling face of polygons","ja":"ポリゴンの陰面消去の確認"},
+	"MapEditor::head-dofchk":{"en":"Show camera bokeh","ja":"カメラのボケを表示"},
 	"MapEditor::head-envmenu":{"en":"Render setting of preview","ja":"プレビューのレンダー設定"},
 	"MapEditor::head-gridchk":{"en":"Show Grid","ja":"グリッドの表示"},
 	"MapEditor::head-infochk":{

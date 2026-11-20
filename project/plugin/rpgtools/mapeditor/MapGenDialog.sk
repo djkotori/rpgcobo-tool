@@ -29,6 +29,7 @@ class MapGenDialog extends UndoableDialog
 
 	//	LEFT
 	typemenu = null;	//	MenuBehavior
+	nummenu = null;		//	MenuBehavior
 	tabs = null;			//	TabBehavior
 	proplist = null;	//	PropertyListBehavior
 	blocklist = null;	//	
@@ -63,6 +64,7 @@ class MapGenDialog extends UndoableDialog
 		editor = e;
 
 		typemenu = MenuBehavior( view.findChild( "typemenu"), ::MapGenerators);
+		nummenu = MenuBehavior( view.findChild( "nummenu"), [1,2,3,4,5,6,7,8,9,10].map( @( v) +{ val=v, lbl=""..v, icon="\ue5cd"}));
 		tabs = TabsBehavior( view.findChild( "tabs"),["$T.lbl_properties","$T.lbl_blocks"]);
 		
 		proplist = PropertyListBehavior( view.findChild( "proplist"), null);
@@ -86,6 +88,8 @@ class MapGenDialog extends UndoableDialog
 
 		view.findChild( "chk_rndseed").setSelected( true);
 		setBusy( false);
+
+		nummenu.selectItem( @( v) v.val==10);
 	}
 
 	function updateFunc( dt){
@@ -206,7 +210,10 @@ class MapGenDialog extends UndoableDialog
 			break;
 		case "btn_apply":
 			if( bw3d){
+				local session = selpic.parent.ref;
+				local gendef = session.mapgen.gendef;
 				resbw = bw3d.bw;
+				resbw.ref = fget( gendef, "stageparams");
 				close();
 			}
 			break;
@@ -319,7 +326,7 @@ class MapGenDialog extends UndoableDialog
 		case "copy":
 		{
 			local t = bi.def.type, v = bi.item;
-			putClipboard( cbtype, t=="block" ? { val=v} : { val=v, fbtype=v&0xfff, fbparam=(v>>>12)});
+			putClipboard( cbtype, t=="blk" ? { type=t, val=v} : { type=t, val=v, fbtype=v&0xfff, fbparam=(v>>>12)});
 			break;
 		}
 		case "paste":
@@ -401,8 +408,8 @@ class MapGenDialog extends UndoableDialog
 		{
 			if( settlement) return;
 			local img = skGetClipboardData( ClipboardType.CLIPBOARD_IMAGE);
-			local sc = session.mapgen.gendef["halfimg"] ? 2 : 1;
-			if( !img || img.width < 32 || img.width > 1024/sc || img.height < 32 || img.height > 1024/sc) return;
+			local sc = session.mapgen.gendef["imgscale"] || 1;
+			if( !img || img.width < 64/sc || img.width > 1024/sc || img.height < 64/sc || img.height > 1024/sc) return;
 			local oldimg = session.png;
 			local l = piclist.rows.indexOf( e.src.parent), self = this;
 			local setpng( img){
@@ -497,7 +504,7 @@ class MapGenDialog extends UndoableDialog
 	//	10個のマップ生成を行う。生成完了まで次の「生成」ボタンは押せない。
 	//	
 	function runSerialMapgen( seed){
-		local num = 10;
+		local num = nummenu.selitem.val;
 		local gendef = ::MapGenerators.find( @( v) v.val==type);
 		local constructionParameters = null;
 		if( gendef["settlement"]){

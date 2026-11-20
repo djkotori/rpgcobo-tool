@@ -25,8 +25,9 @@ class MapCanvas extends CanvasBehavior
 	
 	//	sk3d
 	bw3d = null;		//	SK3DBlockWorld : 
+	colitf = null;		//	BlockColiderInterface : 
 	bwcol = null;		//	b3Body<BlockColiderInterface> : ブロック選択用。flagmaskを状況に応じて置き換えていく
-	skcol = null;		//	SK3DCollisionPreview : コリジョン確認用SK3DObject
+	skcol = null;		//	SK3DCollisionPreview : コリジョン確認用SK3DObject。colitfとは別のBlockColiderInterfaceインスタンス
 	
 	evgizmomap = null;		//	イベントのギズモ
 	mkgizmomap = null;		//	マーカーのギズモ
@@ -40,6 +41,7 @@ class MapCanvas extends CanvasBehavior
 	gridchk = null;
 	colchk = null;
 	skychk = null;
+	dofchk = null;
 
 	infochk = null;
 	infop = null;
@@ -67,6 +69,7 @@ class MapCanvas extends CanvasBehavior
 		infop = InfoPanel( e.findChild( "infop"), this);
 		colchk = head.findChild( "colchk");
 		skychk = head.findChild( "skychk");
+		dofchk = head.findChild( "dofchk");
 		view.addEventListener( DRAGSOURCE_EVENT, dndevent);
 		view.addEventListener( DROPTARGET_EVENT, dndevent);
 		view.dragsource = this;
@@ -126,17 +129,14 @@ class MapCanvas extends CanvasBehavior
 			envmenu?.selectItem( v);
 		}
 		view.renderer.setEnvironment( ::RenderSettings.getEnvironment( rsetid));
+		if( !dofchk.isSelected()) view.renderer.setDOF( 0.0, 0.0);
 	}
 
-	// function selectEnvironment( d){
-	// 	if( envmenu.selitem["islink"]){
-	// 		view.renderer.setWeather( editor.data["weather"]);
-	// 	}else{
-	// 		view.renderer.setWeather( null);
-	// 	}
-	// 	super.selectEnvironment( d);
-	// }
-	
+	function selectEnvironment( d){
+		super.selectEnvironment( d);
+		if( !dofchk.isSelected()) view.renderer.setDOF( 0.0, 0.0);
+	}
+
 	function setBackground( bg){
 		skyboxbgpass = RPGStage.createBackground( bg);
 		if( skychk.isSelected()){
@@ -148,9 +148,7 @@ class MapCanvas extends CanvasBehavior
 	function refreshLinkedEnv( rsetid){
 		if( envmenu.selitem["islink"]){
 			view.renderer.setEnvironment( ::RenderSettings.getEnvironment( rsetid));
-			// view.renderer.setWeather( editor.data["weather"]);
-		}else{
-			// view.renderer.setWeather( null);
+			if( !dofchk.isSelected()) view.renderer.setDOF( 0.0, 0.0);
 		}
 	}
 
@@ -173,18 +171,20 @@ class MapCanvas extends CanvasBehavior
 		bw3d = SK3DBlockWorld( bw);
 		scn.addObject( bw3d);
 		_updatetec( gridchk.isSelected());
-		
+
+		colitf = BlockColiderInterface( bw);
+		colitf.setFlagMask( BLK_SOLID|BLK_PLANT|BLK_BARRIOR|BLK_SOLIDFB|BLK_TERRAIN_BOXCOL);
+		local bcshp = b3Shape.createCustomConcave( colitf);
+		bwcol = b3Body( 0, bcshp, bw3d.mat, G_STAGE, G_VIEW|G_CHARA|G_OBJECT);
+		bwcol.ref = colitf;
+		b3world.addBody( bwcol);
+
 		local bci = BlockColiderInterface( bw);
 		bci.setFlagMask( BLK_SOLID|BLK_PLANT|BLK_BARRIOR|BLK_SOLIDFB);
-		local bcshp = b3Shape.createCustomConcave( bci);
-		bwcol = b3Body( 0, bcshp, bw3d.mat, G_STAGE, G_VIEW|G_CHARA|G_OBJECT);
-		bwcol.ref = bci;
-		b3world.addBody( bwcol);
-		
-		skcol = SK3DCollisionPreview( b3world);
+		skcol = BlockCollisionPreview( bci);
 		scn.addObject( skcol);
 		skcol.visible = colchk.isSelected();
-		// bw3d.visible = false;
+		
 		placeEventMarkerGizmos();
 	}
 
@@ -422,6 +422,14 @@ class MapCanvas extends CanvasBehavior
 				view.renderer.setWeather( null);
 			}
 			break;
+		case "dofchk":
+			if( dofchk.isSelected()){
+				local ps = view.renderer.mainpass.ps;
+				view.renderer.setDOF( ps.postfx["dofrange"], ps.postfx["dofblur"]);
+			}else{
+				view.renderer.setDOF( 0.0, 0.0);
+			}
+			break;
 		default:
 			break;
 		}
@@ -621,9 +629,29 @@ class MapCanvas.InfoPanel
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+//
+//	コリジョン表示用。
+//	
 
+class BlockCollisionPreview extends SK3DObject
+{
+	scollist = null;		//	[(partidmask,col),...]
+	colpreview = null;		//	SK3DCustomCollisionPreview
 
-
+	constructor( cif){
+		super( null);
+		colpreview = SK3DCustomCollisionPreview( cif);
+		colpreview.parent = this;
+		bnd.set( 0, 0, 0, 2000, 400, 2000);
+		visiblemask = SK_VISIBLE_DECAL;
+		scollist = #[(128, 0xff0033ff),(16, 0xffff9966),(4,0xffff33ff),(0, 0xffffffff),];
+	}
+	
+	function render( cam, visiblemask){
+		colpreview.render( cam, visiblemask);
+	}
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////////////

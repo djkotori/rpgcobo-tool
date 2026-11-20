@@ -104,9 +104,13 @@ module.hookAction( "editor_postload", @(){
 		if( !k2) return;
 		local k = sprintf( "%S::%S", k1, k2);
 		local path = ::workspace["embedjson_path"] || ::TipsRunner.tipsjsonlist[0], data = {ja="",en=""}, hasdata = false;
-		local tipslist = ::TipsRunner.tipsjsonlist.map( @( v) +{
-			lbl=v, tb=::loadconf( v), val=v,
-		});
+		// local tipslist = ::TipsRunner.tipsjsonlist.map( @( v) +{
+		// 	lbl=v, tb=::loadconf( v), val=v,	//	loadconfでsuspendcheck入る。。
+		// });
+		local tipslist = [];
+		foreach( i, v in ::TipsRunner.tipsjsonlist){
+			tipslist .. { lbl=v, tb=::loadconf( v), val=v };
+		}
 		foreach( i, v in tipslist){
 			if( v.tb[k]){ data = v.tb[k]; path = v.val; hasdata = true; break; }
 		}

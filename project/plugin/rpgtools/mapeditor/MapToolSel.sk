@@ -44,10 +44,11 @@ local camworks = [
 	{ lbl="World Map", val={"fovy":28,"hpb":[0,45,0],"viewport":17.0,"yoffs":0.5} },
 	{ lbl="Indoor Map", val={"fovy":28,"hpb":[45,36,0],"viewport":14.0,"yoffs":0.2} },
 	{ lbl="Castle Map", val={"fovy":28,"hpb":[45,36,0],"viewport":18.0,"yoffs":0.2} },
+	{ lbl="Forest Map", val={"fovy":28,"hpb":[45,42,0],"viewport":15.0,"yoffs":0.4} },
 	{ lbl="Maze Map", val={"fovy":30,"hpb":[0,41,0],"viewport":15.0,"yoffs":0.5} },
 ];
 
-local presetcamlist( e){
+function presetcamlist(){
 	return camworks;
 	// return camworks.map( @( v, i) +{
 	// 	val = v, lbl=v.name,

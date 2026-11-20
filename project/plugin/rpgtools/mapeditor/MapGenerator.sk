@@ -25,6 +25,8 @@ enum MapGenBiomeID
 	RIVER = 7,			//	通行不能
 	LAKE = 8,			//	通行不能
 	SEA = 9,			//	通行不能
+	COAST = 10,			//	砂浜
+	SNOW = 11,			//	雪原
 	//	RENAMED
 	FLOOR1 = 0,			//	標準的な床
 	FLOOR2 = 1,			//	ひび割れた床や、模様のある床などのバリエーション
@@ -34,6 +36,7 @@ enum MapGenBiomeID
 	LAKE2 = 8,			//	
 	//	ブロック定義バリエーション
 	MOUNTAIN_VAR = 13,		//	山のバリエーション
+	SNOWROAD = 14,		//	雪道
 	// Settlement IDs share the numeric space with world-only variations.
 	TOWN_FLOOR = 10,
 	TOWN_WOOD_FLOOR = 11,
@@ -60,7 +63,13 @@ enum MapGenObjectID
     TREES_S = 29,		//	2x2
     TREES_M = 30,		//	3x3
     TREES_L = 31,		//	3x3
-	//
+	//	変化
+	CACTUS = 32,		//	サボテン TREE_Sから変化
+	PALM = 33,			//	ヤシの木 TREE_Mから変化
+	SNOWTREES_S = 34,		//	2x2
+    SNOWTREES_M = 35,		//	3x3
+    SNOWTREES_L = 36,		//	3x3
+	//	ダンジョン用
 	PORTAL_DOOR = 32,		//	ドアのあるポータル
 	PORTAL_OPEN = 33,		//	開いたポータル
 };
@@ -123,6 +132,16 @@ local _c( r, g, b){ return r | (g<<8) | (b<<16); }
 local _macrowgt( arch, cont, basin){ return { macroArchipelagoWeight=arch, macroContinentWeight=cont, macroBasinWeight=basin}; }
 local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWeight=ring, layoutBranchWeight=branch}; }	
 
+local pens = [
+	Bitmap( 1, 1, 1),	//	0
+	Bitmap( 1, 1, 1),	//	1x1
+	Bitmap( 2, 2, 1),	//	2x2
+	Bitmap( 3, 3, 1),	//	3x3
+	Bitmap( 4, 4, 1),	//	4x4
+	Bitmap( 5, 5, 1),	//	5x5
+	Bitmap( 6, 6, 1),	//	6x6
+];
+
 //	マップ生成定義リスト。
 //	mapimggen.exe に渡すパラメータや、mapimggen.exeの出力pngからBlockWorldを作るためのパラメータを定義する。
 //	
@@ -131,11 +150,16 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 	//	world タイプ。平面なフィールドマップを生成する。画像は1/2サイズで生成される。
 	//	スケールはリアル縮尺からは小さめ。一つの大きな世界を一つのマップに収めるような生成。
 	{
-		lbl="WorldMap", val="world", 
-		halfimg = true,
+		lbl={"ja":"ワールドマップ", "en":"WorldMap"},
+		val="world", 
+		imgscale = 2,
+		stageparams = {
+			camwork = presetcamlist()[1].val,
+			ctrmode = 2, // ジャンプ不能
+		},
 		//
 		props=[
-			{ ...sizeprop, defval=[256,256] },
+			{ ...sizeprop, defval=[320,320] },
 			seedprop,
 			//	画像生成パラメータ
 			{ pid="mode", lbl="$T.lbl_mode", type=LIST, list=[
@@ -149,6 +173,9 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			{ pid="ridgeStrength", lbl={"ja":"尾根の強さ", "en":"Ridge Strength"}, type=RANGE, cnt="cnt6.ui", range=(0.1,1.2), q=100, defval=[0.4,0.55] },
 			{ pid="riverDensity", lbl={"ja":"川の密度", "en":"River Dens"}, type=RANGE, cnt="cnt6.ui", range=(0.1,3.0), q=100, defval=[0.8,1.2] },
 			{ pid="roadDensity", lbl={"ja":"道路の密度", "en":"Road Density"}, type=RANGE, cnt="cnt6.ui", range=(0.1,3.0), q=100, defval=[0.8,1.2] },
+			{ pid="coastRate", lbl={"ja":"海岸率", "en":"Coast Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.4,0.8] },
+			{ pid="snowfieldRate", lbl={"ja":"雪原率", "en":"Snow Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.4,0.7] },
+			{ pid="mountainSnowfieldRate", lbl={"ja":"山間の雪原率", "en":"Mountain Snow Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.7,1.0] },
 			{ pid="basinCornerRound", lbl={"ja":"盆地の角の丸み", "en":"Basin CornerRound"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.25,0.5] },
 			{ pid="basinEdgeInner", lbl={"ja":"盆地の内側の端", "en":"Basin EdgeInner"}, type=RANGE, cnt="cnt6.ui", range=(0.55,0.90), q=100, defval=[0.6,0.8] },
 			{ pid="basinWallInner", lbl={"ja":"盆地の内側の壁", "en":"Basin WallInner"}, type=RANGE, cnt="cnt6.ui", range=(0.70,0.95), q=100, defval=[0.9,0.92] },
@@ -167,18 +194,23 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			flowerdensprop
 		],
 		blkmaplist = [
-			{ id=PLAIN, lbl="PLAIN", type="blk", blkpages=[2,3] },
-			{ id=DESERT, lbl="DESERT", type="blk", blkpages=[2,3] },
-			{ id=FOREST, lbl="FOREST", type="blk", blkpages=[2,3] },
-			{ id=MOUNTAIN, lbl="MOUNTAIN1", type="blk", blkpages=[2,3] },
-			{ id=MOUNTAIN_VAR, lbl="MOUNTAIN2", type="blk", blkpages=[2,3] },
-			{ id=EXMOUNTAIN, lbl="EXMOUNTAIN", type="blk", blkpages=[2,3] },
-			{ id=ROAD, lbl="ROAD", type="blk", blkpages=[2,3] },
-			{ id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,3] },
-			null,
+			{ id=PLAIN, lbl="PLAIN", type="blk", blkpages=[2,5,3] },
+			{ id=DESERT, lbl="DESERT", type="blk", blkpages=[2,5,3] },
+			{ id=FOREST, lbl="FOREST", type="blk", blkpages=[2,5,3] },
+			{ id=COAST, lbl="COAST", type="blk", blkpages=[2,5,3] },
+			{ id=SNOW, lbl="SNOW", type="blk", blkpages=[2,5,3] },
+			{ id=MOUNTAIN, lbl="MOUNTAIN1", type="blk", blkpages=[2,5,3] },
+			{ id=MOUNTAIN_VAR, lbl="MOUNTAIN2", type="blk", blkpages=[2,5,3] },
+			{ id=EXMOUNTAIN, lbl="EXMOUNTAIN", type="blk", blkpages=[2,5,3] },
+			{ id=ROAD, lbl="ROAD", type="blk", blkpages=[2,5,3] },
+			{ id=SNOWROAD, lbl="SNOWROAD", type="blk", blkpages=[2,5,3] },
+			{ id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,5,3] },
+			null, null,
+			//
 			{ id=RIVER, lbl="RIVER", type="blk", blkpages=[8] },
 			{ id=LAKE, lbl="LAKE", type="blk", blkpages=[8] },
 			{ id=SEA, lbl="SEA", type="blk", blkpages=[8] },
+			//
 			{ id=ROCK_S, lbl="ROCK_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=ROCK_M, lbl="ROCK_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=ROCK_L, lbl="ROCK_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
@@ -186,6 +218,10 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			{ id=TREES_S, lbl="TREES_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=TREES_M, lbl="TREES_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=TREES_L, lbl="TREES_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=CACTUS, lbl="CACTUS", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=PALM, lbl="PALM", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=SNOWTREES_M, lbl="SNOWTREES_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=SNOWTREES_L, lbl="SNOWTREES_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=FLOWERS_A, lbl="FLOWERS_A", type="blk", blkpages=[11] },
 			{ id=FLOWERS_B, lbl="FLOWERS_B", type="blk", blkpages=[11] },
 			{ id=FLOWERS_C, lbl="FLOWERS_C", type="blk", blkpages=[11] },
@@ -201,6 +237,8 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			_c( 47, 124, 234),		//	RIVER
 			_c( 70, 145, 240),		//	LAKE
 			_c( 28, 90, 202),		//	SEA
+			_c( 238, 220, 158),		//	COAST
+			_c( 225, 238, 244),		//	SNOW
 		],
 		biohmap = [
 			1.0,	//	PLAIN
@@ -213,12 +251,16 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			0.0,	//	RIVER
 			0.0,	//	LAKE
 			0.0,	//	SEA
+			1.0,	//	COAST
+			1.0,	//	SNOW
 		],
 		bioobjdensmap = {
 			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREES_S]: 0.2, [TREES_M]: 0.04, [TREES_L]: 0.0, [TREE_S]: 0.1,[FLOWERS_A]: 0.4, [FLOWERS_B]: 0.3, [FLOWERS_C]: 0.3},
-			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREES_S]: 0.04,[TREES_M]: 0.0,  [TREES_L]: 0.0, [TREE_S]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
+			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREES_S]: 0.03, [TREES_M]: 0.0,  [TREES_L]: 0.0, [TREE_S]: 0.2, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
 			[FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREES_S]: 0.34,[TREES_M]: 1.5,  [TREES_L]: 0.4, [TREE_S]: 0.65, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
 			[MOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.4, [ROCK_L]: 0.6, [TREES_S]: 0.04,[TREES_M]: 0.02, [TREES_L]: 0.0, [TREE_S]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
+			[COAST]:     { [ROCK_S]: 0.1, [ROCK_M]: 0.0, [ROCK_L]: 0.1, [TREES_S]: 0.0, [TREES_M]: 0.0,  [TREES_L]: 0.0, [TREE_S]: 0.2, [FLOWERS_A]: 0.0,[FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
+			[SNOW]:      { [ROCK_S]: 0.0, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREES_S]: 0.0, [TREES_M]: 0.2,  [TREES_L]: 0.2, [TREE_S]: 0.0, [FLOWERS_A]: 0.0,[FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
 		},
 		objsizemap = {
 			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREES_S]: 2, [TREES_M]: 3, [TREES_L]: 4, [TREE_S]: 3, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
@@ -226,13 +268,15 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 		//	ツールから置き換え可能。MapGenerator定義ごとにある
 		blkmap = {
 			[PLAIN]=2|(1<<5), [DESERT]=2|(7<<5), [FOREST]=2|(27<<5), 
-			[MOUNTAIN]=2|(24<<5), [EXMOUNTAIN]=2|(57<<5), [ROAD]=2|(6<<5), [BRIDGE]=3|(22<<5), 
+			[COAST]=5|(4<<5), [SNOW]=2|(33<<5), 
+			[MOUNTAIN]=2|(24<<5), [EXMOUNTAIN]=2|(57<<5), [ROAD]=2|(6<<5), [SNOWROAD]=197,	[BRIDGE]=3|(22<<5), 
 			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5), [SEA]=8|(0<<5), 
 			[MOUNTAIN_VAR]=2|(0<<5),
 			//
 			[ROCK_S]=20|(17<<12), [ROCK_M]=20|(18<<12), [ROCK_L]=20|(19<<12), 
-			[TREES_S]=20|(74<<12), [TREES_M]=20|(75<<12), [TREES_L]=20|(76<<12), [TREE_S]=20|(67<<12),
-			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5),
+			[TREES_S]=20|(82<<12), [TREES_M]=20|(83<<12), [TREES_L]=20|(84<<12), [TREE_S]=20|(75<<12),
+			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5), 
+			[CACTUS]=20|(80<<12), [PALM]=20|(76<<12), [SNOWTREES_M]=20|(85<<12), [SNOWTREES_L]=20|(86<<12),
 		},
 		//	zoom時の境界処理。川や道路の境界を滑らかにする。川はボールド処理を施す。
 		zoomfunc = @(){
@@ -242,16 +286,16 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 				local c = win[4];
 				b4.fill( c);
 				switch( c){
-				case RIVER: case ROAD: case BRIDGE:
+				case RIVER: case ROAD: case BRIDGE: case COAST:
 					break;
 				case SEA: case LAKE:
 					if( win.countUsed( c) < 9 && win.countUsed( RIVER) == 0){
 						local x = rnd( 0, 0xffff);
 						local f = win[1], l = win[3], b = win[7], r = win[5];
-						if( !((1<<f) & wbits) && (x&2)) b4[0] = b4[3] = f;
-						if( !((1<<l) & wbits) && (x&8)) b4[0] = b4[1] = l;
-						if( !((1<<b) & wbits) && (x&32)) b4[1] = b4[2] = b;
-						if( !((1<<r) & wbits) && (x&256)) b4[2] = b4[3] = r;
+						if( !((1<<f) & wbits) && (f==COAST || (x&2))) b4[0] = b4[3] = f;
+						if( !((1<<l) & wbits) && (l==COAST || (x&8))) b4[0] = b4[1] = l;
+						if( !((1<<b) & wbits) && (b==COAST || (x&32))) b4[1] = b4[2] = b;
+						if( !((1<<r) & wbits) && (r==COAST || (x&256))) b4[2] = b4[3] = r;
 					}
 					break;
 				case MOUNTAIN:
@@ -271,6 +315,13 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 						if( l==RIVER && (x&0x70)) b4[0] = b4[1] = RIVER;
 						if( b==RIVER && (x&0x700)) b4[1] = b4[2] = RIVER;
 						if( r==RIVER && (x&0x7000)) b4[2] = b4[3] = RIVER;
+					}else
+					if( win.countUsed( COAST)){
+						local x = rnd( 0, 0xffff);
+						if( f==COAST && (x&0x5)) b4[0] = b4[3] = COAST;
+						if( l==COAST && (x&0x50)) b4[0] = b4[1] = COAST;
+						if( b==COAST && (x&0x500)) b4[1] = b4[2] = COAST;
+						if( r==COAST && (x&0x5000)) b4[2] = b4[3] = COAST;
 					}
 					//	ROAD
 					if( win.countUsed( ROAD) >= 2){
@@ -327,17 +378,315 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 					if( nz <= 0.2){ blk = blkmap[MOUNTAIN]; }
 					else if( nz <= 0.4){ blk = blkmap[MOUNTAIN_VAR]; }
 					break;
+				case COAST:
+					local pnum = bio.countUsed( COAST, x-2, z-2, 5, 5) + bio.countUsed( SEA, x-2, z-2, 5, 5) + bio.countUsed( RIVER, x-2, z-2, 5, 5);
+					if( pnum > 22) --y;
+					// local pnum = bio.countUsed( SEA, x-2, z-2, 5, 5) + bio.countUsed( RIVER, x-2, z-2, 5, 5);
+					// if( pnum > 3) --y;
+					break;
+				case ROAD:
+					if( bio.countUsed( SNOW, x-1, z-1, 3, 3) > 0){
+						blk = blkmap[SNOWROAD];
+					}
+					break;
 				}
 				y = Math.iround( y);
 				return blk | (y<<16);
 			}
 		}
+
+		objreprace = @( v, bio, tx, tz){
+			switch( v.objid){
+			case TREE_S:
+				local b = bio[tx + tz * bio.width];
+				switch( b){
+				case DESERT: 
+					v.objid = CACTUS; v.rot &= ~1;
+					break;
+				case COAST:
+					v.objid = PALM;
+					break;
+				case PLAIN:	//	周りに海があるかチェック。ランダムサンプリング
+					local palmmask = (1<<SEA)|(1<<COAST);
+					for( local l = 0; l < 12;l ++){
+						local r = this.rnd( 8, 14), th = this.rnd( 0, Math.PI2);
+						local nx = tx + Math.iround( r * Math.cos(th));
+						local nz = tz + Math.iround( r * Math.sin(th));
+						local nb = bio[nx + nz * bio.width];
+						if( palmmask & (1<<nb)){
+							v.objid = PALM;
+							break;
+						}
+					}
+					break;
+				}
+				break;
+			case TREES_M: case TREES_L:
+				local b = bio[tx + tz * bio.width];
+				if( b == SNOW) v.objid = v.objid-TREES_M + SNOWTREES_M;
+				break;
+			}
+			return v;
+		},
 	},
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//	forest タイプ。自然の洞窟
+	{	
+		lbl={"ja":"森", "en":"Forest"}, 
+		val="forest", 
+		imgscale = 4,
+		stageparams = {
+			camwork = presetcamlist()[4].val,
+		},
+		//
+		props=[
+			{ ...sizeprop, defval=[200,200] },
+			seedprop,
+			{ pid="makenoenter", lbl={"ja":"森は進入禁止", "en":"No Enter Forest"}, type=BOOL, cnt="cnt6.ui", notarg=1, defval=true },
+			//	画像生成パラメータ
+			{ pid="complexity", lbl={"ja":"複雑度", "en":"Complexity"}, type=RANGE, cnt="cnt6.ui", range=(1.0,5.9), q=100, defval=[2.2,4.5] },
+			{ pid="entranceCount", lbl={"ja":"出入口の数", "en":"Entrance Count"}, type=RANGE, cnt="cnt6.ui", range=(1.0,4.9), q=100, defval=[1.2,3.5] },
+			{ pid="meanderRate", lbl={"ja":"蛇行率", "en":"Meander Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.4,0.6] },
+			{ pid="blankCellRate", lbl={"ja":"空白率", "en":"Blank Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.15,0.6] },
+			{ pid="deadEndRate", lbl={"ja":"行き止まり率", "en":"Dead End Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.25,0.65] },
+			{ pid="deadEndBranchRate", lbl={"ja":"行き止まり分岐率", "en":"Dead End Branch Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.1,0.3] },
+			{ pid="clearingRate", lbl={"ja":"広場率", "en":"Clearing Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.12,0.25] },
+			{ pid="lakeRate", lbl={"ja":"湖率", "en":"Lake Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.4,0.6] },
+			{ pid="riverRate", lbl={"ja":"川率", "en":"River Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.4,0.6] },
+			{ pid="cliffRate", lbl={"ja":"崖率", "en":"Cliff Rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,0.8), q=100, defval=[0.4,0.6] },
+			
+			//	ブロック生成パラメータ
+			baseyprop,
+			heightscaleprop, 
+			heightnoiseprop,
+			//	オブジェクト配置パラメータ
+			rockdensprop,
+			treedensprop,
+			flowerdensprop
+		],
+		blkmaplist = [
+			{ id=ROAD, lbl="ROAD", type="blk", blkpages=[2,5,3] },
+			{ id=COAST, lbl="INNERROAD", type="blk", blkpages=[2,5,3] },
+			{ id=PLAIN, lbl="PLAIN", type="blk", blkpages=[2,5,3] },
+			{ id=DESERT, lbl="DESERT", type="blk", blkpages=[2,5,3] },
+			{ id=FOREST, lbl="FOREST", type="blk", blkpages=[2,5,3] },
+			{ id=MOUNTAIN, lbl="DEEPFOREST", type="blk", blkpages=[2,5,3] },
+			{ id=EXMOUNTAIN, lbl="CLIFF", type="blk", blkpages=[2,5,3] },
+			{ id=BRIDGE, lbl="BRIDGE", type="blk", blkpages=[2,5,3] },
+			null,
+			{ id=ROCK_S, lbl="ROCK_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=ROCK_M, lbl="ROCK_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=ROCK_L, lbl="ROCK_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=TREE_S, lbl="TREE_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=TREE_M, lbl="TREE_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=TREE_L, lbl="TREE_L", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
+			{ id=FLOWERS_A, lbl="FLOWERS_A", type="blk", blkpages=[11] },
+			{ id=FLOWERS_B, lbl="FLOWERS_B", type="blk", blkpages=[11] },
+			{ id=FLOWERS_C, lbl="FLOWERS_C", type="blk", blkpages=[11] },
+		],
+		biocolor=[
+			_c( 151, 196, 91),		//	PLAIN
+			_c( 239, 239, 223),		//	OPEN
+			_c( 28, 83, 43),		//	FOREST
+			_c( 17, 54, 29),		//	DEEPFOREST
+			_c( 114, 78, 51),		//	CLIFF
+			_c( 154, 116, 76),		//	ROAD
+			_c( 176, 153, 114),		//	BRIDGE
+			_c( 66, 122, 190),		//	RIVER
+			_c( 80, 148, 196),		//	LAKE
+			_c( 0, 0, 0),			//	xxx
+			_c( 190, 156, 100),		//	INNERROAD
+		],
+		bioobjdensmap = {
+			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREE_S]: 0.05,[FLOWERS_A]: 0.2, [FLOWERS_B]: 0.2, [FLOWERS_C]: 0.2},
+			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREE_S]: 0.2, [FLOWERS_A]: 0.5, [FLOWERS_B]: 0.6, [FLOWERS_C]: 0.4},
+			// [FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.3, [TREE_M]: 0.5, [TREE_L]: 0.5, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
+			// [MOUNTAIN]:{ [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.4, [TREE_M]: 0.5, [TREE_L]: 0.4, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
+			// [EXMOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.4, [ROCK_L]: 0.6, [TREE_S]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
+			[ROAD]:     { [ROCK_S]: 0.15, [ROCK_M]: 0.1, [ROCK_L]: 0.0, [TREE_S]: 0.0,[FLOWERS_A]: 0.12, [FLOWERS_B]: 0.12, [FLOWERS_C]: 0.12},
+		},
+		objsizemap = {
+			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREE_S]: 3, [TREE_M]: 4, [TREE_L]: 4, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
+		},
+		//	ツールから置き換え可能。MapGenerator定義ごとにある
+		
+		blkmap = {
+			[PLAIN]=2|(1<<5), [COAST]=386, [DESERT]=2|(2<<5), [FOREST]=2|(27<<5), 
+			[MOUNTAIN]=5|(12<<5), [EXMOUNTAIN]=2|(0<<5), [ROAD]=2|(1<<5), [BRIDGE]=3|(22<<5), 
+			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5),
+			//
+			[ROCK_S]=20|(17<<12), [ROCK_M]=20|(18<<12), [ROCK_L]=20|(19<<12), 
+			[TREE_S]=20|(1<<12), [TREE_M]=20|(2<<12), [TREE_L]=20|(4<<12),
+			[FLOWERS_A]=11|(0<<5), [FLOWERS_B]=11|(1<<5), [FLOWERS_C]=11|(2<<5), 
+		},
+		//	zoom時の境界処理。川や道路の境界を滑らかにする。川はボールド処理を施す。
+		zoomfunc = @( lv, bio){
+			local rnd = rnd, w = bio.width, d = bio.height;
+			if( lv == 0){
+				//	1/4解像度のズーム
+				return @( win, b4, x, z){
+					local c = win[4];
+					b4.fill( c);
+					switch( c){
+					case FOREST:
+					case EXMOUNTAIN:
+						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<c) | (c==FOREST?(1<<EXMOUNTAIN):0);
+						local sc = c==FOREST ? 0.8 : 0.4;
+						local x = ::NoiseGen.value( x*sc, z*sc, 313245+c, 3, 2.0, 0.4);
+						local thrs = win.countUsed( c) < 5 ? 0.25 : 0.55;
+						if( !((1<<f)&mask) && (x>thrs)) b4[0] = b4[3] = f;
+						if( !((1<<l)&mask) && (x>thrs)) b4[0] = b4[1] = l;
+						if( !((1<<b)&mask) && (x>thrs)) b4[1] = b4[2] = b;
+						if( !((1<<r)&mask) && (x>thrs)) b4[2] = b4[3] = r;
+						break;
+					case DESERT:
+						if( win.countUsed( LAKE, 0, 0, 3, 3) >= 3){
+							local x = rnd( 0, 6);
+							if( x == 5){
+								b4.fill( LAKE);
+							}else
+							if( x){
+								if( win[0] == LAKE) b4[0] = LAKE;
+								if( win[6] == LAKE) b4[1] = LAKE;
+								if( win[8] == LAKE) b4[2] = LAKE;
+								if( win[2] == LAKE) b4[3] = LAKE;
+							}
+							break;
+						}
+						break;
+					case ROAD:
+						if( win.countUsed( COAST) >= 2){
+							local f = win[1], l = win[3], b = win[7], r = win[5];
+							if( f == COAST && l == COAST && win[0] != COAST) b4[0] = COAST;
+							if( l == COAST && b == COAST && win[6] != COAST) b4[1] = COAST;
+							if( b == COAST && r == COAST && win[8] != COAST) b4[2] = COAST;
+							if( r == COAST && f == COAST && win[2] != COAST) b4[3] = COAST;
+							break;
+						}
+					case PLAIN:
+						if( c == PLAIN && win.countUsed( COAST) == 1){
+							local f = win[1], l = win[3], b = win[7], r = win[5];
+							if( f == COAST || l == COAST || b == COAST || r == COAST){ b4.fill( COAST); break; }
+						}
+						local mask = (1<<DESERT);
+						for( local l = 0;l < 4;l ++){
+							for( local j = 0;j < 3;j ++){
+								local dx = rnd( -2, 2), dz = rnd( -2, 2);
+								local b = bio[(z+dz)*w+(x+dx)];
+								if( (1<<b)&mask){ b4[l] = b; break; }
+							}
+						}
+						break;
+					case BRIDGE:
+						local mask = (1<<RIVER);
+						if( bio.countUsed( RIVER, x-1, z-1, 3, 3)) b4.fill( RIVER);
+						break;
+					// case COAST:	//	INNERROAD
+					// 	if( win.countUsed( COAST) < 5){
+					// 	}
+					// 	break;
+					}
+				}
+			}else{
+				//	1/2解像度のズーム
+				return @( win, b4, x, z){
+					local c = win[4];
+					b4.fill( c);
+					switch( c){
+					case FOREST:
+					case EXMOUNTAIN:
+						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<c) | (1<<RIVER) | (c==FOREST?(1<<EXMOUNTAIN):0);
+						local sc = c==FOREST ? 0.8/2 : 0.4/2;
+						local x = ::NoiseGen.value( x*sc, z*sc, 313245+c, 3, 2.0, 0.4);
+						// local x = rnd( 0, 0xffff);
+						if( !((1<<f)&mask) && (x<0.4)) b4[0] = b4[3] = f;
+						if( !((1<<l)&mask) && (x<0.4)) b4[0] = b4[1] = l;
+						if( !((1<<b)&mask) && (x<0.4)) b4[1] = b4[2] = b;
+						if( !((1<<r)&mask) && (x<0.4)) b4[2] = b4[3] = r;
+						break;
+					case RIVER:
+						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<c)|(1<<BRIDGE);
+						local x = ::NoiseGen.value( x*0.25, z*0.25, 313245, 2, 2.0, 0.7);
+						// local x = rnd( 0, 0xffff);
+						if( !((1<<f)&mask) && (x>0.45)) b4[0] = b4[3] = f;
+						if( !((1<<l)&mask) && (x>0.45)) b4[0] = b4[1] = l;
+						if( !((1<<b)&mask) && (x>0.45)) b4[1] = b4[2] = b;
+						if( !((1<<r)&mask) && (x>0.45)) b4[2] = b4[3] = r;
+						break;
+					case DESERT:
+						if( win.countUsed( LAKE, 0, 0, 3, 3) >= 3){
+							local x = rnd( 0, 7);
+							if( x == 6){
+								// b4.fill( LAKE);
+							}else{
+								if( win[0] == LAKE) b4[0] = LAKE;
+								if( win[6] == LAKE) b4[1] = LAKE;
+								if( win[8] == LAKE) b4[2] = LAKE;
+								if( win[2] == LAKE) b4[3] = LAKE;
+							}
+						}
+						break;
+					case COAST:	//	INNERROAD
+						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<COAST)|(1<<FOREST);
+						if( !((1<<f) & mask)) b4[0] = b4[3] = f;
+						if( !((1<<l) & mask)) b4[0] = b4[1] = l;
+						if( !((1<<b) & mask)) b4[1] = b4[2] = b;
+						if( !((1<<r) & mask)) b4[2] = b4[3] = r;
+						break;
+					}
+				}
+			}
+		},
+		//	バイオーム画像からブロック、高さ画像を生成する。dst[i] = blk | (y<<16) の形式で返す。
+		blkheightfunc = @( bio, dst){
+			local w = bio.width, h = bio.height;
+			local basey = 2, hscale = 1, hnoise = getrange( gendata["heightnoise"], 1.0);
+			local blkmap = blkmap, rnd = rnd;
+			return @( x, z, i){
+				local b = bio[i], blk = blkmap[b];
+				local y = basey * hscale;
+				y = Math.iround( y);
+				switch( b){
+				case FOREST:
+					local n = bio.countUsed( FOREST, x-1, z-1, 3, 3) + bio.countUsed( MOUNTAIN, x-1, z-1, 3, 3) + bio.countUsed( EXMOUNTAIN, x-1, z-1, 3, 3);
+					y += n>8 ? 2 : 1; break;
+				case MOUNTAIN:
+					y += 1;
+					break;
+				case EXMOUNTAIN:
+					y += 12;
+					local n = bio.countUsed( EXMOUNTAIN, x-1, z-1, 3, 3);
+					if( n > 8) blk = blkmap[MOUNTAIN];
+					break;
+				case RIVER: y -= 1; break;
+				}
+				return blk | (y<<16);
+			}
+		},
+		objgenfunc = @( bio, objbmp){
+			local w = bio.width, d = bio.height;
+			local blkmap = blkmap, rnd = rnd;
+			local objs = [];
+			local sz = 4, hs = sz/2;
+			local trees = [TREE_M, TREE_L];
+			for( local _z=2,r=0;_z<d-2;_z+=8,r++) for( local _x=2;_x<w-2;_x+=8){
+				local x = _x + (r&1)*3, z = _z;
+				if( bio[z*w+x]!=FOREST) continue;
+				if( objbmp.countSet( x-hs, z-hs, sz, sz)) continue;
+				local objid = rnd.choosea(trees);
+				objs .. { objid=objid, x=x, z=z, rot=rnd( 0, 4), };
+				objbmp.draw( pens[sz], x-hs, z-hs);
+			}
+			return objs;
+		}
+	},
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//	cave タイプ。自然の洞窟
 	{	
-		lbl="Cave", val="cave", 
-		halfimg = false,
+		lbl={"ja":"洞穴", "en":"Cave"}, 
+		val="cave", 
 		//
 		props=[
 			{ ...sizeprop, defval=[160,160] },
@@ -369,10 +718,10 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			rockdensprop,
 		],
 		blkmaplist = [
-			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,3] },
-			{ id=FLOOR2, lbl="FLOOR_LV2", type="blk", blkpages=[2,3] },
-			{ id=WALL, lbl="WALL", type="blk", blkpages=[2,3] },
-			{ id=INNERWALL, lbl="INNER WALL", type="blk", blkpages=[2,3] },
+			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,5,3] },
+			{ id=FLOOR2, lbl="FLOOR_LV2", type="blk", blkpages=[2,5,3] },
+			{ id=WALL, lbl="WALL", type="blk", blkpages=[2,5,3] },
+			{ id=INNERWALL, lbl="INNER WALL", type="blk", blkpages=[2,5,3] },
 			{ id=LAKE1, lbl="LAKE", type="blk", blkpages=[8] },
 			null,
 			{ id=ROCK_S, lbl="ROCK_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
@@ -447,8 +796,8 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 	////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//	dungeon タイプ。部屋が繋がった洞窟
 	{	
-		lbl="Dungeon", val="dungeon", 
-		halfimg = false,
+		lbl={"ja":"ダンジョン", "en":"Dungeon"}, 
+		val="dungeon", 
 		//
 		props=[
 			{ ...sizeprop, defval=[160,160] },
@@ -478,10 +827,10 @@ local _layoutwgt( bub, ring, branch){ return { layoutHubWeight=bub, layoutRingWe
 			{ pid="doorOpenRate", lbl={"ja":"ドア開放率", "en":"Door open rate"}, type=RANGE, cnt="cnt6.ui", range=(0.0,1.0), q=100, defval=[0.2,0.8] },
 		],
 		blkmaplist = [
-			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,3] },
-			{ id=FLOOR2, lbl="FLOOR_LV2", type="blk", blkpages=[2,3] },
-			{ id=WALL, lbl="WALL", type="blk", blkpages=[2,3] },
-			{ id=SEA, lbl="INNER WALL", type="blk", blkpages=[2,3] },
+			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,5,3] },
+			{ id=FLOOR2, lbl="FLOOR_LV2", type="blk", blkpages=[2,5,3] },
+			{ id=WALL, lbl="WALL", type="blk", blkpages=[2,5,3] },
+			{ id=SEA, lbl="INNER WALL", type="blk", blkpages=[2,5,3] },
 			{ id=LAKE1, lbl="LAKE", type="blk", blkpages=[8] },
 			null,
 			{ id=PORTAL_DOOR, lbl="PORTAL_DOOR", type="asset" },
@@ -581,13 +930,13 @@ local settlementBlocksTown = [
 	2|(1<<5), 2|(7<<5), 2|(27<<5), 3|(16<<5), 3|(35<<5),
 	2|(6<<5), 3|(22<<5), 8, 8, 3|(35<<5),
 	//	TOWN_FLOOR, TOWN_WOOD_FLOOR, TOWN_STONE_FLOOR, TOWN_FURNITURE, TOWN_PAVEMENT
-	483, 66, 451, 1187, 1603,
+	483, 66, 451, 1187, 99,
 	//	TOWN_SEA, TOWN_CLIFF, TOWN_TREES, TOWN_CASTLE_WALL_WALK
 	8, 2|(24<<5), 2|(27<<5), 3|(17<<5)
 ];
 local settlementBlocksCastle = [
 	2|(1<<5), 2|(7<<5), 2|(27<<5), 3|(16<<5), 3|(35<<5),
-	1603, 3|(22<<5), 8, 8, 3|(35<<5),
+	99, 3|(22<<5), 8, 8, 3|(35<<5),
 	//	TOWN_FLOOR, TOWN_WOOD_FLOOR, TOWN_STONE_FLOOR, TOWN_FURNITURE, TOWN_PAVEMENT
 	483, 1155, 1475, 1187, 899,
 	//	TOWN_SEA, TOWN_CLIFF, TOWN_TREES, TOWN_CASTLE_WALL_WALK
@@ -795,7 +1144,7 @@ local settlementHeight = @( bio, dst){
 		return blkmap[b] | (y<<16);
 	}
 };
-foreach( t in ["village", "town", "castle"]){
+foreach( t in ["town", "village", "castle"]){
 	local props = [ { ...sizeprop, range=t=="castle" ? (128,1024) : (64,1024), defval=[160,160] }, seedprop ];
 	if( t == "castle"){
 		props .. { pid="mode", lbl={ja="城の種類", en="Castle Type"}, type=LIST, list=[
@@ -893,15 +1242,20 @@ foreach( t in ["village", "town", "castle"]){
 		ROAD,BRIDGE,TOWN_PAVEMENT, WALL,INNERWALL,SEA,
 		TOWN_FLOOR,TOWN_WOOD_FLOOR,TOWN_STONE_FLOOR, TOWN_FURNITURE,TOWN_CLIFF,TOWN_TREES];
 	foreach( id in terrainIds){
-		blkmaplist .. (id==null ? null : {id:id,lbl:settlementLabels[id],type:"blk", blkpages=(id==RIVER || id==LAKE || id==TOWN_SEA) ? [8] : [2,3]});
+		blkmaplist .. (id==null ? null : {id:id,lbl:settlementLabels[id],type:"blk", blkpages=(id==RIVER || id==LAKE || id==TOWN_SEA) ? [8] : [2,5,3]});
 	}
 	foreach( palette in (t=="castle" ? [castlePalette,settlementPalette] : [settlementPalette])) foreach( def in palette){
 		blkmaplist .. def;
 		if( def) blkmap[def.id] <- def.value;
 	}
+	local lblmap = {
+		"town" : {"ja":"街", "en":"Town"},
+		"village" : {"ja":"村", "en":"Village"},
+		"castle" : {"ja":"城", "en":"Castle"}
+	}
 	::MapGenerators .. {
-		lbl=t=="town" ? "Town" : (t=="village" ? "Village" : "Castle"), val=t,
-		halfimg=false, settlement=true, props=props,
+		lbl=lblmap[t], val=t,
+		settlement=true, props=props,
 		biocolor=colors, blkmap=blkmap, blkmaplist=blkmaplist,
 		bioobjdensmap={}, objsizemap={}, blkheightfunc=settlementHeight
 	};
@@ -1056,7 +1410,7 @@ class MapGenerator
 		local outid = "%x" % seed;
 		local p = popen_s();
 		local args = [];
-		local wdiv = gendef.halfimg ? 2 : 1;
+		local wdiv = gendef["imgscale"] || 1;
 		args .. "-type" .. gendef.val .. "-w" .. (srcw/wdiv) .. "-d" .. (srcd/wdiv);
 		args .. "-dir" .. tmpdir .. "-out" .. outid .. "-seed" .. seed;
 		local parameters = clone gendata;
@@ -1145,11 +1499,11 @@ class MapGenerator
 		local srcrev = flipY( src);
 		//	まずはbio画像を作る。biocolorを使って、srcの色からバイオームIDを取得する。
 		local bio = ImageColorGroups.toIndexImage( gendef.biocolor, srcrev, RGBAImage( srcrev.width, srcrev.height));
-		//	halfimg指定の場合は、bioを倍サイズ化する。この時に、川や道路の境界を滑らかにする処理が入る。
-		if( gendef.halfimg){
+		//	imgscale指定の場合は、bioを倍サイズ化する。この時に、川や道路の境界を滑らかにする処理が入る。
+		if( gendef["imgscale"] && gendef["imgscale"] > 1){
 			bio = zoomBiomeImage( bio);
 		}
-		//	次にフリーブロックを配置していく => 後回し！
+		//	次にフリーブロックを配置していく
 		objs = generateObjects( bio);
 		//	バイオームからブロック、高さを決定する。
 		dst = generateBlockHeightImage( bio);
@@ -1184,6 +1538,7 @@ class MapGenerator
 			switch( typeof( v)){
 			case SS_TABLE: parseopts( v, args, numeric); continue;	//	再帰的にparseoptsする。
 			case SS_ARRAY: f = numeric ? getargrange( i, v) : getrange( v); break;
+			case SS_BOOL: continue;		//	dame
 			default: f = v; break;
 			}
 			if( numeric) numeric[i] <- f;
@@ -1212,6 +1567,7 @@ class MapGenerator
 		local d0 = [getrange( gendata["rockdens"]), getrange( gendata["treedens"]), getrange( gendata["flowerdens"]), getrange( gendata["treedens"])];
 		local objbmp = Bitmap( bio.width, bio.height);	//	配置済みのオブジェクトを記録する。1x1のオブジェクトは1x1、2x2のオブジェクトは2x2の領域に配置済みフラグを立てる。
 		local bioobjdensmap = gendef.bioobjdensmap;
+		local objreprace = gendef["objreprace"] || @(){};
 		//////// タイプ毎処理
 		local fn = gendef["objgenfunc"];
 		if( fn){
@@ -1219,27 +1575,19 @@ class MapGenerator
 		}
 		//////// 共通処理
 		//	
-		local pens = #[
-			Bitmap( 1, 1, 1),	//	0
-			Bitmap( 1, 1, 1),	//	1x1
-			Bitmap( 2, 2, 1),	//	2x2
-			Bitmap( 3, 3, 1),	//	3x3
-			Bitmap( 4, 4, 1),	//	4x4
-			Bitmap( 5, 5, 1),	//	5x5
-			Bitmap( 6, 6, 1),	//	6x6
-		];
-		//
 		for( local z = 0;z < h;z += 32){
 			for( local x = 0;x < w;x += 32){
 				//	RGBAImageの指定した領域に存在する色の数を数える。これで、16x16の中に何種類のバイオームが存在するかが分かる。
 				local biocntmap = bio.countColorMap( {}, x, z, 32, 32);
 				local objcntmap = {};
 				local trycnt = 0;
-				//	PLAINからEXMOUTAIN
-				for( local l = 0;l < 5;l ++){
+				//	
+				for( local l = 0;l < 15;l ++){
 					local biocnt = biocntmap[l];
 					if( !biocnt) continue;	//	このバイオームは16x16の中に存在しない。
-					local m = bioobjdensmap[l], t = {};
+					local m = bioobjdensmap[l];
+					if( !m) continue;
+					local t = {};
 					foreach( i, v in m){
 						local n = Math.iround( v * (d0[(i-20)/3]||0.0) * biocnt * rnd( 0.7, 1.0) * 0.03 );
 						if( n){
@@ -1265,7 +1613,9 @@ class MapGenerator
 						}
 						if( bio.countUsed( b,tx-hs, tz-hs, sz, sz) < (sz*sz*4/5)) continue; //	バイオームが一様でない場合も配置失敗
 						//	配置する
-						objs .. { objid=i, x=tx, z=tz, rot=rnd( 0, 3), size=sz};
+						local obj = { objid=i, x=tx, z=tz, rot=rnd( 0, 3), size=sz}
+						objreprace( obj, bio, tx, tz);
+						objs .. obj;
 						objbmp.draw( pens[sz], tx-hs, tz-hs);
 						if( (t[i]=n-1) <= 0) delete t[i];
 						break;
@@ -1281,25 +1631,38 @@ class MapGenerator
 	function zoomBiomeImage( bio){
 		local w = bio.width, h = bio.height;
 		local win = RGBAImage( 3, 3, 0);	//	3x3の窓で、周囲のバイオームを見て、境界を滑らかにする。
-		local bio2 = RGBAImage( w*2, h*2, 0);
-		local di = (0,w*2,w*2+1,1);	//	時計回り
+		local biosrc = bio, biodst = null;
+		// local bio2 = RGBAImage( w*2, h*2, 0);
 		local b4 = (0,0,0,0);
-		local fn = gendef.zoomfunc();
 		win.draw( bio, 0, 0);
-		for( local z = 0, i = 0;z < h;z ++){
-			for( local x = 0;x < w;x ++, i++){
-				local c = bio[i], xz = x*2 + z*4*w;
-				//	周囲のバイオームを見て、境界を滑らかにする。
-				win.draw( bio, -x+1, -z+1);
-				fn( win, b4);
-				// printf( "%S %S => %S\n", x, z, win[4]);
-				bio2[xz+di[0]] = b4[0];
-				bio2[xz+di[1]] = b4[1];
-				bio2[xz+di[2]] = b4[2];
-				bio2[xz+di[3]] = b4[3];
+		local sc = gendef.imgscale, l = 0;
+		while( sc > 1){
+			local fn = gendef.zoomfunc( l, biosrc);
+			local w = biosrc.width, h = biosrc.height, h1 = h-1;
+			local di = (0,w*2,w*2+1,1);	//	時計回り
+			biodst = RGBAImage( w*2, h*2, 0);
+			win.draw( biosrc, 0, 0);	//	初期描画
+			for( local z = 0, i = 0;z < h;z ++){
+				win.draw( biosrc, 0, -z+1);	//	左端描画
+				for( local x = 0;x < w;x ++, i++){
+					local c = biosrc[i], xz = x*2 + z*4*w;
+					//	周囲のバイオームを見て、境界を滑らかにする。
+					if( !z) win.draw( biosrc, -x+1, 0);	//	u-m 端の描画漏れを防ぐ。。。
+					else if( z == h1) win.draw( biosrc, -x+1, -h+3);	//	l-m
+					win.draw( biosrc, -x+1, -z+1);
+					fn( win, b4, x, z);
+					// printf( "%S %S => %S\n", x, z, win[4]);
+					biodst[xz+di[0]] = b4[0];
+					biodst[xz+di[1]] = b4[1];
+					biodst[xz+di[2]] = b4[2];
+					biodst[xz+di[3]] = b4[3];
+				}
 			}
+			sc /= 2;
+			l ++;
+			biosrc = biodst;
 		}
-		return bio2;
+		return biodst;
 	}
 
 	//	バイオーム画像から、ブロックと高さを決定する。dstのバイオームチャンネルと高さチャンネルに書き込む。

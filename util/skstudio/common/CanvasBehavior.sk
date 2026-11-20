@@ -179,8 +179,9 @@ class CanvasBehavior
 		case "renderset_changed":
 			local rset = bc.rset;
 			if( view.renderer.env.id == rset.id){
-				local env = SK3DEnvironment( rset);
-				view.renderer.setEnvironment( env);
+				// local env = SK3DEnvironment( rset);
+				// view.renderer.setEnvironment( env);
+				setRenderSettingID( rset.id);
 			}
 			break;
 		case "renderset_listchanged":
