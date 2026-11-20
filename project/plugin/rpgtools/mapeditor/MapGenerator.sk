@@ -1072,7 +1072,7 @@ local settlementPalette = [
 	paletteBlock("leafy_crop","Leafy Crop",11|(2<<5)),
 	paletteBlock("tall_crop","Tall Crop",11|(6<<5)),
 	paletteBlock("herb_crop","Herb Crop",11|(5<<5)),
-	paletteAsset("civicObject3_26","Well","MA026"),
+	paletteAsset("civicObject3_26","Well","MA026",["civicObject3_26"]),
 	paletteProp("settlementProp_bench","Bench",4,5,furniture,["settlementProp_bench","civicObject4_5","castleObject4_5"]),
 	paletteProp("civicObject2_1","Square Lamp",2,1,[FB_EXLAMP],["civicObject2_1"]),
 	paletteProp("civicObject3_11","Market Stall",3,11,[FB_EXTERIOR],["civicObject3_11"]),
@@ -1100,7 +1100,7 @@ local castlePalette = [
 	castleProp("Counter",4,10,furniture, null, "castleObject4_10"), castleProp("Stove",2,7,lamps, null, "castleObject2_7"), castleProp("Cooking Pot",4,23,furniture, null, "castleObject4_23"),
 	castleProp("Candle",2,4,lamps, null, "castleObject2_4"), castleProp("Piano",4,40,furniture, null, "castleObject4_40"), castleProp("Sword Rack",4,30,furniture, null, "castleObject4_30"),
 	castleProp("Shield Rack",4,28,furniture, null, "castleObject4_28"), castleProp("Book",4,33,furniture, null, "castleObject4_33"), castleProp("Documents",4,34,furniture, null, "castleObject4_34"),
-	castleProp("Tableware",4,35,furniture, null, "castleObject4_35"), null, null
+	castleProp("Tableware",4,35,furniture, null, "castleObject4_35"), castleProp("Statue",3,14,furniture, null, "castleObject3_14"), null, null
 ];
 
 local settlementHeight = @( bio, dst){
@@ -1191,8 +1191,7 @@ foreach( t in ["town", "village", "castle"]){
 	props .. { pid="naturalDecorationDensity", lbl={ja="自然物のランダム散布密度（%）", en="Random Natural Scatter Density (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=10, defval=[1.0,3.0] };
 	if( t == "castle"){
 		props .. { pid="keepRoomCount", lbl={ja="主館の部屋数の範囲", en="Keep Room Count Range"}, type=RANGE, cnt="cnt6.ui", range=(4,32), q=1, defval=[4,12] };
-		props .. { pid="mainRoadWidth", lbl={ja="城内の大通り幅（マス）", en="Castle Main Road Width (Blocks)"}, type=RANGE, cnt="cnt6.ui", range=(3,5), q=1, defval=[3,5] };
-		props .. { pid="roadExtraEdgeRate", lbl={ja="城内の道の追加接続率", en="Castle Extra Road Connection Rate"}, type=RANGE, cnt="cnt6.ui", range=(0,1), q=20, defval=[0.1,0.3] };
+		props .. { pid="mainRoadWidth", lbl={ja="大通りの幅（マス）", en="Main Road Width (Blocks)"}, type=RANGE, cnt="cnt6.ui", range=(3,20), q=1, defval=[6,12] };
 	}else{
 		props .. { pid="terrainRelief", lbl={ja="地形の起伏（0で平地）", en="Terrain Relief (0: Flat)"}, type=RANGE, cnt="cnt6.ui", range=(0,12), q=1, defval=[2.0,4.0] };
 		props .. { pid="terrainProtrusion", lbl={ja="地形の張り出し・川幅（%）", en="Terrain Extensions / River Width (%)"}, type=RANGE, cnt="cnt6.ui", range=(0,100), q=1, defval=[0,100] };
@@ -1383,7 +1382,8 @@ class MapGenerator
 			local value = palette[def.id], br = paletteObject(value).br;
 			foreach( key in def.planKeys){
 				// Keep the planned model and its dimensions together for this batch.
-				parameters[key.."Block"] <- value;
+				// The numeric parameter file takes numbers only: an asset (a string id such as "MA026") is looked up in the palette instead.
+				if( typeof( value) == SS_INTEGER) parameters[key.."Block"] <- value;
 				if( key.startsWith("settlementProp_")){
 					parameters[key.."_width"] <- br.w;
 					parameters[key.."_depth"] <- br.d;
@@ -1762,7 +1762,7 @@ class MapGenerator
 			// bw.fillBlock(IRect3D(x+br.w,y,z,1,br.h+1,2),stone);
 			// bw.fillBlock(IRect3D(x-1,y+br.h,z,br.w+2,1,2),stone);
 			local cxz = regionCenter( r, obj, bw);
-			placePaletteObject( bw, obj, [cxz[0], y, cxz[1]] );
+			placePaletteObject( bw, obj, [cxz[0]+1, y, cxz[1]] );	//	正門は1マス右へ寄せる（開口の中央に合わせる）
 			local t = {x:x,y:y,z:z,width:br.w,height:br.h,};
 			if( obj["maid"]){
 				t ... {maid:obj.maid};
@@ -1912,7 +1912,7 @@ class MapGenerator
 		local density=Math.clamp(assetParameters["naturalDecorationDensity"] ?? 3.5,0,100)/100.0;
 		local flowers = 0, cacti = 0, benches = 0, crops = 0, shrubs = 0;
 		foreach( region in assetPlan.regions){
-			if( region.kind!="asset_plot" && region.kind!="asset_wall" && region.kind!="asset_bridge" && region.kind!="village_open_space" && region.kind!="keep" && region.kind!="keep_expansion" && region.kind!="settlement_facility") continue;
+			if( region.kind!="asset_plot" && region.kind!="asset_wall" && region.kind!="asset_bridge" && region.kind!="village_open_space" && region.kind!="keep" && region.kind!="keep_expansion" && region.kind!="settlement_facility" && region.kind!="lot_facility" && region.kind!="lot_annex") continue;
 			for( local yy=Math.max(0,region.y0-2);yy<=Math.min(d-1,region.y1+2);yy++) for( local xx=Math.max(0,region.x0-2);xx<=Math.min(w-1,region.x1+2);xx++) flowerCells.set(xx,d-1-yy,1);
 		}
 		local forest = assetPlan.settlementSite=="forest", oasis = assetPlan.settlementSite=="oasis";
