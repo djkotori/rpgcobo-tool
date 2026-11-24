@@ -485,29 +485,26 @@ enemyprops .. {
 
 //
 enemyprops .. {
-	proptype = "static"
+	proptype = "score"
 	pid = "exp"
 	lbl = "$T.EXP"
-	type = SCALAR
-	range = (0, 1000000)
+	type=VARIABLE, varbits=0, constbits=2|8|16, 
 	defval = 10
 };
 
 enemyprops .. {
-	proptype = "static"
+	proptype = "score"
 	pid = "jxp"
 	lbl = "$T.JXP"
-	type = SCALAR
-	range = (0, 1000000)
+	type=VARIABLE, varbits=0, constbits=2|8|16, 
 	defval = 1
 };
 
 enemyprops .. {
-	proptype = "static"
+	proptype = "score"
 	pid = "money"
 	lbl = "$T.money"
-	type = SCALAR
-	range = (0, 1000000)
+	type=VARIABLE, varbits=0, constbits=2|8|16, 
 	defval = 10
 };
 

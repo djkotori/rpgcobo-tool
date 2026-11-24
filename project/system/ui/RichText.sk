@@ -28,7 +28,7 @@ class RichText
 		stylemap = {
 			['O'] = { },
 			['M'] = { font="script", },
-			['E'] = { font="icon", },
+			['E'] = { font="icon", flags=1, },
 			['B'] = { flags=2, },
 			['I'] = { flags=4, },
 			['C'] = { linespace=-4, },

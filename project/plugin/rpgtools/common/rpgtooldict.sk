@@ -578,11 +578,48 @@
 	"type_dmgform"						: {"ja":"ダメージ式", "en":"Damage Formula"}
 	"type_jobslot"						: {"ja":"ジョブスロット", "en":"Job Slot"}
 	"type_jobflag"						: {"ja":"専用ジョブフラグ", "en":"Special Job Flag"}
-	"type_skillg"						: {"ja":"スキルグループ", "en":"Skill Group"}
 	"type_battlecmd"					: {"ja":"バトルコマンド", "en":"Battle Command"}
 	"type_eqflag"						: {"ja":"専用装備フラグ", "en":"Special Eq Flag"}
 	"type_tribe"						: {"ja":"種族", "en":"Tribe"}
 	"type_emptyslot"					: {"ja":"空のスロット", "en":"Empty Slot"}
+
+	"type_tips_eqtype"					: {
+		"ja":"ゲームに登場する装備の種類を定義します。それぞれの装備は、武器、盾、防具に大別されます。", 
+		"en":"Description of Equip Type"
+	}
+	"type_tips_eqslot"					: {
+		"ja":"キャラの装備画面で装備を装着するスロットを定義します。", 
+		"en":"Define the slot where equipment is equipped on the character's equipment screen."
+	}
+	"type_tips_elem"					: {
+		"ja":"属性の種類を定義します。キャラなどにオプションの [P]属性耐性[O] を追加すると、得意な属性や苦手な属性を設定できます。", 
+		"en":"Define the types of elements. By adding the optional [P]Element Resistance[O] to characters, you can set their strengths and weaknesses against elements."
+	}
+	"type_tips_resistg"					: {
+		"ja":"耐性グループを定義します。キャラなどにオプションの [P]コンディション耐性[O] を追加すると状態異常に対する耐性をまとめて管理できます。", 
+		"en":"Define the resist groups. By adding the optional [P]Condition Resistance[O] to characters, you can manage resistances to status ailments collectively."
+	}
+	"type_tips_dmgform"					: {
+		"ja":"ダメージ式を定義します。以下の以下のパラメータをテーブル構造で記述します。\n[P]atk: [T]攻撃力\n[P]def: [T]防御力\n [P]hit: [T]命中率\n [P]cri: [T]クリティカル率\n\n※hitは省略でヒット確定、criは省略で0%となります。", 
+		"en":"Define the damage formula. The following parameters are described in a table structure.\n[P]atk: [T]Attack Power\n[P]def: [T]Defense Power\n[P]hit: [T]Hit Rate\n[P]cri: [T]Critical Rate\n\n*If hit is omitted, it is guaranteed to hit. If cri is omitted, it is 0%."
+	}
+	"type_tips_jobslot"					: {
+		"ja":"キャラが装着できるジョブのスロットを定義します。変更可のジョブは、ジョブ画面で自由に変更できます。", 
+		"en":"Define the job slots that characters can equip. Jobs that can be changed freely can be modified in the job screen."
+	}
+	"type_tips_jobflag"					: {
+		"ja":"ジョブを装着できるための特別なフラグを定義します。オプションの [P]ジョブフラグ設定[O] を追加すると、ジョブの装着条件を付与できます。", 
+		"en":"Define the special flags for equipping jobs. By adding the optional [P]Job Flag Settings[O], you can set the conditions for equipping jobs."
+	}
+	"type_tips_eqflag"						: {
+		"ja":"装備専用フラグを定義します。特別な装備条件を持つ装備に適用されます。オプションの [P]装備フラグ設定[O] を追加すると、装備条件を付与できます。", 
+		"en":"Define the special equipment flags. They apply to equipment with special conditions. By adding the optional [P]Equipment Flag Settings[O], you can grant equipment conditions."
+	}
+	"type_tips_tribe"						: {
+		"ja":"種族を定義します。キャラやモンスターに設定することで、特定の種族に対する効果や耐性を管理できます。", 
+		"en":"Define the tribes. By setting them on characters or monsters, you can manage effects and resistances against specific tribes."
+	}
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	変数
@@ -710,6 +747,43 @@
 	"skilltype_enhance"					: {"ja":"強化攻撃スキル", "en":"Enhanced Skill"}
 	"skilltype_macro"					: {"ja":"マクロスキル", "en":"Macro Skill"}
 
+	"skilltype_tips"					: {
+		"ja":"このスキルがどのような使い方をするかを指定します。", 
+		"en":"Specifies how this skill is used."
+	},
+	"skilltype_tips_unusable"			: {
+		"ja":"このスキルは使用できません。アイテムに設定すると使用不能なアイテムとなります。", 
+		"en":"This skill cannot be used. If set to an item, it becomes an unusable item.",
+	},
+	"skilltype_tips_noop"				: {
+		"ja":"このスキルは何もしません。ただし、オプションで設定した条件で色々な効果を発動させることができます。", 
+		"en":"This skill does nothing. However, various effects can be triggered under the conditions set in the options."
+	},
+	"skilltype_tips_attack"				: {
+		"ja":"エネミーに対してダメージを与えるスキルです。", 
+		"en":"This is an attack skill. It deals damage to the enemy."
+	},
+	"skilltype_tips_heal"				: {
+		"ja":"味方に対してHPや状態異常を回復するスキルです。", 
+		"en":"This is a healing skill. It restores the HP and status abnormalities of allies."
+	},
+	"skilltype_tips_buff"				: {
+		"ja":"味方の能力を一時的に強化するスキルです。", 
+		"en":"This is a buff skill. It temporarily enhances the abilities of allies."
+	},
+	"skilltype_tips_debuff"				: {
+		"ja":"敵の能力を一時的に弱体化させるスキルです。", 
+		"en":"This is a debuff skill. It temporarily weakens the abilities of enemies."
+	},
+	"skilltype_tips_enhance"			: {
+		"ja":"このスキルは、次に指定したスキルを発動する際にこのスキルで指定したオプションの効果が追加されます。", 
+		"en":"This skill adds the effects specified in its options when the next specified skill is activated."
+	},
+	"skilltype_tips_macro"				: {
+		"ja":"バトルやメニューで使用できる、マクロを実行して色々な効果を発動させるスキルです。", 
+		"en":"This skill can be used in battle or menu, executes a macro, and triggers various effects."
+	},
+
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	//	データベースサイドビュー
 
@@ -739,6 +813,7 @@
 	"side_dbview_tips_item"				: {"ja":"様々なタイプのアイテムを編集します", "en":"Edit various types of items"}
 	"side_dbview_tips_weapon"			: {"ja":"プレイヤーが装備する武器の能力や見た目を編集します", "en":"Edit the abilities and appearance of the weapons equipped by the player"}
 	"side_dbview_tips_armor"			: {"ja":"プレイヤーが装備する防具の能力を編集します", "en":"Edit the armor abilities equipped by the player"}
+	"side_dbview_tips_store"			: {"ja":"アイテムショップやスキルのリストなど、様々なリストを編集します", "en":"Edit various lists such as item shops and skill lists"}
 	"side_dbview_tips_quest"			: {"ja":"ゲームで受けるクエストを編集します", "en":"Edit the quests to be received in the game"}
 	"side_dbview_tips_macro"			: {"ja":"（上級者用）ゲームのどこからでも呼び出せたり常時実行できるマクロイベントを編集します", "en":"(ADVANCED) Edit macro events that can be called from anywhere in the game"}
 	
@@ -864,8 +939,9 @@
 	"setting_battletype0"				: {"ja":"ターン制", "en":"Turn-based"}
 	"setting_battletype1"				: {"ja":"行動順制", "en":"Action order-based"}
 	"setting_battletype2"				: {"ja":"リアルタイム", "en":"Real time"}
-	"setting_battletype3"				: {"ja":"フロントビュー(ターン)", "en":"Front View(Turn)"}
-	"setting_battletype4"				: {"ja":"フロントビュー(行動順)", "en":"Front View(Order)"}
+	"setting_battleview"				: {"ja":"バトルビュー", "en":"Battle View"}
+	"setting_battleview0"				: {"ja":"サイドビュー", "en":"Side View"}
+	"setting_battleview1"				: {"ja":"フロントビュー", "en":"Front View"}
 	"setting_maxmembers"				: {"ja":"最大パーティ人数", "en":"Maximum Members"}
 	"setting_jxptype"					: {"ja":"ジョブポイント加算", "en":"Job Point addition"}
 	"setting_hotelheal"					: {"ja":"宿屋の回復", "en":"Healing of the inn"}
@@ -1124,6 +1200,7 @@
 	"lbl_dellang"						: {"ja":"言語を削除", "en":"Delete Language"}
 	"lbl_wall"							: {"ja":"壁", "en":"Wall"}
 	"lbl_floor"							: {"ja":"床", "en":"Floor"}
+	"lbl_innerfloor"					: {"ja":"内部床", "en":"Inner Floor"}
 	"lbl_poke"							: {"ja":"はみ出し", "en":"Poke"}
 	"lbl_battle"						: {"ja":"バトル", "en":"Battle"}
 	"lbl_viewinfo"						: {"ja":"情報表示", "en":"Information"}

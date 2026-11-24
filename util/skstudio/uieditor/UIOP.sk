@@ -55,6 +55,9 @@
 					view.stretchSize( view.bnd.w|0, view.bnd.h|0, true);
 				}
 			}
+			if( view.parent instanceof SKLabelView){	//	ラベルの子はレイアウトが特殊。。
+				view.parent.updateInnerLayout();
+			}
 			view.updateMatrix();
 		}
 	}

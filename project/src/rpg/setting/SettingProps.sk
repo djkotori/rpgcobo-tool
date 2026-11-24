@@ -15,8 +15,11 @@ local battletypelist = [
 	{ val=0, lbl="$T.setting_battletype0", },
 	{ val=1, lbl="$T.setting_battletype1", disable=true },	//	未実装・・・
 	{ val=2, lbl="$T.setting_battletype2", },
-	{ val=3, lbl="$T.setting_battletype3", },
-	{ val=4, lbl="$T.setting_battletype4", },
+];
+
+local battleviewlist = [
+	{ val=0, lbl="$T.setting_battleview0", },
+	{ val=1, lbl="$T.setting_battleview1", },
 ];
 
 //////// basic - 基本システム
@@ -28,6 +31,16 @@ settingprops .. {
 	tipskey = "settingprop.battletype"
 	type = LIST,
 	list = battletypelist,
+	defval = 0,
+};
+
+settingprops .. {
+	part = "basic",
+	pid = "battleview",
+	lbl = "$T.setting_battleview",
+	tipskey = "settingprop.battleview"
+	type = LIST,
+	list = battleviewlist,
 	defval = 0,
 };
 

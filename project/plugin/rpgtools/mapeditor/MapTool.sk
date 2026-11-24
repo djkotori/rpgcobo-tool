@@ -638,7 +638,7 @@ class MapTool
 		br.x -= cx; br.y -= cy; br.z -= cz;
 		if( !sk3d || sk3d.ref[0]!=fb || sk3d.ref[1]!=mask){
 			sk3d?.kill();
-			sk3d = SK3DGizmo( canvas, br, mask);
+			sk3d = SK3DGizmo( canvas, br, mask, PEN_FILL);
 			addGuide( "gz", sk3d);
 			sk3d.ref = (fb,mask);
 		}
@@ -810,11 +810,13 @@ class MapTool
 				removeGuide( "pen");
 				removeGuide( "fb");
 				gzt.gz.selectParts( 1<<gzt.part);
+				gzt.gz.setMode( PEN_FILL);
 				canvas.view.repaint();
 				e.consume();
 			}else{
 				local gz = guides["gz"] || guides["box"];
 				if( gz){
+					gz.setMode( PEN_GIZMO);
 					gz.selectParts( 0);
 					canvas.view.repaint();
 				}
@@ -846,6 +848,42 @@ class MapTool
 		local part = gz0.part;
 		local self = this, editor = editor, cam = canvas.camwork.cam;
 		local p0 = gz0.pos, n, absn, pl, dotsc = 1.0;
+		//	回転ギズモ処理。。。
+		if( part == 7){
+			pl = Plane(); pl.setParam( 0, 1, 0, p0.x, p0.y, p0.z);
+			local cp = Vector3D( gz0.gz.gbnd.x, gz0.gz.gbnd.y-gz0.gz.gbnd.s, gz0.gz.gbnd.z);	//	回転の中心
+			local zv = Vector3D( 0,0,-1), xv = Vector3D( 0,1,0).cross( zv).normalize();
+			local rotptr = ptr( -1);
+			//
+			local cfn( e){
+				e.consume();
+				e.computeLocal( self.canvas.view.getInvMatrix());
+				switch( e.id){
+				case MOUSE_DRAGGED:
+				{
+					local q = self.canvas.getRay( e.lx, e.ly), w = q[1]-q[0];
+					local t = pl.getIntersectTime( q[0], w);
+					local v = w.scale( t).add( q[0]).sub( cp).normalize();
+					local th = Math.acos( Math.clamp( zv.dot( v), -1.0, 1.0));
+					if( xv.dot( v) < 0) th = Math.PI*2 - th;
+					local rot = ((th+0.25*Math.PI)/(Math.PI*2)*4)&3;
+					if( rot != ~rotptr){
+						gzfunc( gz0.gz, "rotate", { part:part, rot:rot, trk:trk });
+						rotptr << rot;
+					}
+					break;
+				}
+				case MOUSE_MOVED:	//	来ない
+				case MOUSE_PRESSED:	//	来ない
+					break;
+				case MOUSE_RELEASED:
+				case MOUSE_CANCELLED:
+					return reffunc;
+				}
+				return cfn;
+			}
+			return cfn;
+		}
 		switch( part){
 		case 0:		//	free
 			pl = chooseCameraPlane( cam.fw, gz0.pos); break;
@@ -929,7 +967,7 @@ class SelectBlock
 	}
 
 	static function getPreviewTex( v, fn){
-		local i = v["blk"]? v.blk : sprintf( "%x.%x", v.fblk.fbtype, v.fblk.fbparam);
+		local i = v["blk"]? v.blk : sprintf( "%x.%x.%d", v.fblk.fbtype, v.fblk.fbparam, v["rot"]|0);
 		if( texcache[i]) return fn( texcache[i]);
 		//
 		local queue = #[];
@@ -955,16 +993,15 @@ class SelectBlock
 					}
 					local ret, t0 = skGetTime();
 					if( v["blk"]){	//	ブロックのプレビューはBlockWorldが必要！
-						local bw = #BlockWorld( 2, 2, 2);
-						bw.fillBlock( #IRect3D( 0, 0, 0, 2, 2, 2), v.blk);
-						local vd = #VoxelData( 16, 24, 16);
-						local req = { bw:bw, br:#IRect3D(0,0,0,2,3,2), vd:vd, id:i };
+						local bw = SelectBlock.renderBlockPreview( v.blk);
+						local vd = #VoxelData( 64, 64, 64);
+						local req = { bw:bw, br:IRect3D(0,0,0,bw.w,bw.h,bw.d), vd:vd, id:i };
 						local res = BlockRenderer.createVoxelDatas( [req]);
 						ret = texcache[q.i] <- imgpreview.getVoxelDataImage( vd);
 					}else
 					if( v["fblk"]){	//	フリーブロックのプレビューは直接PM化
 						//	屋根、階段などはparamを
-						ret = texcache[q.i] <- imgpreview.getFreeBlockImage( v.fblk);
+						ret = texcache[q.i] <- imgpreview.getFreeBlockImage( v.fblk, v["rot"]|0);
 					}
 					foreach( fn in q.list) fn( ret);
 					++n;
@@ -975,6 +1012,37 @@ class SelectBlock
 			th[0].start( ththread, this);
 		}
 	}
+
+	static function renderBlockPreview( b){
+		local blkconf = ::blks[b&31];
+		local bv = ::blks[b&31].variations[(b>>5)&0xff];
+		local whd = #(4,4,4), fil = null, put = null;
+		switch( bv.type){
+		case "wallfloor0": case "struct0": case "struct1":
+			whd = #(6,5,6); fil = #(1,0,1,4,4,4);
+			break;
+		case "carpet":
+			whd = #(6,1,6); fil = #(1,0,1,4,1,4);
+			break;
+		case "fence":
+			whd = #(4,2,4);
+			break;
+		case "water":
+			whd = #(6,4,6); fil = #(1,0,1,4,4,4);
+			break;
+		case "plant":
+			whd = #(3,3,3); fil = #(1,1,1,1,1,1);
+			break;
+		}
+		local bw = BlockWorld( whd[0], whd[1], whd[2]);
+		if( fil){
+			bw.fillBlock( IRect3D( fil), b);
+		}else{
+			bw.fillBlock( IRect3D( 0, 0, 0, whd[0], whd[1], whd[2]), b);
+		}
+		return bw;
+	}
+
 	
 	constructor( v, cc=4){
 		view = v;
@@ -1039,7 +1107,7 @@ class SelectBlock
 	};
 
 	//	フリーブロックのカテゴリ配列を指定してページをセットアップ
-	function setFreeBlockPages( catgs, stat=0, fits=null){
+	function setFreeBlockPages( catgs, stat=0, rot=0){
 		pagetype = 1;
 		pagesrc = catgs;
 		pages = array( length( catgs));
@@ -1051,9 +1119,8 @@ class SelectBlock
 				local pi = catgs.findi( @( catg) catg & v.catg);
 				if( pi >= 0){
 					local fb = _makefb( fbtype, vari, stat);
-					if( fits && !fits(fb)) continue;
 					pages[pi].list .. {
-						fblk : fb,
+						fblk : fb, rot : rot,
 					};
 				}
 			}
@@ -1076,7 +1143,7 @@ class SelectBlock
 		case "roof": fbparam |= (4<<14)|(6<<20)|(4<<26); break;
 		default : fbparam |= (stat<<31); break;
 		}
-		return FreeBlock.create({fbtype:fbtype, fbparam:fbparam});
+		return FreeBlock.create({fbtype:fbtype, fbparam:fbparam, });
 	}
 
 	function reloadPages(){
@@ -1288,7 +1355,7 @@ class SK3D2DRegion extends SK3DObject
 {
 	constructor( br, mode){
 		super( null);
-		local pm = ::PrimitiveMeshes.createBox( br.w*0.25-0.01, 64.01, br.d*0.25-0.01);
+		local pm = ::PrimitiveMeshes.createBox( br.w*0.25+0.01, 64.01, br.d*0.25+0.01);
 		local m = pm.face[0].m = clone pm.face[0].m;
 		m.tec = skFXFindTechnique( "rpgtool.reg2d");
 		m.visiblemask = SK_VISIBLE_TRANSPARENT;
@@ -1328,8 +1395,8 @@ class SK3DGizmo extends SK3DObject
 
 	mode = PEN_GIZMO;
 
-	static partcols1 = [0xffff00ff, 0xff0000ff,0xff0000ff, 0x00ff00ff,0x00ff00ff, 0x0000ffff,0x0000ffff];
-	static partcols2 = [0xffffffff, 0xff9999ff,0xff9999ff, 0x99ff99ff,0x99ff99ff, 0x9999ffff,0x9999ffff];
+	static partcols1 = [0xffff00ff, 0xff0000ff,0xff0000ff, 0x00ff00ff,0x00ff00ff, 0x0000ffff,0x0000ffff,  0xffff00ff];
+	static partcols2 = [0xffffffff, 0xff9999ff,0xff9999ff, 0x99ff99ff,0x99ff99ff, 0x9999ffff,0x9999ffff,  0xffffffff];
 
 	constructor( c, r, m, mo=PEN_GIZMO){
 		canvas = c;
@@ -1349,15 +1416,15 @@ class SK3DGizmo extends SK3DObject
 		local cp = Vector3D( r.w, r.h, r.d).scale( 0.25);
 		//	o
 		clearChildren();
-		partobjs = array( 7);
+		partobjs = array( 8);
 		{
 			// local om = PrimitiveMeshes.createSphere( 0.24, 12, 12);
-			local om = PrimitiveMeshes.createWireBox( 0.22, 0.22, 0.22, 0.015);
+			local om = PrimitiveMeshes.createWireBox( 0.17, 0.17, 0.17, 0.015);
 			_setmtl( om, partcols1[0]);
 			local cm = SK3DObject( om);
 			cm.pos << cp;
 			addChild( cm);
-			local cs = b3Shape.createBox( 0.27, 0.27, 0.27);
+			local cs = b3Shape.createBox( 0.22, 0.22, 0.22);
 			shp.addChild( cs, Matrix.fromTranslate( cp), 0, 0);
 			partobjs[0] = cm;
 		}
@@ -1365,7 +1432,7 @@ class SK3DGizmo extends SK3DObject
 		for( local l = 0;l < 3;l ++){
 			if( !(mask&(1<<l))) continue;
 			local v = Vector3D(), w = Vector3D();
-			v[l] = cp[l]+0.01; w[l] = 0.01; w[(l+1)%3] = w[(l+2)%3] = 0.2;
+			v[l] = cp[l]+0.01; w[l] = 0.01; w[(l+1)%3] = w[(l+2)%3] = 0.15;
 			//	-,+
 			for( local j = 0; j < 2;j ++){
 				local pi = 1+l*2+j;
@@ -1379,12 +1446,34 @@ class SK3DGizmo extends SK3DObject
 				partobjs[pi] = cm;
 			}
 		}
+		//	rot 
+		if( mask&(1<<3)){
+			local dz = Math.max( cp.z, 1.0), cr = 0.125;
+			local rm = RPGToolMesh.createRotMesh( -dz, cr);
+			_setmtl( rm, partcols1[7]);
+			local cm = SK3DObject( rm);
+			cm.pos( cp.x, 0, cp.z);
+			addChild( cm);
+			local cs = b3Shape.createCylinder( cr+0.06, 0.01+0.05, cr+0.06);
+			shp.addChild( cs, Matrix.fromTranslate( cp.x, 0, cp.z-dz+cr), 7, 0);
+			partobjs[7] = cm;
+		}
+
 		if( b3body){
 			b3body.setShape( shp);
 		}else{
 			b3body = b3Body( 0.0, shp, mat, G_GIZMO, G_CHARA|G_OBJECT);
 			b3body.ref = this;
 		}
+	}
+
+	function setMode( mo){
+		mode = mo;
+		local c = ::penmodecol[mode];
+		c = (c<<24)|((c&0xff00)<<8)|((c&0xff0000)>>8) | 0;
+		local m0 = mesh.face[0].m, m1 = mesh.face[1].m;
+		m0.Kd = c|0x40;
+		m1.Kd = c|0xff;
 	}
 
 	function _setmtl( pm, col){
@@ -1413,7 +1502,7 @@ class SK3DGizmo extends SK3DObject
 	//	24: Y
 	//	96: Z
 	function selectParts( bits){
-		for( local l = 0;l < 7;l ++){
+		for( local l = 0;l < 8;l ++){
 			if( partobjs[l]){
 				_setmtl( partobjs[l].mesh, ((bits&(1<<l))?partcols2:partcols1)[l]);
 			}

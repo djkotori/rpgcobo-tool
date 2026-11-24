@@ -19,6 +19,8 @@ class MapTools.tool_barrior extends MapTool
 	penid = null;			//	string
 	blkflag = BLK_SOLID | BLK_LIQUID;	//	rayTestで使う
 	x2chk = null;
+	planechk = null;
+	blkchk = null;
 
 	mode = 1;
 
@@ -28,12 +30,14 @@ class MapTools.tool_barrior extends MapTool
 	constructor( e){
 		super( e);
 		penmap = getPenmap();
-		penid = "p01";
+		penid = "rect";
 		//
 		optionview = ::loadSKView( "/plugin/rpgtools/mapeditor/ui/tool_barrior.ui");
 		optionview.addEventListener( ACTION_EVENT, optionevent);
 		x2chk = optionview.findChild( "x2chk");
-		// x2chk.setSelected( true);
+		planechk = optionview.findChild( "planechk");
+		blkchk = optionview.findChild( "blkchk");
+		planechk.setSelected( true);
 		//	
 		optionview.findChild( penid).setSelected( true);
 		setMode( 1);
@@ -44,8 +48,9 @@ class MapTools.tool_barrior extends MapTool
 		optionview.findChild( "mode"..mode)?.setSelected( false);
 		optionview.findChild( "mode"..m).setSelected( true);
 		mode = m;
-		local mm = ["$T.penmode_erace","$T.penmode_paint"];
+		local mm = ["$T.penmode_erace","$T.penmode_paint","$T.penmode_fill","$T.penmode_clear"];
 		optionview.findChild( "modelbl").setText( mm[m]);
+		optionview.anime( m<2 ? 0 : -1);
 	}
 
 	function changeActiveTool( t){
@@ -66,23 +71,48 @@ class MapTools.tool_barrior extends MapTool
 			bmphash = h;
 		}
 	}
+	
+	function showContextMenu( e){
+		local ctxmenu = [
+			{ id="clear", lbl="$T.lbl_clearall", icon="\ue872" },
+			{ id="fill", lbl="$T.lbl_fill", icon="\uf0ff" },
+			"-",
+			...getDefaultContextMenu( e),
+		];
+		local m = MenuPopup.run( ctxmenu);
+		switch( m["id"]){
+		case "clear":
+		case "fill":
+		{
+			local bw = editor.bw, self = this;
+			local oldbmp = bw.bmp, newbmp = Bitmap( bw.w, bw.d, m.id=="clear"?0:1);
+			local redo = [@(){ bw.bmp = newbmp; }];
+			local undo = [@(){ bw.bmp = oldbmp; }];
+			editor.submitOp( redo, undo, null);
+			refresh();
+			break;
+		}
+		default:
+			return processDefaultContextMenu( e, m);
+		}
+	}
 
 	function optionevent( e){
 		e.consume();
-		switch( e.src["name"]){
-		case "mode0": case "mode1": case "mode2": case "mode3": case "mode4":
+		local n = e.src["name"];
+		switch( n){
+		case "mode0": case "mode1": case "mode2": case "mode3":
 			local m = e.src.name[4]-'0';
 			if( m != mode){
 				setMode( m);
 			}
 			break;
 		default:
-			if( e.src["name"] in penmap){
-				local pid = e.src["name"];
-				if( pid != penid){
+			if( (n in penmap) || n=="rect"){
+				if( n != penid){
 					optionview.findChild( penid).setSelected( false);
-					optionview.findChild( pid).setSelected( true);
-					penid = pid;
+					optionview.findChild( n).setSelected( true);
+					penid = n;
 				}
 			}
 			break;
@@ -90,7 +120,7 @@ class MapTools.tool_barrior extends MapTool
 	}
 
 	function getpens(){
-		return penmap[penid];
+		return penmap[(mode>=2||penid=="rect")?"p01":penid];
 	}
 
 	function rayTestX( e, blkflag){
@@ -106,7 +136,7 @@ class MapTools.tool_barrior extends MapTool
 		case MOUSE_MOVED:
 		{
 			local hb = rayTestX( e, blkflag);
-			placePen( hb, getpens()[0], mode ? PEN_PAINT : PEN_ERACE);
+			placePen( hb, getpens()[0], mode==1||mode==2 ? PEN_PAINT : PEN_ERACE);
 			e.consume();
 			break;
 		}
@@ -116,7 +146,18 @@ class MapTools.tool_barrior extends MapTool
 			if( e.isMouseDown( BUTTON1_MASK)){
 				if( hb){
 					e.consume();
-					return barriorStart( e, hb);
+					if( mode >= 2){
+						local bop = BlockOperation( editor.bw);
+						local isplane = planechk.isSelected(), isblk = blkchk.isSelected();
+						local by0 = BlockOperation.barriorBaseY( editor.bw, hb.bx, hb.bz, hb.by+1), blk0 = hb.blk;
+						bop.floodfillBarrior({ hb:hb, mode:mode, isplane:isplane, isblk:isblk, by0:by0, blk0:blk0 });
+						if( bop.len()){
+							bop.submit( editor);
+							refresh();
+						}
+					}else{
+						return penid=="rect" ? rectStart( e, hb) : barriorStart( e, hb);
+					}
 				}
 			}
 			break;
@@ -145,9 +186,10 @@ class MapTools.tool_barrior extends MapTool
 		local pens = getpens(), pen = pens[hb0.f];
 		local bop = BlockOperation( editor.bw);
 		local x2 = x2chk.isSelected();
-		local mode = mode;
+		local mode = mode, isplane = planechk.isSelected(), isblk = blkchk.isSelected();
+		local by0 = BlockOperation.barriorBaseY( editor.bw, hb0.bx, hb0.bz, hb0.by+1), blk0 = hb0.blk;
 		//	最初の描画
-		bop.barriorSet({ pen:pen, hb:hb0, mode:mode });
+		bop.barriorSet({ pen:pen, hb:hb0, mode:mode, isplane:isplane, isblk:isblk, by0:by0, blk0:blk0});
 		bop.submit( editor);
 		refresh();
 		//	開始時のtoolfunc
@@ -162,7 +204,7 @@ class MapTools.tool_barrior extends MapTool
 				}
 				if( hb){
 					if( hb && x2){ hb.bx = (hb.bx)|1; hb.bz = (hb.bz)|1; }
-					bop.barriorSet({ pen:pen, hb:hb, mode:mode});
+					bop.barriorSet({ pen:pen, hb:hb, mode:mode, isplane:isplane, isblk:isblk, by0:by0, blk0:blk0});
 					if( bop.len()){
 						bop.merge( editor);
 						self.refresh();
@@ -176,6 +218,46 @@ class MapTools.tool_barrior extends MapTool
 				return null;
 			case KEY_PRESSED:
 				break;
+			}
+			return fn;
+		};
+		return fn;
+	}
+
+	//	始点⇒終点のボックスでバリア描画
+	function rectStart( e0, hb0){
+		local self = this;
+		local pens = penmap["p01"], pen = pens[hb0.f], pen0 = pens[0];
+		local bop = BlockOperation( editor.bw);
+		local x2 = x2chk.isSelected();
+		local mode = mode, isplane = planechk.isSelected(), isblk = blkchk.isSelected();
+		local by0 = BlockOperation.barriorBaseY( editor.bw, hb0.bx, hb0.bz, hb0.by+1), blk0 = hb0.blk;
+		local box = makebox( hb0, hb0, false);
+		//	最初の描画
+		local trk = "rect"..skGetTime();
+		bop.rectBarriorSet({ box=box, mode:mode, isplane:isplane, isblk:isblk, by0:by0, blk0:blk0 });
+		bop.submit( editor, trk);
+		local fn( e){
+			e.consume();
+			switch( e.id){
+			case MOUSE_MOVED:
+			case MOUSE_DRAGGED:
+				local hb = self.planeTest( e, hb0);
+				if( hb){
+					local b = makebox( hb0, hb, false);
+					if( b <> box){
+						self.editor.op.undo();
+						bop.rectBarriorSet({ box:b, mode:mode, isplane:isplane, isblk:isblk, by0:by0, blk0:blk0 });
+						bop.submit( self.editor, trk);
+						box.set( b);
+						self.refresh();
+					}
+				}
+				self.placePen( hb, pen, PEN_PAINT);
+				break;
+			case MOUSE_CANCELLED:
+			case MOUSE_RELEASED:
+				return null;
 			}
 			return fn;
 		};
@@ -429,6 +511,7 @@ class SelectAsset
 					local bb = uncompressZSTD( decodeBASE64( q.bw64));
 					local bw = ObjectInput.decode( bb);
 					ret = cache[q.bw64] <- imgpreview.getBlockWorldImage( bw);
+					ret.ref = bw;
 					foreach( fn in q.list) fn( ret);
 				}
 				th[0] = null;	//	threadおわり

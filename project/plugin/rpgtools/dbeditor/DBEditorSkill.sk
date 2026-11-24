@@ -19,6 +19,7 @@ local srcdir = dirname( callee().getSourceName());
 local eqtypeprop = {
 	pid = "eqtypebits"
 	lbl = "$T.lbl_eqtypebits",
+	tipskey = "skillprop.eqtypebits"
 	type = CHECKBITS
 	list = @() ::conf.type.eqtype.filter( @( v, i) isWeapon( i)),
 	defval = @(){
@@ -32,6 +33,7 @@ local eqtypeprop = {
 local consumeprop = {
 	pid = "consume"
 	lbl = "$T.skillconsume"
+	tipskey = "skillprop.consume"
 	type = LIST_SCALAR
 	list = [
 		{ lbl:"$T.skillconsume0", val:0},
@@ -45,30 +47,6 @@ local consumeprop = {
 	defval = [0,1]
 };
 
-//	スキル使用条件。敵AIの条件と被るものも多い。これはコマンド選択時に評価されて発動時は再チェックしない
-//	これいらないでしょ！
-// local reqprop = {
-// 	pid = "reqire"
-// 	lbl = "$T.lbl_requse"
-// 	type = LIST
-// 	list = @() ::RPGSystem.skillreq._list
-// 	defval = null
-// }
-
-// //	使用場面
-// local occasionprop = {
-// 	pid = "occasion"
-// 	lbl = "$T.occasion"
-// 	type = LIST
-// 	list = [
-// 		{ lbl:"$T.occasion0", val:0},
-// 		{ lbl:"$T.occasion1", val:1},
-// 		{ lbl:"$T.occasion2", val:2},
-// 		{ lbl:"$T.occasion3", val:3},
-// 	],
-// 	defval = 1,
-// };
-
 //	スキルタイプ、のテンプレート
 local stproptmpl = {
 	pid = "skilltype"
@@ -78,6 +56,14 @@ local stproptmpl = {
 	list = @() ::RPGSystem.skilltype._list.map( @( v) ({ lbl=v.lbl, val=v.key}))
 	defval = @() ::RPGSystem.skilltype._list[0].key
 	refresh = true
+
+	tips = @() {
+		local s = "$T.skilltype_tips\n\n";
+		local t = ::skstudio.editor.data["skilltype"];
+		s = s .. "[P]$T.skilltype_" .. t .. ": [T]" .. "$T.skilltype_tips_" .. t;
+		return s;
+	}
+	
 	//	set()を入れる！！！
 };
 

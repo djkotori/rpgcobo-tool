@@ -81,10 +81,26 @@ class RPGCameraworkStandard extends RPGCamerawork
 		local cp = v_1( poffs).add( tgtloc.pos).rotate( -hpb[0], 0, 0);	//	head回転のみ
 		local vp = v_2( toloc).rotate( -hpb[0], 0, 0);
 		local dp = v_3( cp).sub( vp);
-		local R = 2.5;
+		local R = zoom * 0.5 * cam0.aspect * 0.23;
 		if( Math.abs( dp.x) < R) dp.x = 0; else dp.x = dp.x - R*Math.sign( dp.x);
-		if( Math.abs( dp.z) < R) dp.z = 0; else dp.z = dp.z - R*Math.sign( dp.z);
-		if( Math.abs( dp.y) < R) dp.y = 0; else dp.y = dp.y - R*Math.sign( dp.y);
+		//	パースでZが手前に寄りがちなのでオフセットが入る
+		local RZ = R, cdz = -4.0 * Math.sin( fovy*Math.DTOR);
+		if( dp.z+cdz > -RZ){
+			if( dp.z+cdz < RZ) dp.z = 0;
+			else dp.z = dp.z+cdz - RZ;
+		}else{
+			dp.z = dp.z+cdz + RZ;
+		}
+		local RY = R;
+		if( Math.abs( dp.y) < RY) dp.y = 0;
+		else{	//	Yはバネ運動
+			local d = (dp.y - R * Math.sign( dp.y)), dd = Math.abs( d);
+			local spd = dt * 0.003 + dd * dt * 0.001;
+			if( spd < dd) d = spd * Math.sign( d);
+			dp.y = d;
+		}
+		// if( Math.abs( dp.y) < RY) dp.y = 0; else dp.y = dp.y - RY*Math.sign( dp.y);
+		//
 		dp.rotate( hpb[0], 0, 0);
 		toloc.add( dp);
 		//	Yはベースを移動していかないといけない
@@ -133,6 +149,11 @@ class RPGCameraworkStandard extends RPGCamerawork
 		}
 	}
 
+	function ease( d, s){
+		local t = Math.abs( d/s);
+		return d * Math.pow( Math.saturate( t), 0.5)*0.8;
+	}
+
 	function adjustMapBounds2( stage){
 		//	toloc座標系で外包bnd
 		local ref = v_2( 0.0), loc0 = v_3( toloc);
@@ -142,12 +163,11 @@ class RPGCameraworkStandard extends RPGCamerawork
 		//	
 		local cam = stage.cam;
 		local sy = zoom*0.5, sx = sy * stage.cam.aspect * (0.9 * Math.cos( cam.fovy*Math.DTOR));
-		local sz = sx * stage.cam.aspect * 1.0 * 0.8, d;
-		if( (d=(r.x-r.r)+sx) > 0.0){
-			ref.x = d;
-		}
-		if(  sx > r.x+r.r) ref.x = (r.x+r.r)-sx;
-		if( -sy < r.y-r.s) ref.z = (r.y-r.s)+sy;
+		local sz = sx * stage.cam.aspect * 1.0 * 0.7, d;	//	sz要調整。。。
+		// sy *= 0.9
+		if( (d=(r.x-r.r)+sx) > 0.0){ ref.x = ease( d, sx); }
+		if( (d=(r.x+r.r)-sx) < 0.0){ ref.x = ease( d, sx); }
+		if( (d=(r.y-r.s)+sy) > 0.0) ref.z = ease( d, sy);		//	手前はYで判断、奥はZで判断。へんてこだけどこれが一番しっくりくる。。。
 		if(  sz > r.z+r.t) ref.z = (r.z+r.t)-sz;
 		ref.rotate( hpb[0], 0.0, 0.0);	//	カメラ回転を反映
 		return ref;

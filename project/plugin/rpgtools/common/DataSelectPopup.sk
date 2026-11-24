@@ -17,7 +17,7 @@ class DataSelectPopup extends Popup
 	static POPUPUIPATH = srcdir .. "/ui/dataselectpopup.ui";
 
 	static dbtypelist = [ 
-		"player", "job", "skill", "enemy", "cond", "item", "weapon", "armor", "point", "store", "quest", "map", "macro", 
+		"player", "job", "skill", "enemy", "cond", "item", "weapon", "armor", "point", "store", "map", "macro", 
 	];
 	typelist = null;			//	ListBehavior
 	datalist = null;			//	ListBehavior
@@ -78,7 +78,7 @@ class DataSelectPopup extends Popup
 		datalist.listview.addEventListener( ACTION_EVENT, dataevent);
 		pager = PagerBehavior( v.findChild( "pager"));
 		if( !p["nullable"]){
-			view.findChild( "btn_rem").setVisible( false);
+			view.findChild( "btn_rem").setEnabled( false);
 		}
 		searchedit = view.findChild( "searchedit");
 		searchedit.addEventListener( TEXT_EVENT, searchevent);

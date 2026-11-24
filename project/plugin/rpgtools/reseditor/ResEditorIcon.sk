@@ -27,7 +27,7 @@ class ResEditorIcon extends EditorViewBase
 
 	//	
 	res = null;				//	usericon.json
-	emjidx = null;			//	[{cp,offs,size,w,h,}] : 
+	emjidx = null;			//	[{cp,offs,size,w,h,f}] : 
 	emjdata = null;			//	ByteBuffer : 保存時にバキューム
 
 	function init( path){
@@ -185,10 +185,15 @@ class ResEditorIcon extends EditorViewBase
 
 	function showContextMenu( cp, e){
 		local lyr = Emoji.getEmojiLayer( Emoji.getEmojiCode( cp));
+		local ud = emjidx.find( @( v) v.cp == cp), gs = ud["f"]|0;
 		local menudata = [
 			{ id="hsv", lbl="$T.lbl_hsv", disable=lyr<0},
 			{ id="load", lbl="$T.lbl_load_img", icon="\ue89e"},
 			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", disable=lyr!=2},
+			{ id="grayscale", lbl="$T.lbl_grayscale = "..(gs? "ON" : "OFF"), icon="\ueb37", disable=lyr!=2, submenu=[
+				{ id="grayscale", lbl="OFF", val=0, checked=gs==0 },
+				{ id="grayscale", lbl="ON", val=1, checked=gs==1 },
+			]},
 			"*",
 			{ id="copycode", lbl="$T.lbl_copy_code", icon="\uf1c6" },
 			{ id="copyimg", lbl="$T.lbl_copy_img", icon="\ue14d", disable=lyr<0},
@@ -215,6 +220,22 @@ class ResEditorIcon extends EditorViewBase
 			local op = deleteIconOp( cp);
 			submitOp( op[0], op[1]);
 			break;
+		case "grayscale":
+		{
+			local newgs = ret["val"]|0, self = this;
+			local redo = [@(){
+				ud.f <- newgs;
+				Emoji.registerEmoji( self.emjidx, self.emjdata, 2);
+				// self.updateIcon( cp);
+			}];
+			local undo = [@(){
+				ud.f <- gs;
+				Emoji.registerEmoji( self.emjidx, self.emjdata, 2);
+				// self.updateIcon( cp);
+			}];
+			submitOp( redo, undo);
+			break;
+		}
 		case "hsv":
 			local newimg = IconHSVPopup.run( e.src, Emoji.getEmojiImage( Emoji.getEmojiCode( cp)));
 			if( newimg){

@@ -44,6 +44,17 @@ vs reg2d
 
 fs reg2d
 {
+	float grid( vec2 gv){
+		vec2 dX = abs( dFdx( gv));
+		vec2 dY = abs( dFdy( gv));
+		gv = fract( gv);
+		//
+		vec2 rem = min( gv, 1.0-gv);
+		vec2 width = vec2( max( dY.x, dX.x), max( dY.y, dX.y)) * 2.0;
+		vec2 diff = clamp( (width-rem) / width, 0.0, 1.0);
+		return max( diff.x, diff.y);
+	}
+
 	void main(){
 		mediump vec4 pix;
 		$(COLOR1) { pix = v_col * Kd; } : { pix = Kd; }
@@ -59,6 +70,8 @@ fs reg2d
 		vec2 r = abs( wp.xz-reg[0].xz) - reg[0].yw;
 		if( r.x > -0.005 || r.y > -0.005){
 			pix.w *= 0.2;
+		}else{
+			pix.w *= (1.0-grid( wp.xz))*0.8;
 		}
 		FRAGOUT
 	}

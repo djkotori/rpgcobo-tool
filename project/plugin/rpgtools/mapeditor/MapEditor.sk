@@ -53,6 +53,31 @@ class MapEditor extends EditorViewBase
 		return ed;
 	}
 
+	//	Map Preview
+	static function createPreview( path){
+		if( !matches( path)) return null;
+		local pv = ::loadSKView( "/skstudio/ui/parts/preview1.ui");
+		local r = ::getResource( path);
+		local g = pv.findChild( "g");
+		local pic = g.findChild( "pic");
+		if( getdbtype( path)=="map"){
+			local mapid = r.name;
+			local size = ::conf.map[mapid]["size"];
+			local tex = ::getTexture( `/data/mapdata/${mapid}.webp`);
+			pv.setValue( "lbl", sprintf("%d x %d ",size[0],size[2]));
+			pic.setSprite( Sprite( tex));
+		}else{
+			local bw64 = r.getContent()["bw64"];
+			if( !bw64) return null;
+			SelectAsset.getPreviewTex( bw64, @( tex){
+				pv.setValue( "lbl", sprintf("%d x %d x %d",tex.ref.w,tex.ref.h,tex.ref.d));
+				pic.setSprite( Sprite( tex));
+			});
+		}
+		pv.stretchSize( 200, 200);
+		return pv;
+	}
+
 	//	New File
 	static function newFile( filename, dirpath){
 		local bw = BlockWorld();
@@ -296,17 +321,9 @@ class MapEditor extends EditorViewBase
 			bb.pos = 0;
 			bwres.file.save( bb);
 			//	mapshot保存
-			local tex = mapshottex;
 			if( mapshottex["ref"]){
-				local img = RGBAImage( tex.width, tex.height);
-				local old = skGetRenderTarget();
-				skSetRenderTarget( tex);
-				skReadPixels( 0, 0, img.width, img.height, img);
-				skSetRenderTarget( old);
-				//	
 				local fn = bwres.name.substring( 0, bwres.name.indexOf( ".")) .. ".webp";
-				local bb = img.encodeWebp( 75);	//	大きさでquality落とせば多少サイズ差を吸収できるか
-				bb.pos = 0;
+				local bb = encodeMapShotImage( mapshottex);
 				local imgf = FileRef( bwres.pres.file, fn);
 				imgf.save( bb);
 			}
@@ -325,6 +342,18 @@ class MapEditor extends EditorViewBase
 		}
 	}
 
+	function encodeMapShotImage( tex){
+		local img = RGBAImage( tex.width, tex.height);
+		local old = skGetRenderTarget();
+		skSetRenderTarget( tex);
+		skReadPixels( 0, 0, img.width, img.height, img);
+		skSetRenderTarget( old);
+		//	
+		local bb = img.encodeWebp( 75);	//	大きさでquality落とせば多少サイズ差を吸収できるか
+		bb.pos = 0;
+		return bb;
+	}
+
 	//	作業中のデータでデバッグするための情報取得
 	//	dataの他に、bw、あと縮小マップも？ついでにsetting.inimapも？？
 	function getWorkingData(){
@@ -337,6 +366,11 @@ class MapEditor extends EditorViewBase
 			d["***replace***"] <- true;
 			t.conf.map <- { [mapid] = d };
 			t.res[bwres.path] <- ObjectOutput.encode( bw);
+			if( mapshottex["ref"]){
+				local fn = bwres.name.substring( 0, bwres.name.indexOf( ".")) .. ".webp";
+				local bb = encodeMapShotImage( mapshottex);
+				t.res[ bwres.pres.path.."/"..fn] <- bb;
+			}
 		}else{
 			local d = deepclone( bwres.getContent());
 			local bb = ObjectOutput.encode( bw);
@@ -602,6 +636,7 @@ with( skstudio){
 		uid = "editor_map",
 		matches = MapEditor.matches,
 		createEditor = MapEditor.createEditor,
+		createPreview = MapEditor.createPreview,
 		sideview = "side_map",
 
 		// newfile = {

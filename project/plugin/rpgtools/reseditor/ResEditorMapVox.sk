@@ -142,6 +142,7 @@ local inexprop( incatg, excatg){
 // local nameprop = { pid="name", lbl="$T.lbl_name", type=LANGSTRING, defval = "", }	//	名前なし！
 local vp0prop = { pid="vp0", lbl="$T.lbl_model", type=VOXEL_PARTS, dir=@() ::skstudio.editor.selcatg.dir0, restype="voxparts", usevcname=true, defval=null, showpartstree=true }
 local vp1prop = { pid="vp1", lbl="$T.lbl_model", type=VOXEL_PARTS, dir=@() ::skstudio.editor.selcatg.dir1, restype="voxparts", usevcname=true, defval=null, showpartstree=true }
+local vp2prop = { pid="vp2", lbl="$T.lbl_model", type=VOXEL_PARTS, dir=@() ::skstudio.editor.selcatg.dir1, restype="voxparts", usevcname=true, defval=null, showpartstree=true }
 local pal0prop = { pid="pal0", lbl="$T.lbl_palette", type=PALETTEMAP, cnt="cnt6.ui", defval=[],
 	inipal=@() ::skstudio.editor.getIniPalette(),
 	palchange=@( palmod) ::skstudio.editor.paletteChanged( palmod, 0)
@@ -155,7 +156,8 @@ local doorcatgprop = { pid="catg", lbl="in/ex", type=LIST, }
 
 //	個別プロパティ
 local vp0wprop = { ...vp0prop, lbl="$T.lbl_model - $T.lbl_wall" }
-local vp1fprop = { ...vp1prop, lbl="$T.lbl_model - $T.lbl_floor", hide=@( pl) !pl.getParam( "vp0") }
+local vp1fprop = { ...vp1prop, lbl="$T.lbl_model - $T.lbl_floor", nullable=true, hide=@( pl) !pl.getParam( "vp0") }
+local vp2fprop = { ...vp2prop, lbl="$T.lbl_model - $T.lbl_innerfloor", nullable=true, hide=@( pl) !pl.getParam( "vp0") }
 local floortypeprop = { pid="floortype", lbl="$T.floortype", type=LIST, list=floortypelist, defval=2 }
 local layerprop = { pid="layer", lbl="$T.floorlayer", type=SCALAR, range=(-128,127), defval=0 }
 local edgeshpprop = { pid="edgeshp", lbl="$T.edgeshp", type=LIST, list=edgeshplist, defval=0 }
@@ -200,8 +202,8 @@ class ResEditorMapVox extends EditorViewBase
 		{ lbl="$T.blk_basic", props=[typefn("shape"),vp0prop,pal0prop,shapeprop,], dir0="/resource/vox/map/shape", caps=128, id="shape" }
 		{ lbl="$T.blk_naturefloor", props=[typefn("floor0"),vp1prop,pal1prop,floortypeprop,layerprop,], dir1="/resource/vox/map/floor", caps=16, id="floor0" }
 		{ lbl="$T.blk_naturewall", props=[typefn("wall0"),vp0prop,pal0prop,], dir0="/resource/vox/map/terrain", caps=16, id="wall0" }
-		{ lbl="$T.blk_natureunion", props=[typefn("wallfloor0"),vp0wprop,vp1fprop,pal0prop,floortypeprop,layerprop,], dir0="/resource/vox/map/terrain", dir1="/resource/vox/map/floor", caps=128, id="wallfloor0" }
-		{ lbl="$T.blk_structa", props=[typefn("struct0"),vp0wprop,vp1fprop,pal0prop,edgeshpprop,floortypeprop,layerprop,], dir0="/resource/vox/map/wall", dir1="/resource/vox/map/floor", caps=128, id="struct0" }
+		{ lbl="$T.blk_natureunion", props=[typefn("wallfloor0"),vp0wprop,vp1fprop,vp2fprop,pal0prop,floortypeprop,layerprop,], dir0="/resource/vox/map/terrain", dir1="/resource/vox/map/floor", caps=128, id="wallfloor0" }
+		{ lbl="$T.blk_structa", props=[typefn("struct0"),vp0wprop,vp1fprop,vp2fprop,pal0prop,edgeshpprop,floortypeprop,layerprop,], dir0="/resource/vox/map/wall", dir1="/resource/vox/map/floor", caps=128, id="struct0" }
 		// { lbl="$T.blk_structb", props=[typefn("struct1"),vp0wprop,vp1fprop,pal0prop,edgeshpprop,floortypeprop], dir0="/resource/vox/map/wall", dir1="/resource/vox/map/floor", caps=128, id="struct1" }
 		{ lbl="$T.blk_carpet", props=[typefn("carpet"),vp0prop,pal0prop,], dir0="/resource/vox/map/carpet", caps=64, id="carpet" }
 		{ lbl="$T.blk_water", props=[typefn("water"),vp0prop,pal0prop,], dir0="/resource/vox/map/water", caps=64, id="water" }
@@ -546,7 +548,7 @@ class ResEditorMapVox extends EditorViewBase
 		{
 			local pid = cmd.prop.pid, val = cmd.val;
 			switch( pid){
-			case "vp0": case "vp1":	// vox変更によって、名前、パレット、中心点
+			case "vp0": case "vp1": case "vp2":	// vox変更によって、名前、パレット、中心点
 				setVoxParamOp( pid, val);
 				break;
 			default:
@@ -561,7 +563,7 @@ class ResEditorMapVox extends EditorViewBase
 	function getIniPalette(){
 		local d = data[selcatg.id][selitem.id];
 		local camap = {};
-		for( local l = 0;l < 2;l ++){
+		for( local l = 0;l < 3;l ++){
 			local vcvp = d["vp"..l];
 			if( !vcvp) continue;
 			local vc = VoxelContainer.getGlobal( vcvp[0]), vcpal = vc.pal;
@@ -627,33 +629,36 @@ class ResEditorMapVox extends EditorViewBase
 	}
 
 	function setVoxParamOp( pid, val){
-		local vc = VoxelContainer.getGlobal( val[0]), vcpal = vc.pal;
-		local vp = vc.findParts( val[1]);
 		//	パレット取得＋抜き色
-		local ca = vp.getUsingColors();
-		local palpid = selcatg.props.find( @( p) p.type==PALETTEMAP ).pid;
-		//
+		local palpid = selcatg.props.find( @( p) p.type==PALETTEMAP ).pid, cols;
 		local resid = selitem.id, d = data[selcatg.id][resid], self = this;
 		local oldvcvp = d[pid], oldpal = d[palpid], oldtrns=d["trns"]||0;
-		//	コリジョン自動生成。FreeBlockのみ
-		local oldcols = d["cols"], cols = oldcols;
-		if( "cols" in d){
-			local _vp = (d.type=="door"||d.type=="lamp") ? vp.children : vp;	//	ドア、ランプは最初の子パーツ
-			local vr = _vp.wholebnd();	//	ドア、ランプは
-			local size = ((vr.w+7)/8, ((vr.h+7)/8), (vr.d+7)/8);
-			cols = ("cols" in d) && makeAutoCollisionData( _vp, size[0], size[1], size[2], ("align" in oldcols)?oldcols.align:12);
+		if( val){
+			local vc = VoxelContainer.getGlobal( val[0]), vcpal = vc.pal;
+			local vp = vc.findParts( val[1]);
+			//	コリジョン自動生成。FreeBlockのみ
+			local oldcols = d["cols"];
+			cols = oldcols;
+			if( "cols" in d){
+				local _vp = (d.type=="door"||d.type=="lamp") ? vp.children : vp;	//	ドア、ランプは最初の子パーツ
+				local vr = _vp.wholebnd();	//	ドア、ランプは
+				local size = ((vr.w+7)/8, ((vr.h+7)/8), (vr.d+7)/8);
+				cols = ("cols" in d) && makeAutoCollisionData( _vp, size[0], size[1], size[2], ("align" in oldcols)?oldcols.align:12);
+			}
+		}else{
+
 		}
 		//	
 		local redo = [@(){
 			d[pid] <- val;
-			d[palpid] <- self.getIniPalette();
+			if( palpid) d[palpid] <- self.getIniPalette();
 			d.trns <- self.getTransColor();
 			if( cols) d.cols <- cols;
 			self.updateItemView( resid, d);	//	catg変更時に関係ないのがupdateされる場合あるけど問題は起きないはず。。。。
 		}];
 		local undo = [@(){
 			d[pid] <- oldvcvp;
-			d[palpid] <- oldpal;
+			if( palpid) d[palpid] <- oldpal;
 			d.trns <- oldtrns;
 			if( cols) d.cols <- oldcols;
 			self.updateItemView( resid, d);

@@ -20,6 +20,17 @@ class SpriteSheetEditor extends EditorViewBase
 		return ed;
 	}
 
+	static function createPreview( path){
+		if( !path.endsWith( ".ssg")) return null;
+		local r = ::getResource( path);
+		local t = decodeJSON( r.getContent());
+		local n = r.name;
+		n = n.substring( 0, n.lastIndexOf( "."));
+		//
+		local ir = r.pres.getResource( n);
+		return ImageEditor.createImagePreview( ir.path);
+	}
+
 	//	New File
 	static function newFile( filename, dirpath){
 		local imgdirpath = dirpath.substring( 1).replace( "/", ".") .. "." .. filename.substring( 0, filename.lastIndexOf( "."));
@@ -410,6 +421,7 @@ skstudio.registerEditor( {
 	uid = "editor_spritesheet",
 	matches = @( path){ return path.endsWith( ".ssg"); }
 	createEditor = SpriteSheetEditor.createEditor,
+	createPreview = SpriteSheetEditor.createPreview,
 
 	newfile = {
 		icon = FileIcons.ssg,

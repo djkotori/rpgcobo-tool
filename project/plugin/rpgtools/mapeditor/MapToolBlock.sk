@@ -78,11 +78,10 @@ class MapTools.tool_pen extends MapTool
 			break;
 		default:
 			if( (n in penmap) || n=="rect"){
-				local pid = e.src["name"];
-				if( pid != penid){
+				if( n != penid){
 					optionview.findChild( penid).setSelected( false);
-					optionview.findChild( pid).setSelected( true);
-					penid = pid;
+					optionview.findChild( n).setSelected( true);
+					penid = n;
 				}
 			}
 			break;

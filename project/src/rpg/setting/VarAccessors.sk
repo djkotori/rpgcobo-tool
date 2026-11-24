@@ -279,6 +279,10 @@ class SystemVarAccessor
 			func = @( key, val=undefined){ return !!::rpgstage.battle["battledata"]["escape"]; }
 		},
 		{
+			key = "BATTLEVIEW", name = "$T.setting_battleview", type = VAR_BOOL, readonly = true,
+			func = @( key, val=undefined){ return ::rpgstage.battle["viewtype"] ?? ::conf.setting["battleview"]; }
+		},
+		{
 			key = "UIFOCUS", name = "UI $T.lbl_focus", type = VAR_STRING, readonly = true,
 			func = @( key, val=undefined){
 				return ::gpui.gpuitarget["view"]["name"] || "";

@@ -90,7 +90,9 @@ class DBEditorType.TypeEdit
 		proplist.ref = this;
 		capsmenu = v.findChild( "capsmenu");
 		capsmenu.addEventListener( ACTION_EVENT, capsevent);
-		v.setValue( "typelbl", def.lbl);
+		local lbl = v.findChild( "typelbl");
+		lbl.setValue( ::rtf( def.lbl .. " [E][#526E79]\ue88e"));
+		lbl.tips = "$T.type_tips_" .. def.key;
 	}
 
 	function setItems( a){

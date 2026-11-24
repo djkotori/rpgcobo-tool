@@ -157,7 +157,7 @@ class DBSideView extends SKView
 				lbl = r["itemname"] || sprintf( "%S: %S", r.id, v["name"] || ""),
 				icon = r["itemicon"] || v["icon"],
 				res = r, val = v,
-				// tips = "AODWJOFJAWOWJAOFJAWOWJFOWAJOFJOWJA"
+				tips = r,
 			};
 		}
 	}

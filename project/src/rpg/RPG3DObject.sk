@@ -1820,6 +1820,11 @@ class RPG3DMapAsset extends RPG3DObject
 	function getMaterials(){
 		return bw3d?.getMaterials();
 	}
+
+	function setVisible( v){
+		visible = v;
+		if( bw3d) bw3d.setVisible( v);
+	}
 }
 
 

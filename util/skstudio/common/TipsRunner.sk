@@ -86,7 +86,7 @@ class TipsRunner
 				if( k1){ k1v = v; ka = ta.slice( 0, i).reverse(); break;}
 			}
 			foreach( i, v in ka){
-				if( !v.isVisible()) continue;
+				if( !v.isVisible() || !(v.layerflags & 1)) continue;
 				if( v.ref instanceof PropertyBehavior){
 					//	ヘッダのラベル内にマウスがない場合はスキップ
 					local lv = v.findChild( "head.lbl");
@@ -126,12 +126,35 @@ class TipsRunner
 	}
 
 	//	指定したマウス位置からvのtipsを表示する
+	//	tipsは毎フレーム比較、更新が入るので、SKViewそのものや大きなデータは入れてはいけない
 	function showTips( ms, tv){
+		local ts = fget( tv, "tips");
+		local v = ::skstudio.createPreview( ts);	//	Resourceは専用プレビューがある場合あり。
+		if( v){
+			local root = ::rootview.findChild( "dlglayer") || ::rootview;
+			local vp = Vector3D( 0, tv.bnd.h+2, 0).transform( tv.mat);
+			local pos = Vector3D( ms.mousex+0, Math.min( ms.mousey+24, vp.y)|0, 0).transform( root.getInvMatrix());
+			v.pos( pos);
+			if( root.contains( tv)){
+				root.addChild( v);	//	先にaddしとかないとadjustBoundsできない。。。。
+			}else{
+				root.insertChild( 0, v);
+			}
+			adjustBounds( v, tv, root);
+			tipview = v;
+			v.ref = ts;
+			return;
+		}
+		showLabelTips( ms, tv, ts);
+	}
+
+	//	ラベルのtipsを表示する。伸縮などの機能あり
+	function showLabelTips( ms, tv, ts){
 		local type = (tv.layerflags & 256) ? "tipsh" : "tipsv";
 		local uipath = uipathmap[type];
 		local v = ::loadSKView( uipath);
-		local ts = fget( tv, "tips");
-		local s = ::lang( ts);
+		local s = fget( ts, "tipstext") ?? ts;	//	tipstextが存在する場合はそれを使う
+		s = string( ::lang( s));
 		if( s.contains( '$')){
 			local fn = ::compiletemplate_c( s); s = fn();
 		}

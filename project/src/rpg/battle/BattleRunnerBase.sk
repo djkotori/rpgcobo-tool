@@ -45,7 +45,8 @@ class BattleRunnerBase
 	battledata = null;				//	{ enemies, escape,  } : エネミーグループの設定データ。
 	endfunc = null;					//	バトル終了時に呼ばれるコールバック関数。endfunc( this)と呼ばれる。
 	stage = null;					//	RPGStage
-
+	viewtype = 0;					//	0:サイドビュー, 1:フロントビュー
+	
 	members = null;					//	RPGCharaBase[]
 	enemies = null;					//	RPGCharaBase[]
 	charas = null;					//	RPGCharaBase[] : 全てのキャラ
@@ -74,6 +75,7 @@ class BattleRunnerBase
 	constructor( st, bd){
 		stage = st;
 		battledata = bd;
+		viewtype = ::conf.setting["battleview"] | 0;
 		endfunc = bd.endfunc;
 		members = [];
 		enemies = [];
@@ -103,6 +105,7 @@ class BattleRunnerBase
 	//	登場キャラのセットアップ
 
 	static pwidths = [0.0, 0.0, 3.5, 5.6, 9.0, 10.4, 11.0, 11.0, 11.0];	//	メンバー数で陣形の幅を変更
+	static enemylocscale = [Vector3D( 1, 1, 1.8), Vector3D( 2.2, 1, 1.8)];
 
 	//	バトル用のキャラをステージに配置する。※後から追加できるように！！！
 	//	パーティーメンバー、エネミー
@@ -114,12 +117,14 @@ class BattleRunnerBase
 			p3d.setPosition( p);
 		}
 		//	※エネミーの配置。バトルに渡されたエネミーグループ設定。
-		local eloc = stage.getLocation( "*enemyloc");	//	マーカー位置
+		local mk = viewtype==1 ? "*enemyloc_fv" : "*enemyloc";
+		local eloc = stage.getLocation( mk);	//	マーカー位置
 		foreach( v in battledata.enemies){		//	{id,x,z}
 			local ec = RPGEnemy();
 			ec.setDataID( v.id);
 			local e3d = addBattleEnemy( ec);
-			local p = Vector3D( eloc.pos).add( v.x, 0 v.z*1.8);	//	なんかzが縮こまる
+			local ls = enemylocscale[viewtype];
+			local p = Vector3D( eloc.pos).add( v.x*ls.x, 0 v.z*ls.z);	//	なんかzが縮こまる
 			local epos = (p.x, p.y, p.z, eloc.dir);
 			e3d.setPosition( epos);
 		}
@@ -128,10 +133,11 @@ class BattleRunnerBase
 	//	※パーティメンバーの配置は計算でやる。。。キャラが多い方がキャラ同士の隙間を狭くするように
 	//	1=0m, 2=2.0m, 3=3.0m, 4~=4.5m
 	function getBasePosition( pc){
+		local mk = viewtype==1 ? "*memberloc_fv" : "*memberloc";
 		local a = rpgstat.members.filter( @( v) v);	//	実際のメンバー数
 		local i = a.indexOf( pc), n = length( a);
-		local w = pwidths[n];
-		local m = stage.getLocation( "*memberloc");	//	マーカー位置
+		local w = pwidths[n] * (viewtype==1 ? -0.9 : 1.0);		//	フロントビューの場合は幅を反転させて狭くする
+		local m = stage.getLocation( mk);	//	マーカー位置
 		local pvec = Vector3D( 1, 0, 0).rotate( m.dir, 0, 0);		//	横視点だと右から左だけど、縦視点だと左から右だなー。。。カメラでチェックするしか
 		local ploc = m.pos;
 		if( n > 1) ploc += pvec * ((0.5-i/(n-1.0))*w);
@@ -171,6 +177,7 @@ class BattleRunnerBase
 	//	バトル用のエネミーの3Dオブジェクトを追加。メンバーとやることは変わらない
 	function addBattleEnemy( ec){	//	ec:RPGEnemy
 		local rp3d = RPG3DObject.create3DObject( ec.data);
+		if( viewtype==1) rp3d.scale( 1.25);	//	フロントビューの場合はエネミーを大きく表示。。。
 		rp3d.synccondani = true;
 		rp3d.rpgobj = ec;
 		rp3d.manuaction = ManualMoveAction( rp3d);		//	バトル用のマニュアルアクション
@@ -231,8 +238,9 @@ class BattleRunnerBase
 	//	UIのセットアップ
 
 	function setupBattleUI(){
+		local uipath = viewtype==1 ? "battleui_fv.ui" : "battleui.ui";
 		battleui = ::RPGMain.showView( {
-			uipath = "battleui.ui"		//	パーティメンバーリスト、コマンドリストを持つ。画面下部に常駐
+			uipath = uipath		//	パーティメンバーリスト、コマンドリストを持つ。画面下部に常駐
 			name = "battleui"
 			layer = "stageui"
 		});
@@ -248,12 +256,14 @@ class BattleRunnerBase
 		local self = this;
 		memberlist.bindValue( members.map( @( v) v?{	//	v:RPGPlayer[] プレイヤーのパラメータを同期させる
 			name = v.name
-			isdead = @() v.isDead() ? 1 : 0
+			health = @() v.isDead() ? -2 : v.isPinch() ? -1 : 0
 			hp = @() v.HP
 			mp = @() v.MP
 			tp = @() v.TP
-			cmdgauge = @() v.isDead()?-1 : v.cmdgauge<=0?-1 : v.cmdgauge>=100?11 : (v.cmdgauge*0.1)		//	アクティブバトル時に表示 -1,0-100
+			hpgauge = @() (v.HP<=0)? -1 : v.HP*10.0 / v.MAXHP,	//	HPゲージ -1,0-10
+			cmdgauge = @() v.isDead()?-1 : v.cmdgauge<=0?-1 : v.cmdgauge>=100?11 : (v.cmdgauge*0.1)		//	アクティブバトル時に表示 -1,0-10
 			sel = @() (v.selected || self.getChara3D( v)["selbits"]) ? "on" : "off"
+			cmdg = @() self.cmdchr == v ? "on" : "off"
 			conds = @() ::RPGSystem.getConditionString( v.conds)
 		}:{	//	v=nullの場合は非表示
 			g = ptr({ hide=true})
@@ -526,20 +536,24 @@ class BattleRunnerBase
 		//	カメラを切り替え、キャラをアニメーション
 		selectCommandTargets( []);
 		battleui.setVisible( false);
-		stage.setCamerawork({ type=2, mkid="*victorycam", trans=0, });
+		local mk = viewtype==1 ? "*victorycam_fv" : "*victorycam";
+		stage.setCamerawork({ type=2, mkid=mk, trans=0, });
 		stage.addCameraMotion({ type=1, playtype=2, pos=[0,0,0], hpb=[40,0,0], zoom=0.3, time=20000, easing=0, });
 		//	
 		local alives = members.filter( @( v) !v.isDefeated());	//	defeatedなキャラは経験値はいらない
 		local alive3ds = alives.map( @( v) getChara3D( v));
-		foreach( p3d in alive3ds) p3d.anime2( {id="victory"});
+		foreach( p3d in alive3ds){
+			if( viewtype == 1) p3d.setDir( p3d.dir+Math.PI);	//	フロントビューの場合はキャラの向きを反転させる。。。
+			p3d.anime2( {id="victory"});
+		}
 		emitOption( "victory", null);	//	勝利演出で使う
 		//	取得値
 		local jxp = 0, money = 0, exp = 0, items = clone stoleitems;	//	items:RPGItem[]
 		foreach( e in enemies){
 			if( e.escaped) continue;	//	逃げたエネミーはカウント対象外
-			exp += e.data.exp;
-			jxp += e.data.jxp;
-			money += e.data.money;
+			exp += e.exp;
+			jxp += e.jxp;
+			money += e.money;
 			//	ドロップアイテムは一人一つまで。また、盗んだものがある場合はドロップは無し
 			if( !(e.battleflags & 0x10000)){	//	盗んだ場合に0x10000が立つ
 				for( local l = 0, di; di=e.data["item"..l]; l ++){
@@ -589,14 +603,16 @@ class BattleRunnerBase
 		//	次のレベルまでの経験値/20、最大でexp/100、最低で1。最大時には5秒かかる。
 		local olds = alives.map( @( v) v.cloneForCompare());	//	レベルアップ判定用
 		local dexp = calcdexp( alives, exp);
-		foreach( p3d in alive3ds) p3d.popupExpGauge();
-		local lvups = [], skip = 0;
-		while( exp > dexp){
-			foreach( pc in alives) skip |= _addexp( pc, dexp);
-			exp -= dexp;
-			if( !skip && ::RPGMain.waitClick( 50)) skip = 1;
+		if( dexp > 0){
+			foreach( p3d in alive3ds) p3d.popupExpGauge();
+			local lvups = [], skip = 0;
+			while( exp > dexp){
+				foreach( pc in alives) skip |= _addexp( pc, dexp);
+				exp -= dexp;
+				if( !skip && ::RPGMain.waitClick( 50)) skip = 1;
+			}
+			foreach( pc in alives) _addexp( pc, exp);
 		}
-		foreach( pc in alives) _addexp( pc, exp);
 		//	ジョブレベルも加算
 		foreach( pc in alives) pc.addJobExp( jxp);
 		//	レベルアップをパネル表示

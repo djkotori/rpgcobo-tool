@@ -345,6 +345,7 @@ import GamepadStateID;
 			st = cmd.stage;
 			st.camwork.recover( st);	//	カメラワークのリセット
 			st.setPaused( true);		//	念のためポーズ
+			st.changePlayer3D( st.stat.statmap.playermodel);	//	mmm??
 			RPGMain.changeActiveStage( st);
 			RPGMain.buttonhelp( "stage");	//	デフォルトのボタンヘルプ
 			//	元のステージでなっていたBGMを途中から復帰させる。無い場合は今のBGMが継続していく。

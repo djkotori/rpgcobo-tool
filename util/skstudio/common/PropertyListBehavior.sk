@@ -197,6 +197,8 @@ class PropertyHeader
 	}
 
 	function reinit(){
+		local lv = cnt.findChild( "head.lbl");
+		if( lv) lv.tips = null;		//	ラベルのtipsをクリア
 	}
 
 	function refresh(){
@@ -308,6 +310,8 @@ class PropertyBehavior
 	}
 
 	function reinit(){
+		local lv = cnt.findChild( "head.lbl");
+		if( lv) lv.tips = null;		//	ラベルのtipsをクリア
 	}
 
 	function refresh(){
@@ -707,8 +711,9 @@ class PropertyBehaviors.Path extends PropertyBehaviors.String
 			if( !path.startsWith( "/")){
 				if( proplist.ref["res"]) path = proplist.ref.res.pres.path .. "/" .. path;
 			}
-			if( !::getResource( path)) return;
-			preview = ::skstudio.createPreview( path);
+			local r = ::getResource( path);
+			if( !r) return;
+			preview = ::skstudio.createPreview( r);
 			if( preview){
 				local iv = cnt, root = ::rootview;
 				local p = Vector3D( 4-preview.bnd.w, (cnt.bnd.h>>1)-(preview.bnd.h>>1), 0).transform( iv.mat).transform( root.getInvMatrix());

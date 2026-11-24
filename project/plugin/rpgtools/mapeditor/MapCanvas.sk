@@ -810,7 +810,7 @@ class SK3DEventGizmo extends SK3DObject
 			local role = ::RPGSystem.eventrole[data.role];
 			local col = evcolorlist[data.col]["icon"][1] || 0xffffffff;
 			local om = RPGToolMesh.createIconMesh( role.icon, col, 0.5, "evicon.ui", false);
-			om.face[0].m.Kd &= 0xffffff80;
+			om.face[0].m.Kd &= 0xffffffff;
 			om.face[0].m.depthtest = 0;
 			icon3d = SK3DObject( om);
 			icon3d.pos( 0.0, 0.5, 0.0);
@@ -907,24 +907,39 @@ class SK3DEventGizmo extends SK3DObject
 	//	axisガイドは選択中止か表示されない？
 	function setState( s){
 		stat = s;
+		if( !visible) return;
 		//	選択状態以外ではaxis非表示(当たり判定だけ生きてる。。。)
 		local showaxis = s==3;
 		foreach( v in partobjs) v?.setVisible( showaxis);
 		local c = 0xffffffff;
 		switch( s){
-		case 0: c = 0xffffff2f; break;
-		case 1: c = 0xffffff6f; break;
-		case 2: c = 0xffffffcf; break;
+		case 0: c = 0xffffff3f; break;
+		case 1: c = 0xffffff7f; break;
+		case 2: c = 0xffffffff; break;
 		case 3: c = 0xffffffff; break;
 		}
 		foreach( m in getMaterials()){
 			m.Kmul = c;
+		}
+		local pmac = (c&255); pmac = pmac | (pmac<<8) | (pmac<<16) | (pmac<<24);
+		foreach( m in icon3d?.getMaterials()){
+			m.Kmul = pmac;
 		}
 		local r = s==3 ? 1.0 : s==2 ? 1.0 : s==1 ? 0.6 : 0.4;
 		foreach( m in mdlobj?.getMaterials()){
 			m.alpharef = r;
 		}
 		mdlobj.setVisible( true);
+	}
+
+	function setVisible( v){
+		visible = v;
+		if( mdlobj) mdlobj.setVisible( v);
+		if( icon3d) icon3d.setVisible( v);
+		if( lvecobj) lvecobj.setVisible( v);
+		if( tr3d) tr3d.setVisible( v);
+		foreach( v in partobjs) v?.setVisible( false);
+		if( v) setState( stat);
 	}
 	
 	//	1: O
@@ -1017,9 +1032,9 @@ class SK3DMarkerGizmo extends SK3DObject
 		stat = s;
 		local m = mesh.face[0].m;
 		switch( s){
-		case 0: m.Kmul = 0xffffff4f; break;
-		case 1: m.Kmul = 0xffffff8f; break;
-		case 2: m.Kmul = 0xffffffcf; break;
+		case 0: m.Kmul = 0x4f4f4f4f; break;
+		case 1: m.Kmul = 0x7f7f7f7f; break;
+		case 2: m.Kmul = 0xffffffff; break;
 		case 3: m.Kmul = 0xffffffff; break;
 		}
 	}

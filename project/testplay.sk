@@ -26,10 +26,11 @@ local loadworkdata( wd){
 	override( conf._map, wd["conf"], true);
 	foreach( path, v in wd["res"]){
 		local r = getResource( path);
+		flushStdOut();
 		if( r){
 			local f = r["file"];
 			r.file = {
-				load = @() v
+				load = @() clone v
 				refresh = @(){ if( f){ r.file = f; f.refresh(); }}
 			};
 		}

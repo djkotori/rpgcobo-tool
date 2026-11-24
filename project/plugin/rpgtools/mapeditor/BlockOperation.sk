@@ -290,7 +290,7 @@ class BlockOperation
 					if( ax!=1 && y-y0 >= bm && y > 0) stk .. x .. (y-1) .. z;
 					if( ax!=1 && y-y0 <= bp && y < t) stk .. x .. (y+1) .. z;
 					if( ax!=2 && z-z0 >= bm && z > 0) stk .. x .. y .. (z-1);
-					if( ax!=2 && z-z0 <= bp && y < f) stk .. x .. y .. (z+1);
+					if( ax!=2 && z-z0 <= bp && z < f) stk .. x .. y .. (z+1);
 				}
 			}
 		}while( length( stk));
@@ -595,15 +595,32 @@ class BlockOperation
 		return length( redoop);
 	}
 
+	static function barriorBaseY( bw, x, z, by){
+		for( local y = by; y >= 0; y --){
+			local b = bw.blockat( x, y, z);
+			if( ::Block.isFullOcclude( b) || ::Block.hasFlag( b, BLK_LIQUID)) return y;
+		}
+		return -1;
+	}
+	
 	function barriorSet( p){
 		local pen = p.pen, blk = p["blk"]||0;
 		local x0 = p.hb.bx-pen.pivot[0], x1 = x0 + pen.w;
 		local y0 = p.hb.by;
 		local z0 = p.hb.bz-pen.pivot[2], z1 = z0 + pen.d;
 		local v = p["mode"]==1 ? 1 : 0;
+		local isplane = p["isplane"], isblk = p["isblk"], by0 = p["by0"], blk0 = p["blk0"];
 		local _bw = bw;
 		for( local z = z0, i = 0; z < z1; z ++) for( local x = x0; x < x1; x ++, i++){
 			if( pen[i]){
+				local by = barriorBaseY( _bw, x, z, y0+1);
+				if( isplane){
+					if( by != by0) continue;
+				}
+				if( isblk){
+					local b = _bw.blockat( x, by, z);
+					if( b != blk0) continue;
+				}
 				local b = _bw.bmp? _bw.bmp.get( x, z) : 0;
 				if( b != v){
 					redoop    .. @(){ _bw.bmp.set( x, z, v); }
@@ -613,6 +630,69 @@ class BlockOperation
 		}
 		if( redoop[0] && !bw.bmp) bw.bmp = Bitmap( bw.w, bw.d);
 		return this;
+	}
+	
+	function rectBarriorSet( p){
+		local r = p.box;
+		local x0 = r.x, x1 = x0 + r.w;
+		local y0 = p.by0;
+		local z0 = r.z, z1 = z0 + r.d;
+		local v = p["mode"]==1 ? 1 : 0;
+		local isplane = p["isplane"], isblk = p["isblk"], by0 = p["by0"], blk0 = p["blk0"];
+		local _bw = bw;
+		for( local z = z0; z < z1; z ++) for( local x = x0; x < x1; x ++){
+			local by = barriorBaseY( _bw, x, z, y0+1);
+			if( isplane){
+				if( by != by0) continue;
+			}
+			if( isblk){
+				local b = _bw.blockat( x, by, z);
+				if( b != blk0) continue;
+			}
+			local b = _bw.bmp? _bw.bmp.get( x, z) : 0;
+			if( b != v){
+				redoop    .. @(){ _bw.bmp.set( x, z, v); }
+				undoop[0] <- @(){ _bw.bmp.set( x, z, b); }
+			}
+		}
+		return length( redoop);
+	}
+
+	//	バリア塗りつぶし
+	function floodfillBarrior( p){
+		local r = bw.w-1, t = bw.h-1, f = bw.d-1, _bw = bw;
+		local chk = {};
+		local x0 = p.hb.bx, y0 = p.hb.by, z0 = p.hb.bz;
+		local isplane = p["isplane"], isblk = p["isblk"], by0 = p["by0"], blk0 = p["blk0"];
+		local v = p["mode"]==2 ? 1 : 0;
+		local stk = [x0,z0];	//	一次元配列的に使う
+		local bm = -32, bp = 32;
+		do{
+			local z = stk.pop(), x = stk.pop(), k = (x*128)^(z<<20);
+			if( chk[k]) continue;	//	調べたフラグ
+			chk[k] <- 1;
+			local b = _bw.bmp? _bw.bmp.get( x, z) : 0;
+			if( b != v){
+				//	plane, blk test
+				local by = barriorBaseY( _bw, x, z, y0+1);
+				if( isplane){
+					if( by != by0) continue;
+				}
+				if( isblk){
+					local b0 = _bw.blockat( x, by, z);
+					if( b0 != blk0) continue;
+				}
+				redoop    .. @(){ _bw.bmp.set( x, z, v); }
+				undoop[0] <- @(){ _bw.bmp.set( x, z, b); }
+				//
+				if( x-x0 >= bm && x > 0) stk .. (x-1) .. z;
+				if( x-x0 <= bp && x < r) stk .. (x+1) .. z;
+				if( z-z0 >= bm && z > 0) stk .. x .. (z-1);
+				if( z-z0 <= bp && z < f) stk .. x .. (z+1);
+			}
+		}while( length( stk));
+		if( redoop[0] && !bw.bmp) bw.bmp = Bitmap( bw.w, bw.d);
+		return length( redoop);
 	}
 
 	function stampSet( p){

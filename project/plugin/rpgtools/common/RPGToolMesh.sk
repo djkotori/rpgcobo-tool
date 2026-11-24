@@ -252,6 +252,27 @@ class RPGToolMesh
 		return pm;
 	}
 
+	static function createRotMesh( dz, r){
+		local prim = ::PrimitiveMeshes;
+		local mb = prim.getMeshBuilder();
+		mb.setMatrix( Matrix.fromTranslate( 0, 0, dz+r));
+		prim._createCylinder( r, r, 0.01, 16);
+		mb.setMatrix( Matrix.fromTranslate( 0, 0, dz*0.5+r*0.5));
+		prim._createBox( 0.02, 0.002, dz*0.5+r);
+		local pm = mb.toPolygonMesh();
+		mb.clear();
+		local m0 = pm.face[0].m = clone pm.face[0].m;
+		local c = 0xffffff00;
+		//	m0 : 半透明デカール
+		m0.visiblemask = SK_VISIBLE_TRANSPARENT;
+		m0.polygonoffset1 = -90.0;
+		m0.Kd = -1;
+		m0.blend = SK_MIX;
+		m0.depthmask = 0;
+		m0.cullface = 0;
+		return pm;
+	}
+
 	//	
 	static function createIconMesh( ic, col, r, path, xz){
 		local v = ::loadSKView( srcdir.."/ui/"..path);
@@ -277,6 +298,9 @@ class RPGToolMesh
 		local blkid = 29;
 		local whd = #(4,4,4), fil = null, put = null;
 		switch( blkconf.variations[0].type){
+		case "wallfloor0": case "struct0": case "struct1":
+			whd = #(6,4,6); fil = #(1,0,1,4,4,4);
+			break;
 		case "floor0": case "floor1": case "floor2": case "floor3":
 			whd = #(4,1,4);
 			break;
@@ -495,11 +519,12 @@ class BlockImagePreview
 	}
 
 	//	フリーブロック用のプレビュー画像を生成する
-	function getFreeBlockImage( fb){
+	function getFreeBlockImage( fb, rot=0){
 		//	メッシュ生成して原点に配置
 		local pm = RPGToolMesh.createFreeBlockMesh( fb);
 		local sk = SK3DObject();
 		sk.setSource( pm);
+		sk.rot << Quaternion.fromHPB( rot*Math.HPI, 0, 0);
 		return createImage( sk);
 	}
 

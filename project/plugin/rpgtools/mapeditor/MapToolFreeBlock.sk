@@ -125,6 +125,7 @@ class MapTools.tool_fblk extends MapTool
 			optionview.findChild( "rot"..drot)?.setSelected( false);
 			drot = e.src.name[3]-'0';
 			e.src.setSelected( true);
+			selblk.setFreeBlockPages( selblk.pagesrc, stat, drot);
 			break;
 		case "stata": case "statb":
 			local b = e.src.name=="stata"?0:1;
@@ -132,7 +133,7 @@ class MapTools.tool_fblk extends MapTool
 				optionview.findChild( "stata").setSelected( b==0);
 				optionview.findChild( "statb").setSelected( b==1);
 				stat = b;
-				selblk.setFreeBlockPages( selblk.pagesrc, stat);
+				selblk.setFreeBlockPages( selblk.pagesrc, stat, drot);
 			}
 			break;
 		default:
@@ -260,13 +261,26 @@ class MapTools.tool_fblk extends MapTool
 				local fblk = listfb();
 				hb = rayTest( e, BLK_SOLID | BLK_SOLIDFB | BLK_DECAL);	//	blkflag
 				if( fblk && !hb["fbuid"]){
+					selgz?.setMode( PEN_GIZMO);
 					placePen( hb, pen, PEN_ATTACH);
+				}else
+				if( selgz && hb["fbuid"]==selgz["ref"]["fbuid"]){
+					selgz.setMode( PEN_FILL);
+					placeSelectPen( null, pen, PEN_SPOIT);
 				}else{
-					placeSelectPen( hb["fbuid"]!=selgz["ref"]["fbuid"] ? hb : null, pen, PEN_SPOIT);
+					selgz?.setMode( PEN_GIZMO);
+					placeSelectPen( hb, pen, PEN_SPOIT);
 				}
 			}else{
 				local hb = rayTest( e, BLK_SOLID | BLK_SOLIDFB | BLK_DECAL);
-				placeSelectPen( hb["fbuid"]!=selgz["ref"]["fbuid"] ? hb : null, pen, PEN_SPOIT);
+				if( selgz && hb["fbuid"]==selgz["ref"]["fbuid"]){
+					selgz.setMode( PEN_FILL);
+					placeSelectPen( null, pen, PEN_SPOIT);
+				}else{
+					selgz?.setMode( PEN_GIZMO);
+					placeSelectPen( hb, pen, PEN_SPOIT);
+				}
+				// placeSelectPen( hb["fbuid"]!=selgz["ref"]["fbuid"] ? hb : null, pen, PEN_SPOIT);
 			}
 			updateFBSelectionColor();
 			e.consume();
@@ -297,7 +311,7 @@ class MapTools.tool_fblk extends MapTool
 				hb = rayTest( e, BLK_SOLID | BLK_SOLIDFB | BLK_DECAL);
 				e.consume();
 				if( hb["fbuid"]){
-					if( !canvas.selfbmap[hb.fbuid]) canvas.clearFBSelection();
+					if( !e.isShiftDown() && !canvas.selfbmap[hb.fbuid]) canvas.clearFBSelection();
 					if( hb.fbuid != selgz["ref"]["fbuid"]) _pickfb( hb);
 					removeGuide( "pen");
 					return editor.tool.dragFBStart( e, hb);	//	_pickfbでカレントのツールが切り替わってる可能性あり。。。
@@ -409,6 +423,10 @@ class MapTools.tool_fblk extends MapTool
 				local pos = (fb.x+arg.d[0],fb.y+arg.d[1],fb.z+arg.d[2]);
 				bop.placeFreeBlock({fblk:fb, fbuid:fb.fbuid, pos:pos});
 				break;
+			case "rotate":
+				local rot = arg.rot;
+				bop.placeFreeBlock({fblk:fb, fbuid:fb.fbuid, rot:rot});
+				break;
 			}
 			if( bop.len()){
 				//	ギズモの移動を反映。※ドア以外では変化しないはずだけど念のため全ての移動で行う
@@ -454,7 +472,6 @@ class MapTools.tool_fblk extends MapTool
 						bop.undoop .. @(){ self.restoreFBGizmo( synct); }
 					}
 					local gzfbuid = self.selgz["ref"]["fbuid"];
-					printf( "u-m??????? %S %S\b", self.selgz, self.selgz["ref"]["fbuid"]);
 					bop.redoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, -1); }
 					bop.undoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, -1); }
 					bop.submit( editor, trk);

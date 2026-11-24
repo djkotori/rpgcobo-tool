@@ -165,7 +165,7 @@ class MapGenDialog extends UndoableDialog
 	function updateBlockList( gendef, resetBlockList){
 		local defs = gendef.blkmaplist;
 		local count = length( defs), rows = (count+2)/3;
-		local slots = resetBlockList ? rows*3 : count;
+		local slots = resetBlockList ? rows*3 : (count+2)/3*3;
 		blocklist.setRowCount( rows);
 		for( local i=0;i<slots;i++){
 			local def = i<count ? defs[i] : null;
@@ -716,7 +716,7 @@ class MapGenDialog.BlockSetIcon
 				selb.setBlockPages( def.blkpages);
 				selb.selectBlock( item);
 			}else{
-				selb.setFreeBlockPages( def.fbpages, 0, def["fits"]);
+				selb.setFreeBlockPages( def.fbpages, 0);
 				selb.selectFreeBlock( {fbtype=item&4095, fbparam:item>>>12});
 			}
 			selv.addEventListener( ACTION_EVENT, @( e){

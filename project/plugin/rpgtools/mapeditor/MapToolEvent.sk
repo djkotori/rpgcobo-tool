@@ -150,14 +150,18 @@ class MapTools.tool_event extends MapTool
 
 	static fpush = ( Vector3D(0,1,0), Vector3D(0,0,-1), Vector3D(-1,0,0), Vector3D(0,0,1), Vector3D(1,0,0), Vector3D(0,-1,0), );
 
-	function execPaste( cbdata){
+	function execPaste( cbdata, plc=0){
 		local pen3d = guides["pen"] || guides["tmp"];
 		if( cbdata && pen3d){
 			local self = this;
-			local redo = [], undo = [];
-			local p0 = Vector3D( pen3d.pos).sub( 0.25).scale( 2.0).add( fpush[pen3d.ref[2]]);	//	ref[2]に向きが保存されてる。。。
-			local cr = cbdata.reduce( @( v, r) r.expand( Vector3D( v.data.pos)), Rect3D( 0, 0, 0, -3000, -3000, -3000));
-			p0.sub( cr.x, cr.y, cr.z);
+			local redo = [], undo = [], p0;
+			if( plc == 1){
+				p0 = Vector3D( 0.0);
+			}else{
+				p0 = Vector3D( pen3d.pos).sub( 0.25).scale( 2.0).add( fpush[pen3d.ref[2]]);	//	ref[2]に向きが保存されてる。。。
+				local cr = cbdata.reduce( @( v, r) r.expand( Vector3D( v.data.pos)), Rect3D( 0, 0, 0, -3000, -3000, -3000));
+				p0.sub( cr.x, cr.y-cr.s, cr.z);
+			}
 			//	
 			local nxid = (getnextid( canvas.evgizmomap, 1000000), getnextid( canvas.mkgizmomap, 2000000));
 			foreach( i, v in cbdata){
@@ -376,6 +380,8 @@ class MapTools.tool_event extends MapTool
 							showDoorConectMenu( e, hb);
 						}
 					}else{
+						
+						
 						showDefaultContextMenu( e, hb);
 					}
 					removeGuide( "tmp");
@@ -429,7 +435,7 @@ class MapTools.tool_event extends MapTool
 		local self = this;
 		local rot = getCameraRot();
 		local box = IRect3D();
-		local a0 = [];
+		local a0 = e0.isShiftDown() ? clone evlist.getSelectedItems() : [];
 		local allgz = {...editor.canvas.evgizmomap,...editor.canvas.mkgizmomap};
 		
 		local selbox( b){
@@ -454,9 +460,6 @@ class MapTools.tool_event extends MapTool
 			case MOUSE_DRAGGED:
 				local hb;
 				hb = self.planeTest( e, hb0);
-				if( hb && (e.modifiers&SHIFT_MASK)){
-					self.adjustPlane( hb0, hb);
-				}
 				if( hb){
 					local b = makebox( hb0, hb, 0);
 					if( b <> box){
@@ -554,10 +557,24 @@ class MapTools.tool_event extends MapTool
 		case "cut":
 		case "copy":
 			putClipboard( "mapev", a.map( @( v) +{ id=v.id, data=v.data}));
+			if( m["id"]=="cut") deleteEvents( a);
 			break;
 		case "delete":
 			deleteEvents( a);
 			break;
+		case "color":
+		{
+			local self = this, oldcols = a.map( @( v) v.data.col), newcol = m["val"];
+			local redo = [@(){
+				foreach( v in a){ v.data.col = newcol; self.getGizmo( v.id).changeColor( newcol); };
+			}];
+			local undo = [@(){
+				foreach( i, v in a){ v.data.col = oldcols[i]; self.getGizmo( v.id).changeColor( oldcols[i]); };
+			}];
+			editor.submitOp( redo, undo, null);
+			refresh();
+			break;
+		}
 		}
 	}
 
@@ -871,23 +888,29 @@ class MapTools.tool_event extends MapTool
 	//	未選択時のコンテキストメニュー。
 	//	追加関係があるので複雑。。。
 	function showDefaultContextMenu( e, hb){
-		local evlist = ::RPGSystem.eventrole._list.map( @( v) v["menutype"]=="event" ? {
+		local evsubmenu = ::RPGSystem.eventrole._list.map( @( v) v["menutype"]=="event" ? {
 			id="plcev", lbl=v.name, icon=v.icon, key=v.key
 		} : undefined);
-		evlist[0] <- { id="plcev", lbl="$T.lbl_customevent", icon="\ue01e", key="custom" };
-		evlist[1] <- "-";
+		evsubmenu[0] <- { id="plcev", lbl="$T.lbl_customevent", icon="\ue01e", key="custom" };
+		evsubmenu[1] <- "-";
 		local mklist = ::RPGSystem.markerdef._list.map( @( v)({
 			id="plcmk", lbl=v.name, icon=v.icon, key=v.key
 		})) .. "-" .. {
 			id="inimap", lbl="$T.lbl_placeinimap", icon="\ue56a"
 		};
 		local cbdata = getClipboard( "mapev");	//	開くたびにクリップボード取得しちゃうけどまーだいじょぶかな
+		local sela = evlist.getSelectedItems( 1);
 		local ctxmenu = [
-			{ id="plcev", lbl="$T.lbl_placeevent", icon="\ue01e", submenu=evlist},
+			{ id="plcev", lbl="$T.lbl_placeevent", icon="\ue01e", submenu=evsubmenu},
 			{ id="plcmk", lbl="$T.lbl_placemarker", icon="\ue55c", submenu=mklist},
 			{ id="plcev", lbl="$T.lbl_placeportal", icon="\uea77", key="portal"},
 			"-"
+			{ id="copy", lbl="$T.menu_edit_copy", icon="\ue14d", disable=!sela[0] },
+			{ id="cut", lbl="$T.menu_edit_cut", icon="\ue14e", disable=!sela[0] },
 			{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f", disable=!cbdata},
+			{ id="pastesp", lbl="$T.menu_edit_paste_samepos", icon="\ue14f", disable=!cbdata},
+			"-"
+			{ id="delete", lbl="$T.lbl_delete", icon="\ue872", modkey="Delete", disable=!sela[0] },
 			"-",
 			...getDefaultContextMenu( e),
 		];
@@ -903,7 +926,16 @@ class MapTools.tool_event extends MapTool
 			placeInimap( hb);
 			break;
 		case "paste":
-			execPaste( cbdata);
+		case "pastesp":
+			execPaste( cbdata, m["id"]=="pastesp" ? 1 : 0);
+			break;
+		case "cut":
+		case "copy":
+			putClipboard( "mapev", sela.map( @( v) +{ id=v.id, data=v.data}));
+			if( m["id"]=="cut") deleteEvents( sela);
+			break;
+		case "delete":
+			deleteEvents( sela);
 			break;
 		default:
 			return processDefaultContextMenu( e, m);

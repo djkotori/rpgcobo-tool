@@ -759,13 +759,16 @@ class SKStudio extends SKView
 		}
 	}
 
-	//	pathからプレビューを作成する。SKViewを返す。
-	function createPreview( path){
-		foreach( t in editorregistry){
-			if( !t["createPreview"]) continue;
-			if( !t.matches( path)) continue;
-			local pr = t.createPreview( path);
-			if( pr) return pr;
+	//	任意のオブジェクトvからプレビューを作成する。SKViewを返す。
+	function createPreview( v){
+		if( v instanceof Resource){
+			local path = v.path;
+			foreach( t in editorregistry){
+				if( !t["createPreview"]) continue;
+				if( !t.matches( path)) continue;
+				local pr = t.createPreview( path);
+				if( pr) return pr;
+			}
 		}
 	}
 

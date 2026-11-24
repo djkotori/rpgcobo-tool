@@ -565,6 +565,10 @@ class PropertyBehaviors.VoxelParts extends PropertyBehavior
 	function paramevent( e){
 		if( e.src["name"]=="listmenu"){	//	リスト選択
 			local ret = ResourceFileSelectDialog.run( prop);
+			if( ret == "rem"){
+				setParam( null);
+				postActionEvent( true);
+			}else
 			if( ret){
 				if( prop["usevcname"]){
 					ret[0] = ret[0].substring( ret[0].lastIndexOf( "/")+1, ret[0].lastIndexOf( "."));

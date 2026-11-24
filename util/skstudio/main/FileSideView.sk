@@ -304,14 +304,32 @@ class FileSideView extends SKView
 			preview = null;
 		}
 		if( i){
-			preview = ::skstudio.createPreview( i.path);
+			local r = ::getResource( i.path);	//	i.resを入れればいいが。
+			preview = ::skstudio.createPreview( r);
 			if( preview){
 				local iv = filelist.getItemView( i);
 				local p = Vector3D( iv.bnd.w, e.ly-(preview.bnd.h>>1), 0).transform( iv.mat).transform( ::rootview.getInvMatrix());
 				preview.pos << p;
+				adjustBounds( preview, iv, ::rootview);
 				::rootview.addChild( preview);
 				preview.enabled = false;
 			}
+		}
+	}
+
+	//	viewがrootからはみ出さないように調整。
+	//	PulldownMenuなどはオーバーライドして上下に補正するようにする
+	function adjustBounds( view, posview, root){
+		local p = view.pos, b = view.bnd;
+		if( root.bnd.h < (p.y+b.y+b.h) ) {
+			p.y = root.bnd.h - b.y-b.h;
+		}else if( 0.0 > p.y+b.y) {
+			p.y = -b.y;
+		}
+		if( root.bnd.w < (p.x+b.x+b.w) ) {
+			p.x = root.bnd.w - b.x-b.w;
+		}else if( 0.0 > p.x+b.x) {
+			p.x = -b.x;
 		}
 	}
 

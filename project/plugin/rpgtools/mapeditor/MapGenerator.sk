@@ -477,7 +477,8 @@ local pens = [
 		props=[
 			{ ...sizeprop, defval=[200,200] },
 			seedprop,
-			{ pid="makenoenter", lbl={"ja":"森は進入禁止", "en":"No Enter Forest"}, type=BOOL, cnt="cnt6.ui", notarg=1, defval=true },
+			{ pid="exitinset", lbl={"ja":"出入口をはめ込む", "en":"Inset Entrance"}, type=BOOL, notarg=1, defval=true },
+			{ pid="makenoenter", lbl={"ja":"森は進入禁止", "en":"No Enter Forest"}, type=BOOL, notarg=1, defval=true },
 			//	画像生成パラメータ
 			{ pid="complexity", lbl={"ja":"複雑度", "en":"Complexity"}, type=RANGE, cnt="cnt6.ui", range=(1.0,5.9), q=100, defval=[2.2,4.5] },
 			{ pid="entranceCount", lbl={"ja":"出入口の数", "en":"Entrance Count"}, type=RANGE, cnt="cnt6.ui", range=(1.0,4.9), q=100, defval=[1.2,3.5] },
@@ -534,12 +535,12 @@ local pens = [
 			_c( 190, 156, 100),		//	INNERROAD
 		],
 		bioobjdensmap = {
-			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREE_S]: 0.05,[FLOWERS_A]: 0.2, [FLOWERS_B]: 0.2, [FLOWERS_C]: 0.2},
-			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREE_S]: 0.2, [FLOWERS_A]: 0.5, [FLOWERS_B]: 0.6, [FLOWERS_C]: 0.4},
+			[PLAIN]:     { [ROCK_S]: 0.2, [ROCK_M]: 0.1, [ROCK_L]: 0.1, [TREE_S]: 0.05,[FLOWERS_A]: 0.3, [FLOWERS_B]: 0.3, [FLOWERS_C]: 0.3},
+			[DESERT]:    { [ROCK_S]: 0.3, [ROCK_M]: 0.4, [ROCK_L]: 0.3, [TREE_S]: 0.2, [FLOWERS_A]: 0.7, [FLOWERS_B]: 0.7, [FLOWERS_C]: 0.7},
 			// [FOREST]:    { [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.3, [TREE_M]: 0.5, [TREE_L]: 0.5, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
 			// [MOUNTAIN]:{ [ROCK_S]: 0.1, [ROCK_M]: 0.2, [ROCK_L]: 0.05,[TREE_S]: 0.4, [TREE_M]: 0.5, [TREE_L]: 0.4, [FLOWERS_A]: 0.05,[FLOWERS_B]: 0.1, [FLOWERS_C]: 0.0},
 			// [EXMOUNTAIN]:  { [ROCK_S]: 0.2, [ROCK_M]: 0.4, [ROCK_L]: 0.6, [TREE_S]: 0.0, [FLOWERS_A]: 0.0, [FLOWERS_B]: 0.0, [FLOWERS_C]: 0.0},
-			[ROAD]:     { [ROCK_S]: 0.15, [ROCK_M]: 0.1, [ROCK_L]: 0.0, [TREE_S]: 0.0,[FLOWERS_A]: 0.12, [FLOWERS_B]: 0.12, [FLOWERS_C]: 0.12},
+			[ROAD]:     { [ROCK_S]: 0.3, [ROCK_M]: 0.2, [ROCK_L]: 0.12, [TREE_S]: 0.0,[FLOWERS_A]: 0.2, [FLOWERS_B]: 0.2, [FLOWERS_C]: 0.2},
 		},
 		objsizemap = {
 			[ROCK_S]: 2, [ROCK_M]: 3, [ROCK_L]: 4, [TREE_S]: 3, [TREE_M]: 4, [TREE_L]: 4, [FLOWERS_A]: 1, [FLOWERS_B]: 2, [FLOWERS_C]: 3,
@@ -547,8 +548,8 @@ local pens = [
 		//	ツールから置き換え可能。MapGenerator定義ごとにある
 		
 		blkmap = {
-			[PLAIN]=2|(1<<5), [COAST]=386, [DESERT]=2|(2<<5), [FOREST]=2|(27<<5), 
-			[MOUNTAIN]=5|(12<<5), [EXMOUNTAIN]=2|(0<<5), [ROAD]=2|(1<<5), [BRIDGE]=3|(22<<5), 
+			[PLAIN]=2|(1<<5), [COAST]=2|(7<<5), [DESERT]=2|(2<<5), [FOREST]=2|(27<<5), 
+			[MOUNTAIN]=5|(19<<5), [EXMOUNTAIN]=5|(12<<5), [ROAD]=2|(1<<5), [BRIDGE]=3|(22<<5), 
 			[RIVER]=8|(0<<5), [LAKE]=8|(0<<5),
 			//
 			[BRIDGE_M]="MA027",
@@ -568,9 +569,9 @@ local pens = [
 					case FOREST:
 					case EXMOUNTAIN:
 						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<c) | (c==FOREST?(1<<EXMOUNTAIN):0);
-						local sc = c==FOREST ? 0.8 : 0.4;
+						local sc = c==FOREST ? 0.6 : 0.6;
 						local x = ::NoiseGen.value( x*sc, z*sc, 313245+c, 3, 2.0, 0.4);
-						local thrs = win.countUsed( c) < 5 ? 0.25 : 0.55;
+						local thrs = win.countUsed( c) < 5 ? 0.25 : 0.4;
 						if( !((1<<f)&mask) && (x>thrs)) b4[0] = b4[3] = f;
 						if( !((1<<l)&mask) && (x>thrs)) b4[0] = b4[1] = l;
 						if( !((1<<b)&mask) && (x>thrs)) b4[1] = b4[2] = b;
@@ -633,13 +634,13 @@ local pens = [
 					case FOREST:
 					case EXMOUNTAIN:
 						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<c) | (1<<RIVER) | (c==FOREST?(1<<EXMOUNTAIN):0);
-						local sc = c==FOREST ? 0.8/2 : 0.4/2;
+						local sc = c==FOREST ? 0.6/4 : 0.6/4;
 						local x = ::NoiseGen.value( x*sc, z*sc, 313245+c, 3, 2.0, 0.4);
-						// local x = rnd( 0, 0xffff);
-						if( !((1<<f)&mask) && (x<0.4)) b4[0] = b4[3] = f;
-						if( !((1<<l)&mask) && (x<0.4)) b4[0] = b4[1] = l;
-						if( !((1<<b)&mask) && (x<0.4)) b4[1] = b4[2] = b;
-						if( !((1<<r)&mask) && (x<0.4)) b4[2] = b4[3] = r;
+						local thrs = win.countUsed( c) < 5 ? 0.75 : 0.4;
+						if( !((1<<f)&mask) && (x<thrs)) b4[0] = b4[3] = f;
+						if( !((1<<l)&mask) && (x<thrs)) b4[0] = b4[1] = l;
+						if( !((1<<b)&mask) && (x<thrs)) b4[1] = b4[2] = b;
+						if( !((1<<r)&mask) && (x<thrs)) b4[2] = b4[3] = r;
 						break;
 					case RIVER:
 						local f = win[1], l = win[3], b = win[7], r = win[5], mask = (1<<c)|(1<<BRIDGE);
@@ -679,8 +680,12 @@ local pens = [
 			local w = bio.width, h = bio.height;
 			local basey = 2, hscale = 1, hnoise = getrange( "heightnoise", 1.0);
 			local blkmap = blkmap, rnd = rnd;
+			local bordermask = gendata["exitinset"] ? (1<<FOREST)|(1<<EXMOUNTAIN)|(1<<MOUNTAIN)|(1<<RIVER) : 0;
 			return @( x, z, i){
 				local b = bio[i], blk = blkmap[b];
+				if( (1<<b) & bordermask){
+					if( x<=2 || x>=w-3 || z<=2 || z>=h-3) return 0;
+				}
 				local y = basey * hscale;
 				y = Math.iround( y);
 				switch( b){
@@ -692,8 +697,8 @@ local pens = [
 					break;
 				case EXMOUNTAIN:
 					y += 12;
-					local n = bio.countUsed( EXMOUNTAIN, x-1, z-1, 3, 3);
-					if( n > 8) blk = blkmap[MOUNTAIN];
+					// local n = bio.countUsed( EXMOUNTAIN, x-1, z-1, 3, 3);
+					// if( n > 8) blk = blkmap[MOUNTAIN];
 					break;
 				case BRIDGE:	//	橋はアセットで配置するので川に変換
 					blk = blkmap[RIVER];
@@ -709,14 +714,17 @@ local pens = [
 			{
 				local w = bio.width, d = bio.height;
 				local sz = 4, hs = sz/2;
-				local trees = [TREE_M, TREE_L];
-				for( local _z=2,r=0;_z<d-2;_z+=8,r++) for( local _x=2;_x<w-2;_x+=8){
-					local x = _x + (r&1)*3, z = _z;
-					if( bio[z*w+x]!=FOREST) continue;
-					if( objbmp.countSet( x-hs, z-hs, sz, sz)) continue;
-					local objid = rnd.choosea(trees);
-					objs .. { objid=objid, x=x, z=z, rot=rnd( 0, 4), };
-					objbmp.draw( pens[sz], x-hs, z-hs);
+				local trees = [TREE_M, TREE_L], x, z;
+				for( local _z=5,r=0;_z<d-5;_z+=8,r++) for( local _x=5;_x<w-5;_x+=8){
+					for( local j = 0; j < 2; j ++){
+						local x = _x + (r&1)*4 + rnd(-1,2), z = _z + rnd(-1,2);
+						if( bio[z*w+x]!=FOREST) continue;
+						if( objbmp.countSet( x-hs, z-hs, sz, sz)) continue;
+						local objid = rnd.choosea(trees);
+						objs .. { objid=objid, x=x, z=z, rot=rnd( 0, 4), };
+						objbmp.draw( pens[sz], x-hs, z-hs);
+						break;
+					}
 				}
 			}
 			//	橋の配置。これは bio0 を参照して行う
@@ -782,8 +790,9 @@ local pens = [
 			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,5,3] },
 			{ id=FLOOR2, lbl="FLOOR_LV2", type="blk", blkpages=[2,5,3] },
 			{ id=WALL, lbl="WALL", type="blk", blkpages=[2,5,3] },
-			{ id=INNERWALL, lbl="INNER WALL", type="blk", blkpages=[2,5,3] },
+			// { id=INNERWALL, lbl="INNER WALL", type="blk", blkpages=[2,5,3] },
 			{ id=LAKE1, lbl="LAKE", type="blk", blkpages=[8] },
+			null,
 			null,
 			{ id=ROCK_S, lbl="ROCK_S", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
 			{ id=ROCK_M, lbl="ROCK_M", type="fblk", fbpages=[FB_TREE,FB_ROCK] },
@@ -810,7 +819,7 @@ local pens = [
 		//	ツールから置き換え可能。MapGenerator定義ごとにある
 		blkmap = {
 			[FLOOR1]=2|(24<<5), [FLOOR2]=2|(0<<5), 
-			[WALL]=2|(60<<5), [INNERWALL]=3|(35<<5), 
+			[WALL]=517, //[INNERWALL]=3|(35<<5), 
 			[LAKE1]=8|(0<<5), 
 			//
 			[ROCK_S]=20|(17<<12), [ROCK_M]=20|(18<<12),// [ROCK_L]=20|(19<<12), 
@@ -843,6 +852,7 @@ local pens = [
 					break;
 				case EXMOUNTAIN:
 					y += 10;
+					blk = blkmap[MOUNTAIN];
 					break;
 				case LAKE2:
 					y += 4;
@@ -891,7 +901,7 @@ local pens = [
 			{ id=FLOOR1, lbl="FLOOR_LV1", type="blk", blkpages=[2,5,3] },
 			{ id=FLOOR2, lbl="FLOOR_LV2", type="blk", blkpages=[2,5,3] },
 			{ id=WALL, lbl="WALL", type="blk", blkpages=[2,5,3] },
-			{ id=SEA, lbl="INNER WALL", type="blk", blkpages=[2,5,3] },
+			{ id=ROAD, lbl="ROAD", type="blk", blkpages=[2,5,3] },
 			{ id=LAKE1, lbl="LAKE", type="blk", blkpages=[8] },
 			null,
 			{ id=PORTAL_DOOR, lbl="PORTAL_DOOR", type="asset" },
@@ -917,8 +927,8 @@ local pens = [
 		//	ツールから置き換え可能。MapGenerator定義ごとにある
 		blkmap = {
 			[FLOOR1]=3|(9<<5), [FLOOR2]=3|(14<<5), 
-			[WALL]=3|(16<<5), [SEA]=3|(35<<5),
-			[ROAD]=3|(17<<5), [BRIDGE]=3|(34<<5),
+			[WALL]=3|(56<<5), // [SEA]=3|(35<<5),
+			[ROAD]=3|(46<<5), [BRIDGE]=3|(34<<5),
 			[RIVER]=8|(0<<5), 
 			//
 			[PORTAL_DOOR]="MA060", [PORTAL_OPEN]="MA061",
@@ -933,8 +943,9 @@ local pens = [
 				local blk = blkmap[b];
 				local y = basey * hscale;
 				switch( b){
-				case WALL:
 				case SEA:
+					blk = blkmap[WALL];
+				case WALL:
 					y += 6;
 					break;
 				}
@@ -1145,12 +1156,9 @@ local castleProp( lbl, kind, variant, pages, fits=null, key=null){
 	return paletteProp(key,lbl,kind,variant,pages,[key],fits);
 }
 
-local roomDoorFits = @( fb) fb.br.w>=2 && fb.br.w<=4;// && fb.br.d<=2;
-
 local castlePalette = [
 	paletteAsset("castleGate","Castle Gate","MA066"),
-	castleProp("Room Door",1,18,[FB_INDOOR],roomDoorFits, "castleObject1_8"),
-	// castleProp("Royal Door",1,13,[FB_INDOOR],roomDoorFits, "castleObject1_13"),
+	castleProp("Room Door",1,18,[FB_INDOOR], null, "castleObject1_8"),
 	paletteAsset("castleObject1_13", "Royal Door","MA067"),
 	paletteBlock("royal_carpet","Royal Carpet",9),
 	paletteBlock("ballroom_floor","Ballroom Floor",3|(34<<5)),
@@ -1170,41 +1178,68 @@ local settlementHeight = @( bio, dst){
 	local wallheight = settlementWallHeight;
 	local keepHeight = Math.max( 6, wallheight), keepRegions = [];
 	local castle = gendef.val=="castle", plan = assetPlan;
-	if( castle && plan){
-		foreach( region in plan.regions){
-			if( region.kind=="keep" || region.kind=="keep_expansion") keepRegions.push( region);
-			else if( region.kind=="castle_portal") keepHeight = Math.max( keepHeight, region.objectHeight);
-			// else if( region.kind=="castle_front_door")
-			// 	keepHeight = Math.max( keepHeight, paletteObject(plannedPaletteValue("castleGate", "castleGate")).br.h+1);
-		}
-	}
-	return @( x, z, i){
-		local b = bio[i], y = basey;
-		switch( b){
-		case WALL: case INNERWALL: case SEA:
-			if( castle && b!=SEA){
-				local row = bio.height-1-z;
-				local curtain = plan && plan["castleDefenseMask"] && plan.castleDefenseMask[row*bio.width+x]==2;
-				if( !curtain && (!plan || keepRegions.find(@(r) x>=r.x0 && x<=r.x1 && row>=r.y0 && row<=r.y1))){
-					y += keepHeight;
-					break;
+	if( castle){
+		// foreach( region in plan["regions"]){
+		// 	if( region.kind=="keep" || region.kind=="keep_expansion") keepRegions.push( region);
+		// 	else if( region.kind=="castle_portal") keepHeight = Math.max( keepHeight, region.objectHeight);
+		// 	// else if( region.kind=="castle_front_door")
+		// 	// 	keepHeight = Math.max( keepHeight, paletteObject(plannedPaletteValue("castleGate", "castleGate")).br.h+1);
+		// }
+		return @( x, z, i){
+			local b = bio[i], y = basey;
+			switch( b){
+			case WALL: case INNERWALL: case SEA:
+				// if( b!=SEA){
+				// 	local row = bio.height-1-z;
+				// 	local curtain = plan && plan["castleDefenseMask"] && plan.castleDefenseMask[row*bio.width+x]==2;
+				// 	if( !curtain && (!plan || keepRegions.find(@(r) x>=r.x0 && x<=r.x1 && row>=r.y0 && row<=r.y1))){
+				// 		y += keepHeight;
+				// 		break;
+				// 	}
+				// }
+				if( b==INNERWALL){
+					local m = ((x&2)^(z&2));
+					if( m) ++y;
+					++y;
 				}
+				y += wallheight; break;
+			case CASTLE_WALL_WALK:
+				y += Math.max( 1, wallheight-1); break;
+			case TOWN_FURNITURE:
+				y += 2; break;
+			case TOWN_CLIFF:
+				y += 6; break;
+			case TOWN_TREES:
+				break;
+			case RIVER: case LAKE: case TOWN_SEA:
+				y = Math.max( 0, basey-1); break;
 			}
-			y += wallheight; break;
-		case CASTLE_WALL_WALK:
-			y += Math.max( 1, wallheight-1); break;
-		case TOWN_FURNITURE:
-			y += 2; break;
-		case TOWN_CLIFF:
-			y += 6; break;
-		case TOWN_TREES:
-			break;
-		case RIVER: case LAKE: case TOWN_SEA:
-			y = Math.max( 0, basey-1); break;
+			return blkmap[b] | (y<<16);
 		}
-		return blkmap[b] | (y<<16);
+	}else{
+		return @( x, z, i){
+			local b = bio[i], y = basey;
+			switch( b){
+			case WALL: case INNERWALL: case SEA:
+				y += wallheight; break;
+			case CASTLE_WALL_WALK:
+				y += Math.max( 1, wallheight-1); break;
+			case TOWN_FURNITURE:
+				y += 2; break;
+			case TOWN_CLIFF:
+				y += 6; break;
+			case TOWN_TREES:
+				break;
+			case RIVER: case LAKE: case TOWN_SEA:
+				y = Math.max( 0, basey-1); break;
+			}
+			return blkmap[b] | (y<<16);
+		}
 	}
 };
+
+
+
 foreach( t in ["castle", "town", "village", ]){
 	local props = [ { ...sizeprop, range=t=="castle" ? (128,1024) : (64,1024), defval=[160,160] }, seedprop ];
 	if( t == "castle"){

@@ -57,33 +57,27 @@ class ImageEditor extends EditorViewBase
 	//	UI File Preview
 	static function createPreview( path){
 		if( !ImageEditor.matches( path)) return null;
+		return ImageEditor.createImagePreview( path);
+	}
+
+	static function createImagePreview( path){
 		local pv = ::loadSKView( "/skstudio/ui/parts/preview1.ui");
-		local sp = ::getSprite( path);
-		local imgv = SKImageView( sp);
-		local w = imgv.bnd.w, h = imgv.bnd.h;
+		local r = ::getResource( path);
+		local sp = (r instanceof SpriteSheet) ? Sprite( r.tex) : ::getSprite( r.path);
+		local w = sp.bnd.w, h = sp.bnd.h;
 		pv.setValue( "lbl", sprintf("%d x %d ",w,h));
-		imgv.bnd.x = imgv.bnd.y = 0.0;
 		local t = Math.max( w, h);
 		if( t > 320){
-			imgv.imagealign = 12;
-			imgv.setRect( 0, 0, imgv.bnd.w*320/t, imgv.bnd.h*320/t);
 			t = 320.0 / t;
 		}else{
 			t = Math.min( Math.floor( 320.0 / t), 4);
-			imgv.setRect( 0, 0, (w*t)|0, (h*t)|0);
 		}
+		local g = pv.findChild( "g");
+		local pic = g.findChild( "pic");
+		pic.setSprite( sp);
 		local cw = Math.max( 128, w*t);
 		local ch = Math.max( 128, h*t);
-		imgv.pos( (cw-imgv.bnd.w)>>1, (ch-imgv.bnd.h)>>1, 0.0);
-		if( imgv.sp.tex0.flags & 64){	//	SK_TEXTURE_CUBEMAP
-			imgv.sp.shadersrc = skFXFindTechnique( "toolsprite.cubeex").getShaderSource(0);
-		}else{
-			imgv.sp.tex0.setSamplerState( #SamplerState( SK_CLAMP, SK_CLAMP, SK_POINT, SK_POINT));
-			imgv.sp.blend = SK_MIX;
-		}
-		pv.findChild( "g").addChild( imgv);
 		pv.stretchSize( cw, ch);
-		imgv.updateLayout();
 		return pv;
 	}
 

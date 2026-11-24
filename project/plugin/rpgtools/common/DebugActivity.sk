@@ -190,6 +190,10 @@ class DebugSession
 			local b = false;
 			for( local l = 0;l < trynum;l ++){
 				sleep( 200);
+				if( !(popen?.isrunning())){
+					printf( "Debug process is down...\n");
+					break;
+				}
 				try{
 					printf( "IPCConnection connecting...\n");
 					if( b=ipc.connect( popen.processid())) break;
@@ -279,13 +283,18 @@ class DebugSession
 
 	//	
 	function printLines(){
+		if( !popen) return;
 		local sb = #StringBuffer();
 		sb.clear();
 		local c = 0;
 		for( local li; li = popen.readLine();){
 			sb .. ":::" .. li.trim() .. "\n";
 			c++;
-			if( c >= 100) break;
+			if( c >= 100){
+				printf( "%S", string( sb));
+				sb.clear();
+				c = 0;
+			}
 		}
 		printf( "%S", string( sb));
 	}

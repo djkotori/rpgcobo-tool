@@ -51,6 +51,7 @@ class ConfigResource extends Resource
 		"quest" : ("\uea23",0xffffffff),
 		"macro" : ("\uf80e",0xffffffff),
 		"map" : ("\uf11e",0xaaffffff),		//	mm
+		"point" : ("\ue57d",0xffffffff),
 	};
 
 	static filedir = confdir;
@@ -119,6 +120,10 @@ class ConfigResource extends Resource
 		userdata = null;
 		dirty = true;
 	}
+
+	function getResourceName(){
+		return "$T.side_dbview_"..name;
+	}
 }
 
 //	P000など編集の最小単位。セーブもこれ毎に行う。
@@ -179,9 +184,12 @@ class ConfigItemResource extends Resource
 		return true;
 	}
 
-	function tips(){
-		local pname = T["side_dbview_"..pres.name];		//	※マップアセットでちゃんととれない
-		return `[P]$pname: [T]${getResourceName()}`;
+	function tipstext(){
+		local pname = pres.getResourceName();//T["side_dbview_"..pres.name];		//	※マップアセットでちゃんととれない
+		local data = getContent();
+		local s = `[P]$pname: [T]${getResourceName()}`;
+		if( length( data["desc"])) s += "\n\n" + data["desc"];
+		return s;
 	}
 }
 
@@ -239,7 +247,7 @@ class GameConfigResource extends Resource
 		return false;
 	}
 
-	function tips(){
+	function tipstext(){
 		local pname = T["side_dbview_game"];
 		return `[P]$pname: [T]$itemname`;
 	}
@@ -319,7 +327,7 @@ class GameResourceResource extends Resource
 		return false;
 	}
 
-	function tips(){
+	function tipstext(){
 		return `[P]$T.lbl_resource: [T]${getResourceName()}`;
 	}
 }

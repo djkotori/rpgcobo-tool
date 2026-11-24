@@ -388,12 +388,12 @@ local customscp = {
 //	隊列変更スキル　※指定不能
 
 //	アクション定義を返す。name,pid等は入ってないので...でつなげること
-local makeactionprop( scps){
+local makeactionprop( lbl, scps){
 	return {
 		type=PROPERTYLIST,
 		propdef=@(){
 			local propdef = {
-				name="aiuro", width=520, 
+				name=lbl, width=520, 
 				props = @( v){
 					local ss = scps.find( @( s) s.id==v.id);
 					local a = [
@@ -434,18 +434,19 @@ local occasionprop = { pid="occasion", lbl="$T.occasion", type=LIST,
 local occasionprop_none = { pid="occasion", lbl="$T.occasion", type=NOEDITOR, defval=0, }
 local occasionprop_battle = { pid="occasion", lbl="$T.occasion", type=NOEDITOR, defval=1, }
 
-local cmdtgtprop = { pid="cmdtgt", lbl="$T.cmdtgt", type=LIST, list=cmdtgt_all, defval=0 }
-local cmdtgtprop_enemy = { pid="cmdtgt", lbl="$T.cmdtgt", type=LIST, list=cmdtgt_enemy, defval=cmdtgt_enemy[0].val }
-local cmdtgtprop_party = { pid="cmdtgt", lbl="$T.cmdtgt", type=LIST, list=cmdtgt_party, defval=cmdtgt_party[0].val }
+local cmdtgtprop = { pid="cmdtgt", lbl="$T.cmdtgt", type=LIST, list=cmdtgt_all, defval=0, tipskey="skillprop.cmdtgt" }
+local cmdtgtprop_enemy = { ...cmdtgtprop, list=cmdtgt_enemy, defval=cmdtgt_enemy[0].val }
+local cmdtgtprop_party = { ...cmdtgtprop, list=cmdtgt_party, defval=cmdtgt_party[0].val }
 
-local dmgtypeprop = { pid="dmgtype", lbl="$T.dmgtype", type=LIST, list=dmgtype_all, defval=HP_DAMAGE }
-local dmgtypeprop_damage = { pid="dmgtype", lbl="$T.dmgtype", type=LIST, list=dmgtype_damage, defval=HP_DAMAGE }
-local dmgtypeprop_heal = { pid="dmgtype", lbl="$T.dmgtype", type=LIST, list=dmgtype_heal, defval=HP_HEAL }
+local dmgtypeprop = { pid="dmgtype", lbl="$T.dmgtype", type=LIST, list=dmgtype_all, defval=HP_DAMAGE, tipskey="skillprop.dmgtype" }
+local dmgtypeprop_damage = { ...dmgtypeprop, list=dmgtype_damage, defval=HP_DAMAGE }
+local dmgtypeprop_heal = { ...dmgtypeprop, list=dmgtype_heal, defval=HP_HEAL }
 
 //	ダメージ式関係。dmgtype=NO_DAMAGEの時には非表示になるものがある。
-local dmgformprop = { pid="dmgform", lbl="$T.type_dmgform", type=LIST, list=@() ::typelist( "dmgform"), defval=0, refresh=true, hide=hide_nodamage};
+local dmgformprop = { pid="dmgform", lbl="$T.type_dmgform", type=LIST, list=@() ::typelist( "dmgform"), defval=0, refresh=true, hide=hide_nodamage, tipskey="skillprop.dmgform"};
 local atkformprop = {
 	pid="atkform", lbl="$T.lbl_atkform", type=SCRIPT, defval="", hide=hide_nodamage, //deflbl=deflbl_dmgform( "atk"),
+	tipskey="skillprop.atkform",
 	get = @( prop, data, e){
 		local val = data[prop.pid];
 		if( length( val)) return val;
@@ -457,16 +458,16 @@ local atkformprop = {
 		data[prop.pid] <- (val!="" && val!=defval) ? val : "";
 	}
 };
-local dmgrateprop = { pid="dmgrate", lbl="$T.lbl_dmgrate", type=VEC2, range=(0.0, 9.0), q=10, ui="r", defval=(0.9,1.1), hide=hide_nodamage};
-local spdrateprop = { pid="spdrate", lbl="$T.lbl_spdrate", type=SCALAR, range=(0.0, 9.0), q=100, ui="r", defval=1.0, };
-local hitrateprop = { pid="hitrate", lbl="$T.lbl_hitrate", type=SCALAR, range=(0.0, 9.0), q=100, ui="r", defval=1.0, hide=hide_nodamage};
-local atknumprop = { pid="atknum", lbl="$T.lbl_atknum", type=VEC2, range=(1, 9), defval=(1,1), ui="r", hide=hide_nodamage};
-local elembitsprop = { pid="elembits", lbl="$T.type_elem", type=CHECKBITS, list=@() ::typelist( "elem"), hide=hide_nodamage, defval=1};
-local remcondsprop = { pid="remconds", lbl="$T.lbl_remconds", type=CHECKBITS, list=@() ::datalist( "cond"), defval=0};
-local putcondsprop = { pid="putconds", lbl="$T.lbl_putconds", type=CHECKBITS, list=@() ::datalist( "cond"), defval=0};
+local dmgrateprop = { pid="dmgrate", lbl="$T.lbl_dmgrate", type=VEC2, range=(0.0, 9.0), q=10, ui="r", defval=(0.9,1.1), hide=hide_nodamage, tipskey="skillprop.dmgrate"};
+local spdrateprop = { pid="spdrate", lbl="$T.lbl_spdrate", type=SCALAR, range=(0.0, 9.0), q=100, ui="r", defval=1.0, tipskey="skillprop.spdrate"};
+local hitrateprop = { pid="hitrate", lbl="$T.lbl_hitrate", type=SCALAR, range=(0.0, 9.0), q=100, ui="r", defval=1.0, hide=hide_nodamage, tipskey="skillprop.hitrate"};
+local atknumprop = { pid="atknum", lbl="$T.lbl_atknum", type=VEC2, range=(1, 9), defval=(1,1), ui="r", hide=hide_nodamage, tipskey="skillprop.atknum"};
+local elembitsprop = { pid="elembits", lbl="$T.type_elem", type=CHECKBITS, list=@() ::typelist( "elem"), hide=hide_nodamage, defval=1, tipskey="skillprop.elembits"};
+local remcondsprop = { pid="remconds", lbl="$T.lbl_remconds", type=CHECKBITS, list=@() ::datalist( "cond"), defval=0, tipskey="skillprop.remconds"};
+local putcondsprop = { pid="putconds", lbl="$T.lbl_putconds", type=CHECKBITS, list=@() ::datalist( "cond"), defval=0, tipskey="skillprop.putconds"};
 //	
-local condgprop = { pid="condg", lbl="$T.type_condg", type=LIST, list=@() ::typelist( "condg"), defval=0};
-local flagsprop = { pid="flags", lbl="$T.skillflag", type=CHECKBITS, list=skillflaglist, defval=255};
+local condgprop = { pid="condg", lbl="$T.type_condg", type=LIST, list=@() ::typelist( "condg"), defval=0, tipskey="skillprop.condg"};
+local flagsprop = { pid="flags", lbl="$T.skillflag", type=CHECKBITS, list=skillflaglist, defval=255, tipskey="skillprop.flags"};
 
 //	エフェクト、アニメ
 local efxhead = { pid="HACT", lbl="$T.lbl_action", type=HEADER, menu=[
@@ -475,10 +476,10 @@ local efxhead = { pid="HACT", lbl="$T.lbl_action", type=HEADER, menu=[
 ]};
 
 local aimaniprop = { pid="aimani", lbl="$T.lbl_aimani", type=ANIME_POPUP, defval=null }
-local useactprop = { pid="useact", lbl="$T.lbl_useact", type=PROPERTYLIST, ...makeactionprop( SkillBeginScripts), }
-local atkactprop = { pid="atkact", lbl="$T.lbl_atkact", type=PROPERTYLIST, ...makeactionprop( SkillAttackScripts), }
-local hitactprop = { pid="hitact", lbl="$T.lbl_hitact", type=PROPERTYLIST, ...makeactionprop( SkillHitScripts), }
-local endactprop = { pid="endact", lbl="$T.lbl_endact", type=PROPERTYLIST, ...makeactionprop( SkillEndScripts), }
+local useactprop = { pid="useact", lbl="$T.lbl_useact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_useact", SkillBeginScripts), }
+local atkactprop = { pid="atkact", lbl="$T.lbl_atkact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_atkact", SkillAttackScripts), }
+local hitactprop = { pid="hitact", lbl="$T.lbl_hitact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_hitact", SkillHitScripts), }
+local endactprop = { pid="endact", lbl="$T.lbl_endact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_endact", SkillEndScripts), }
 
 local acttestprop = {
 	pid="acttest", lbl="", type=CUSTOMBUTTON, ui="1", cnt="cnt5.ui", get=@( prop, data) 1, set=@( prop, data, act) 0, 

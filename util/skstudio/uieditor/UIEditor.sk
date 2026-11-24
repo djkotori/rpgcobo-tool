@@ -39,23 +39,23 @@ class UIEditor extends EditorViewBase
 	static function createPreview( path){
 		if( !path.endsWith( ".ui")) return null;
 		local pv = ::loadSKView( "/skstudio/ui/parts/preview1.ui");
-
 		local ui = ::loadSKView( path);
+		ui.updateMatrixAll();
 		local w = ui.bnd.w, h = ui.bnd.h;
 		pv.setValue( "lbl", sprintf("%d x %d ",w,h));
-		ui.bnd.x = ui.bnd.y = 0.0;
 		local t = Math.max( w, h);
 		if( t > 320){
 			t = 320.0 / t;
-			ui.scale( t, t, 1.0);
 		}else{
 			t = 1.0;
 		}
-		local cw = Math.max( 128, w*t);
-		local ch = Math.max( 128, h*t);
+		local sp = ui.capture();
+		local g = pv.findChild( "g");
+		local pic = g.findChild( "pic");
+		pic.setSprite( sp);
+		local cw = Math.max( 128, w*t + 12);
+		local ch = Math.max( 128, h*t + 12);
 		pv.stretchSize( cw, ch);
-		pv.findChild( "g").addChild( ui);
-		pv.findChild( "g").setBuffer( 2);
 		return pv;
 	}
 
