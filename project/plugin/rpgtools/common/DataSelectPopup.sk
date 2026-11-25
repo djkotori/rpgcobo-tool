@@ -63,6 +63,7 @@ class DataSelectPopup extends Popup
 		local lbl = v.findChild( "lbl"), icon = v.findChild( "icon"), sep = v.findChild( "sep");
 		v.setValue( "dataid", i.dataid);
 		v.setValue( "lbl", i.lbl);
+		v.tips = i.tips;
 		v.pickable = false;
 	}
 
@@ -159,6 +160,7 @@ class DataSelectPopup extends Popup
 					dataid = i
 					lbl = sprintf( "%S%S", v["icon"]||"", v["name"])
 					data = v
+					tips = ::getResource( "/.x/%S/%S" % (t, i))
 				};
 			}
 		}
@@ -194,6 +196,7 @@ class DataSelectPopup extends Popup
 						dataid = i
 						lbl = sprintf( "%S%S", v["icon"]||"", v["name"])
 						data = v
+						tips = ::getResource( "/.x/%S/%S" % (t, i))
 					};
 				}
 			}

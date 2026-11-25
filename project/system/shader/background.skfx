@@ -17,6 +17,7 @@ param def
 	uniform highp mat4 invpmat <id=ENV2MAT>;
 	uniform mediump mat4 invvmat3 <id=MISC2MAT>;	//	ENV4MAT -> MISC2MAT
 	uniform mediump mat4 colormat <id=COLORMAT>;
+	uniform lowp vec4 p1<id=UNICOLOR2>;			//	gsel
 	
 	varying mediump vec4 v_uv;
 	varying highp vec3 v_wn;
@@ -96,7 +97,7 @@ define decalout_pbrforward
 
 define decalout_deferred
 {
-	#define FRAGOUT pix.xyz = tonemap_inv( pix.xyz); mediump float v = max( pix.x, max( pix.y, pix.z))+0.001; \
+	#define FRAGOUT pix.xyz = tonemap_inv( pix.xyz); pix.w = p1.w; mediump float v = max( pix.x, max( pix.y, pix.z))+0.001; \
 		frag0 = vec4( pix.xyz/v, pix.w); frag1 = uint( (1<<29)|(63<<23)|((1024)|(1024<<11)|(1<<22))); frag2 = floatBitsToUint( v);
 }
 
@@ -113,7 +114,7 @@ define pbrout_pbrforward
 define pbrout_deferred
 {
 	#define FRAGOUT mediump float v = max( pix.x, max( pix.y, pix.z))+0.001; \
-		frag0 = vec4( pix.xyz/v, pix.w); frag1 = uint( (1<<29)|(63<<23)|((1024)|(1024<<11)|(1<<22))); frag2 = floatBitsToUint( v);
+		frag0 = vec4( pix.xyz/v, p1.w); frag1 = uint( (1<<29)|(63<<23)|((1024)|(1024<<11)|(1<<22))); frag2 = floatBitsToUint( v);
 }
 
 // define pbrout_deferred_select ??

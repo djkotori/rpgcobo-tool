@@ -342,6 +342,7 @@ class MapTools.tool_asset extends MapTool
 			optionview.findChild( "rot"..drot)?.setSelected( false);
 			drot = e.src.name[3]-'0';
 			e.src.setSelected( true);
+			selasset.setRotation( drot);
 			break;
 		default:
 			break;
@@ -488,16 +489,20 @@ class SelectAsset
 	pages = null;		//	[[{blk,name,}],...]
 	selitem = null;		//	pages[selpage][x]
 
+	rot = 0;
+	pagebits = -1;
+
 	rev = -1;
 	dnd = 0;
 
-	static function getPreviewTex( bw64, fn){
+	static function getPreviewTex( bw64, rot, fn){
 		local cache = #{};
-		if( cache[bw64]) return fn( cache[bw64]);
+		local k = bw64..rot;
+		if( cache[k]) return fn( cache[k]);
 		//
 		local queue = #[];
-		local qi = queue.indexOf( bw64);
-		if( qi >= 0) queue[qi].list .. fn; else queue .. { bw64:bw64, list:[fn] };
+		local qi = queue.findi( @( q) q.k == k);
+		if( qi >= 0) queue[qi].list .. fn; else queue .. { k:k, bw64:bw64, rot:rot, list:[fn] };
 		//
 		local th = #(null,);
 		local imgpreview = #BlockImagePreview( 128, 128, Vector3D( -30*Math.DTOR, 30*Math.DTOR));
@@ -510,7 +515,7 @@ class SelectAsset
 					local ret;
 					local bb = uncompressZSTD( decodeBASE64( q.bw64));
 					local bw = ObjectInput.decode( bb);
-					ret = cache[q.bw64] <- imgpreview.getBlockWorldImage( bw);
+					ret = cache[q.k] <- imgpreview.getBlockWorldImage( bw, q.rot);
 					ret.ref = bw;
 					foreach( fn in q.list) fn( ret);
 				}
@@ -592,8 +597,14 @@ class SelectAsset
 			}
 		}
 	}
+
+	function setRotation( r){
+		rot = r;
+		setPageBits( pagebits);
+	}
 	
 	function setPageBits( pb){
+		pagebits = pb;
 		findView( selitem)?.setSelected( false);
 		//	
 		local list = [];
@@ -619,7 +630,7 @@ class SelectAsset
 		}
 		//	プレビューロード
 		foreach( v in va){
-			getPreviewTex( v.ref.bw64, @( tex){ v.findChild( "icon").setSprite( Sprite( tex)); });
+			getPreviewTex( v.ref.bw64, rot, @( tex){ v.findChild( "icon").setSprite( Sprite( tex)); });
 		}
 		findView( selitem)?.setSelected( true);
 	}

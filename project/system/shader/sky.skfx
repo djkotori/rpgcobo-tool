@@ -82,7 +82,7 @@ param physical
 	uniform highp mat4 P <id=MISC1MAT>;
 	uniform highp mat4 Q <id=MISC2MAT>;
 	uniform highp sampler2D transmittanceTex <id=COLORTEX1, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=CLAMP, WRAP_T=CLAMP>;
-	uniform highp sampler3D noiseTex <id=COLORTEX2, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=WRAP, WRAP_T=WRAP, WRAP_R=WRAP>;
+	uniform sampler3D noiseTex <id=COLORTEX2, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=WRAP, WRAP_T=WRAP, WRAP_R=WRAP>;
 	uniform highp sampler2D skyTex <id=COLORTEX3, MIN_FILTER=LINEAR, MAG_FILTER=LINEAR, WRAP_S=WRAP, WRAP_T=CLAMP>;
 
 	uniform lowp vec4 rdiv <id=UNICOLOR1>;
@@ -139,7 +139,8 @@ fs physical_common
 		h = max( h, 0.0);
 		// Near-surface aerosols accumulate in a shallow boundary layer.
 		highp float boundary = 48.0*(P[0].w-1.0)*(P[0].w-1.0)/P[0].w*exp(-h/0.075);
-		return vec3( exp( -h/8.0), exp( -h/1.2)+boundary, max( 0.0, 1.0-abs(h-25.0)/15.0));
+		// exp2 avoids an observed mobile exp(-h/8) divergence in integration loops.
+		return vec3( exp2(-h*0.18033688), exp( -h/1.2)+boundary, max( 0.0, 1.0-abs(h-25.0)/15.0));
 	}
 
 	highp vec3 extinction( highp vec3 density){

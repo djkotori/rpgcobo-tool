@@ -14,6 +14,8 @@ local srcdir = dirname( callee().getSourceName());
 
 class DBEditorPlayer extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_player.ui";
+
 	//	プレイヤーの基本パラメータ。基本拡張はできない。が、プラグインでここ拡張することは可能。
 	static baseprops1 = [
 		RPGProperties.nameprop,	//	※プレイヤーにはアイコンが無くてOK?
@@ -677,3 +679,5 @@ class DBEditorPlayer.LVTypeDialog.Parameter
 		}
 	}
 }
+
+DBEditor.registerDBType( "player", DBEditorPlayer);

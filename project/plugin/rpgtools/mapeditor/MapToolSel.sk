@@ -880,7 +880,7 @@ class MapTools.tool_sel extends MapTool
 				placeSizeLabel( e, box);
 				break;
 			case MOUSE_RELEASED:
-				self.sksel = self.place3DGizmo( box, 1|2|4, PEN_SELECT);
+				self.sksel = self.place3DGizmo( box, 0, 1|2|4, PEN_SELECT);
 				self.selbox = box;
 				self.removeGuide( "push");
 				lblref[0]?.removeFromParent();
@@ -959,7 +959,7 @@ class MapTools.tool_sel extends MapTool
 				if( arg.part == 0){
 					br1.offset( arg.d[0], arg.d[1], arg.d[2]);
 				}
-				self.place3DGizmo( br1, 1|2|4, PEN_SELECT);
+				self.place3DGizmo( br1, 0, 1|2|4, PEN_SELECT);
 				self.selbox = br1;
 				self.sksel.ref = br1;
 				break;
@@ -976,8 +976,9 @@ class MapTools.tool_sel extends MapTool
 		local m = IMat(), br = IRect3D(), pos = IPos( hb0.bx, hb0.by+1, hb0.bz, rot0), mir=(1,1);
 		local setmat( x, y, z, r, sx, sz){
 			m.identity().translate( x, y, z).rotate( r).scale( sx, sz).translate( cx, cy, cz);
-			br.set( m.transform( IRect3D(0,0,0,srcbw.w,srcbw.h,srcbw.d)));
-			self.place3DGizmo( br, -1, PEN_GIZMO);
+			local br0 = IRect3D( 0,0,0,srcbw.w,srcbw.h,srcbw.d);
+			br.set( m.transform( br0));
+			self.place3DGizmo( br, r, -1, PEN_FILL);
 		}
 		setmat( pos.x, pos.y, pos.z, pos.rot, mir[0], mir[1]);
 		//	paste op
@@ -1005,13 +1006,16 @@ class MapTools.tool_sel extends MapTool
 		}
 		local gizmofunc( gz, op, arg=null){
 			switch( op){
+			case "rotate":
+				self.editor.op.undo();
+				pos.rot = arg.rot;
+				setmat( pos.x, pos.y, pos.z, pos.rot, mir[0], mir[1]);
+				pasteop();
+				break;
 			case "move":
-				if( arg.part <= 6){
-					pos.x += arg.d[0];
-					pos.y += arg.d[1];
-					pos.z += arg.d[2];
-				}else{
-				}
+				pos.x += arg.d[0];
+				pos.y += arg.d[1];
+				pos.z += arg.d[2];
 				self.editor.op.undo();
 				setmat( pos.x, pos.y, pos.z, pos.rot, mir[0], mir[1]);
 				pasteop();

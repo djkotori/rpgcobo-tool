@@ -73,7 +73,31 @@ module.hookAction( "editor_postload", @(){
 //	LV2キー --- LV1から子へ
 //	- プロパティpid
 //	- ボタン名
-//	
+
+local changetips( k, v, r){
+	local s = r.file.load().asText();
+	local sb = StringBuffer();
+	local i0 = s.indexOf( `"$k"`);
+	if( i0 < 0){	//	ない
+		if( !v) return;			//	追加する内容がなければ何もしない
+		i0 = s.indexOf( `"insertion-point-for-tool"`);
+		sb .. s.substring( 0, i0);
+		sb .. sprintf( "\"%S\":{\n\t\t\"ja\":\"%S\",\n\t\t\"en\":\"%S\"\n\t},\n\t", k, v.ja, v.en);
+		sb .. s.substring( i0);
+	}else{
+		local i1 = s.indexOf( "}", i0);
+		sb .. s.substring( 0, i0);
+		if( !v){
+			sb .. s.substring( i1 + 1);
+		}else{
+			sb .. sprintf( "\"%S\":{\n\t\t\"ja\":\"%S\",\n\t\t\"en\":\"%S\"\n\t}", k, v.ja, v.en);
+			sb .. s.substring( i1 + 1);
+		}
+	}
+	local bb = sb.toByteBuffer();
+	r.file.save( bb);
+	r.refresh();
+}
 
 ::skstudio.registerCommand( {
 	uid="cmd_embedtips", modkey="~_E", lbl="$T.toolcmd_embedtips", icon="\ue887",
@@ -89,11 +113,17 @@ module.hookAction( "editor_postload", @(){
 		}
 		foreach( i, v in ka){
 			if( !v.isVisible()) continue;
-			if( v.ref instanceof PropertyBehavior){
-				k2 = v.ref.prop.lbl;
+			// if( v.ref instanceof PropertyBehavior){		//	プロパティはtipskeyを使う。。。この方が楽
+			// 	k2 = v.ref.prop.lbl;
+			// 	break;
+			// }
+			if( v instanceof GPUIButton){
+				local p = v.parent;
+				for( ; p; p = p.parent) if( p.name) break;
+				k2 = sprintf( "%S-%S", p["name"]||"X", v.name);
 				break;
 			}
-			if( v instanceof GPUIButton){
+			if( v instanceof SKTipsLabelView){
 				local p = v.parent;
 				for( ; p; p = p.parent) if( p.name) break;
 				k2 = sprintf( "%S-%S", p["name"]||"X", v.name);
@@ -103,19 +133,16 @@ module.hookAction( "editor_postload", @(){
 		// printf( "KEY %S %S\n", k1, k2);
 		if( !k2) return;
 		local k = sprintf( "%S::%S", k1, k2);
-		local path = ::workspace["embedjson_path"] || ::TipsRunner.tipsjsonlist[0], data = {ja="",en=""}, hasdata = false;
-		// local tipslist = ::TipsRunner.tipsjsonlist.map( @( v) +{
-		// 	lbl=v, tb=::loadconf( v), val=v,	//	loadconfでsuspendcheck入る。。
-		// });
+		local path = ::workspace["embedjson_path"] || ::TipsRunner.tipsconflist[0], data = {ja="",en=""}, hasdata = false;
 		local tipslist = [];
-		foreach( i, v in ::TipsRunner.tipsjsonlist){
+		foreach( i, v in ::TipsRunner.tipsconflist){
 			tipslist .. { lbl=v, tb=::loadconf( v), val=v };
 		}
 		foreach( i, v in tipslist){
 			if( v.tb[k]){ data = v.tb[k]; path = v.val; hasdata = true; break; }
 		}
 		//	ポップアップで編集
-		local p = Popup( ::loadSKView( "/skstudio/ui/dialog/embedtipspopup.ui"));
+		local p = MobablePopup( ::loadSKView( "/skstudio/ui/dialog/embedtipspopup.ui"));
 		local menu = MenuBehavior( p.view.findChild( "jsonmenu"), tipslist);
 		menu.selectItem( @( v) v.val==path);
 		p.view.setValue( "k", k);
@@ -124,26 +151,8 @@ module.hookAction( "editor_postload", @(){
 		p.show( null, getMousePos( 0));
 		if( p.ret){
 			local d = {ja=p.view.findChild( "edit_ja").getText(), en=p.view.findChild( "edit_en").getText(), };
-			local npath = menu.selitem.val;
-			if( hasdata && path != npath){	//	path入れ替わった
-				local t = tipslist.find( @( v) v.val==path).tb;
-				delete t[k];
-				local bb = encodeJSON( t, 5, ByteBuffer());	bb.pos = 0;
-				local r = ::getResource( path);
-				r.file.save( bb);
-				r.refresh();
-			}
-			local t = tipslist.find( @( v) v.val==npath).tb;
-			if( length( d.ja) || length( d.en)){
-				t[k] <- d;
-			}else{
-				delete t[k];
-			}
-			local bb = encodeJSON( t, 5, ByteBuffer());	bb.pos = 0;
-			local r = ::getResource( npath);
-			r.file.save( bb);
-			r.refresh();
-			::workspace["embedjson_path"] <- npath;
+			local npath = tipslist[0].val;
+			changetips( k, d, ::getResource( npath));
 		}
 	}
 });

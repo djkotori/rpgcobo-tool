@@ -391,6 +391,7 @@ class reg.ColorBackgroundPass extends reg.ImagePassBase
 		m.depthmask = 0;
 		m.depthtest = SK_LEQUAL;
 		m.misccol0 = c;
+		m.misccol1 = 2;
 		m.gsel = 2;
 	}
 
@@ -432,6 +433,7 @@ class reg.SkyboxBackgroundPass extends reg.ImagePassBase
 		m.miscmat0 = Matrix();
 		m.miscmat0[0] = 0;
 		m.miscmat1 = Matrix();
+		m.misccol1 = 2;
 		m.gsel = 2;
 	}
 
@@ -469,6 +471,7 @@ class reg.TextureBackgroundPass extends reg.ImagePassBase
 		m.depthtest = SK_LEQUAL;
 		m.miscmat0 = Matrix();
 		m.miscmat1 = Matrix();
+		m.misccol1 = 2;
 		m.gsel = 2;
 		m.miscmat0.set( 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
 	}
@@ -536,6 +539,7 @@ class reg.GenSkyBackgroundPass extends reg.ImagePassBase
 		m.depthtest = SK_LEQUAL;
 		m.miscmat0 = Matrix();
 		m.miscmat1 = Matrix();
+		m.misccol1 = 2;
 		m.gsel = 2;
 		m.miscmat0.set( 1,1,1,1, 0,0,0,0, 0,0,0,0, 0,0,0,0 );
 	}
@@ -2037,8 +2041,8 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	// litidxtex = null;		//	litcullパス内にあればいいか
 	// litprmtex = null;
 	g0tex = null;			//	1/1 rgba8
-	g1tex = null;			//	1/1 rgba8
-	g2tex = null;			//	1/1 rgba8
+	g1tex = null;			//	1/1 r32ui
+	g2tex = null;			//	1/1 r32ui
 	g1tex2 = null;			//	1/1 rgba8 : normal blur
 	ztex = null;			//	1/1 d24|d32
 	uztex = null;			//	1/1 r16ui
@@ -2052,6 +2056,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 	lightingfb = null;		//	hdcolortex | hdcolortex,sdcolortex
 	transfb = null;			//	hdcolortex, ztex
 	decalfb = null;			//	sdcolortex, ztex
+	g0fb = null;			//	g0tex, ztex : シルエット描画用
 	exp = null;				//	Exposure : 
 	
 	//	pass
@@ -2120,6 +2125,7 @@ class reg.PBRDeferredRendererPass extends SK3DRenderPass
 		basefb = r.createRenderTarget( {color0=g0tex, color1=g1tex, color2=g2tex, depth=ztex});
 		transfb = r.createRenderTarget( {color0=hdcolortex, depth=ztex});
 		decalfb = r.createRenderTarget( {color0=sdcolortex, depth=ztex});
+		g0fb = r.createRenderTarget( {color0=g0tex, depth=ztex});
 		//	screen space
 		gblurpass.enabled = false;// h.pbr_qua >= 2;		//	gblur ボツ。。。
 		if( gblurpass["enabled"]){

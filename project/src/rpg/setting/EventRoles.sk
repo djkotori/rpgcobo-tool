@@ -807,7 +807,7 @@ RPGSystem.eventrole .. {
 	]
 	
 	pageprops = @( cmd)[
-		{ pid="memo", lbl="$T.lbl_pagememo", type=STRING }
+		{ pid="memo", lbl="$T.lbl_pagememo", type=STRING, multiline=2 }
 		moveactionprop, ...RPGSystem.moveaction[cmd["moveaction"]]["props"],
 		triggerprop,
 		{ pid="searchtext", lbl="$T.lbl_searchtext", type=LISTORSTRING, 

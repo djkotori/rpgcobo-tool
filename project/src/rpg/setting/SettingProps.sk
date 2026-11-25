@@ -109,6 +109,7 @@ settingprops .. {
 	proptype = "status",
 	pid = "hotelheal",
 	lbl = "$T.setting_hotelheal",
+	tipskey = "settingprop.hotelheal"
 	type = LIST,
 	list = [
 		{ lbl="$T.setting_hotelheal0", val=0, }
@@ -123,23 +124,9 @@ settingprops .. {
 	proptype = "status",
 	pid = "lvupheal",
 	lbl = "$T.setting_lvupheal",
+	tipskey = "settingprop.lvupheal"
 	type = BOOL,
 	defval = false,
-};
-
-settingprops .. {
-	part = "basic",
-	proptype = "status",
-	pid = "showhidden",
-	lbl = "$T.setting_showhidden",
-	type = BOOL,
-	type = LIST,
-	list = [
-		{ lbl="$T.lbl_none", val=0, }
-		{ lbl="$T.lbl_auto", val=1, }
-		{ lbl="$T.lbl_always", val=2, }
-	]
-	defval = 1,
 };
 
 //////// command - バトルコマンド
@@ -162,6 +149,7 @@ settingprops .. {
 	part = "startup"
 	pid = "inimembers"
 	lbl = "$T.setting_inimembers"
+	tipskey = "settingprop.inimembers"
 
 	type = DATAIDS
 	datalist = @() array( ::skstudio.editor["data"]["maxmembers"] ?? ::conf.setting.maxmembers).map(
@@ -180,6 +168,7 @@ settingprops .. {
 	part = "startup"
 	pid = "inimoney"
 	lbl = "$T.mymoney"
+	tipskey = "settingprop.inimoney"
 
 	type = SCALAR
 	range = (0, 1000000)
@@ -191,6 +180,7 @@ settingprops .. {
 	part = "startup"
 	pid = "titlemap"
 	lbl = "$T.setting_titlemap"
+	tipskey = "settingprop.titlemap"
 	type = DATAID
 	datatype = ["map"]
 	
@@ -202,6 +192,7 @@ settingprops .. {
 	part = "startup"
 	pid = "inimap"
 	lbl = "$T.setting_inimap"
+	tipskey = "settingprop.inimap"
 	type = CUSTOMBUTTON
 
 	tostring = @( v){
@@ -348,6 +339,7 @@ stageprops .. {
 	mapedit=true,
 	pid="rsetid",
 	lbl="$T.menu_view_rendersetting",
+	tipskey = "stageprop.rsetid",
 	type=LIST,
 	list = rendersetlist,
 	defval="pbr_df",
@@ -470,6 +462,7 @@ stageprops .. {
 	mapedit=true,
 	pid="bg",
 	lbl="$T.lbl_bgimage",
+	tipskey = "stageprop.bg",
 	type=PROPERTYLIST,
 	defval={ type="skybox", },
 	propdef = bgpropdef
@@ -527,6 +520,7 @@ stageprops .. {
 	pid="weather",
 	lbl="$T.setting_weather",
 	type = PROPERTYLIST,
+	tipskey = "stageprop.weather",
 	propdef = weatherpropdef,
 	defval = {type=null},
 
@@ -538,11 +532,12 @@ stageprops .. {
 stageprops .. { mapedit=true, pid="MAP_SOUND", lbl="$T.lbl_sound", type=HEADER, cnt="header1.ui" }
 
 stageprops .. {
-	mapedit=true, pid="bgmid", lbl="$T.lbl_bgm", type=RESID, restype = ["bgm"], defval=null
+	mapedit=true, pid="bgmid", lbl="$T.lbl_bgm", type=RESID, restype = ["bgm"], defval=null,
+	tipskey = "stageprop.bgm",
 }
 
 stageprops .. {
-	mapedit=true, pid="reverbid", lbl="$T.reverb", type=LIST,
+	mapedit=true, pid="reverbid", lbl="$T.reverb", type=LIST, tipskey = "stageprop.reverbid",
 	list=@() ::conf._resource.snd._env.reverbs.map( @( v)({ lbl="$T.reverb_"..v.id, icon="\ue049", val=v.id, })),
 	defval="PLAIN"
 
@@ -577,19 +572,6 @@ stageprops .. {
 };
 
 stageprops .. {
-	pid = "ctrmode",
-	lbl = "$T.setting_ctrmode",
-	type = LIST,
-	list = [
-		{ lbl="$T.ctrmode0", val=0 },
-		{ lbl="$T.ctrmode1", val=1 },
-		{ lbl="$T.ctrmode2", val=2 },
-		{ lbl="$T.ctrmode3", val=3 },
-	]
-	defval = 1,
-};
-
-stageprops .. {
 	pid = "menuopenable",
 	lbl = "$T.setting_menuopenable",
 	type = BOOL,
@@ -606,6 +588,7 @@ stageprops .. {
 stageprops .. {
 	mapedit=true, pid = "ctrmode",
 	lbl = "$T.setting_ctrmode",
+	tipskey = "stageprop.ctrmode",
 	type = LIST,
 	list = [
 		{ lbl="$T.ctrmode0", icon="\uf230", val=0 },
@@ -617,7 +600,14 @@ stageprops .. {
 };
 
 stageprops .. {
-	mapedit=true, pid="canenter_water", lbl="$T.setting_canenter_water", type=BOOL//1, cnt="cnt5.ui",
+	mapedit=true, pid = "silhouette", lbl = "$T.setting_silhouette", tipskey = "stageprop.silhouette",
+	type = RGBA,
+	defval = 0x00ffff99,
+};
+
+stageprops .. {
+	mapedit=true, pid="canenter_water", lbl="$T.setting_canenter_water", tipskey = "stageprop.canenter_water",
+	type=BOOL
 	defval = false,
 	
 	func = @( stage, val){
@@ -628,7 +618,8 @@ stageprops .. {
 }
 
 stageprops .. {
-	mapedit=true, pid="canenter_hole", lbl="$T.setting_canenter_hole", type=BOOL//1, cnt="cnt5.ui",
+	mapedit=true, pid="canenter_hole", lbl="$T.setting_canenter_hole", tipskey = "stageprop.canenter_hole",
+	type=BOOL
 	defval = false,
 	
 	func = @( stage, val){
@@ -664,17 +655,11 @@ local exitmappropdef = {
 }
 
 stageprops .. {
-	mapedit=true, pid="exitmap", lbl="$T.setting_exitmap", type=PROPERTYLIST,
+	mapedit=true, pid="exitmap", lbl="$T.setting_exitmap", tipskey = "stageprop.exitmap",
+	type=PROPERTYLIST,
 	propdef = exitmappropdef,
 	defval = {dest=null},
 }
-
-stageprops .. {
-	pid = "mapexitable",
-	lbl = "$T.setting_mapexitable",
-	type = BOOL,
-	defval = true,
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 //	コンフィグ設定

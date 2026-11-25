@@ -69,7 +69,7 @@ class MapEditor extends EditorViewBase
 		}else{
 			local bw64 = r.getContent()["bw64"];
 			if( !bw64) return null;
-			SelectAsset.getPreviewTex( bw64, @( tex){
+			SelectAsset.getPreviewTex( bw64, 0, @( tex){
 				pv.setValue( "lbl", sprintf("%d x %d x %d",tex.ref.w,tex.ref.h,tex.ref.d));
 				pic.setSprite( Sprite( tex));
 			});

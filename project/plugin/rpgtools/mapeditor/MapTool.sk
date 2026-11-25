@@ -37,7 +37,9 @@ class MapTool
 
 	static function createTool( e, id){
 		local cls = MapTools[id];
-		return cls( e);
+		local v = cls( e);
+		v.optionview.name = id;
+		return v;
 	}
 
 	function reloadBlockList(){
@@ -462,9 +464,11 @@ class MapTool
 	}
 
 	//	
-	function place3DGizmo( r, mask, mode, rot=0){
+	function place3DGizmo( r, rot, mask, mode){
 		local sk3d = guides["box"];
 		local br = clone r;
+		if( rot) br = ::unrotateRect( br, rot);
+		//
 		local cx = br.x+br.w/2, cy = br.y+br.h/2, cz = br.z+br.d/2;
 		br.offset( -cx, -cy, -cz);
 		if( 1){
@@ -788,12 +792,17 @@ class MapTool
 
 	function rayTestGZ( e){
 		local q = canvas.getRay( e.lx, e.ly);
-		local b3res = scn.b3world.rayTest( 1, q[0], q[1], -1, G_GIZMO);	//	closest
+		local b3res = scn.b3world.rayTest( 0, q[0], q[1], -1, G_GIZMO);	//	all
+		local partscore = #[0,0,0,0,0,0,0,0,8];
+		local minscore = 1000, ret;
 		foreach( br in b3res){
-			if( br.bodyb["ref"] instanceof SK3DGizmo){
-				return { gz:br.bodyb["ref"], part:br.partidb, pos:clone br.pointb};
+			local sc = partscore[br.partidb];
+			if( sc < minscore && br.bodyb["ref"] instanceof SK3DGizmo){
+				minscore = sc;
+				ret = { gz:br.bodyb["ref"], part:br.partidb, pos:clone br.pointb};
 			}
 		}
+		return ret;
 	}
 
 	//	ギズモ操作開始前イベント。
@@ -885,7 +894,7 @@ class MapTool
 			return cfn;
 		}
 		switch( part){
-		case 0:		//	free
+		case 0: case 8:	//	free
 			pl = chooseCameraPlane( cam.fw, gz0.pos); break;
 		case 1: case 2:	//	x
 		case 3: case 4:	//	y
@@ -911,7 +920,7 @@ class MapTool
 				if( t < 0.0) break;
 				local d = #(0,0,0), d0 = #(0,0,0)
 				local dot = 0;
-				if( part == 0){
+				if( part == 0 || part == 8){
 					local fd = w.scale( t).add( q[0]).sub( p0).scale( 2.0);
 					d.set( fd.x|0, fd.y|0, fd.z|0);
 				}else{
@@ -957,6 +966,9 @@ class SelectBlock
 
 	pages = null;		//	[[{blk,name,}],...]
 	selitem = null;		//	pages[selpage][x]
+	fbstat = 0;
+	fbrot = 0;
+	pagebits = -1;
 
 	dnd = 0;
 
@@ -1109,22 +1121,7 @@ class SelectBlock
 	//	フリーブロックのカテゴリ配列を指定してページをセットアップ
 	function setFreeBlockPages( catgs, stat=0, rot=0){
 		pagetype = 1;
-		pagesrc = catgs;
-		pages = array( length( catgs));
-		foreach( i,_ in pages){ pages[i] = { lbl:"", list:[], idx:-1 }};
-		//
-		foreach( fbtype,fbt in ::fblks){
-			foreach( vari,v in fbt["variations"]){
-				if( v["hide"]) continue;
-				local pi = catgs.findi( @( catg) catg & v.catg);
-				if( pi >= 0){
-					local fb = _makefb( fbtype, vari, stat);
-					pages[pi].list .. {
-						fblk : fb, rot : rot,
-					};
-				}
-			}
-		}
+		_makefblist( catgs, stat, rot);
 		foreach( i,p in pages){
 			p.idx = i;
 			p.lbl = catglblmap[catgs[i]];
@@ -1132,6 +1129,30 @@ class SelectBlock
 		tablist.setListItems( pages);
 		tablist.selectAll();
 		setPageBits( (1<<length( pages))-1);
+	}
+
+	function _makefblist( catgs, stat, rot){
+		pagesrc = catgs;
+		pages = array( length( catgs));
+		foreach( i,_ in pages){ pages[i] = { lbl:"", list:[], idx:-1 }};
+		foreach( fbtype,fbt in ::fblks){
+			foreach( vari,v in fbt["variations"]){
+				if( v["hide"]) continue;
+				local pi = catgs.findi( @( catg) catg & v.catg);
+				if( pi >= 0){
+					local fb = _makefb( fbtype, vari, stat);
+					pages[pi].list .. {
+						fblk : fb, rot : fbrot,
+					};
+				}
+			}
+		}
+	}
+
+	function setFreeBlockStat( stat, rot){
+		fbstat = stat;
+		fbrot = rot;
+		reloadPages();
 	}
 
 	function _makefb( fbtype, vari, stat){
@@ -1148,17 +1169,19 @@ class SelectBlock
 
 	function reloadPages(){
 		switch( pagetype){
-		case 0: return setBlockPages( pagesrc);
-		case 1: return setFreeBlockPages( pagesrc);
+		case 0:{
+			return setBlockPages( pagesrc);
+		}
+		case 1:{
+			_makefblist( pagesrc, fbstat, fbrot);
+			setPageBits( pagebits);
+			break;
+		}
 		}
 	}
 
-	function setPage( i){
-		// setPageBits( 1<<i);
-		currentthread().printStackTrace();
-	}
-
 	function setPageBits( pb){
+		pagebits = pb;
 		findView( selitem)?.setSelected( false);
 		//	
 		local list = [];
@@ -1391,7 +1414,7 @@ class SK3DGizmo extends SK3DObject
 	br = null;			//	IRect3D
 	mask = -1;
 
-	partobjs = null;	//	array[7]
+	partobjs = null;	//	array[9]
 
 	mode = PEN_GIZMO;
 
@@ -1416,7 +1439,7 @@ class SK3DGizmo extends SK3DObject
 		local cp = Vector3D( r.w, r.h, r.d).scale( 0.25);
 		//	o
 		clearChildren();
-		partobjs = array( 8);
+		partobjs = array( 9);
 		{
 			// local om = PrimitiveMeshes.createSphere( 0.24, 12, 12);
 			local om = PrimitiveMeshes.createWireBox( 0.17, 0.17, 0.17, 0.015);
@@ -1457,6 +1480,11 @@ class SK3DGizmo extends SK3DObject
 			local cs = b3Shape.createCylinder( cr+0.06, 0.01+0.05, cr+0.06);
 			shp.addChild( cs, Matrix.fromTranslate( cp.x, 0, cp.z-dz+cr), 7, 0);
 			partobjs[7] = cm;
+		}
+		//	box / no mesh
+		if( mask&(1<<4)){
+			local cs = b3Shape.createBox( cp.x, cp.y, cp.z);
+			shp.addChild( cs, Matrix.fromTranslate( cp), 8, 0);
 		}
 
 		if( b3body){

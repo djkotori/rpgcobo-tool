@@ -1294,11 +1294,11 @@ UIEditor.widgetfactory ... [
 		}
 	},
 	{
-		name = "SPLABEL", 
+		name = "TIPSLABEL", 
 		icon = FileIcons.ttf,
 		func = @(){
-			local v = SKSpriteLabelView();
-			v.bnd.set( 0, 0, 128, 32);
+			local v = SKTipsLabelView("TIPS");
+			v.bnd.set( 0, 0, 128, 20);
 			return v;
 		}
 	},

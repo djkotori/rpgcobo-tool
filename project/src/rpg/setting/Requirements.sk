@@ -378,7 +378,7 @@ charainfodef .. { key = "MPR", lbl = "$T.MP(％)", calc = @( pc, data) int( pc.m
 local statlistfunc(){
 	local a = [];
 	foreach( p in ::RPGSystem.playerprops){
-		if( p.proptype=="score" && typeof( p.defval)<=SS_FLOAT) a .. { lbl:`$p.pid: ${p.lbl}`, val:p.pid };
+		if( (p.proptype=="score" || p.proptype=="status") && typeof( p.defval)<=SS_FLOAT) a .. { lbl:`$p.pid: ${p.lbl}`, val:p.pid };
 	}
 	return a;
 }

@@ -16,6 +16,8 @@ local srcdir = dirname( callee().getSourceName());
 
 class DBEditorType extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_type.ui";
+
 	//	
 	typelistview = null;		//	GPUIListView : 横並びにタイプが並ぶ
 
@@ -271,3 +273,5 @@ class DBEditorType.TypeEdit.TypeSortDialog extends UndoableDialog
 		}
 	}
 }
+
+DBEditor.registerDBType( "type", DBEditorType);

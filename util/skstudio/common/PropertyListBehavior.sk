@@ -1745,7 +1745,7 @@ class PropertyBehaviors.CustomButton extends PropertyBehavior
 	}
 	
 	function paramevent( e){
-		if( e.src["name"] == "btn"){
+		if( e.id == ACTION_PERFORMED && e.src["name"] == "btn"){
 			if( prop["edit"]){
 				local v = ~(prop.edit, this, val);
 				if( v!=null && v!=undefined && v<>val){

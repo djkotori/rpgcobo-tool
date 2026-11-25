@@ -16,6 +16,8 @@ local srcdir = dirname( callee().getSourceName());
 
 class DBEditorSetting extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_setting.ui";
+
 	//////////////////////////////////////////////////////////////////////////////////////
 
 	appicon = null;			//	RGBAImage : 128x128程度。32~512までかな
@@ -172,3 +174,5 @@ class DBEditorSetting extends DBEditor
 		}
 	}
 }
+
+DBEditor.registerDBType( "setting", DBEditorSetting);

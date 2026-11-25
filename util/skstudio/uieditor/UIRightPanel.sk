@@ -44,7 +44,7 @@ class UIRightPanel
 		// viewtree.filterfunc = @( n, v){ return !(v.layerflags&8); }
 		viewtree.setviewfunc = @( la, v, i){
 			defaultsetview( la, v, i);
-			
+			v.tips = null;	//	ツールチップを非表示にする
 			local ic = FileIcons[i["icontype"]];
 			if( ic) v.setValue( "icon", ic);
 			v.findChild( "visichk").setSelected( i.layerflags & 1);

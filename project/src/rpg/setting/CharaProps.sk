@@ -73,6 +73,7 @@ playerprops .. {
 	proptype = "status"
 	pid = "jobs"
 	lbl = "$T.job",
+	tipskey = "charaprop.jobs"
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = DATAIDS		//	dataidの配列タイプ。それぞれフィルタをかけれる
@@ -93,6 +94,7 @@ playerprops .. {
 	proptype = "static"
 	pid = "eqtypebits"
 	lbl = "$T.lbl_eqtypebits",
+	tipskey = "charaprop.eqtypebits"
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = CHECKBITS
@@ -106,6 +108,7 @@ playerprops .. {
 	proptype = "status"
 	pid = "equips"
 	lbl = "$T.lbl_iniequips",			//	ツール上での表示名
+	tipskey = "charaprop.equips"
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = DATAIDS		//	dataidの配列タイプ。それぞれフィルタをかけれる
@@ -131,6 +134,7 @@ playerprops .. {
 	proptype = "status"
 	pid = "eqlockbits"
 	lbl = "$T.lbl_eqlockbits",			//	ツール上での表示名
+	tipskey = "charaprop.eqlockbits"
 
 	//	プロパティ定義。lvcurveの編集でも参照
 	type = CHECKBITS
@@ -144,6 +148,7 @@ playerprops .. {
 	proptype = "status"
 	pid = "formation"
 	lbl = "$T.formation"
+	tipskey = "charaprop.formation"
 	
 	type = LIST
 	list = [{lbl="$T.formation_front",val=0}, {lbl="$T.formation_back",val=1},];
@@ -157,6 +162,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MAXHP"
 	lbl = "${T.MAXHP}"			//	ツール上での表示名
+	tipskey = "charaprop.MAXHP"
 	lvcurve = true
 
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -171,6 +177,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MAXMP"
 	lbl = "${T.MAXMP}"			//	ツール上での表示名
+	tipskey = "charaprop.MAXMP"
 	lvcurve = true
 
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -185,6 +192,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MAXTP"
 	lbl = "${T.MAXTP}"			//	ツール上での表示名
+	tipskey = "charaprop.MAXTP"
 
 	type = NOEDITOR
 	defval = 100
@@ -196,6 +204,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "PATK"
 	lbl = "${T.PATK}"			//	ツール上での表示名
+	tipskey = "charaprop.PATK"
 	lvcurve = true
 
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -210,6 +219,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "PDEF"
 	lbl = "${T.PDEF}"			//	ツール上での表示名
+	tipskey = "charaprop.PDEF"
 	lvcurve = true
 	
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -224,6 +234,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MATK"
 	lbl = "${T.MATK}"			//	ツール上での表示名
+	tipskey = "charaprop.MATK"
 	lvcurve = true
 	
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -238,6 +249,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MDEF"
 	lbl = "${T.MDEF}"			//	ツール上での表示名
+	tipskey = "charaprop.MDEF"
 	lvcurve = true
 	
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -252,6 +264,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "AGI"
 	lbl = "${T.AGI}"			//	ツール上での表示名
+	tipskey = "charaprop.AGI"
 	lvcurve = true
 	
 	//	プロパティ定義。lvcurveの編集でも参照
@@ -266,6 +279,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "EDR"
 	lbl = "${T.EDR}"			//	ツール上での表示名
+	tipskey = "charaprop.EDR"
 
 	//	プロパティ定義。編集可能なプロパティではない。オプションで変更。
 	type = NOEDITOR
@@ -279,6 +293,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "CDR"
 	lbl = "${T.MAXHP}"
+	tipskey = "charaprop.CDR"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -291,6 +306,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "PHIT"
 	lbl = "${T.PHIT}"
+	tipskey = "charaprop.PHIT"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -304,6 +320,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "PEVA"
 	lbl = "${T.PEVA}"
+	tipskey = "charaprop.PEVA"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -316,6 +333,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MHIT"
 	lbl = "${T.MHIT}"
+	tipskey = "charaprop.MHIT"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -329,6 +347,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "MEVA"
 	lbl = "${T.MEVA}"
+	tipskey = "charaprop.MEVA"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -341,6 +360,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "CRI"
 	lbl = "${T.CRI}"
+	tipskey = "charaprop.CRI"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -354,6 +374,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "CEVA"
 	lbl = "${T.CEVA}"
+	tipskey = "charaprop.CEVA"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -366,6 +387,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "TGR"
 	lbl = "${T.TGR}"
+	tipskey = "charaprop.TGR"
 
 	type = NOEDITOR
 	skipdefset = true
@@ -378,6 +400,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "tribebits"
 	lbl = "${T.tribebits}"
+	tipskey = "charaprop.tribebits"
 	
 	type = NOEDITOR
 	skipdefset = true
@@ -390,6 +413,7 @@ playerprops .. {
 	proptype = "score"
 	pid = "STL"
 	lbl = "盗み力"
+	tipskey = "charaprop.STL"
 	
 	type = NOEDITOR
 	skipdefset = true
@@ -403,6 +427,7 @@ playerprops .. {
 	proptype = "static"
 	pid = "defskillid"
 	lbl = "$T.lbl_defskill"
+	tipskey = "charaprop.defskillid"
 
 	type = NOEDITOR
 	defval = "S003"
@@ -437,6 +462,7 @@ enemyprops .. varprop( {
 	proptype = "score"
 	pid = "LV"
 	lbl = "$T.LV"
+	tipskey = "enemyprop.LV"
 	type = SCALAR
 	range = (1,999)
 	defval = 1
@@ -467,6 +493,7 @@ enemyprops .. {
 	proptype = "score"
 	pid = "defskillid"
 	lbl = "$T.lbl_defskill"
+	tipskey = "enemyprop.defskillid"
 
 	type = DATAID
 	datatype = ["skill"]
@@ -478,6 +505,7 @@ enemyprops .. {
 	proptype = "static"
 	pid = "dietype"
 	lbl = "$T.lbl_dietype"
+	tipskey = "enemyprop.dietype"
 	type = LIST
 	list = ["$T.lbl_normal", "$T.lbl_boss"]
 	defval = 0
@@ -488,6 +516,7 @@ enemyprops .. {
 	proptype = "score"
 	pid = "exp"
 	lbl = "$T.EXP"
+	tipskey = "enemyprop.exp"
 	type=VARIABLE, varbits=0, constbits=2|8|16, 
 	defval = 10
 };
@@ -496,6 +525,7 @@ enemyprops .. {
 	proptype = "score"
 	pid = "jxp"
 	lbl = "$T.JXP"
+	tipskey = "enemyprop.jxp"
 	type=VARIABLE, varbits=0, constbits=2|8|16, 
 	defval = 1
 };
@@ -504,6 +534,7 @@ enemyprops .. {
 	proptype = "score"
 	pid = "money"
 	lbl = "$T.money"
+	tipskey = "enemyprop.money"
 	type=VARIABLE, varbits=0, constbits=2|8|16, 
 	defval = 10
 };
@@ -522,6 +553,7 @@ local dropprop = {
 	proptype = "static"
 	pid = "item"
 	lbl = "$T.lbl_dropitem"
+	tipskey = "enemyprop.item"
 	type = PROPERTYLIST
 	propdef={
 		name="$T.lbl_dropitem", 

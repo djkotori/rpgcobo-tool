@@ -4,7 +4,7 @@ import VirtualKeyCode;
 import PropertyType;
 import RPGPropertyType;
 
-local v_1 = Vector3D(), r_1 = Rect3D();
+local v_1 = Vector3D(), r_1 = Rect3D(), m_1 = Matrix();
 
 //////////////////////////////////////////////////////////////////////////
 //	
@@ -203,60 +203,79 @@ class RPGEfxAnimeModifier extends SK3DModifier
 	}
 }
 
-
-//	壁の裏のキャラを透過する
-//	depthtestをgreaterにして半透明描画。transparentパスの描画。
+//	特殊なレンダリング手順で壁の裏のキャラを透過したシルエット描画をする。ペアレントの透過処理を行う。
+//	デカールパスのrender内で、
+//	1. g1texをターゲットにしてdepthtestをgreaterにしてレガシー描画。これでαが255になるかな？
+//	2. ターゲットを戻してg1texをテクスチャとしてバインドし、バウンディングボックスをブレンド描画。
+//	   この時、周りのg1tex.aが255又は元オブジェクトのgsel値なら描画無し。
+//	※g1texは破壊される。vox.overlayで参照されるが、必要な個所は破壊されないはず。
 //	
-class SeeThroughModifier extends SK3DModifier
+class SK3DSilhouette extends SK3DObject
 {
-	order = 54;
-
-	rp3d = null;			//	RPG3DObject
-	+efxmat = Matrix();		//	
-	
-	time = 0.0;				//	
+	renderer = null;
+	checkbehind = true;
+	silcol = 0x00ffff99;
 
 	constructor( r){
-		rp3d = r;
-		foreach( pm in r["pmmap"]){
-			setToPM( pm);
-		}
-		r.visiblemask |= SK_VISIBLE_DECAL;
+		super( null);
+		renderer = r;	//	u-m
+		mesh = PrimitiveMeshes.createBox( 1.0, 1.0, 1.0);
+		local f = mesh.face[0];
+		local m = f.m = clone f.m;
+		m.tec = skFXFindTechnique( "decal.silhouette");
+		m.blend = SK_MIX;
+		m.misccol0 = silcol;
+		m.depthtest = 0;
+		m.visiblemask = SK_VISIBLE_DECAL;
+		setLayer( -9);		//	最初の方に描画
 	}
 
-	function modify( o, dt){
-		return true;
+	function setSilhouetteColor( c){
+		mesh.face[0].m.misccol0 = silcol = c;
 	}
 
-	function interrupt( o){
-		foreach( pm in rp3d["pmmap"]){
-			resetFromPM( pm);
-		}
-		rp3d.visiblemask &= ~SK_VISIBLE_DECAL;
-	}
-
-	//	このエフェクトをPolygonMeshに設定する
-	function setToPM( pm){
-		local a = [];
-		foreach( f in pm.face){
-			f = clone f;
-			local m = f.m = clone f.m;
-			m.visiblemask = SK_VISIBLE_DECAL | 0x80000;	//	フラグ代わり。。。
-			m.blend = SK_MIX;
-			m.colormat = Matrix( 0,0,0,0, 0,0,0,0, 0,0,0,0, 0.2,0.2,0.2,0.2);
-			m.depthtest = SK_GREATER;
-			m.depthmask = 0;
-			m.polygonoffset1 = -1300.0;
-			a .. f;
-		}
-		pm.face ... a;
+	function updateVisibleMask(){
+		visiblemask = SK_VISIBLE_DECAL;
+		return false;
 	}
 	
-	//	エフェクトをPolygonMeshから削除する。
-	static function resetFromPM( pm){
-		foreach( f in pm.face){
-			if( f.m["visiblemask"] & 0x80000) removei;
-		}
+	function update( dt, pmatdirty=true){
+		visible = parent.visible && (silcol & 0xff);
+		bnd.set( parent.bnd);	//	親と完全一致な描画範囲。はみ出しちゃう場合に注意
+		local b = super.update( dt, pmatdirty);
+		return b;
+	}
+
+	//	裏側にあるかチェックするオクルージョンクエリが出来ればいいが、GPU待ちが怖いのでコリジョンのレイテストでやる。。。
+	//	人体、カプセル型のコリジョンを想定。中心、上部、下部が同時に隠れた場合にシルエットを表示開始。
+	function checkBehind(){
+	}
+
+	//	passfilter=128 の必要あり。あと、parentがSK_VISIBLE_OPAQUEを描画可能なこと。
+	function render( cam, visiblemask){
+		local g0fb = renderer.mainpass["g0fb"];		//	g0tex, ztexのFrameBufferがいる。。。deferred以外は無し
+		if( !g0fb) return;
+		//	parentをgreater描画してg0texのαを255にする
+		local oldfb = skSetRenderTarget( g0fb);
+		local p = parent, ma = p.getMaterials(), gsel = ma[0].gsel;
+		local vm0 = renderer.env.visiblemask;
+		renderer.env.visiblemask = SK_VISIBLE_OPAQUE;
+		foreach( m in ma){ if( m.visiblemask & SK_VISIBLE_OPAQUE){
+			m.depthtest = SK_GREATER; m.depthmask = 0; m.cullface = SK_CW; m.polygonoffset1 -= 1800;
+		}}
+		p.render( cam, SK_VISIBLE_OPAQUE, 1);
+		foreach( m in ma){ if( m.visiblemask & SK_VISIBLE_OPAQUE){
+			m.depthtest = SK_LESS; m.depthmask = 1; m.cullface = SK_CCW; m.polygonoffset1 += 1800;	//	ちゃんと退避したほうが良い
+		}}
+		renderer.env.visiblemask = vm0;
+		skInvalidateFrameBuffer( 1<<8);	//	depthは更新されないのでinvalidate可能
+		skSetRenderTarget( oldfb);
+		//	バウンディングボックス描画
+		local b = p.bnd;
+		local mat = m_1.set( p.gmat).scale( b.r, b.s, b.t).translate( b.x, b.y, b.z);
+		mesh.face[0].m.misccol1 = gsel;
+		skSetMatrix( SK_WORLD, mat);
+		mesh.render( visiblemask);
 	}
 }
 

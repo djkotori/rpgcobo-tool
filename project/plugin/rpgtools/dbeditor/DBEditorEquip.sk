@@ -54,6 +54,8 @@ local _ctgeqtype( bits){
 
 class DBEditorArmor extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_skill.ui";
+
 	//	スキルの基本パラメータ。基本拡張はできない。が、プラグインでここ拡張することは可能。
 	static baseprops1 = [
 		RPGProperties.nameiconprop,
@@ -185,3 +187,7 @@ class DBEditorWeapon extends DBEditorArmor
 
 	static eqmask = 1;
 }
+
+
+DBEditor.registerDBType( "armor", DBEditorArmor);
+DBEditor.registerDBType( "weapon", DBEditorWeapon);

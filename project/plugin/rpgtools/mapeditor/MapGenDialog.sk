@@ -677,7 +677,7 @@ class MapGenDialog.BlockSetIcon
 		if( def.type == "asset"){
 			local ba = ::conf._resource.map_asset[b];
 			if( ba["bw64"]){
-				SelectAsset.getPreviewTex( ba.bw64, @( tex){ icon.setSprite( Sprite( tex)); });
+				SelectAsset.getPreviewTex( ba.bw64, 0, @( tex){ icon.setSprite( Sprite( tex)); });
 			}
 		}else{
 			if( b){

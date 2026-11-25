@@ -946,7 +946,6 @@
 	"setting_jxptype"					: {"ja":"ジョブポイント加算", "en":"Job Point addition"}
 	"setting_hotelheal"					: {"ja":"宿屋の回復", "en":"Healing of the inn"}
 	"setting_lvupheal"					: {"ja":"レベルアップで回復", "en":"Recover by leveling up"}
-	"setting_showhidden"				: {"ja":"物陰のプレイヤーを表示", "en":"Show hidden player"}
 	"setting_inimembers"				: {"ja":"開始メンバー", "en":"Initial Members"}
 	"setting_titlemap"					: {"ja":"タイトルマップ", "en":"Title Map"}
 	"setting_inimap"					: {"ja":"開始マップ", "en":"Initial Map"}
@@ -961,7 +960,7 @@
 	"setting_saveable"					: {"ja":"セーブ可能", "en":"Save Enabled"}
 	"setting_weather"					: {"ja":"天気", "en":"Weather"}
 	"setting_exitmap"					: {"ja":"脱出先マップ", "en":"MapExit Destination"}
-	"setting_mapexitable"				: {"ja":"マップ脱出有効", "en":"MapExit Enabled"}
+	"setting_silhouette"				: {"ja":"シルエット色", "en":"Silhouette Color"}
 	"setting_canenter_water"			: {"ja":"水に進入可能", "en":"Can Enter Water"}
 	"setting_canenter_hole"				: {"ja":"穴に進入可能", "en":"Can Enter Hole"}
 	
@@ -1023,6 +1022,146 @@
 	"lbl_na_victory"					: {"ja":"バトル辛勝", "en":"Battle narrow victory"}
 	"lbl_pinchturn"						: {"ja":"ピンチターン", "en":"Pinch Turn"}
 
+	"opt_status_tips"					: {
+		"ja":"キャラのパラメータを変更します。",
+		"en":"Changes the character's parameters."
+	}
+	"opt_tribe_tips"					: {
+		"ja":"キャラの種族を付与します。",
+		"en":"Adds a tribe to the character."
+	}
+	"opt_conddef_tips"					: {
+		"ja":"キャラの状態異常に対する耐性を付与します。",
+		"en":"Adds resistance to status ailments to the character."
+	}
+	"opt_elemdef_tips"					: {
+		"ja":"キャラの属性に対する耐性を付与します。",
+		"en":"Adds resistance to elements to the character."
+	}
+	"opt_getskill_tips"					: {
+		"ja":"このオプションが付いている間、指定したスキルが使用可能になります。",
+		"en":"The specified skills become usable while this option is active."
+	}
+	"opt_battlecmd_tips"				: {
+		"ja":"このオプションが付いている間、指定したバトルコマンドが追加されます。\n[W]コマンドスロットの状態によっては追加されない場合もあります。",
+		"en":"The specified battle commands are added while this option is active.\nDepending on the state of the command slots, they may not be added."
+	}
+	"opt_elemsp_tips"					: {
+		"ja":"攻撃が特定の属性を持っていた場合、攻撃力が増加します。",
+		"en":"Increases attack power when an attack has a specific element."
+	}
+	"opt_tribesp_tips"					: {
+		"ja":"攻撃相手が特定の種族だった場合、攻撃力が増加します。",
+		"en":"Increases attack power when the target belongs to a specific tribe."
+	}
+	"opt_weaponsp_tips"					: {
+		"ja":"特定のタイプの武器を装備していた場合、攻撃力が増加します。",
+		"en":"Increases attack power when equipped with a weapon of a specific type."
+	}
+	"opt_defrate_tips"					: {
+		"ja":"相手の攻撃が特定のダメージ式と属性だった場合、ダメージ率を変更します。",
+		"en":"Changes the damage rate when the opponent's attack has a specific damage formula and element."
+	}
+	"opt_eqflag_tips"					: {
+		"ja":"このオプションが付いている間、指定した装備フラグが付与され、特別な装備を装備することが出来ます。",
+		"en":"While this option is active, the specified equipment flag is granted, allowing you to equip special equipment."
+	}
+	"opt_jobflag_tips"					: {
+		"ja":"このオプションが付いている間、指定したジョブフラグが付与され、特別なジョブになることが出来ます。",
+		"en":"While this option is active, the specified job flag is granted, allowing you to become a special job."
+	}
+	"opt_bossflag_tips"					: {
+		"ja":"このオプションが付いたエネミーは、即死や致命的な状態異常が効かなくなります。",
+		"en":"Enemies with this option are immune to instant death and critical status ailments."
+	}
+	"opt_skillseal_tips"					: {
+		"ja":"このオプションで指定されたスキルが使用できなくなります。沈黙などの状態異常で使われます。",
+		"en":"The skills specified by this option become unusable. This is used for status ailments such as Silence."
+	}
+	"opt_skillflagseal_tips"				: {
+		"ja":"キャラの持つ能力フラグが無効になります。例えば、眠り状態では [P] 回避 シールド かばう[O] のような能力を無効にすることが出来ます。",
+		"en":"The character's ability flags are disabled. For example, while asleep, abilities such as [P] Evasion, Shield, Cover[O] should be disabled."
+	}
+	"opt_putcond_tips"					: {
+		"ja":"攻撃を当てた時や受けた時に、相手に対して指定したコンディションを付与します。",
+		"en":"When you hit or are hit by an attack, the specified condition is applied to the opponent."
+	}
+	"opt_remond_tips"					: {
+		"ja":"攻撃を当てた時や受けた時に、相手に対して指定したコンディションを解除します。",
+		"en":"When you hit or are hit by an attack, the specified condition is removed from the opponent."
+	}
+	"opt_exskill_tips"					: {
+		"ja":"攻撃を当てた時に、指定したスキルを追加で発動します。",
+		"en":"When you hit an opponent with an attack, the specified skill is activated in addition."
+	}
+	"opt_recoil_tips"					: {
+		"ja":"ダメージを与えた時に、指定した反動ダメージを受けます。マイナス値だと吸収になります。",
+		"en":"When you deal damage, you take the specified recoil damage. Negative values result in absorption."
+	}
+	"opt_counter_tips"					: {
+		"ja":"攻撃を受けた時に、指定したスキルで反撃します。",
+		"en":"When you are attacked, you counterattack with the specified skill."
+	}
+	"opt_shield_tips"					: {
+		"ja":"攻撃を受けた時に、シールドを発動しダメージを軽減します。",
+		"en":"When you are attacked, a shield is activated to reduce damage."
+	}
+	"opt_parry_tips"					: {
+		"ja":"攻撃を受けた時に、回避を発動し攻撃をかわします。",
+		"en":"When you are attacked, you evade the attack."
+	}
+	"opt_reflect_tips"					: {
+		"ja":"攻撃を受けた時に、攻撃を反射します。",
+		"en":"When you are attacked, you reflect the attack."
+	}
+	"opt_absorb_tips"					: {
+		"ja":"攻撃を受けた時に、攻撃を吸収します。",
+		"en":"When you are attacked, you absorb the attack."
+	}
+	"opt_steal_tips"					: {
+		"ja":"攻撃を当てた時に、相手からアイテムを盗みます。",
+		"en":"When you hit an opponent with an attack, you steal an item from them."
+	}
+	"opt_skillreplace_tips"					: {
+		"ja":"選択したスキルが行動時に強制的に置き換えられます。",
+		"en":"The selected skill is forcibly replaced when acting."
+	}
+	"opt_dyingskill_tips"					: {
+		"ja":"死亡時に、選択したスキルを発動します。この結果回復した場合には死亡は取り消されます。",
+		"en":"When you die, the selected skill is activated. If this results in recovery, the death is canceled."
+	}
+	"opt_backup_tips"					: {
+		"ja":"仲間の代わりにダメージを受けます。",
+		"en":"You take damage in place of your allies."
+	}
+	"opt_turndmg_tips"					: {
+		"ja":"バトル中の定期的なタイミングでダメージ／回復が発生します。",
+		"en":"Damage or recovery occurs at regular intervals during battle."
+	}
+	"opt_walkdmg_tips"					: {
+		"ja":"ステージ中の歩行によりダメージ／回復が発生します。",
+		"en":"Damage or recovery occurs while walking during the stage."
+	}
+	"opt_autocond_tips"					: {
+		"ja":"条件により自動的にコンディションが付与されます。",
+		"en":"Conditions are automatically applied based on the specified requirements."
+	}
+	"opt_script_tips"					: {
+		"ja":"指定したタイミングでスクリプトを実行します。",
+		"en":"Executes a script at the specified timing."
+	}
+	"opt_voice_tips"					: {
+		"ja":"バトル時の指定したタイミングでボイスを再生します。",
+		"en":"Plays a voice at the specified timing during battle."
+	}
+	"opt_equipvox_tips"					: {
+		"ja":"装備モデルを置き換えます。見た目だけの変更です。",
+		"en":"Replaces the equipment model. This is a visual-only change."
+	}
+	"opt_mot_tips"					: {
+		"ja":"モーションを置き換えます。見た目だけの変更です。",
+		"en":"Replaces the motion. This is a visual-only change."
+	}
 	
 	////////// require
 

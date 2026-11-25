@@ -9,7 +9,7 @@ import GamepadButtonCode;
  */
 class TipsRunner
 {
-	static tipsjsonlist = ["/skstudio/tipsdata.conf"];
+	static tipsconflist = [];
 	static embedtipsmap = {};
 
 	uipathmap = null;			//	
@@ -24,7 +24,7 @@ class TipsRunner
 	static function start( pmap){
 		local r = TipsRunner();
 		r.uipathmap = pmap;
-		foreach( v in tipsjsonlist){
+		foreach( v in tipsconflist){
 			local t = ::loadconf( v);
 			embedtipsmap ... t;
 		}
@@ -47,6 +47,9 @@ class TipsRunner
 		local ms = ::rootview.mouses[0];
 		local tv = tipsviewAt( ::rootview.mouses[0]);
 		if( tipview){
+			if( ms.isClicked()){
+				tipview.removeFromParent();	//	消すだけ
+			}else
 			if( tv != monview){
 				hideTips();
 			}else{
@@ -54,7 +57,7 @@ class TipsRunner
 				local ts = fget( tv, "tips");
 				if( ts <> ts0){
 					hideTips();
-					showTips( ms, tv);
+					if( tv) showTips( ms, tv);
 				}
 			}
 		}else{
@@ -106,6 +109,13 @@ class TipsRunner
 					break;
 				}
 				if( v instanceof GPUIButton){
+					local p = v.parent;
+					for( ; p; p = p.parent) if( p.name) break;
+					k2 = sprintf( "%S-%S", p["name"]||"X", v.name);
+					k2v = v;
+					break;
+				}
+				if( v instanceof SKTipsLabelView){
 					local p = v.parent;
 					for( ; p; p = p.parent) if( p.name) break;
 					k2 = sprintf( "%S-%S", p["name"]||"X", v.name);

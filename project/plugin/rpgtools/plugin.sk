@@ -66,7 +66,7 @@ function loadPlugin( args, opt){
 
 	module.hookAction( "editor_postload", @(){
 		::skstudio.titlebar.setTitle( "RPG-Cobo : %S" % ::conf.setting.projname);
-		::TipsRunner.tipsjsonlist .. "/plugin/rpgtools/rpgtips.json";
+		::TipsRunner.tipsconflist .. "/plugin/rpgtools/rpgtips.conf";
 		::UIEditor.widgetfactory ... [
 			{
 				name = "POPLABEL",

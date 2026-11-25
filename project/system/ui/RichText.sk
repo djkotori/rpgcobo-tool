@@ -28,7 +28,7 @@ class RichText
 		stylemap = {
 			['O'] = { },
 			['M'] = { font="script", },
-			['E'] = { font="icon", flags=1, },
+			['E'] = { font="icon", flags=0, },
 			['B'] = { flags=2, },
 			['I'] = { flags=4, },
 			['C'] = { linespace=-4, },
@@ -40,7 +40,7 @@ class RichText
 			//
 			['D'] = { color=0xFF7A4Dff, },
 			['U'] = { color=0xbfffffff, },
-			['N'] = { color=0xaaaaaaff, },
+			['N'] = { color=0xbbbbbbff, },
 			//
 			['S'] = { flags=2, color=0xA3D900ff, },
 			['W'] = { color=0xffcc00ff, },

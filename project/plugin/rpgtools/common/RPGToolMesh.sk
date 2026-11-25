@@ -537,9 +537,10 @@ class BlockImagePreview
 		return createImage( sk);
 	}
 
-	function getBlockWorldImage( bw){
+	function getBlockWorldImage( bw, rot=0){
 		local bw3d = SK3DBlockWorld( bw);
 		bw3d.setPivot( Vector3D( -bw.w*0.25, 0, -bw.d*0.25));
+		bw3d.rot << Quaternion.fromHPB( rot*Math.HPI, 0, 0);
 		bw3d.matdirty = true;
 		bw3d.updateMatrix( true);
 		bw3d.generateAllMesh();

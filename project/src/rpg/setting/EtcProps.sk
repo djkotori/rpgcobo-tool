@@ -76,6 +76,7 @@ condprops .. {
 condprops .. {
 	pid = "revcondid"
 	lbl = "$T.lbl_revcond"
+	tipskey = "condprop.revcondid"
 	type = DATAID,
 	nullable = true
 	datatype = ["cond"]
@@ -92,6 +93,7 @@ condprops .. {
 condprops .. {
 	pid = "xcondbits"
 	lbl = "$T.lbl_xcondbits"
+	tipskey = "condprop.xcondbits"
 	type = CHECKBITS,
 	list = @( pl){
 		local ri = pl.ref;
@@ -103,6 +105,7 @@ condprops .. {
 condprops .. {
 	pid = "remcondbits"
 	lbl = "$T.lbl_remcondbits"
+	tipskey = "condprop.remcondbits"
 	type = CHECKBITS,
 	list = @( pl){
 		local ri = pl.ref;
@@ -114,6 +117,7 @@ condprops .. {
 condprops .. {
 	pid = "rem_die",
 	lbl = "$T.lbl_rem_die"
+	tipskey = "condprop.rem_die"
 	type = BOOL,
 	defval = true,
 };
@@ -121,6 +125,7 @@ condprops .. {
 condprops .. {
 	pid = "rem_battle"
 	lbl = "$T.lbl_rem_battle"
+	tipskey = "condprop.rem_battle"
 	type = BOOL,
 	defval = true,
 };
@@ -128,6 +133,7 @@ condprops .. {
 condprops .. {
 	pid = "rem_turn"
 	lbl = "$T.lbl_rem_turn"
+	tipskey = "condprop.rem_turn"
 	type = VEC2,
 	range = (0,100)
 	defval = [1,3]
@@ -137,6 +143,7 @@ condprops .. {
 condprops .. {
 	pid = "rem_walk"
 	lbl = "$T.lbl_rem_walk"
+	tipskey = "condprop.rem_walk"
 	type = VEC2,
 	range = (-100,100)
 	defval = [0,0]

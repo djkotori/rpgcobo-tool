@@ -41,6 +41,8 @@ local reqfailprop = { pid="reqfail", lbl="$T.reqfail", type=LIST, list=reqfailli
 
 class DBEditorStore extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_store.ui";
+
 	//	ストアの基本パラメータ。基本拡張はできない。が、プラグインでここ拡張することは可能。
 	static baseprops1 = [
 		RPGProperties.nameiconprop,
@@ -163,6 +165,21 @@ class DBEditorStore extends DBEditor
 			},
 		},
 	};
+
+	static function getTipsText( path){
+		local v = ::getResourceContent( path);
+		if( !v) return null;
+		local typestr = "$T.storetype" + v.type;
+		local sb = StringBuffer();
+		sb .. `[P]${typestr}: [T]${v.name}[#A3D900]`;
+		local a = length( v.items) > 6 ? v.items.slice( 0, 5) : v.items;
+		foreach( i in a){
+			local d = ::rpgdata[i.dataid];
+			sb .. "\n・" .. d["name"];
+		}
+		if( length( v.items) > 6) sb .. "\n… [A]+"..(length( v.items) - 5);
+		return string( sb);
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////////
 	
@@ -453,3 +470,5 @@ class DBEditorStore extends DBEditor
 		}
 	}
 }
+
+DBEditor.registerDBType( "store", DBEditorStore);

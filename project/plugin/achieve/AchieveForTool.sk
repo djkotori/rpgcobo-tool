@@ -6,7 +6,8 @@ import PropertyType;
 import RPGPropertyType;
 
 local D = {
-	name : { "ja":"アチーブメント(実績)","en":"Achievement System"}
+	title : { "ja":"アチーブメント(実績)","en":"Achievement System"}
+	name : { "ja":"アチーブメント","en":"Achievement"}
 
 	defname = {"ja":"新しい実績", "en":"New Achievement"}
 	defdesc = {"ja":"実績の達成条件などの説明を書いてください。", "en":"Write the description of the achievement conditions."}
@@ -31,6 +32,8 @@ local reqsprop = {
 
 class ::DBEditorAchieve extends DBEditor
 {
+	static UIPATH = srcdir.."/dbeditor_achieve.ui";
+
 	static props = [
 		{ ...RPGProperties.nameiconprop, defval=@() [::lang( D.defname), "\uf24e"] },
 		{ pid="enabled", lbl="$T.lbl_enabled", type=BOOL, defval=true }
@@ -52,7 +55,7 @@ class ::DBEditorAchieve extends DBEditor
 	
 	function init( path){
 		op = OperationStack();
-		setValue( "titlelbl", "$T.lbl_dbedit : " .. lang( D.name));
+		setValue( "titlelbl", "$T.lbl_dbedit : " .. lang( D.title));
 		
 		proplist = PropertyListBehavior( findChild( "proplist"));
 		proplist.listview.addEventListener( ACTION_EVENT, propevent);
@@ -246,15 +249,7 @@ class ::DBEditorAchieve extends DBEditor
 
 {
 	local gamedir = getResource( "/.x/game");
-	gamedir.list .. GameConfigResource( gamedir, "achieve", "アチーブメント", "\uea23");
+	gamedir.list .. GameConfigResource( gamedir, "achieve", lang( D.name), "\uea23");
 
-	local _createCustomEditor = DBEditor.createCustomEditor;
-
-	function DBEditor::createCustomEditor( path, dbtype){
-		if( dbtype == "achieve"){
-			return ::loadSKView( srcdir.."/dbeditor_achieve.ui", DBEditorAchieve);
-		}
-		return _createCustomEditor( path, dbtype);
-	}
-
+	DBEditor.registerDBType( "achieve", DBEditorAchieve);
 }

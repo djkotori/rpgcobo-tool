@@ -32,6 +32,7 @@ class OptionList
 		local opt = ::RPGSystem.option[i.opttype];
 		v.setValue( "icon", opt["icon"] || "\ueb8b");
 		v.findChild( "visichk").setSelected( !i["hide"]);
+		v.tips = "$T." .. i.opttype .. "_tips";
 		v.pickable = false;
 	}
 
@@ -307,6 +308,7 @@ class OptionAddPopup extends Popup
 				c.setValue( "lbl", opt.name);
 				c.setValue( "icon", opt.icon);
 				c.ref = opt;
+				c.tips = "$T."..opt.key.."_tips";
 			}
 		}
 		listview.updateLayout();

@@ -28,8 +28,8 @@ class SKLabelView extends SKView
 	}
 
 	function resetAttribute(){
-		textbox.setAttribute( fontattr);
 		resetattr = false;
+		textbox.setAttribute( fontattr);
 	}
 	
 	//	テキストを設定する。↓のコード変換も行う。ただしgetText()で得られる文字列は渡したsそのもの。
@@ -43,8 +43,8 @@ class SKLabelView extends SKView
 	
 	function setTextBody( s){
 		if( resetattr) resetAttribute();
-		if( text["applyToLabel"]){		//	RichText
-			text.applyToLabel( this);
+		if( s["applyToLabel"]){		//	RichText
+			s.applyToLabel( this);
 		}else{
 			if( typeof( s) == SS_TABLE) s = ::lang( s);
 			s = string( s);
@@ -94,10 +94,7 @@ class SKLabelView extends SKView
 	function updateInnerLayout(){
 		//	子をテキストの矩形に合わせてアラインする
 		if( !_defer && children){
-			if( resetattr){
-				textbox.setAttribute( fontattr);
-				resetattr = false;
-			}
+			if( resetattr) resetAttribute();
 			local tr = textbox.bnd, lx = textbox.lx, ly = textbox.ly+tr.y;
 			foreach( v in children){
 				//	ラベルに対してのアラインは上中下、左右。ストレッチモードの場合は上下に対しては中左右に対しては左。
@@ -167,10 +164,7 @@ class SKLabelView extends SKView
 	}
 	
 	function render(){
-		if( resetattr){
-			textbox.setAttribute( fontattr);
-			resetattr = false;
-		}
+		if( resetattr) resetAttribute();
 		skDrawTextBox( textbox);
 	}
 
@@ -321,6 +315,30 @@ class SKLabelView extends SKView
 		fa.gradation = t["gradation"] | 0;
 		return fa;
 	}
+}
+
+class SKTipsLabelView extends SKLabelView
+{
+	constructor( s="", a=null){
+		super( s, a || #FontAttribute( Fonts.get( "ui"), 14, 0xddddddff, 0))
+	}
+
+	function resetAttribute(){
+		setTextBody( text);
+	}
+
+	function setTextBody( s){
+		resetattr = false;
+		if( typeof( s) == SS_STRING) s = ::rtf( s .. " [E][#526E79]\ue88e");
+		s.applyToLabel( this);
+		updateInnerLayout();
+		repaint();
+	}
+
+	//	tipsは Alt+Shift+Eで編集するため、プロパティ一覧には表示しない
+	// function getProperties(){
+	// 	return #[...super.getProperties(),SKVP[TIPS]];
+	// }
 }
 
 class SKSpriteLabelView extends SKView

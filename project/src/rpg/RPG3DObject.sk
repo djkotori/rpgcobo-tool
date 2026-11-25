@@ -1587,7 +1587,7 @@ class RPG3DVoxChara extends RPG3DObject
 		local r = super.update( dt, pmatdirty);
 		//	必要なマテリアルパラメータをコピー。毎フレームやらんでもいいけど
 		foreach( m in getMaterials()){
-			m.misccol0 = (200<<24) | ((m.visiblemask&4096)*(255<<4));
+			m.misccol0 = (m.gsel<<24) | ((m.visiblemask&4096)*(255<<4));
 		}
 		//	装備ボクセルの更新チェックはオプションが変化した場合のみ行う。参照が違うかチェックするだけで良し
 		if( optchk != rpgobj["options"]){

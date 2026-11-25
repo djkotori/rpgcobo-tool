@@ -1097,7 +1097,7 @@ eventcmd .. {
 	props = @( cmd){
 		local a = [
 			{ pid="charaid", lbl="$T.side_dbview_player", type=DATAID, datatype=["player","enemy"], variable=1, varbits=1|2|4|8, },
-			{ pid="key", lbl="$T.lbl_info", type=LIST, list=@() RPGSystem.charainfodef._list.map( @(v) +{ lbl=v.lbl, val=v.key}), refresh=1,
+			{ pid="key", lbl="$T.lbl_key", type=LIST, list=@() RPGSystem.charainfodef._list.map( @(v) +{ lbl=v.lbl, val=v.key}), refresh=1,
 				set = @( prop, data, val){
 					local cidef = RPGSystem.charainfodef[val];
 					data.key <- val;

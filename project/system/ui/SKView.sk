@@ -809,6 +809,7 @@ with SKView
 			if( render) render();
 			foreach( c in children){ c.renderAll(); };
 			if( buf.blend == SK_PMAMIX) skSetPMAMode( 0);
+			if( tex.flags & 2) skInvalidateFrameBuffer( 1<<8);	//	depthは更新されないのでinvalidate可能
 			//	fx適用 ... pma画像で処理できるように
 			if( numpass){
 				skInitMatrix( SK_WORLD);

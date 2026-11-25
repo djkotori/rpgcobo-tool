@@ -16,6 +16,8 @@ local srcdir = dirname( callee().getSourceName());
 
 class DBEditorDict extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_dict.ui";
+
 	static GROUPUIPATH = srcdir .. "/ui/dictgroup.ui";
 	static ITEM1UIPATH = srcdir .. "/ui/dictitem1.ui";	//	category3
 	static ITEM2UIPATH = srcdir .. "/ui/dictitem2.ui";	//	category0~2
@@ -131,3 +133,5 @@ class DBEditorDict extends DBEditor
 		}
 	}
 }
+
+DBEditor.registerDBType( "dict", DBEditorDict);

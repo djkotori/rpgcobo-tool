@@ -747,3 +747,28 @@ class UISelectionLayer extends SKView
 		sellist ... a;
 	}
 }
+
+//	SKGroupViewなど、表示の無いビューの領域を可視化するためのレイヤー
+//	UIEditorRootViewにかぶさるように描画。普段は非表示。
+//	
+class UIOverlayLayer extends SKView
+{
+	sp = null;					//	枠で表示。
+	target = null;				//	SKView: 描画対象のビュー。
+
+	function _draw( v){
+		if( v["ovcolor"]){
+			sp.bnd.set( 0, 0, v.bnd.w, v.bnd.h);
+			skSetMatrix( v.mat);
+			sp.color = v["ovcolor"];
+			skDrawSprite( sp);
+		}
+		foreach( cv in v["children"]){
+			_draw( cv);
+		}
+	}
+
+	function render(){
+		_draw( target);
+	}
+}

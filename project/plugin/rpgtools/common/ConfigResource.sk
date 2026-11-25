@@ -185,10 +185,15 @@ class ConfigItemResource extends Resource
 	}
 
 	function tipstext(){
-		local pname = pres.getResourceName();//T["side_dbview_"..pres.name];		//	※マップアセットでちゃんととれない
+		local cls = ::DBEditor.typereg[pres.name];
+		if( cls["getTipsText"]){
+			local s = cls.getTipsText( path);
+			if( s) return s;
+		}
+		local pname = pres.getResourceName();
 		local data = getContent();
 		local s = `[P]$pname: [T]${getResourceName()}`;
-		if( length( data["desc"])) s += "\n\n" + data["desc"];
+		if( length( data["desc"])) s += "\n[N]\uf241 " + data["desc"];
 		return s;
 	}
 }

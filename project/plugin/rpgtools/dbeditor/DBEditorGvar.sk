@@ -18,6 +18,8 @@ local srcdir = dirname( callee().getSourceName());
 
 class DBEditorGvar extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_gvar.ui";
+
 	static gvartypes = [
 		{ lbl="$T.vartype0", val=0, }
 		"*"
@@ -218,3 +220,5 @@ class DBEditorGvar extends DBEditor
 		}
 	}
 }
+
+DBEditor.registerDBType( "gvar", DBEditorGvar);

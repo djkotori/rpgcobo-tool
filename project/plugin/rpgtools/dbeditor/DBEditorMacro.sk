@@ -21,6 +21,8 @@ local runmodelist = [
 
 class DBEditorMacro extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_macro.ui";
+
 	//	マクロの基本パラメータ。基本拡張はできない。が、プラグインでここ拡張することは可能。
 	static baseprops = [
 		RPGProperties.nameprop,
@@ -119,3 +121,5 @@ class DBEditorMacro extends DBEditor
 		}
 	}
 }
+
+DBEditor.registerDBType( "macro", DBEditorMacro);

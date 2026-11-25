@@ -25,6 +25,8 @@ local createInitialAIPage(){
 
 class DBEditorEnemy extends DBEditor
 {
+	static UIPATH = srcdir.."/ui/dbeditor_enemy.ui";
+	
 	//	エネミーの基本パラメータ。基本拡張はできない。が、プラグインでここ拡張することは可能。
 	static baseprops1 = [
 		RPGProperties.nameprop,	//	※エネミーにはアイコンが無くてOK?
@@ -527,3 +529,5 @@ class PageDragSource
 		}
 	}
 }
+
+DBEditor.registerDBType( "enemy", DBEditorEnemy);

@@ -97,6 +97,7 @@ class ResEditorUI extends EditorViewBase
 			v.setValue( "lbl", i["path"]);
 			v.findChild( "usechk").setSelected( i["use"]);
 			v.findChild( "lockg").anime( i["lock"]?10:0);
+			v.tips = ::getResource( i["path"]);
 			v.pickable = false;
 		}
 		addEventListener( ACTION_EVENT, actionevent);

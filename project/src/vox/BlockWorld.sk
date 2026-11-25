@@ -439,6 +439,13 @@ class SK3DBlockWorld extends SK3DObject
 		}
 		return ma;
 	}
+
+	function setGSelectorID( gsel){
+		foreach( m in getMaterials()){
+			m.gsel = gsel;
+			m.misccol0 = (gsel<<24);	//	vox.skfxではuniform節約のためにmisccol0でgselを渡す。。。。
+		}
+	}
 }
 
 //	BlockChunkとは粒度が違うため、別管理する必要がある。

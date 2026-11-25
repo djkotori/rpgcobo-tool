@@ -115,7 +115,7 @@ class MapTools.tool_fblk extends MapTool
 
 	//	pickBlockでフリーブロックが選択された。
 	function freeBlockPicked( fb){
-		placeFBGizmo( fb, -1);
+		placeFBGizmo( fb, 15);
 	}
 
 	function optionevent( e){
@@ -125,7 +125,7 @@ class MapTools.tool_fblk extends MapTool
 			optionview.findChild( "rot"..drot)?.setSelected( false);
 			drot = e.src.name[3]-'0';
 			e.src.setSelected( true);
-			selblk.setFreeBlockPages( selblk.pagesrc, stat, drot);
+			selblk.setFreeBlockStat( stat, drot);
 			break;
 		case "stata": case "statb":
 			local b = e.src.name=="stata"?0:1;
@@ -133,7 +133,7 @@ class MapTools.tool_fblk extends MapTool
 				optionview.findChild( "stata").setSelected( b==0);
 				optionview.findChild( "statb").setSelected( b==1);
 				stat = b;
-				selblk.setFreeBlockPages( selblk.pagesrc, stat, drot);
+				selblk.setFreeBlockStat( stat, drot);
 			}
 			break;
 		default:
@@ -175,7 +175,7 @@ class MapTools.tool_fblk extends MapTool
 		if( bop.len()){
 			bop.submit( editor);
 			local fb = editor.bw.getFreeBlock( fbuid);
-			placeFBGizmo( fb, -1);
+			placeFBGizmo( fb, 15);
 		}
 	}
 
@@ -225,7 +225,7 @@ class MapTools.tool_fblk extends MapTool
 				}
 				local fbuid = placeFreeBlock( e, hb, fblk, rot);
 				local fb = editor.bw.getFreeBlock( fbuid);
-				placeFBGizmo( fb, -1);
+				placeFBGizmo( fb, 15);
 			}
 			break;
 		}
@@ -472,8 +472,8 @@ class MapTools.tool_fblk extends MapTool
 						bop.undoop .. @(){ self.restoreFBGizmo( synct); }
 					}
 					local gzfbuid = self.selgz["ref"]["fbuid"];
-					bop.redoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, -1); }
-					bop.undoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, -1); }
+					bop.redoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, 15); }
+					bop.undoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); if( gzfbuid) self.placeFBGizmo( gzfbuid, 15); }
 					bop.submit( editor, trk);
 					d0.set( d[0], d[1], d[2]);
 				}
@@ -528,7 +528,7 @@ class MapTools.tool_fblk extends MapTool
 				local hb = self.rayTest( e, BLK_SOLID | BLK_SOLIDFB | BLK_DECAL | BLK_LIQUID);	//	blkflag
 				if( hb["fbuid"]){
 					local fb = bw.getFreeBlock( hb.fbuid);
-					if( fb) self.placeFBGizmo( fb, -1);
+					if( fb) self.placeFBGizmo( fb, 15);
 				}
 				self.removeGuide( "box");
 				return null;
@@ -694,7 +694,7 @@ class MapTools.tool_fblk extends MapTool
 					if( ((1<<hb.f)&(2|4|8|16))) r = hb.f-1;
 					local fbuid = self.placeFreeBlock( e, hb, fb, r);
 					local fb = editor.bw.getFreeBlock( fbuid);
-					self.placeFBGizmo( fb, -1);
+					self.placeFBGizmo( fb, 15);
 				}
 				return null;
 			case KEY_PRESSED:
@@ -754,7 +754,7 @@ class MapTools.tool_column extends MapTools.tool_fblk
 		if( bop.len()){
 			bop.submit( editor);
 			local fb = editor.bw.getFreeBlock( fbuid);
-			placeFBGizmo( fb, -1);
+			placeFBGizmo( fb, 15);
 		}
 	}
 
@@ -942,7 +942,7 @@ class MapTools.tool_slope extends MapTools.tool_fblk
 		if( bop.len()){
 			bop.submit( editor);
 			local fb = editor.bw.getFreeBlock( fbuid);
-			placeFBGizmo( fb, -1);
+			placeFBGizmo( fb, 15);
 		}
 	}
 
@@ -1009,7 +1009,7 @@ class MapTools.tool_slope extends MapTools.tool_fblk
 						bop.undoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); }
 						bop.submit( editor);
 						local fb = editor.bw.getFreeBlock( fbuid);
-						if( fb) self.placeFBGizmo( fb, -1);
+						if( fb) self.placeFBGizmo( fb, 15);
 					}
 				}
 				return null;
@@ -1090,7 +1090,7 @@ class MapTools.tool_roof extends MapTools.tool_fblk
 		if( bop.len()){
 			bop.submit( editor);
 			local fb = editor.bw.getFreeBlock( fbuid);
-			placeFBGizmo( fb, -1);
+			placeFBGizmo( fb, 15);
 		}
 	}
 
@@ -1146,7 +1146,7 @@ class MapTools.tool_roof extends MapTools.tool_fblk
 						bop.undoop .. @(){ self.canvas.updateFBSelection(); self.updateFBSelectionColor(); }
 						bop.submit( editor);
 						local fb = editor.bw.getFreeBlock( fbuid);
-						if( fb) self.placeFBGizmo( fb, -1);
+						if( fb) self.placeFBGizmo( fb, 15);
 					}
 				}
 				return null;
@@ -1208,7 +1208,7 @@ class MapTools.tool_crack extends MapTools.tool_fblk
 				if( hb.f == 0){ hb.by += fblk.br.y - fb.br.y - 1; }
 				local fbuid = placeFreeBlock( e, hb, fb, rot);
 				local fb = editor.bw.getFreeBlock( fbuid);
-				placeFBGizmo( fb, -1);
+				placeFBGizmo( fb, 15);
 			}
 			break;
 		}
