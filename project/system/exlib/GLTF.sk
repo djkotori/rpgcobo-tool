@@ -277,7 +277,7 @@ class GLTFLoader
 			if( s){ tf.sx = s[0]; tf.sy = s[1]; tf.sz = s[2]; }
 			if( r){ tf.rx = r[0]; tf.ry = r[1]; tf.rz = r[2]; tf.rw = r[3]; }
 			tfmap[f.frame] <- tf;
-			if( f.frame == 0) printf( "frame %d local transform: %f %f %f    %f %f %f %f  %S\n", f.frame, tf.tx, tf.ty, tf.tz, tf.rx, tf.ry, tf.rz, tf.rw, (t&&1)|(s&&2)|(r&&4));
+			// if( f.frame == 0) printf( "frame %d local transform: %f %f %f    %f %f %f %f  %S\n", f.frame, tf.tx, tf.ty, tf.tz, tf.rx, tf.ry, tf.rz, tf.rw, (t&&1)|(s&&2)|(r&&4));
 		}
 		local tl = TransformTimeline.create( tfmap);
 		return tl;
@@ -361,6 +361,7 @@ class GLTFLoader
 			bp.name = jnode.name;
 			local track = trackmap[n.id];
 			// printf( "NODE..... %S   %S\n", encodeJSON( node), encodeJSON( track, 5));
+			// printf( "motion node: %s\n", jnode.name); bp.bindpose.print();
 			local frames;
 			if( track){
 				frames = track.keys;
@@ -537,6 +538,7 @@ class GLTFLoader
 			mn.id = l;
 			mn.parentid = nd.parent;
 			mn.tf = getNodeLocalTransform( nd);
+			// printf( "Node[%d]: %s  parent %d  skin %d  mesh %d  tf %f %f %f\n", l, nd.name, nd.parent, nd.skin, nd.mesh, mn.tf.tx, mn.tf.ty, mn.tf.tz);
 			//	TODO: ノード自身のアニメ。
 			//	スキンアニメ作成。
 			if( nd.skin >= 0 && mn.meshid >= 0){
@@ -550,13 +552,18 @@ class GLTFLoader
 				local wmapname = pms.wmapname = [];
 				//	変なデータ用。bindposeにこのノードのグローバル行列を掛ける必要あり。。。これじゃノード間でMotionが共有できないな～でもそんなことはされないか？？？？
 				local ndmat = getNodeGlobalMatrix( nd);
+				local bp1 = {};
 				foreach( i, ji in joints){
 					local jnode = getNode( ji);
 					wmapname .. jnode.name;
 					foreach( mot in pmt.motionmap){
 						local bp = mot.parts.find( @( v) v.name == jnode.name);
 						if(bp){
-							ndmat.mult34( bp.bindpose, bp.bindpose);
+							if( !bp1[bp.bindpose]){
+								ndmat.mult34( bp.bindpose, bp.bindpose);
+								bp.bindpose.print();
+								bp1[bp.bindpose] <- 1;
+							}
 							bp.bindpose.invert34( bp.invbindpose);
 						}
 					}
