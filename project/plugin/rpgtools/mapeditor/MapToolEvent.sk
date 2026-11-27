@@ -379,12 +379,17 @@ class MapTools.tool_event extends MapTool
 						}else{
 							showDoorConectMenu( e, hb);
 						}
+						removeGuide( "tmp");
 					}else{
-						
-						
-						showDefaultContextMenu( e, hb);
+						local fn = showMiscContextMenu( e, hb), self = this;
+						removeGuide( "tmp");
+						if( fn){
+							return @( e){
+								local f = fn( e);
+								return f;
+							}
+						}
 					}
-					removeGuide( "tmp");
 				}
 			}
 			break;
@@ -887,7 +892,7 @@ class MapTools.tool_event extends MapTool
 	
 	//	未選択時のコンテキストメニュー。
 	//	追加関係があるので複雑。。。
-	function showDefaultContextMenu( e, hb){
+	function showMiscContextMenu( e, hb){
 		local evsubmenu = ::RPGSystem.eventrole._list.map( @( v) v["menutype"]=="event" ? {
 			id="plcev", lbl=v.name, icon=v.icon, key=v.key
 		} : undefined);

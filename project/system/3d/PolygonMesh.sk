@@ -94,7 +94,9 @@ with BoneParts
 		invbindpose = bindpose.invert34();
 		this.length = bb.getf();
 		transline = TransformTimeline();
+		local p0 = bb.pos;
 		transline.loadData( bb);
+		local p1 = bb.pos;
 		bb.geti();
 	}
 	
@@ -113,8 +115,10 @@ with BoneParts
 		for( local l = 0;l < 16;l ++){
 			bb.putf( bindpose[l]);
 		}
-		bb.putf( length);
-		writeTransformTimeline( p.timeline, bb);
+		bb.putf( this.length);
+		local p0 = bb.pos;
+		transline.storeData( bb);
+		local p1 = bb.pos;
 		bb.puti( 0)
 	}
 }

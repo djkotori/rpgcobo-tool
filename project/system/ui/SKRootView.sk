@@ -272,10 +272,10 @@ class SKRootView extends SKView
 	function changeDragTarget( mid, v, e){
 		local m = mouses[mid];
 		if( m.dragview && m.dragview != v){
-			postEvent( Event().setMouseEvent( mid, mouses[mid].dragview, MOUSE_CANCELLED, e.x, e.y, e.modifiers, 0, m.outofmodal));
+			postEvent( Event().setMouseEvent( mid, mouses[mid].dragview, MOUSE_CANCELLED, e.x, e.y, e.modifiers, 0, m.modalpressed));
 		}
 		m.dragview = v;
-		m.outofmodal = false;		//	モーダルではなくなるはず
+		m.modalpressed = false;		//	MOUSE_RELEASEDの対象がvになるので、モーダル外フラグをリセット
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -295,7 +295,10 @@ class SKRootView extends SKView
 		}
 	}
 	
-	function refreshMouseCursor( t){
+	function refreshMouseCursor(){
+		local m = mouses[0];
+		local v = m.dragview || m.entered || m.modalview || this;
+		local t = v.getMouseCursor();
 		if( t != mctype){ mctype = t; mcmanager.cursorChanged( this); }
 	}
 	
@@ -486,11 +489,6 @@ class SKRootView extends SKView
 				local b = true;
 				foreach( i, m1 in mouses){ if( m!=m1 && toenter==m1.dragview){ b = false; break; }}
 				if( b)postEvent( Event().setMouseEvent( mid, toenter, MOUSE_ENTERED, x, y, mod, 0, false, entered));
-				//	マウスカーソル変更チェック
-				if( !mid){
-					local t = toenter.getMouseCursor();
-					if( t != mctype){ mctype = t; mcmanager.cursorChanged( this);}
-				}
 			}
 			m.entered = toenter;
 		}
@@ -513,6 +511,7 @@ class SKRootView extends SKView
 		local mod = e.modifiers;
 		local mid = e.mouseid;
 		local m = mouses[mid];
+		m.modalview = outofmodal ? target : null;
 		switch( eid){
 		case MOUSE_EXITED:
 			mouseEnterCheck( mid, m, null, x, y, eid, mod);
@@ -525,7 +524,7 @@ class SKRootView extends SKView
 			if( target){
 				if( exclusiveTouchCheck( target, m)){ break; }
 				if( m.dragview && m.dragview != target){	//	同じmouseidでpressが連続で来る。simulateMouseとかで起きうる
-					postEvent( Event().setMouseEvent( mid, m.dragview, MOUSE_CANCELLED, x, y, mod, e.count, m.outofmodal));
+					postEvent( Event().setMouseEvent( mid, m.dragview, MOUSE_CANCELLED, x, y, mod, e.count, m.modalpressed));
 				}
 				m.dragview = target;
 				m.dragbtn = mmod;
@@ -534,7 +533,7 @@ class SKRootView extends SKView
 				m.mousex = x;
 				m.mousey = y;
 				m.modifiers = m.modifiers|mod;
-				m.outofmodal = outofmodal;
+				m.modalpressed = outofmodal;
 				postEvent( Event().setMouseEvent( mid, target, MOUSE_PRESSED, x, y, mod, e.count, outofmodal));
 			}
 			break;
@@ -556,7 +555,7 @@ class SKRootView extends SKView
 				dorepaint = true;
 			}
 			if( m.dragview){
-				postEvent( Event().setMouseEvent( mid, m.dragview, MOUSE_RELEASED, x, y, mod, e.count, m.outofmodal));
+				postEvent( Event().setMouseEvent( mid, m.dragview, MOUSE_RELEASED, x, y, mod, e.count, m.modalpressed));
 				if( (mmod) == m.dragbtn) m.dragview = null;
 			}
 			m.modifiers = m.modifiers&(~mmod);
@@ -606,7 +605,7 @@ class SKRootView extends SKView
 					}
 					m.dndcheck = false;
 				}else{
-					postEvent( Event().setMouseEvent( mid, m.dragview, MOUSE_DRAGGED, x, y, mod, 0, m.outofmodal));
+					postEvent( Event().setMouseEvent( mid, m.dragview, MOUSE_DRAGGED, x, y, mod, 0, m.modalpressed));
 				}
 			}else{
 				if( target) postEvent( Event().setMouseEvent( mid, target, MOUSE_MOVED, x, y, mod, 0, outofmodal));
@@ -624,6 +623,7 @@ class SKRootView extends SKView
 			}
 			break;
 		}
+		if( !mid) refreshMouseCursor();
 	}
 	
 	function getDnDAction( mod){
@@ -773,7 +773,7 @@ function reportErrorAction( func, type="general"){
 class SKRootView.MouseState
 {
 	mouseid = -1;
-	entered = null ;
+	entered = null;
 	mousex = 0;	mousey = 0;
 	modifiers = 0;
 	wheel = 0;
@@ -786,7 +786,8 @@ class SKRootView.MouseState
 	dsoffsx = 0;	dsoffsy = 0;
 	dndcheck = false;
 	
-	outofmodal = false;
+	modalpressed = false;		//	プレス時にモーダル外かどうか
+	modalview = null;			//	
 	
 	constructor( mid){
 		mouseid = mid;

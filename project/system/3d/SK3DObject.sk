@@ -288,7 +288,7 @@ class SK3DObject extends SK3DRenderNode
 			animlayers.integrateBonePoses( bones, gmat, true);
 		}
 		bnd.set( pmt.getBounds());
-		// updateSortOffset();
+		updateSortOffset();
 		materials = null;
 	}
 	
@@ -995,9 +995,9 @@ class SK3DObject extends SK3DRenderNode
 	function updateVisibleMask(){
 		local b = false;
 		local vs = 0;
-		foreach( f in mesh?mesh.face:ptc?ptc.groups:null){
-			if( !f.m.depthmask){ b = true; }
-			vs |= f.m.visiblemask;
+		foreach( m in getMaterials()){
+			if( !m.depthmask){ b = true; }
+			vs |= m.visiblemask;
 		}
 		if( (vs & SK_VISIBLE_TRANSPARENT) && inwater){
 			vs = (vs^SK_VISIBLE_TRANSPARENT) | SK_VISIBLE_TRANSPARENT_INWATER;

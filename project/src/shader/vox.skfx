@@ -16,7 +16,6 @@ param vox
 	uniform sampler3D ptntex <id=COLORTEX2, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
 	uniform sampler2D paltex <id=COLORTEX3, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
 	uniform mediump mat4 colormat <id=COLORMAT>;
-	uniform lowp vec4 envcol <id=ENVCOLOR>;
 	uniform highp vec3 ptntexscale <id=COLORTEX2_PIX>;
 	uniform lowp float alpharef<ID=ALPHAREF>;
 	uniform lowp vec4 p1<id=UNICOLOR1>;
@@ -183,6 +182,7 @@ param overlay
 {
 	uniform sampler2D gtex0 <id=GTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
 	uniform highp vec2 gtex0scale <id=GTEX1_PIX>;
+	uniform lowp vec4 envcol <id=ENVCOLOR>;
 
 	fragout lowp vec4 fragcolor;
 }

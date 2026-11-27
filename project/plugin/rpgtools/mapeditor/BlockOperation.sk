@@ -255,7 +255,7 @@ class BlockOperation
 					if( y-y0 >= bm && y > 0) stk .. x .. (y-1) .. z;
 					if( y-y0 <= bp && y < t) stk .. x .. (y+1) .. z;
 					if( z-z0 >= bm && z > 0) stk .. x .. y .. (z-1);
-					if( z-z0 <= bp && y < f) stk .. x .. y .. (z+1);
+					if( z-z0 <= bp && z < f) stk .. x .. y .. (z+1);
 				}
 			}
 		}while( length( stk));

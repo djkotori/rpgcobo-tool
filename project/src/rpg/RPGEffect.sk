@@ -210,11 +210,12 @@ class RPGEfxAnimeModifier extends SK3DModifier
 //	   この時、周りのg1tex.aが255又は元オブジェクトのgsel値なら描画無し。
 //	※g1texは破壊される。vox.overlayで参照されるが、必要な個所は破壊されないはず。
 //	
-class SK3DSilhouette extends SK3DObject
+class SK3DBehindSilhouette extends SK3DObject
 {
 	renderer = null;
 	checkbehind = true;
 	silcol = 0x00ffff99;
+	fade = 0.0;							//	物陰に隠れると2.0まで増加。物陰から出ると0.0にフェードする
 
 	constructor( r){
 		super( null);
@@ -224,14 +225,13 @@ class SK3DSilhouette extends SK3DObject
 		local m = f.m = clone f.m;
 		m.tec = skFXFindTechnique( "decal.silhouette");
 		m.blend = SK_MIX;
-		m.misccol0 = silcol;
 		m.depthtest = 0;
 		m.visiblemask = SK_VISIBLE_DECAL;
 		setLayer( -9);		//	最初の方に描画
 	}
 
 	function setSilhouetteColor( c){
-		mesh.face[0].m.misccol0 = silcol = c;
+		silcol = c;
 	}
 
 	function updateVisibleMask(){
@@ -240,15 +240,29 @@ class SK3DSilhouette extends SK3DObject
 	}
 	
 	function update( dt, pmatdirty=true){
-		visible = parent.visible && (silcol & 0xff);
+		updateFade( dt);
+		visible = fade > 0.01 && parent.visible && (silcol & 0xff);
 		bnd.set( parent.bnd);	//	親と完全一致な描画範囲。はみ出しちゃう場合に注意
 		local b = super.update( dt, pmatdirty);
 		return b;
 	}
 
+	function updateFade( dt){
+		local target = checkBehind() ? 2.0 : 0.0;
+		fade += (target - fade) * Math.min( dt / 300.0, 1.0);
+	}
+
 	//	裏側にあるかチェックするオクルージョンクエリが出来ればいいが、GPU待ちが怖いのでコリジョンのレイテストでやる。。。
-	//	人体、カプセル型のコリジョンを想定。中心、上部、下部が同時に隠れた場合にシルエットを表示開始。
+	//	人体、カプセル型のコリジョンを想定。中心、上部、下部が同時に隠れた場合にシルエットを表示開始。←これ後回し。。。
 	function checkBehind(){
+		local b3res = #b3Result( 8);
+		local ap = renderer.camera.eye, bp = v_1( parent.gbnd.x, parent.gbnd.y, parent.gbnd.z);
+		local b3res = scn.b3world.rayTest( 0, ap, bp, -1, CollisionGroupID.G_STAGE, b3res);
+		foreach( br in b3res){	//	マップ境界と進入禁止のフィンコリジョンを除外。。。
+			// printf( "hit/? %f, %f, %f body %S   tr %S %S\n", br.pointb.x, br.pointb.y, br.pointb.z, br.bodyb["ref"], br.partidb, br.tridb);
+			if( br.bodyb["ref"] && (br.partidb & 0xff) < 252) return true;
+		}
+		return false;
 	}
 
 	//	passfilter=128 の必要あり。あと、parentがSK_VISIBLE_OPAQUEを描画可能なこと。
@@ -272,8 +286,9 @@ class SK3DSilhouette extends SK3DObject
 		skSetRenderTarget( oldfb);
 		//	バウンディングボックス描画
 		local b = p.bnd;
-		local mat = m_1.set( p.gmat).scale( b.r, b.s, b.t).translate( b.x, b.y, b.z);
-		mesh.face[0].m.misccol1 = gsel;
+		local mat = m_1.set( p.gmat).translate( b.x, b.y, b.z).scale( b.r*1.2, b.s*1.2, b.t*1.2);
+		mesh.face[0].m.misccol1 = gsel | (255<<8);
+		mesh.face[0].m.misccol0 = Math.lerpcolor( silcol&0xffffff00, silcol, Math.saturate( fade));
 		skSetMatrix( SK_WORLD, mat);
 		mesh.render( visiblemask);
 	}

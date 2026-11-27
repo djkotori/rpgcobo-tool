@@ -2002,7 +2002,7 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 		mdlid = data["mdlid"] || "EP000";
 		local restype = RPGResource.getResourceType( mdlid);
 		local res = ::conf._resource[restype][mdlid];
-		local id = res["pic3d"] || res["vox"];
+		local id = res["pic3d"] || res["vox"] || res["pmt"];
 		local tex = null;
 		//	キャラの場合はどうしましょ
 		if( teximgcache[id]){
@@ -2010,7 +2010,7 @@ class PropertyBehaviors.EnemyGroup.EnemyPic extends SKImageView
 			img = t.img;
 			tex = t.tex;
 		}else
-		if( res["vox"]){
+		if( res["vox"] || res["pmt"]){
 			local imgpreview = #BlockImagePreview( 128, 128);
 			local rp3d = RPG3DObject.create3DObject( {mdlid=mdlid});
 			rp3d.setDir( Math.PI);

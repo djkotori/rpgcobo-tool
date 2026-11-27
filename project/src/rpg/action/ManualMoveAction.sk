@@ -29,7 +29,7 @@ class ManualMoveAction
 		rp3d = p;
 		stats = [];
 		moves = [];
-		ispic = rp3d instanceof RPG3DPicture;
+		ispic = (rp3d instanceof RPG3DPicture) || (rp3d instanceof RPG3DPolyModel);	//	u-m
 	}
 
 	function _get( key){

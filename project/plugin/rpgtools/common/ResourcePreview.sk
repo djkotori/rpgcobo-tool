@@ -303,7 +303,7 @@ class ResourcePreviewCanvas
 				sk3d = RPG3DObject();
 				sk3d.setSource( pmt);
 				sk3d.setDir( Math.PI);
-				sk3d.pos( 0, -val["colsize"][1]*0.5, 0);
+				// sk3d.pos( 0, -val["colsize"][1]*0.5, 0);
 				//	pivotとしてTransformを指定
 				local tr = Transform();
 				local hpb = val["hpb"];
@@ -311,8 +311,9 @@ class ResourcePreviewCanvas
 				tr.setSRT( _p, Vector3D( val["scale"]||1.0), _r);
 				sk3d.setPivot( tr);
 				//
-				local r = sk3d.gbnd;
+				local r = sk3d.bnd;
 				local sc = 1.0/Math.sqrt( r.r*r.r+r.s*r.s+r.t*r.t);
+				sk3d.pos( 0, -r.y*sc, 0);
 				sk3d.scale( sc);
 				sk3d.matdirty = true;
 			}

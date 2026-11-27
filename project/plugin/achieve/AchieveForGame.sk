@@ -53,7 +53,7 @@ class ::AchievementSystem
 	function checkUnlockAchievements(){
 		local achievemap = ::sharedstat.etc["achievemap"];
 		foreach( i, v in ::conf["achieve"]["items"]){
-			if( !(i in achievemap) || achievemap[i] || !length( v["reqs"])) continue;	//	reqsない場合は手動のみ
+			if( !(i in achievemap) || achievemap[i] || !v["enabled"] || !length( v["reqs"])) continue;	//	reqsない場合は手動のみ
 			local b = ::reqchk( v["reqs"]);		//	条件を満たしているかチェック
 			if( b){
 				achievemap[i] <- 1;

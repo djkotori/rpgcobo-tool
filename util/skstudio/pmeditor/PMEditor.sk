@@ -44,10 +44,11 @@ class PMEditor extends EditorViewBase
 		g.addChild( v3)
 		g.setBuffer( 2);
 		v3.renderer.setEnvironment( ::RenderSettings.getEnvironment( "pbr_draft"));
-		v3.scn.maincamera.lookat( Vector3D( 0, 1.5, -8), Vector3D( 0, 0.5, 0));
+		v3.scn.maincamera.lookat( Vector3D( 1, 1, -8), Vector3D( -1, -1, 8));
 		local r = ::getResource( path);
 		local pmt = ::getPolygonMeshTree( r);
 		local sk3d = SK3DObject( pmt);
+		sk3d.pos( -sk3d.bnd.x, -sk3d.bnd.y, -sk3d.bnd.z);
 		v3.scn.addObject( sk3d);
 		return pv;
 	}

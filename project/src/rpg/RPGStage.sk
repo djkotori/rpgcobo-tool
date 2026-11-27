@@ -457,7 +457,7 @@ class RPGStage
 			player3d.setDir( old.dir);
 		}
 		//	シルエット
-		local sil3d = SK3DSilhouette( view3d.renderer);
+		local sil3d = SK3DBehindSilhouette( view3d.renderer);
 		sil3d.setSilhouetteColor( stat.statmap.silhouette);
 		player3d.addChild( sil3d);
 	}

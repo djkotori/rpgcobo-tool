@@ -465,7 +465,7 @@ fs pbrout_forward
 	vec4 pbrlighting_switch( G g){	//	g ha unpack zumi
 		g.shadow = calcshadow( g.wvp, 0.0, g.n);
 		g.ao = calcao( g.uv);
-		g.sss = ssshadow( g.uv);
+		g.sss = vec4( 1.0); // ssshadow( g.uv);	//	tex3 ha fx...
 		switch( g.mtype){
 		case 0u: setup_standard( g); return lighting_standard( g);
 		case 1u: return lighting_decal( g);

@@ -352,8 +352,7 @@ with SKView
 	function setMouseCursor( t){
 		mousecurs = t;
 		if( ::rootview.contains( this)){
-			local f = ::rootview.mouses[0].entered;	//	mouses[0] == PCマウス
-			if( contains( f)){ ::rootview.refreshMouseCursor( f.getMouseCursor()); }
+			::rootview.refreshMouseCursor();
 		}
 	}
 	

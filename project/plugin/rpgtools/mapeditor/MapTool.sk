@@ -105,6 +105,7 @@ class MapTool
 				local btn = ed.tools.findChild( v);
 				return { lbl=btn.tips, icon=btn.findChild( "icon").getText(), toolid=btn.name, }
 			})},
+			{ lbl="$T.lbl_pickblock", id="pickblock", icon="\ue3b8", modkey="~" }
 			"-"
 			{ lbl="$T.menu_debug_here", icon="\uf06a", uid="menu_debug_here", disable=!hb, mapid=ed.mapid, pos=hb&&[hb.bx*0.5,(hb.by+1)*0.5,hb.bz*0.5,0], }
 		];
@@ -117,6 +118,9 @@ class MapTool
 		}else
 		if( m["toolid"]){
 			editor.changeTool( m.toolid);
+		}else
+		if( m["id"] == "pickblock"){
+			return startSpoit( true);
 		}
 	}
 
@@ -701,7 +705,7 @@ class MapTool
 
 	//	※このイベントハンドリング中にツールが切り替わることがある！toolfunc自体は切り替わらない。
 	//	
-	function startSpoit(){
+	function startSpoit( noalt=false){
 		removeGuide( "pen");
 		removeGuide( "fb");
 		local blkflag = BLK_SOLID|BLK_LIQUID|BLK_PLANT|BLK_BARRIOR|BLK_SOLIDFB|BLK_DECAL, mode = 4;	//	4:すぽいと、、
@@ -720,6 +724,8 @@ class MapTool
 			placeSelectPen( hb, pen, PEN_SPOIT);
 			selgz( rayTestEVMK( p)["gz"]);
 		}
+		canvas.view.setMouseCursor( CursorType.CURSOR_CROSS);
+		//
 		local fn( e){
 			local self = editor.tool;
 			e.consume();
@@ -727,8 +733,9 @@ class MapTool
 			switch( e.id){
 			case MOUSE_MOVED:
 			case MOUSE_DRAGGED:
-				if( !e.isAltDown()){
+				if( !noalt && !e.isAltDown()){
 					self.removeGuide( "pen");
+					self.canvas.view.setMouseCursor( CursorType.CURSOR_ARROW);
 					return null;
 				}
 				local gz = self.rayTestEVMK( e)["gz"];
@@ -763,13 +770,19 @@ class MapTool
 					}
 				}
 				break;
-			// case MOUSE_RELEASED:
+			case MOUSE_RELEASED:
+				if( noalt){
+					self.canvas.view.setMouseCursor( CursorType.CURSOR_ARROW);
+					return null;
+				}
+				break;
 			// case MOUSE_CANCELLED:
 			// 	return null;
 			case KEY_RELEASED:
 				if( e.keycode == VK_ALT){
 					self.removeGuide( "pen");
 					selgz( null);
+					self.canvas.view.setMouseCursor( CursorType.CURSOR_ARROW);
 					return null;
 				}
 				break;

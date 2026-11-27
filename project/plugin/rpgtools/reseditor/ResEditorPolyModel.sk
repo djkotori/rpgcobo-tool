@@ -31,22 +31,25 @@ class ResEditorPolyModel extends ResEditor
 		{ pid="pmt", lbl="$T.lbl_model", type=GRAPHIC, dir="/resource/poly_mdl", restype="poly_mdl", nullable=true, defval=null }
 		{ pid="pos", lbl="$T.lbl_position", type=VEC3, range=(-10.0,10.0), q=100, defval=[0,0,0] }
 		{ pid="hpb", lbl="$T.lbl_rotation", type=VEC3, range=(-180,180), defval=[0,0,0] }
-		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,4.0), q=10, defval=1.0, ui="bar" }
+		{ pid="scale", lbl="$T.lbl_scale", type=SCALAR, range=(0.1,4.0), q=100, defval=1.0, ui="bar" }
 		{ pid="colshp",	lbl="$T.lbl_collision",	type=LIST, list=colshplist, defval=SK_SHAPE_BOX },
 		{ pid="colsize", lbl="$T.lbl_size", type=VEC3, range=(0.01,10.0),q=100, defval=(0.5,0.5,0.5) },
 		
-		{ pid="charause", lbl="$T.lbl_charause", type=BOOL, defval=false },
 		{ pid="eventuse", lbl="$T.lbl_mapuse", type=BOOL, defval=true },
-
-		{ pid="animap", lbl="$T.lbl_anime", type=ANIMEMAP, defval=[], cnt="cnt6.ui", motlist=@( pl){
-			local pmtpath = pl.proplist.ref["selitem"]["data"]["pmt"];
-			local pmt = ::getPolygonMeshTree( pmtpath);
-			local a = [];	//	{lbl="$T.lbl_none", val=null}
-			if( pmt){
-				a ... pmt.getMotionIDList().map( @( i) +{ lbl=i, val=i});
-			}
-			return a;
-		}},
+		{ pid="charause", lbl="$T.lbl_charause", type=BOOL, defval=false },
+		{ pid="cntpos", lbl="$T.lbl_centerpos", type=VEC3, range=(0.0,1.0), q=100, defval=[0.5,0.5,0.5] }
+		{ pid="atkpos", lbl="$T.lbl_attackpos", type=VEC3, range=(0.0,1.0), q=100, defval=[0.5,0.5,0.8] }
+		{ pid="gndpos", lbl="$T.lbl_groundpos", type=VEC3, range=(-1.0,1.0), q=100, defval=[0.5,0.0,0.5] }
+		
+		// { pid="animap", lbl="$T.lbl_anime", type=ANIMEMAP, defval=[], cnt="cnt6.ui", motlist=@( pl){
+		// 	local pmtpath = pl.proplist.ref["selitem"]["data"]["pmt"];
+		// 	local pmt = ::getPolygonMeshTree( pmtpath);
+		// 	local a = [];	//	{lbl="$T.lbl_none", val=null}
+		// 	if( pmt){
+		// 		a ... pmt.getMotionIDList().map( @( i) +{ lbl=i, val=i});
+		// 	}
+		// 	return a;
+		// }},
 		{ pid="memo", lbl="$T.lbl_memo", type=STRING, multiline=true, cnt="cnt6.ui", },
 	];
 
@@ -185,10 +188,14 @@ class ResEditorPolyModel extends ResEditor
 					}
 				}
 				local r = dir.create( fn, bb);
+				r.flush();
+				::skstudio.flushEditor( r.path);
 				::skstudio.fileview.refreshDir( "/resource/poly_mdl");
-				if( ret["setitem"]) setPmtParamOp( r.path);
+				if( ret["setitem"]){
+					selectID( mdlid);
+					setPmtParamOp( r.path);
+				}
 			}
-
 		}catch( ex){
 			printexception( ex);
 			::rootview.postErrorEvent( {type="MessagePreview", error=ex, msg = "$T.error_import_mdl: " .. ex.message});

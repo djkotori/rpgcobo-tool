@@ -1,13 +1,15 @@
 declare mod_efx;
 
 //////////////////////////////////////////////////////////////////////
-//	vox,enemy overlay shader
+//	overlay effect shader
 //	
-//	RPG3DObjectに光のエフェクト、選択のアウトライン描画を追加する。
+//	SK3DObjectに光のエフェクト、選択のアウトライン描画を追加する。
 //	このエフェクトはTransパスで行われる。pbr forward passの後に分離した描画パスで描画する。
 //	↑Decalパスにやっぱしよう！HDRにしちゃうと見た目の調整が難しい。。同じ理由でエフェクトも光系はDecalで作る。
 //	※overlayとoutlineも分離する。パスが多くなるけど本来は分離するべきなので。
 //	selectionはenvcolorを使う。
+//	
+//	現在の対応シェーダ: vox.skfx, enemy.skfx, *pbr.skfx
 //	
 //	OverlayEffectクラスでアニメーションを定義する。OverlayEffectはEfxEditorのアクション編集で追加できるように拡張。
 //	以下のパラメータ

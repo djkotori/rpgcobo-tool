@@ -406,6 +406,11 @@ class RPG3DObject extends SK3DObject
 	/////////////////////////////////////////////////////////////////////////
 	//	演出指示
 	//	
+
+	//	指定したアニメIDが存在するかどうかを返す。
+	function hasAnime( aid){
+		return !!animemap[aid];
+	}
 	
 	//	アニメID, 再生パートを指定してアニメーション再生。
 	//	マニュアル的な再生も可能ではある。
@@ -517,14 +522,22 @@ class RPG3DObject extends SK3DObject
 	}
 
 	function getEffectPosition( plc){
+		// switch( plc){
+		// case 1: //	top
+		// 	return (0,bnd.y+bnd.s,0, null);
+		// case 2: //	bottom
+		// 	return (0,bnd.y-bnd.s,0, null);
+		// }
+		// //	center
+		// return (0, 0, 0, null);
 		switch( plc){
 		case 1: //	top
-			return (0,bnd.y+bnd.s,0, null);
+			return (bnd.x,bnd.y+bnd.s,bnd.z, null);
 		case 2: //	bottom
-			return (0,bnd.y-bnd.s,0, null);
+			return (bnd.x,bnd.y-bnd.s,bnd.z, null);
 		}
 		//	center
-		return (0, 0, 0, null);
+		return (bnd.x, bnd.y, bnd.z, null);
 	}
 	
 	//	自分自身にオーバーレイエフェクトを発生させる。同時に一つのOverlayEffectのみ有効。
@@ -960,7 +973,7 @@ class RPG3DObject extends SK3DObject
 			local r = self.projectBounds();
 			local gy = r.h;
 			if( self["pic"]){ gy *= 1.0-self.pic.gndpos[1]; }
-			v.pos( r.x+(r.w>>1), r.y+gy, 0);
+			v.pos( r.x+(r.w>>1), r.y+gy-8, 0);
 			v.matdirty = true;
 			return true;
 		};
@@ -1828,11 +1841,11 @@ class RPG3DMapAsset extends RPG3DObject
 }
 
 
-
 class RPG3DPolyModel extends RPG3DObject
 {
 	polymdl = null;
-	colmat = null;
+
+	sil3d = null;
 
 	function setPolyModel( x){
 		polymdl = x;
@@ -1850,7 +1863,7 @@ class RPG3DPolyModel extends RPG3DObject
 		local colsize = x["colsize"]||#(0.38,0.45,0.38);
 		local shp = createShape( x["colshp"]||SK_SHAPE_CAPSULE, colsize);
 		local offsmat = Matrix.fromTranslate( 0, colsize[1], 0).mult34( invtr);
-		b3body = b3Body( 0.0, shp, mat, G_OBJECT|G_EVENT, G_STAGE|G_CHARA);
+		b3body = b3Body( 0.0, shp, mat, G_CHARA, G_STAGE|G_CHARA);		//	G_OBJECT|G_EVENT
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
 		//	アニメーションは、元のやつに定義のアニメを足し込む
@@ -1858,16 +1871,14 @@ class RPG3DPolyModel extends RPG3DObject
 		animelist = clone pmt.animelist;
 		animemap = pmt._animap;
 
-		colmat = Matrix();
 		updateVisibleMask();
 		setGSelectorID( 200);
 	}
 
 	function update( dt, pmatdirty=true){
-		if( ::["rpgstage"]){
-			local w = Math.cos( skGetTime( ::rpgstage.envcoltime)*0.01)*0.3+0.7;
-			local iw = (1.0-w)*0.8+0.2;
-			colmat.set( iw,0,0,0, 0,iw,0,0, 0,0,iw,0, 0.2*w,w,w,1);
+		//	必要なマテリアルパラメータをコピー。毎フレームやらんでもいいけど
+		foreach( m in getMaterials()){
+			m.misccol0 = (m.gsel<<24) | ((m.visiblemask&4096)*(255<<4));
 		}
 		return super.update( dt, pmatdirty);
 	}
@@ -1877,17 +1888,22 @@ class RPG3DPolyModel extends RPG3DObject
 		return false;
 	}
 
-	function setSelected( b){
-		if( !selbits != !b){
-			local ma = getMaterials();
-			foreach( m in ma){
-				if( b){
-					m.colormat = colmat;
-				}else{
-					m.colormat = null;
-				}
-			}
+	function getEffectPosition( plc){
+		local sc;
+		switch( plc){
+		case 1: //	top
+			sc = #(0.5, 1.0, 0.5);
+			break;
+		case 2: //	bottom
+			sc = polymdl["gndpos"] || #(0.5, 0.0, 0.5);
+			break;
+		case 3: //	attack
+			sc = polymdl["atkpos"] || #(0.5, 0.5, 0.8);
+			break;
+		default: //	center
+			sc = polymdl["cntpos"] || #(0.5, 0.5, 0.5);
+			break;
 		}
-		selbits = b;
+		return (bnd.x+bnd.r*(sc[0]*2-1),bnd.y+bnd.s*(sc[1]*2-1),bnd.z+bnd.t*(sc[2]*2-1), null);
 	}
 }

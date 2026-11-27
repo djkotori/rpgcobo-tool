@@ -4,6 +4,7 @@ module mod_math;
 module mod_transform;
 module mod_pbrg;
 module mod_pbrlighting;
+module mod_efx;
 
 param pbr
 {
@@ -88,14 +89,46 @@ fs pbr
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
+//	overlay shader
+
+param overlay
+{
+	uniform sampler2D gtex0 <id=GTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
+	uniform highp vec2 gtex0scale <id=GTEX1_PIX>;
+	uniform lowp vec4 p1<id=UNICOLOR1>;
+	uniform lowp vec4 envcol <id=ENVCOLOR>;
+	
+	fragout lowp vec4 fragcolor;
+}
+
+fs overlay
+{
+	void main(){
+		mediump vec4 pix = vec4( 0.0);
+		//	overlay
+		mediump vec4 ovcol = overlayefx( v_wvp);
+		pix = ovcol;
+		//	outline
+		highp vec2 uv = gl_FragCoord.xy * gtex0scale;
+		float b = outline_gtex( gtex0, uv, gtex0scale, 200.0/255.0) * p1.y;
+		pix = mix( pix, envcol, b);
+		//	
+		fragcolor = pix;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
 //	depth/shadow mode shader
 
 param nocolor
 {
 	attribute mediump vec4 in_uv <id=UV1>;		//	vec4( uv0, uv1)
 	
+	uniform sampler2D coltex1 <id=COLORTEX1>;
+	
 	uniform highp mat4 uvmat <id=UVMAT>;
 	uniform highp vec3 zrange <id=DEPTHRANGE, scale=(1.0,65535.0)>;
+	uniform lowp float alpharef<ID=ALPHAREF>;
 	
 	varying mediump vec3 v_n;
 	varying highp vec3 v_wvp;
@@ -171,6 +204,23 @@ technique basic
 		param = pbr;
 		vs = pbrout_error;
 		fs = pbrout_error;
+	}
+
+	//	overlay pass
+	pass {
+		using transform, bayer;
+		using overlayefx;
+		using outline_gtex, overlay;
+		
+		BLEND = PMAMIX;
+		DEPTHMASK = OFF;
+		POLYGONOFFSET = -60;
+		
+		passfilter = 128;
+		visiblemask = 12288;
+		param = pbr;
+		vs = pbr;
+		fs = overlay;
 	}
 
 	//	mode shaders

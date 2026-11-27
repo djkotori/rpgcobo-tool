@@ -406,7 +406,7 @@ param silhouette
 	uniform highp mat4 pmat <id=PMAT>;
 	uniform mediump mat4 miscmat <id=MISC1MAT>;
 	uniform mediump vec4 color <id=UNICOLOR1>;
-	uniform mediump vec4 gsel <id=UNICOLOR2>;
+	uniform lowp vec4 gsel <id=UNICOLOR2>;
 
 	uniform sampler2D gtex0 <id=GTEX1, WRAP_S=CLAMP, WRAP_T=CLAMP, MIN_FILTER=NEAREST, MAG_FILTER=NEAREST>;
 	uniform highp vec2 gtex0scale <id=GTEX1_PIX>;
@@ -427,8 +427,8 @@ fs silhouette
 	void main(){
 		highp vec2 uv = gl_FragCoord.xy * gtex0scale;
 		mediump vec4 pix = color;
-		mediump float v0 = texture2D( gtex0, uv).a;
-		if( v0 < 1.0){ pix = vec4( 0.0); }
+		mediump float v0 = gsel.z, dv = v0 - texture2D( gtex0, uv).a;
+		if( dv*dv > 0.000001){ pix = vec4( 0.0); }
 		else{
 			highp vec2 d = gtex0scale * 3.0;
 			vec4 v4 = vec4(
@@ -437,7 +437,7 @@ fs silhouette
 				texture2D( gtex0, uv+d*vec2( 0.0,-1.0)).w,
 				texture2D( gtex0, uv+d*vec2( 0.0, 1.0)).w
 			);
-			vec4 v1 = min( abs( v4 - vec4( v0)), abs( v4 - vec4( gsel.a)));
+			vec4 v1 = min( abs( v4 - vec4( v0)), abs( v4 - vec4( gsel.w)));
 			v1 = step( vec4( 0.1), v1);
 			pix.w *= clamp( float( dot( v1, v1)), 0.0, 1.0);
 		}

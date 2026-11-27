@@ -1514,6 +1514,7 @@
 	"lbl_mapshotmode"					: {"ja":"縮小マップの表示", "en":"Map Viewing Mode"}
 	"lbl_automapping"					: {"ja":"オートマッピング", "en":"Auto Mapping"}
 	"lbl_selblock"						: {"ja":"ブロック選択", "en":"Block Select"}
+	"lbl_pickblock"						: {"ja":"ブロック選択", "en":"Block Picker"}
 	"lbl_selasset"						: {"ja":"アセットの選択", "en":"Select Asset"}
 	"lbl_encntrate"						: {"ja":"エンカウント率", "en":"Encounter Rate"}
 	"lbl_groupnum"						: {"ja":"グループ数", "en":"Group Num"}

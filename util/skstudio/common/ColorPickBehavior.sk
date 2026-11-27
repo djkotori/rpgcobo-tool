@@ -1,5 +1,6 @@
 import VirtualKeyCode;
 import ModifiersMask;
+import CursorType;
 
 //	ボタンにカラーピックの機能を加える。
 //	
@@ -79,6 +80,13 @@ class ColorPopup extends Popup
 		}
 	}
 
+	function keyevent( e){
+		if( e.keycode == VK_ALT){
+			::rootview.setMouseCursor( e.id==KEY_RELEASED ? CURSOR_ARROW : CURSOR_CROSS);
+		}
+		return super.keyevent( e);
+	}
+
 	function valueevent( e){
 		if( e.id == VALUE_CHANGED && cbfunc){
 			cbfunc( e.actioncmd);
@@ -99,6 +107,7 @@ class ColorPopup extends Popup
 		pop.setColor( col);
 		pop.cbfunc = cbfunc;
 		pop.show( null, cv);
+		::rootview.setMouseCursor( CURSOR_ARROW);
 		return pop.ret ? pop.colpanel.color : null;
 	}
 }

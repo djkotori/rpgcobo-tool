@@ -251,6 +251,7 @@ class PolygonMeshTree extends Serializable
 			if( cimg){
 				local img = skLoadImage( cimg);
 				local t = self._texlist[i] = Texture(); t.load( img, ts.flags); t.ref = ts;
+				t.setSamplerState( ts.sampler);
 				cimg.pos = 0;
 			}
 		}
@@ -338,6 +339,7 @@ local VALUE_INDEXBUFFER		= 492;
 local VALUE_MOTIONDATA		= 493;
 local VALUE_SHAPEKEYLIST	= 494;
 local VALUE_SHAPESTATETIMELINE	= 495;
+local VALUE_SAMPLERSTATE	= 496;
 
 local infunc( i){
 	loadData( i.bbuf);
@@ -356,6 +358,11 @@ registerSerializable( ShapeStateTimeline, VALUE_SHAPESTATETIMELINE, infunc, outf
 registerSerializable( Transform, VALUE_TRANSFORM,
 	function( i){ set( i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf(), i.getf()); },
 	function( o){ o.putf( tx); o.putf( ty); o.putf( tz); o.putf( sx); o.putf( sy); o.putf( sz); o.putf( rx); o.putf( ry); o.putf( rz); o.putf( rw); }
+);
+
+registerSerializable( SamplerState, VALUE_SAMPLERSTATE, 
+	function( i){ set( i.getb(), i.getb(), i.getb(), i.getb(), i.getb()); },
+	function( o){ o.putb( wraps); o.putb( wrapt); o.putb( minfilter); o.putb( magfilter); o.putb( lodbias); }
 );
 
 function getPolygonMeshTree( res){
