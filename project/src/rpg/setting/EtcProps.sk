@@ -160,7 +160,8 @@ condprops .. {
 
 condprops .. {
 	pid = "ani",
-	lbl = "$T.lbl_anime"
+	lbl = "$T.lbl_standani"
+	tipskey = "condprop.ani"
 	type = ANIME_POPUP,
 	nullable = true,
 	defval = null
@@ -169,6 +170,7 @@ condprops .. {
 condprops .. {
 	pid = "efx_start",
 	lbl = "$T.lbl_efx_start"
+	tipskey = "condprop.efx_start"
 	type = RESID,
 	restype = ["efx"],
 	defval = null,
@@ -178,6 +180,7 @@ condprops .. {
 condprops .. {
 	pid = "efx_cont",
 	lbl = "$T.lbl_efx_cont"
+	tipskey = "condprop.efx_cont"
 	type = RESID,
 	restype = ["efx"],
 	defval = null,
@@ -187,6 +190,7 @@ condprops .. {
 condprops .. {
 	pid = "snd_cont",
 	lbl = "$T.lbl_sound"
+	tipskey = "condprop.snd_cont"
 	type = RESID,
 	restype = ["snd"],
 	defval = null,
@@ -196,6 +200,7 @@ condprops .. {
 condprops .. {
 	pid = "showpop",
 	lbl = "$T.lbl_showpop"
+	tipskey = "condprop.showpop"
 	type = BOOL,
 	defval = true,
 };
@@ -203,6 +208,7 @@ condprops .. {
 condprops .. {
 	pid = "showstat",
 	lbl = "$T.lbl_showstat"
+	tipskey = "condprop.showstat"
 	type = BOOL,
 	defval = true,
 };

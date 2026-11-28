@@ -475,11 +475,11 @@ local efxhead = { pid="HACT", lbl="$T.lbl_action", type=HEADER, menu=[
 	{ id="paste", lbl="$T.menu_edit_paste", icon="\ue14f"},
 ]};
 
-local aimaniprop = { pid="aimani", lbl="$T.lbl_aimani", type=ANIME_POPUP, defval=null }
-local useactprop = { pid="useact", lbl="$T.lbl_useact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_useact", SkillBeginScripts), }
-local atkactprop = { pid="atkact", lbl="$T.lbl_atkact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_atkact", SkillAttackScripts), }
-local hitactprop = { pid="hitact", lbl="$T.lbl_hitact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_hitact", SkillHitScripts), }
-local endactprop = { pid="endact", lbl="$T.lbl_endact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_endact", SkillEndScripts), }
+local aimaniprop = { pid="aimani", lbl="$T.lbl_aimani", type=ANIME_POPUP, defval=null, tipskey="skillprop.aimani" }
+local useactprop = { pid="useact", lbl="$T.lbl_useact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_useact", SkillBeginScripts), tipskey="skillprop.useact" }
+local atkactprop = { pid="atkact", lbl="$T.lbl_atkact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_atkact", SkillAttackScripts), tipskey="skillprop.atkact" }
+local hitactprop = { pid="hitact", lbl="$T.lbl_hitact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_hitact", SkillHitScripts), tipskey="skillprop.hitact" }
+local endactprop = { pid="endact", lbl="$T.lbl_endact", type=PROPERTYLIST, ...makeactionprop( "$T.lbl_endact", SkillEndScripts), tipskey="skillprop.endact" }
 
 local acttestprop = {
 	pid="acttest", lbl="", type=CUSTOMBUTTON, ui="1", cnt="cnt5.ui", get=@( prop, data) 1, set=@( prop, data, act) 0, 

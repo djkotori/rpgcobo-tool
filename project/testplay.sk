@@ -440,6 +440,8 @@ local revertRenderSkip( s){
 	v.layerflags = v.layerflags ^ 0x8000;
 }
 
+::sk3dcol <- null;
+
 local rootevent( e){
 	if( e.id != KEY_PRESSED) return;
 	switch( e.keycode){
@@ -450,6 +452,15 @@ local rootevent( e){
 			revertRenderSkip( "stageui");
 			revertRenderSkip( "message");
 			revertRenderSkip( "menu");
+		}
+		break;
+	case VK_F3:
+		if( ::sk3dcol){
+			::sk3dcol.kill();
+			::sk3dcol = null;
+		}else{
+			::sk3dcol = SK3DCollisionPreview( ::rpgstage.scn.b3world);
+			::rpgstage.scn.addObject( ::sk3dcol);
 		}
 		break;
 	case VK_ENTER:

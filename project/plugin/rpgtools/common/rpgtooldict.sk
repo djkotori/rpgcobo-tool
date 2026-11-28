@@ -865,6 +865,7 @@
 	"lbl_input_random"					: {"ja":"乱数", "en":"Random"}
 	"lbl_lvcurve"						: {"ja":"レベルカーブ", "en":"Lv Curve"}
 	"lbl_battleai"						: {"ja":"バトルAI", "en":"Battle AI"}
+	"lbl_aipages"						: {"ja":"AIページ", "en":"AI Pages"}
 	"lbl_contturns"						: {"ja":"継続ターン", "en":"Continuous Turns"}
 	"lbl_addskilllist"					: {"ja":"スキル一覧に追加", "en":"Add to SkillList"}
 	"lbl_enemyuse"						: {"ja":"エネミーが使用可能", "en":"Enemy Useable"}

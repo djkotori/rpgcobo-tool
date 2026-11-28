@@ -273,20 +273,22 @@ class SK3DBehindSilhouette extends SK3DObject
 		local oldfb = skSetRenderTarget( g0fb);
 		local p = parent, ma = p.getMaterials(), gsel = ma[0].gsel;
 		local vm0 = renderer.env.visiblemask;
+		skSetRenderState( SK_INVERTFACE, 1);
 		renderer.env.visiblemask = SK_VISIBLE_OPAQUE;
 		foreach( m in ma){ if( m.visiblemask & SK_VISIBLE_OPAQUE){
-			m.depthtest = SK_GREATER; m.depthmask = 0; m.cullface = SK_CW; m.polygonoffset1 -= 1800;
+			m.depthtest = SK_GREATER; m.depthmask = 0; m.polygonoffset1 -= 1800;
 		}}
 		p.render( cam, SK_VISIBLE_OPAQUE, 1);
 		foreach( m in ma){ if( m.visiblemask & SK_VISIBLE_OPAQUE){
-			m.depthtest = SK_LESS; m.depthmask = 1; m.cullface = SK_CCW; m.polygonoffset1 += 1800;	//	ちゃんと退避したほうが良い
+			m.depthtest = SK_LESS; m.depthmask = 1; m.polygonoffset1 += 1800;	//	ちゃんと退避したほうが良い
 		}}
+		skSetRenderState( SK_INVERTFACE, 0);
 		renderer.env.visiblemask = vm0;
 		skInvalidateFrameBuffer( 1<<8);	//	depthは更新されないのでinvalidate可能
 		skSetRenderTarget( oldfb);
 		//	バウンディングボックス描画
 		local b = p.bnd;
-		local mat = m_1.set( p.gmat).translate( b.x, b.y, b.z).scale( b.r*1.2, b.s*1.2, b.t*1.2);
+		local mat = m_1.set( p.gmat).translate( b.x, b.y, b.z).scale( b.r*1.2, b.s*1.2, b.t*1.2);	//	これ実際のバウンディングボックスが欲しい
 		mesh.face[0].m.misccol1 = gsel | (255<<8);
 		mesh.face[0].m.misccol0 = Math.lerpcolor( silcol&0xffffff00, silcol, Math.saturate( fade));
 		skSetMatrix( SK_WORLD, mat);

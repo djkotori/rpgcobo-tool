@@ -720,6 +720,7 @@ class RPG3DObject extends SK3DObject
 		local vec = v_2( 0.0, vvy, 0.0);
 		local b3res = b3world.convexSweepTest( 0, shp, pos0, vec, G_CHARA, G_STAGE|G_CHARA|G_OBJECT);
 		foreach( br in b3res){
+			if( br.bodyb == b3body) continue;	//	自分自身にも当たるけど無視
 			local ny = br.normal.y, sn = br.surfnormal;	//	sweeptestの場合はnormalは正規ベクトル
 			if( ny > FLOORANGLE && (!sn || sn.y>FLOORANGLE)){// || (ny > 0.03 && sn && sn.y > FLOORANGLE/* && br.pointb.y < pos.y+width*/)){	//	カプセルの下半球が触れてる床のみ採用
 				local f = br.fraction;	//	b3resはfractionで昇順ソートされている
@@ -1851,7 +1852,6 @@ class RPG3DPolyModel extends RPG3DObject
 	function setPolyModel( x){
 		polymdl = x;
 		setSource( x.pmt);
-		
 		//	pivotとしてTransformを指定
 		local tr = Transform();
 		local hpb = x["hpb"];
@@ -1867,6 +1867,7 @@ class RPG3DPolyModel extends RPG3DObject
 		b3body = b3Body( 0.0, shp, mat, G_CHARA, G_STAGE|G_CHARA);		//	G_OBJECT|G_EVENT
 		b3body.ref = this;
 		b3body.setOffsetTransform( offsmat);
+		offsy = colsize[1];
 		//	アニメーションは、元のやつに定義のアニメを足し込む
 		local pmt = meshtree.pmt;
 		animelist = clone pmt.animelist;

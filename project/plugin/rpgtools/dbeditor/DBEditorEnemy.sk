@@ -228,12 +228,12 @@ local ailvlist = [
 class BattleAIEdit
 {
 	static aiprops = [
-		{ pid="req0", lbl="${T.lbl_require}1", type=LIST, ...aireqprops, },
-		{ pid="req1", lbl="${T.lbl_require}2", type=LIST, ...aireqprops, },
-		{ pid="rate", lbl="$T.lbl_rate", type=SCALAR, range=(0,100) },
-		{ pid="turn", lbl="$T.lbl_contturns", type=VEC2, range=(1,9), ui="r" },
-		{ pid="actnum", lbl="$T.lbl_actnum", type=VEC2, range=(1,9), ui="r" },
-		{ pid="ailv", lbl="$T.lbl_ailv", type=LIST, list=ailvlist },
+		{ pid="req0", lbl="${T.lbl_require}1", type=LIST, ...aireqprops, tipskey="battleai.req" },
+		{ pid="req1", lbl="${T.lbl_require}2", type=LIST, ...aireqprops, tipskey="battleai.req" },
+		{ pid="rate", lbl="$T.lbl_rate", type=SCALAR, range=(0,100), tipskey="battleai.rate" },
+		{ pid="turn", lbl="$T.lbl_contturns", type=VEC2, range=(1,9), ui="r", tipskey="battleai.turn" },
+		{ pid="actnum", lbl="$T.lbl_actnum", type=VEC2, range=(1,9), ui="r", tipskey="battleai.actnum" },
+		{ pid="ailv", lbl="$T.lbl_ailv", type=LIST, list=ailvlist, tipskey="battleai.ailv" },
 	];
 
 	static cmdpropdef = {
